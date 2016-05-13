@@ -20,7 +20,6 @@ package org.apache.spark.mllib.tree.loss
 import org.apache.spark.annotation.{DeveloperApi, Since}
 import org.apache.spark.mllib.util.MLUtils
 
-
 /**
  * :: DeveloperApi ::
  * Class for log loss calculation (for classification).
@@ -44,7 +43,7 @@ object LogLoss extends Loss {
    */
   @Since("1.2.0")
   override def gradient(prediction: Double, label: Double): Double = {
-    - 4.0 * label / (1.0 + math.exp(2.0 * label * prediction))
+    -4.0 * label / (1.0 + math.exp(2.0 * label * prediction))
   }
 
   override private[spark] def computeError(prediction: Double, label: Double): Double = {

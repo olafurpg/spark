@@ -41,10 +41,13 @@ import org.apache.flume.Channel
 // When the response comes or a timeout is hit, the TransactionProcessor is retrieved and then
 // unblocked, at which point the transaction is committed or rolled back.
 
-private[flume] class SparkAvroCallbackHandler(val threads: Int, val channel: Channel,
-  val transactionTimeout: Int, val backOffInterval: Int) extends SparkFlumeProtocol with Logging {
-  val transactionExecutorOpt = Option(Executors.newFixedThreadPool(threads,
-    new SparkSinkThreadFactory("Spark Sink Processor Thread - %d")))
+private[flume] class SparkAvroCallbackHandler(
+    val threads: Int, val channel: Channel, val transactionTimeout: Int, val backOffInterval: Int)
+    extends SparkFlumeProtocol
+    with Logging {
+  val transactionExecutorOpt = Option(
+      Executors.newFixedThreadPool(
+          threads, new SparkSinkThreadFactory("Spark Sink Processor Thread - %d")))
   // Protected by `sequenceNumberToProcessor`
   private val sequenceNumberToProcessor = mutable.HashMap[CharSequence, TransactionProcessor]()
   // This sink will not persist sequence numbers and reuses them if it gets restarted.
@@ -89,8 +92,8 @@ private[flume] class SparkAvroCallbackHandler(val threads: Int, val channel: Cha
   private def createProcessor(seq: String, n: Int): Option[TransactionProcessor] = {
     sequenceNumberToProcessor.synchronized {
       if (!stopped) {
-        val processor = new TransactionProcessor(
-          channel, seq, n, transactionTimeout, backOffInterval, this)
+        val processor =
+          new TransactionProcessor(channel, seq, n, transactionTimeout, backOffInterval, this)
         sequenceNumberToProcessor.put(seq, processor)
         if (isTest) {
           processor.countDownWhenBatchAcked(testLatch)
@@ -140,8 +143,8 @@ private[flume] class SparkAvroCallbackHandler(val threads: Int, val channel: Cha
    * @return An `Option` of the transaction processor for the corresponding batch. Note that this
    *         instance is no longer tracked and the caller is responsible for that txn processor.
    */
-  private[sink] def removeAndGetProcessor(sequenceNumber: CharSequence):
-      Option[TransactionProcessor] = {
+  private[sink] def removeAndGetProcessor(
+      sequenceNumber: CharSequence): Option[TransactionProcessor] = {
     sequenceNumberToProcessor.synchronized {
       sequenceNumberToProcessor.remove(sequenceNumber.toString)
     }

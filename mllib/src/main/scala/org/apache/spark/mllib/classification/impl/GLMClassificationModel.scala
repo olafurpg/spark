@@ -42,22 +42,20 @@ private[classification] object GLMClassificationModel {
      * @param modelClass  String name for model class, to be saved with metadata
      * @param numClasses  Number of classes label can take, to be saved with metadata
      */
-    def save(
-        sc: SparkContext,
-        path: String,
-        modelClass: String,
-        numFeatures: Int,
-        numClasses: Int,
-        weights: Vector,
-        intercept: Double,
-        threshold: Option[Double]): Unit = {
+    def save(sc: SparkContext,
+             path: String,
+             modelClass: String,
+             numFeatures: Int,
+             numClasses: Int,
+             weights: Vector,
+             intercept: Double,
+             threshold: Option[Double]): Unit = {
       val sqlContext = SQLContext.getOrCreate(sc)
       import sqlContext.implicits._
 
       // Create JSON metadata.
-      val metadata = compact(render(
-        ("class" -> modelClass) ~ ("version" -> thisFormatVersion) ~
-        ("numFeatures" -> numFeatures) ~ ("numClasses" -> numClasses)))
+      val metadata = compact(render(("class" -> modelClass) ~ ("version" -> thisFormatVersion) ~
+              ("numFeatures" -> numFeatures) ~ ("numClasses" -> numClasses)))
       sc.parallelize(Seq(metadata), 1).saveAsTextFile(Loader.metadataPath(path))
 
       // Create Parquet data.
@@ -84,13 +82,13 @@ private[classification] object GLMClassificationModel {
         case Row(weights: Vector, intercept: Double, _) =>
           (weights, intercept)
       }
-      val threshold = if (data.isNullAt(2)) {
-        None
-      } else {
-        Some(data.getDouble(2))
-      }
+      val threshold =
+        if (data.isNullAt(2)) {
+          None
+        } else {
+          Some(data.getDouble(2))
+        }
       Data(weights, intercept, threshold)
     }
   }
-
 }

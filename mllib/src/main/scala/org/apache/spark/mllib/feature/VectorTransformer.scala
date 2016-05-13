@@ -62,5 +62,4 @@ trait VectorTransformer extends Serializable {
   def transform(data: JavaRDD[Vector]): JavaRDD[Vector] = {
     transform(data.rdd)
   }
-
 }

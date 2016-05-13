@@ -68,8 +68,7 @@ class MultiDatabaseSuite extends QueryTest with SQLTestUtils with TestHiveSingle
           assert(spark.wrapped.tableNames(db).contains("t"))
           checkAnswer(spark.table("t"), df)
 
-          sql(
-            s"""
+          sql(s"""
               |CREATE TABLE t1
               |USING parquet
               |OPTIONS (
@@ -93,8 +92,7 @@ class MultiDatabaseSuite extends QueryTest with SQLTestUtils with TestHiveSingle
         assert(spark.wrapped.tableNames(db).contains("t"))
         checkAnswer(spark.table(s"$db.t"), df)
 
-        sql(
-          s"""
+        sql(s"""
               |CREATE TABLE $db.t1
               |USING parquet
               |OPTIONS (
@@ -201,8 +199,7 @@ class MultiDatabaseSuite extends QueryTest with SQLTestUtils with TestHiveSingle
         val path = dir.getCanonicalPath
 
         activateDatabase(db) {
-          sql(
-            s"""CREATE EXTERNAL TABLE t (id BIGINT)
+          sql(s"""CREATE EXTERNAL TABLE t (id BIGINT)
                |PARTITIONED BY (p INT)
                |STORED AS PARQUET
                |LOCATION '$path'
@@ -218,9 +215,8 @@ class MultiDatabaseSuite extends QueryTest with SQLTestUtils with TestHiveSingle
           df.write.parquet(s"$path/p=2")
           sql("ALTER TABLE t ADD PARTITION (p=2)")
           hiveContext.sessionState.refreshTable("t")
-          checkAnswer(
-            spark.table("t"),
-            df.withColumn("p", lit(1)).union(df.withColumn("p", lit(2))))
+          checkAnswer(spark.table("t"),
+                      df.withColumn("p", lit(1)).union(df.withColumn("p", lit(2))))
         }
       }
     }
@@ -233,8 +229,7 @@ class MultiDatabaseSuite extends QueryTest with SQLTestUtils with TestHiveSingle
       withTempPath { dir =>
         val path = dir.getCanonicalPath
 
-        sql(
-          s"""CREATE EXTERNAL TABLE $db.t (id BIGINT)
+        sql(s"""CREATE EXTERNAL TABLE $db.t (id BIGINT)
                |PARTITIONED BY (p INT)
                |STORED AS PARQUET
                |LOCATION '$path'
@@ -250,9 +245,8 @@ class MultiDatabaseSuite extends QueryTest with SQLTestUtils with TestHiveSingle
         df.write.parquet(s"$path/p=2")
         sql(s"ALTER TABLE $db.t ADD PARTITION (p=2)")
         hiveContext.sessionState.refreshTable(s"$db.t")
-        checkAnswer(
-          spark.table(s"$db.t"),
-          df.withColumn("p", lit(1)).union(df.withColumn("p", lit(2))))
+        checkAnswer(spark.table(s"$db.t"),
+                    df.withColumn("p", lit(1)).union(df.withColumn("p", lit(2))))
       }
     }
   }
@@ -277,8 +271,7 @@ class MultiDatabaseSuite extends QueryTest with SQLTestUtils with TestHiveSingle
 
       {
         val message = intercept[AnalysisException] {
-          sql(
-            s"""
+          sql(s"""
             |CREATE TABLE `d:b`.`t:a` (a int)
             |USING parquet
             |OPTIONS (
@@ -291,8 +284,7 @@ class MultiDatabaseSuite extends QueryTest with SQLTestUtils with TestHiveSingle
 
       {
         val message = intercept[AnalysisException] {
-          sql(
-            s"""
+          sql(s"""
               |CREATE TABLE `d:b`.`table` (a int)
               |USING parquet
               |OPTIONS (

@@ -37,17 +37,19 @@ import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.internal.Logging
 import org.apache.spark.util.{ResetSystemProperties, Utils}
 
-class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
-  with ResetSystemProperties {
+class YarnSparkHadoopUtilSuite
+    extends SparkFunSuite
+    with Matchers
+    with Logging
+    with ResetSystemProperties {
 
-  val hasBash =
-    try {
-      val exitCode = Runtime.getRuntime().exec(Array("bash", "--version")).waitFor()
-      exitCode == 0
-    } catch {
-      case e: IOException =>
-        false
-    }
+  val hasBash = try {
+    val exitCode = Runtime.getRuntime().exec(Array("bash", "--version")).waitFor()
+    exitCode == 0
+  } catch {
+    case e: IOException =>
+      false
+  }
 
   if (!hasBash) {
     logWarning("Cannot execute bash, skipping bash tests.")
@@ -61,15 +63,16 @@ class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
     val args = Array("arg1", "${arg.2}", "\"arg3\"", "'arg4'", "$arg5", "\\arg6")
     try {
       val argLine = args.map(a => YarnSparkHadoopUtil.escapeForShell(a)).mkString(" ")
-      Files.write(("bash -c \"echo " + argLine + "\"").getBytes(StandardCharsets.UTF_8), scriptFile)
+      Files.write(
+          ("bash -c \"echo " + argLine + "\"").getBytes(StandardCharsets.UTF_8), scriptFile)
       scriptFile.setExecutable(true)
 
       val proc = Runtime.getRuntime().exec(Array(scriptFile.getAbsolutePath()))
       val out = new String(ByteStreams.toByteArray(proc.getInputStream())).trim()
       val err = new String(ByteStreams.toByteArray(proc.getErrorStream()))
       val exitCode = proc.waitFor()
-      exitCode should be (0)
-      out should be (args.mkString(" "))
+      exitCode should be(0)
+      out should be(args.mkString(" "))
     } finally {
       scriptFile.delete()
     }
@@ -79,14 +82,12 @@ class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
     val key = "yarn.nodemanager.hostname"
     val default = new YarnConfiguration()
 
-    val sparkConf = new SparkConf()
-      .set("spark.hadoop." + key, "someHostName")
+    val sparkConf = new SparkConf().set("spark.hadoop." + key, "someHostName")
     val yarnConf = new YarnSparkHadoopUtil().newConfiguration(sparkConf)
 
-    yarnConf.getClass() should be (classOf[YarnConfiguration])
+    yarnConf.getClass() should be(classOf[YarnConfiguration])
     yarnConf.get(key) should not be default.get(key)
   }
-
 
   test("test getApplicationAclsForYarn acls on") {
 
@@ -148,28 +149,26 @@ class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
       case None =>
         fail()
     }
-
   }
 
   test("test expandEnvironment result") {
     val target = Environment.PWD
     if (classOf[Environment].getMethods().exists(_.getName == "$$")) {
-      YarnSparkHadoopUtil.expandEnvironment(target) should be ("{{" + target + "}}")
+      YarnSparkHadoopUtil.expandEnvironment(target) should be("{{" + target + "}}")
     } else if (Utils.isWindows) {
-      YarnSparkHadoopUtil.expandEnvironment(target) should be ("%" + target + "%")
+      YarnSparkHadoopUtil.expandEnvironment(target) should be("%" + target + "%")
     } else {
-      YarnSparkHadoopUtil.expandEnvironment(target) should be ("$" + target)
+      YarnSparkHadoopUtil.expandEnvironment(target) should be("$" + target)
     }
-
   }
 
   test("test getClassPathSeparator result") {
     if (classOf[ApplicationConstants].getFields().exists(_.getName == "CLASS_PATH_SEPARATOR")) {
-      YarnSparkHadoopUtil.getClassPathSeparator() should be ("<CPS>")
+      YarnSparkHadoopUtil.getClassPathSeparator() should be("<CPS>")
     } else if (Utils.isWindows) {
-      YarnSparkHadoopUtil.getClassPathSeparator() should be (";")
+      YarnSparkHadoopUtil.getClassPathSeparator() should be(";")
     } else {
-      YarnSparkHadoopUtil.getClassPathSeparator() should be (":")
+      YarnSparkHadoopUtil.getClassPathSeparator() should be(":")
     }
   }
 
@@ -218,16 +217,15 @@ class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
     hadoopConf.set("yarn.resourcemanager.principal", "yarn/myrm:8032@SPARKTEST.COM")
     val util = new YarnSparkHadoopUtil
     val renewer = util.getTokenRenewer(hadoopConf)
-    renewer should be ("yarn/myrm:8032@SPARKTEST.COM")
+    renewer should be("yarn/myrm:8032@SPARKTEST.COM")
   }
 
   test("check token renewer default") {
     val hadoopConf = new Configuration()
     val util = new YarnSparkHadoopUtil
-    val caught =
-      intercept[SparkException] {
-        util.getTokenRenewer(hadoopConf)
-      }
+    val caught = intercept[SparkException] {
+      util.getTokenRenewer(hadoopConf)
+    }
     assert(caught.getMessage === "Can't get Master Kerberos principal for use as renewer")
   }
 
@@ -274,7 +272,7 @@ class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
     intercept[ClassNotFoundException] {
       util.obtainTokenForHBaseInner(hadoopConf)
     }
-    util.obtainTokenForHBase(hadoopConf) should be (None)
+    util.obtainTokenForHBase(hadoopConf) should be(None)
   }
 
   // This test needs to live here because it depends on isYarnMode returning true, which can only
@@ -282,8 +280,8 @@ class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
   test("security manager token generation") {
     try {
       System.setProperty("SPARK_YARN_MODE", "true")
-      val initial = SparkHadoopUtil.get
-        .getSecretKeyFromUserCredentials(SecurityManager.SECRET_LOOKUP_KEY)
+      val initial =
+        SparkHadoopUtil.get.getSecretKeyFromUserCredentials(SecurityManager.SECRET_LOOKUP_KEY)
       assert(initial === null || initial.length === 0)
 
       val conf = new SparkConf()
@@ -291,8 +289,8 @@ class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
         .set(SecurityManager.SPARK_AUTH_SECRET_CONF, "unused")
       val sm = new SecurityManager(conf)
 
-      val generated = SparkHadoopUtil.get
-        .getSecretKeyFromUserCredentials(SecurityManager.SECRET_LOOKUP_KEY)
+      val generated =
+        SparkHadoopUtil.get.getSecretKeyFromUserCredentials(SecurityManager.SECRET_LOOKUP_KEY)
       assert(generated != null)
       val genString = new Text(generated).toString()
       assert(genString != "unused")
@@ -304,5 +302,4 @@ class YarnSparkHadoopUtilSuite extends SparkFunSuite with Matchers with Logging
       System.clearProperty("SPARK_YARN_MODE")
     }
   }
-
 }

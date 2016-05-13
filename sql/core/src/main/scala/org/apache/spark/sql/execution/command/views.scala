@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.catalog.{CatalogColumn, CatalogTable, Catal
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
 
-
 /**
  * Create Hive view on non-hive-compatible tables by specifying schema ourselves instead of
  * depending on Hive meta-store.
@@ -43,14 +42,13 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
  *                 unless they are specified with full qualified table name with database prefix.
  * @param sql the original sql
  */
-case class CreateViewCommand(
-    tableDesc: CatalogTable,
-    child: LogicalPlan,
-    allowExisting: Boolean,
-    replace: Boolean,
-    isTemporary: Boolean,
-    sql: String)
-  extends RunnableCommand {
+case class CreateViewCommand(tableDesc: CatalogTable,
+                             child: LogicalPlan,
+                             allowExisting: Boolean,
+                             replace: Boolean,
+                             isTemporary: Boolean,
+                             sql: String)
+    extends RunnableCommand {
 
   // TODO: Note that this class can NOT canonicalize the view SQL string entirely, which is
   // different from Hive and may not work for some cases like create view on self join.
@@ -66,15 +64,14 @@ case class CreateViewCommand(
 
   // Disallows 'CREATE TEMPORARY VIEW IF NOT EXISTS' to be consistent with 'CREATE TEMPORARY TABLE'
   if (allowExisting && isTemporary) {
-    throw new AnalysisException(
-      "It is not allowed to define a TEMPORARY view with IF NOT EXISTS.")
+    throw new AnalysisException("It is not allowed to define a TEMPORARY view with IF NOT EXISTS.")
   }
 
   // Temporary view names should NOT contain database prefix like "database.table"
   if (isTemporary && tableDesc.identifier.database.isDefined) {
     val database = tableDesc.identifier.database.get
     throw new AnalysisException(
-      s"It is not allowed to add database prefix ${database} for the TEMPORARY view name.")
+        s"It is not allowed to add database prefix ${database} for the TEMPORARY view name.")
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
@@ -91,8 +88,8 @@ case class CreateViewCommand(
     } else {
       // Adds default database for permanent table if it doesn't exist, so that tableExists()
       // only check permanent tables.
-      val database = tableDesc.identifier.database.getOrElse(
-        sessionState.catalog.getCurrentDatabase)
+      val database =
+        tableDesc.identifier.database.getOrElse(sessionState.catalog.getCurrentDatabase)
       val tableIdentifier = tableDesc.identifier.copy(database = Option(database))
 
       if (sessionState.catalog.tableExists(tableIdentifier)) {
@@ -106,13 +103,13 @@ case class CreateViewCommand(
           // Handles `CREATE VIEW v0 AS SELECT ...`. Throws exception when the target view already
           // exists.
           throw new AnalysisException(
-            s"View $tableIdentifier already exists. If you want to update the view definition, " +
+              s"View $tableIdentifier already exists. If you want to update the view definition, " +
               "please use ALTER VIEW AS or CREATE OR REPLACE VIEW AS")
         }
       } else {
         // Create the view if it doesn't exist.
         sessionState.catalog.createTable(
-          prepareTable(sparkSession, analyzedPlan), ignoreIfExists = false)
+            prepareTable(sparkSession, analyzedPlan), ignoreIfExists = false)
       }
     }
     Seq.empty[Row]
@@ -165,9 +162,12 @@ case class CreateViewCommand(
           if (tableDesc.schema.isEmpty) {
             columnNames.mkString(", ")
           } else {
-            columnNames.zip(tableDesc.schema.map(f => quote(f.name))).map {
-              case (name, alias) => s"$name AS $alias"
-            }.mkString(", ")
+            columnNames
+              .zip(tableDesc.schema.map(f => quote(f.name)))
+              .map {
+                case (name, alias) => s"$name AS $alias"
+              }
+              .mkString(", ")
           }
         }
 
@@ -183,7 +183,7 @@ case class CreateViewCommand(
     } catch {
       case NonFatal(e) =>
         throw new RuntimeException(
-          "Failed to analyze the canonicalized SQL. It is possible there is a bug in Spark.", e)
+            "Failed to analyze the canonicalized SQL. It is possible there is a bug in Spark.", e)
     }
 
     val viewSchema: Seq[CatalogColumn] = {
@@ -192,8 +192,9 @@ case class CreateViewCommand(
           CatalogColumn(a.name, a.dataType.catalogString)
         }
       } else {
-        analyzedPlan.output.zip(tableDesc.schema).map { case (a, col) =>
-          CatalogColumn(col.name, a.dataType.catalogString, nullable = true, col.comment)
+        analyzedPlan.output.zip(tableDesc.schema).map {
+          case (a, col) =>
+            CatalogColumn(col.name, a.dataType.catalogString, nullable = true, col.comment)
         }
       }
     }

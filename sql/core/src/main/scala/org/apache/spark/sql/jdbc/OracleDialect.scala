@@ -21,7 +21,6 @@ import java.sql.Types
 
 import org.apache.spark.sql.types._
 
-
 private case object OracleDialect extends JdbcDialect {
 
   override def canHandle(url: String): Boolean = url.startsWith("jdbc:oracle")

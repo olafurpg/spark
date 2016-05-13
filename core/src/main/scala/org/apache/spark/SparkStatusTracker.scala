@@ -33,7 +33,7 @@ import org.apache.spark.scheduler.TaskSchedulerImpl
  *
  * NOTE: this class's constructor should be considered private and may be subject to change.
  */
-class SparkStatusTracker private[spark] (sc: SparkContext) {
+class SparkStatusTracker private[spark](sc: SparkContext) {
 
   private val jobProgressListener = sc.jobProgressListener
 
@@ -90,19 +90,16 @@ class SparkStatusTracker private[spark] (sc: SparkContext) {
    */
   def getStageInfo(stageId: Int): Option[SparkStageInfo] = {
     jobProgressListener.synchronized {
-      for (
-        info <- jobProgressListener.stageIdToInfo.get(stageId);
-        data <- jobProgressListener.stageIdToData.get((stageId, info.attemptId))
-      ) yield {
-        new SparkStageInfoImpl(
-          stageId,
-          info.attemptId,
-          info.submissionTime.getOrElse(0),
-          info.name,
-          info.numTasks,
-          data.numActiveTasks,
-          data.numCompleteTasks,
-          data.numFailedTasks)
+      for (info <- jobProgressListener.stageIdToInfo.get(stageId);
+           data <- jobProgressListener.stageIdToData.get((stageId, info.attemptId))) yield {
+        new SparkStageInfoImpl(stageId,
+                               info.attemptId,
+                               info.submissionTime.getOrElse(0),
+                               info.name,
+                               info.numTasks,
+                               data.numActiveTasks,
+                               data.numCompleteTasks,
+                               data.numFailedTasks)
       }
     }
   }
@@ -117,10 +114,10 @@ class SparkStatusTracker private[spark] (sc: SparkContext) {
     sc.getExecutorStorageStatus.map { status =>
       val bmId = status.blockManagerId
       new SparkExecutorInfoImpl(
-        bmId.host,
-        bmId.port,
-        status.cacheSize,
-        executorIdToRunningTasks.getOrElse(bmId.executorId, 0)
+          bmId.host,
+          bmId.port,
+          status.cacheSize,
+          executorIdToRunningTasks.getOrElse(bmId.executorId, 0)
       )
     }
   }

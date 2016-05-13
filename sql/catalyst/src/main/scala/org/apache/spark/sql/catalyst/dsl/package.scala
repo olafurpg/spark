@@ -67,25 +67,25 @@ package object dsl {
     def unary_! : Predicate = Not(expr)
     def unary_~ : Expression = BitwiseNot(expr)
 
-    def + (other: Expression): Expression = Add(expr, other)
-    def - (other: Expression): Expression = Subtract(expr, other)
-    def * (other: Expression): Expression = Multiply(expr, other)
-    def / (other: Expression): Expression = Divide(expr, other)
-    def % (other: Expression): Expression = Remainder(expr, other)
-    def & (other: Expression): Expression = BitwiseAnd(expr, other)
-    def | (other: Expression): Expression = BitwiseOr(expr, other)
-    def ^ (other: Expression): Expression = BitwiseXor(expr, other)
+    def +(other: Expression): Expression = Add(expr, other)
+    def -(other: Expression): Expression = Subtract(expr, other)
+    def *(other: Expression): Expression = Multiply(expr, other)
+    def /(other: Expression): Expression = Divide(expr, other)
+    def %(other: Expression): Expression = Remainder(expr, other)
+    def &(other: Expression): Expression = BitwiseAnd(expr, other)
+    def |(other: Expression): Expression = BitwiseOr(expr, other)
+    def ^(other: Expression): Expression = BitwiseXor(expr, other)
 
-    def && (other: Expression): Predicate = And(expr, other)
-    def || (other: Expression): Predicate = Or(expr, other)
+    def &&(other: Expression): Predicate = And(expr, other)
+    def ||(other: Expression): Predicate = Or(expr, other)
 
-    def < (other: Expression): Predicate = LessThan(expr, other)
-    def <= (other: Expression): Predicate = LessThanOrEqual(expr, other)
-    def > (other: Expression): Predicate = GreaterThan(expr, other)
-    def >= (other: Expression): Predicate = GreaterThanOrEqual(expr, other)
-    def === (other: Expression): Predicate = EqualTo(expr, other)
-    def <=> (other: Expression): Predicate = EqualNullSafe(expr, other)
-    def =!= (other: Expression): Predicate = Not(EqualTo(expr, other))
+    def <(other: Expression): Predicate = LessThan(expr, other)
+    def <=(other: Expression): Predicate = LessThanOrEqual(expr, other)
+    def >(other: Expression): Predicate = GreaterThan(expr, other)
+    def >=(other: Expression): Predicate = GreaterThanOrEqual(expr, other)
+    def ===(other: Expression): Predicate = EqualTo(expr, other)
+    def <=>(other: Expression): Predicate = EqualNullSafe(expr, other)
+    def =!=(other: Expression): Predicate = Not(EqualTo(expr, other))
 
     def in(list: Expression*): Expression = In(expr, list)
 
@@ -102,7 +102,8 @@ package object dsl {
     def isNull: Predicate = IsNull(expr)
     def isNotNull: Predicate = IsNotNull(expr)
 
-    def getItem(ordinal: Expression): UnresolvedExtractValue = UnresolvedExtractValue(expr, ordinal)
+    def getItem(ordinal: Expression): UnresolvedExtractValue =
+      UnresolvedExtractValue(expr, ordinal)
     def getField(fieldName: String): UnresolvedExtractValue =
       UnresolvedExtractValue(expr, Literal(fieldName))
 
@@ -143,7 +144,7 @@ package object dsl {
       // Note that if we make ExpressionConversions an object rather than a trait, we can
       // then make this a value class to avoid the small penalty of runtime instantiation.
       def $(args: Any*): analysis.UnresolvedAttribute = {
-        analysis.UnresolvedAttribute(sc.s(args : _*))
+        analysis.UnresolvedAttribute(sc.s(args: _*))
       }
     }
 
@@ -168,18 +169,14 @@ package object dsl {
       case target => UnresolvedStar(Option(target))
     }
 
-    def callFunction[T, U](
-        func: T => U,
-        returnType: DataType,
-        argument: Expression): Expression = {
+    def callFunction[T, U](func: T => U, returnType: DataType, argument: Expression): Expression = {
       val function = Literal.create(func, ObjectType(classOf[T => U]))
       Invoke(function, "apply", returnType, argument :: Nil)
     }
 
-    def windowSpec(
-        partitionSpec: Seq[Expression],
-        orderSpec: Seq[SortOrder],
-        frame: WindowFrame): WindowSpecDefinition =
+    def windowSpec(partitionSpec: Seq[Expression],
+                   orderSpec: Seq[SortOrder],
+                   frame: WindowFrame): WindowSpecDefinition =
       WindowSpecDefinition(partitionSpec, orderSpec, frame)
 
     def windowExpr(windowFunc: Expression, windowSpec: WindowSpecDefinition): WindowExpression =
@@ -273,9 +270,10 @@ package object dsl {
     }
   }
 
-  object expressions extends ExpressionConversions  // scalastyle:ignore
+  object expressions extends ExpressionConversions // scalastyle:ignore
 
-  object plans {  // scalastyle:ignore
+  object plans {
+    // scalastyle:ignore
     def table(ref: String): LogicalPlan =
       UnresolvedRelation(TableIdentifier(ref), None)
 
@@ -293,22 +291,21 @@ package object dsl {
 
       def where(condition: Expression): LogicalPlan = Filter(condition, logicalPlan)
 
-      def filter[T : Encoder](func: T => Boolean): LogicalPlan = {
+      def filter[T: Encoder](func: T => Boolean): LogicalPlan = {
         val deserialized = logicalPlan.deserialize[T]
         val condition = expressions.callFunction(func, BooleanType, deserialized.output.head)
         Filter(condition, deserialized).serialize[T]
       }
 
-      def serialize[T : Encoder]: LogicalPlan = CatalystSerde.serialize[T](logicalPlan)
+      def serialize[T: Encoder]: LogicalPlan = CatalystSerde.serialize[T](logicalPlan)
 
-      def deserialize[T : Encoder]: LogicalPlan = CatalystSerde.deserialize[T](logicalPlan)
+      def deserialize[T: Encoder]: LogicalPlan = CatalystSerde.deserialize[T](logicalPlan)
 
       def limit(limitExpr: Expression): LogicalPlan = Limit(limitExpr, logicalPlan)
 
-      def join(
-        otherPlan: LogicalPlan,
-        joinType: JoinType = Inner,
-        condition: Option[Expression] = None): LogicalPlan =
+      def join(otherPlan: LogicalPlan,
+               joinType: JoinType = Inner,
+               condition: Option[Expression] = None): LogicalPlan =
         Join(logicalPlan, otherPlan, joinType, condition)
 
       def cogroup[Key: Encoder, Left: Encoder, Right: Encoder, Result: Encoder](
@@ -318,15 +315,14 @@ package object dsl {
           rightGroup: Seq[Attribute],
           leftAttr: Seq[Attribute],
           rightAttr: Seq[Attribute]
-        ): LogicalPlan = {
-        CoGroup.apply[Key, Left, Right, Result](
-          func,
-          leftGroup,
-          rightGroup,
-          leftAttr,
-          rightAttr,
-          logicalPlan,
-          otherPlan)
+      ): LogicalPlan = {
+        CoGroup.apply[Key, Left, Right, Result](func,
+                                                leftGroup,
+                                                rightGroup,
+                                                leftAttr,
+                                                rightAttr,
+                                                logicalPlan,
+                                                otherPlan)
       }
 
       def orderBy(sortExprs: SortOrder*): LogicalPlan = Sort(sortExprs, true, logicalPlan)
@@ -341,10 +337,9 @@ package object dsl {
         Aggregate(groupingExprs, aliasedExprs, logicalPlan)
       }
 
-      def window(
-          windowExpressions: Seq[NamedExpression],
-          partitionSpec: Seq[Expression],
-          orderSpec: Seq[SortOrder]): LogicalPlan =
+      def window(windowExpressions: Seq[NamedExpression],
+                 partitionSpec: Seq[Expression],
+                 orderSpec: Seq[SortOrder]): LogicalPlan =
         Window(windowExpressions, partitionSpec, orderSpec, logicalPlan)
 
       def subquery(alias: Symbol): LogicalPlan = SubqueryAlias(alias.name, logicalPlan)
@@ -355,19 +350,24 @@ package object dsl {
 
       def union(otherPlan: LogicalPlan): LogicalPlan = Union(logicalPlan, otherPlan)
 
-      def generate(
-        generator: Generator,
-        join: Boolean = false,
-        outer: Boolean = false,
-        alias: Option[String] = None,
-        outputNames: Seq[String] = Nil): LogicalPlan =
-        Generate(generator, join = join, outer = outer, alias,
-          outputNames.map(UnresolvedAttribute(_)), logicalPlan)
+      def generate(generator: Generator,
+                   join: Boolean = false,
+                   outer: Boolean = false,
+                   alias: Option[String] = None,
+                   outputNames: Seq[String] = Nil): LogicalPlan =
+        Generate(generator,
+                 join = join,
+                 outer = outer,
+                 alias,
+                 outputNames.map(UnresolvedAttribute(_)),
+                 logicalPlan)
 
       def insertInto(tableName: String, overwrite: Boolean = false): LogicalPlan =
-        InsertIntoTable(
-          analysis.UnresolvedRelation(TableIdentifier(tableName)),
-          Map.empty, logicalPlan, overwrite, false)
+        InsertIntoTable(analysis.UnresolvedRelation(TableIdentifier(tableName)),
+                        Map.empty,
+                        logicalPlan,
+                        overwrite,
+                        false)
 
       def as(alias: String): LogicalPlan = logicalPlan match {
         case UnresolvedRelation(tbl, _) => UnresolvedRelation(tbl, Option(alias))

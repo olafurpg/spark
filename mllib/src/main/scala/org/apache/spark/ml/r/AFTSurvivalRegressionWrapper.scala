@@ -31,23 +31,25 @@ import org.apache.spark.ml.util._
 import org.apache.spark.sql.{DataFrame, Dataset}
 
 private[r] class AFTSurvivalRegressionWrapper private (
-    val pipeline: PipelineModel,
-    val features: Array[String]) extends MLWritable {
+    val pipeline: PipelineModel, val features: Array[String])
+    extends MLWritable {
 
   private val aftModel: AFTSurvivalRegressionModel =
     pipeline.stages(1).asInstanceOf[AFTSurvivalRegressionModel]
 
-  lazy val rCoefficients: Array[Double] = if (aftModel.getFitIntercept) {
-    Array(aftModel.intercept) ++ aftModel.coefficients.toArray ++ Array(math.log(aftModel.scale))
-  } else {
-    aftModel.coefficients.toArray ++ Array(math.log(aftModel.scale))
-  }
+  lazy val rCoefficients: Array[Double] =
+    if (aftModel.getFitIntercept) {
+      Array(aftModel.intercept) ++ aftModel.coefficients.toArray ++ Array(math.log(aftModel.scale))
+    } else {
+      aftModel.coefficients.toArray ++ Array(math.log(aftModel.scale))
+    }
 
-  lazy val rFeatures: Array[String] = if (aftModel.getFitIntercept) {
-    Array("(Intercept)") ++ features ++ Array("Log(scale)")
-  } else {
-    features ++ Array("Log(scale)")
-  }
+  lazy val rFeatures: Array[String] =
+    if (aftModel.getFitIntercept) {
+      Array("(Intercept)") ++ features ++ Array("Log(scale)")
+    } else {
+      features ++ Array("Log(scale)")
+    }
 
   def transform(dataset: Dataset[_]): DataFrame = {
     pipeline.transform(dataset).drop(aftModel.getFeaturesCol)
@@ -69,7 +71,7 @@ private[r] object AFTSurvivalRegressionWrapper extends MLReadable[AFTSurvivalReg
       // TODO: Support dot operator.
       if (features.contains(".")) {
         throw new UnsupportedOperationException(
-          "Terms of survreg formula can not support dot operator.")
+            "Terms of survreg formula can not support dot operator.")
       }
       rewritedFormula = label.trim + "~" + features.trim
       censorCol = censor.trim
@@ -81,7 +83,6 @@ private[r] object AFTSurvivalRegressionWrapper extends MLReadable[AFTSurvivalReg
     (rewritedFormula, censorCol)
   }
 
-
   def fit(formula: String, data: DataFrame): AFTSurvivalRegressionWrapper = {
 
     val (rewritedFormula, censorCol) = formulaRewrite(formula)
@@ -91,33 +92,32 @@ private[r] object AFTSurvivalRegressionWrapper extends MLReadable[AFTSurvivalReg
 
     // get feature names from output schema
     val schema = rFormulaModel.transform(data).schema
-    val featureAttrs = AttributeGroup.fromStructField(schema(rFormula.getFeaturesCol))
-      .attributes.get
+    val featureAttrs =
+      AttributeGroup.fromStructField(schema(rFormula.getFeaturesCol)).attributes.get
     val features = featureAttrs.map(_.name.get)
 
-    val aft = new AFTSurvivalRegression()
-      .setCensorCol(censorCol)
-      .setFitIntercept(rFormula.hasIntercept)
+    val aft =
+      new AFTSurvivalRegression().setCensorCol(censorCol).setFitIntercept(rFormula.hasIntercept)
 
-    val pipeline = new Pipeline()
-      .setStages(Array(rFormulaModel, aft))
-      .fit(data)
+    val pipeline = new Pipeline().setStages(Array(rFormulaModel, aft)).fit(data)
 
     new AFTSurvivalRegressionWrapper(pipeline, features)
   }
 
-  override def read: MLReader[AFTSurvivalRegressionWrapper] = new AFTSurvivalRegressionWrapperReader
+  override def read: MLReader[AFTSurvivalRegressionWrapper] =
+    new AFTSurvivalRegressionWrapperReader
 
   override def load(path: String): AFTSurvivalRegressionWrapper = super.load(path)
 
   class AFTSurvivalRegressionWrapperWriter(instance: AFTSurvivalRegressionWrapper)
-    extends MLWriter {
+      extends MLWriter {
 
     override protected def saveImpl(path: String): Unit = {
       val rMetadataPath = new Path(path, "rMetadata").toString
       val pipelinePath = new Path(path, "pipeline").toString
 
-      val rMetadata = ("class" -> instance.getClass.getName) ~
+      val rMetadata =
+        ("class" -> instance.getClass.getName) ~
         ("features" -> instance.features.toSeq)
       val rMetadataJson: String = compact(render(rMetadata))
       sc.parallelize(Seq(rMetadataJson), 1).saveAsTextFile(rMetadataPath)

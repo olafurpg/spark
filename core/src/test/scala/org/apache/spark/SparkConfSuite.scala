@@ -165,8 +165,8 @@ class SparkConfSuite extends SparkFunSuite with LocalSparkContext with ResetSyst
     } finally {
       executor.shutdownNow()
       val sysProps = System.getProperties
-      for (key <- sysProps.stringPropertyNames().asScala if key.startsWith("spark.5425."))
-        sysProps.remove(key)
+      for (key <- sysProps.stringPropertyNames().asScala if key.startsWith("spark.5425.")) sysProps
+        .remove(key)
     }
   }
 
@@ -175,15 +175,15 @@ class SparkConfSuite extends SparkFunSuite with LocalSparkContext with ResetSyst
 
     conf.registerKryoClasses(Array(classOf[Class1], classOf[Class2]))
     assert(conf.get("spark.kryo.classesToRegister") ===
-      classOf[Class1].getName + "," + classOf[Class2].getName)
+        classOf[Class1].getName + "," + classOf[Class2].getName)
 
     conf.registerKryoClasses(Array(classOf[Class3]))
     assert(conf.get("spark.kryo.classesToRegister") ===
-      classOf[Class1].getName + "," + classOf[Class2].getName + "," + classOf[Class3].getName)
+        classOf[Class1].getName + "," + classOf[Class2].getName + "," + classOf[Class3].getName)
 
     conf.registerKryoClasses(Array(classOf[Class2]))
     assert(conf.get("spark.kryo.classesToRegister") ===
-      classOf[Class1].getName + "," + classOf[Class2].getName + "," + classOf[Class3].getName)
+        classOf[Class1].getName + "," + classOf[Class2].getName + "," + classOf[Class3].getName)
 
     // Kryo doesn't expose a way to discover registered classes, but at least make sure this doesn't
     // blow up.

@@ -63,7 +63,7 @@ private[stat] object PearsonCorrelation extends Correlation with Logging {
     while (i < n) {
       // TODO remove once covariance numerical issue resolved.
       cov(i, i) = if (closeToZero(cov(i, i))) 0.0 else math.sqrt(cov(i, i))
-      i +=1
+      i += 1
     }
 
     // Loop through columns since cov is column major
@@ -74,12 +74,13 @@ private[stat] object PearsonCorrelation extends Correlation with Logging {
       sigma = cov(j, j)
       i = 0
       while (i < j) {
-        val corr = if (sigma == 0.0 || cov(i, i) == 0.0) {
-          containNaN = true
-          Double.NaN
-        } else {
-          cov(i, j) / (sigma * cov(i, i))
-        }
+        val corr =
+          if (sigma == 0.0 || cov(i, i) == 0.0) {
+            containNaN = true
+            Double.NaN
+          } else {
+            cov(i, j) / (sigma * cov(i, i))
+          }
         cov(i, j) = corr
         cov(j, i) = corr
         i += 1
@@ -91,7 +92,7 @@ private[stat] object PearsonCorrelation extends Correlation with Logging {
     i = 0
     while (i < n) {
       cov(i, i) = 1.0
-      i +=1
+      i += 1
     }
 
     if (containNaN) {

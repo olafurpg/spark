@@ -33,13 +33,10 @@ trait JavaTestBase extends TestSuiteBase {
    * The stream will be derived from the supplied lists of Java objects.
    */
   def attachTestInputStream[T](
-      ssc: JavaStreamingContext,
-      data: JList[JList[T]],
-      numPartitions: Int) = {
+      ssc: JavaStreamingContext, data: JList[JList[T]], numPartitions: Int) = {
     val seqData = data.asScala.map(_.asScala)
 
-    implicit val cm: ClassTag[T] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
+    implicit val cm: ClassTag[T] = implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
     val dstream = new TestInputStream[T](ssc.ssc, seqData, numPartitions)
     new JavaDStream[T](dstream)
   }
@@ -50,8 +47,7 @@ trait JavaTestBase extends TestSuiteBase {
    **/
   def attachTestOutputStream[T, This <: JavaDStreamLike[T, This, R], R <: JavaRDDLike[T, R]](
       dstream: JavaDStreamLike[T, This, R]) = {
-    implicit val cm: ClassTag[T] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
+    implicit val cm: ClassTag[T] = implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
     val ostream = new TestOutputStreamWithPartitions(dstream.dstream)
     ostream.register()
   }
@@ -65,8 +61,7 @@ trait JavaTestBase extends TestSuiteBase {
    */
   def runStreams[V](
       ssc: JavaStreamingContext, numBatches: Int, numExpectedOutput: Int): JList[JList[V]] = {
-    implicit val cm: ClassTag[V] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[V]]
+    implicit val cm: ClassTag[V] = implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[V]]
     ssc.getState()
     val res = runStreams[V](ssc.ssc, numBatches, numExpectedOutput)
     res.map(_.asJava).toSeq.asJava
@@ -80,10 +75,10 @@ trait JavaTestBase extends TestSuiteBase {
    * Returns a sequence of RDD's. Each RDD is represented as several sequences of items, each
    * representing one partition.
    */
-  def runStreamsWithPartitions[V](ssc: JavaStreamingContext, numBatches: Int,
-      numExpectedOutput: Int): JList[JList[JList[V]]] = {
-    implicit val cm: ClassTag[V] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[V]]
+  def runStreamsWithPartitions[V](ssc: JavaStreamingContext,
+                                  numBatches: Int,
+                                  numExpectedOutput: Int): JList[JList[JList[V]]] = {
+    implicit val cm: ClassTag[V] = implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[V]]
     val res = runStreamsWithPartitions[V](ssc.ssc, numBatches, numExpectedOutput)
     res.map(entry => entry.map(_.asJava).asJava).toSeq.asJava
   }
@@ -91,7 +86,6 @@ trait JavaTestBase extends TestSuiteBase {
 
 object JavaTestUtils extends JavaTestBase {
   override def maxWaitTimeMillis = 20000
-
 }
 
 object JavaCheckpointTestUtils extends JavaTestBase {

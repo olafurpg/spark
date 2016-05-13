@@ -30,18 +30,22 @@ import org.apache.spark.ml.param.shared._
 import org.apache.spark.ml.stat.distribution.MultivariateGaussian
 import org.apache.spark.ml.util._
 import org.apache.spark.mllib.clustering.{GaussianMixture => MLlibGM}
-import org.apache.spark.mllib.linalg.{Matrices => OldMatrices, Matrix => OldMatrix,
-  Vector => OldVector, Vectors => OldVectors, VectorUDT => OldVectorUDT}
+import org.apache.spark.mllib.linalg.{Matrices => OldMatrices, Matrix => OldMatrix, Vector => OldVector, Vectors => OldVectors, VectorUDT => OldVectorUDT}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SQLContext}
 import org.apache.spark.sql.functions.{col, udf}
 import org.apache.spark.sql.types.{IntegerType, StructType}
 
-
 /**
  * Common params for GaussianMixture and GaussianMixtureModel
  */
-private[clustering] trait GaussianMixtureParams extends Params with HasMaxIter with HasFeaturesCol
-  with HasSeed with HasPredictionCol with HasProbabilityCol with HasTol {
+private[clustering] trait GaussianMixtureParams
+    extends Params
+    with HasMaxIter
+    with HasFeaturesCol
+    with HasSeed
+    with HasPredictionCol
+    with HasProbabilityCol
+    with HasTol {
 
   /**
    * Set the number of clusters to create (k). Must be > 1. Default: 2.
@@ -80,11 +84,12 @@ private[clustering] trait GaussianMixtureParams extends Params with HasMaxIter w
  */
 @Since("2.0.0")
 @Experimental
-class GaussianMixtureModel private[ml] (
-    @Since("2.0.0") override val uid: String,
-    @Since("2.0.0") val weights: Array[Double],
-    @Since("2.0.0") val gaussians: Array[MultivariateGaussian])
-  extends Model[GaussianMixtureModel] with GaussianMixtureParams with MLWritable {
+class GaussianMixtureModel private[ml](@Since("2.0.0") override val uid: String,
+                                       @Since("2.0.0") val weights: Array[Double],
+                                       @Since("2.0.0") val gaussians: Array[MultivariateGaussian])
+    extends Model[GaussianMixtureModel]
+    with GaussianMixtureParams
+    with MLWritable {
 
   @Since("2.0.0")
   override def copy(extra: ParamMap): GaussianMixtureModel = {
@@ -96,7 +101,8 @@ class GaussianMixtureModel private[ml] (
   override def transform(dataset: Dataset[_]): DataFrame = {
     val predUDF = udf((vector: OldVector) => predict(vector.asML))
     val probUDF = udf((vector: OldVector) => OldVectors.fromML(predictProbability(vector.asML)))
-    dataset.withColumn($(predictionCol), predUDF(col($(featuresCol))))
+    dataset
+      .withColumn($(predictionCol), predUDF(col($(featuresCol))))
       .withColumn($(probabilityCol), probUDF(col($(featuresCol))))
   }
 
@@ -111,8 +117,8 @@ class GaussianMixtureModel private[ml] (
   }
 
   private[clustering] def predictProbability(features: Vector): Vector = {
-    val probs: Array[Double] =
-      GaussianMixtureModel.computeProbabilities(features.toBreeze.toDenseVector, gaussians, weights)
+    val probs: Array[Double] = GaussianMixtureModel.computeProbabilities(
+        features.toBreeze.toDenseVector, gaussians, weights)
     Vectors.dense(probs)
   }
 
@@ -160,7 +166,7 @@ class GaussianMixtureModel private[ml] (
   @Since("2.0.0")
   def summary: GaussianMixtureSummary = trainingSummary.getOrElse {
     throw new RuntimeException(
-      s"No training summary available for the ${this.getClass.getSimpleName}")
+        s"No training summary available for the ${this.getClass.getSimpleName}")
   }
 }
 
@@ -174,10 +180,11 @@ object GaussianMixtureModel extends MLReadable[GaussianMixtureModel] {
   override def load(path: String): GaussianMixtureModel = super.load(path)
 
   /** [[MLWriter]] instance for [[GaussianMixtureModel]] */
-  private[GaussianMixtureModel] class GaussianMixtureModelWriter(
-      instance: GaussianMixtureModel) extends MLWriter {
+  private[GaussianMixtureModel] class GaussianMixtureModelWriter(instance: GaussianMixtureModel)
+      extends MLWriter {
 
-    private case class Data(weights: Array[Double], mus: Array[OldVector], sigmas: Array[OldMatrix])
+    private case class Data(
+        weights: Array[Double], mus: Array[OldVector], sigmas: Array[OldMatrix])
 
     override protected def saveImpl(path: String): Unit = {
       // Save metadata and Params
@@ -227,11 +234,9 @@ object GaussianMixtureModel extends MLReadable[GaussianMixtureModel] {
    * @param weights  Weights for each Gaussian
    * @return  Probability (partial assignment) for each of the k clusters
    */
-  private[clustering]
-  def computeProbabilities(
-      features: BDV[Double],
-      dists: Array[MultivariateGaussian],
-      weights: Array[Double]): Array[Double] = {
+  private[clustering] def computeProbabilities(features: BDV[Double],
+                                               dists: Array[MultivariateGaussian],
+                                               weights: Array[Double]): Array[Double] = {
     val p = weights.zip(dists).map {
       case (weight, dist) => EPSILON + weight * dist.pdf(features)
     }
@@ -251,14 +256,12 @@ object GaussianMixtureModel extends MLReadable[GaussianMixtureModel] {
  */
 @Since("2.0.0")
 @Experimental
-class GaussianMixture @Since("2.0.0") (
-    @Since("2.0.0") override val uid: String)
-  extends Estimator[GaussianMixtureModel] with GaussianMixtureParams with DefaultParamsWritable {
+class GaussianMixture @Since("2.0.0")(@Since("2.0.0") override val uid: String)
+    extends Estimator[GaussianMixtureModel]
+    with GaussianMixtureParams
+    with DefaultParamsWritable {
 
-  setDefault(
-    k -> 2,
-    maxIter -> 100,
-    tol -> 0.01)
+  setDefault(k -> 2, maxIter -> 100, tol -> 0.01)
 
   @Since("2.0.0")
   override def copy(extra: ParamMap): GaussianMixture = defaultCopy(extra)
@@ -304,13 +307,14 @@ class GaussianMixture @Since("2.0.0") (
       .setSeed($(seed))
       .setConvergenceTol($(tol))
     val parentModel = algo.run(rdd)
-    val gaussians = parentModel.gaussians.map { case g =>
-      new MultivariateGaussian(g.mu.asML, g.sigma.asML)
+    val gaussians = parentModel.gaussians.map {
+      case g =>
+        new MultivariateGaussian(g.mu.asML, g.sigma.asML)
     }
-    val model = copyValues(new GaussianMixtureModel(uid, parentModel.weights, gaussians))
-      .setParent(this)
-    val summary = new GaussianMixtureSummary(model.transform(dataset),
-      $(predictionCol), $(probabilityCol), $(featuresCol), $(k))
+    val model =
+      copyValues(new GaussianMixtureModel(uid, parentModel.weights, gaussians)).setParent(this)
+    val summary = new GaussianMixtureSummary(
+        model.transform(dataset), $(predictionCol), $(probabilityCol), $(featuresCol), $(k))
     model.setSummary(summary)
   }
 
@@ -339,12 +343,13 @@ object GaussianMixture extends DefaultParamsReadable[GaussianMixture] {
  */
 @Since("2.0.0")
 @Experimental
-class GaussianMixtureSummary private[clustering] (
+class GaussianMixtureSummary private[clustering](
     @Since("2.0.0") @transient val predictions: DataFrame,
     @Since("2.0.0") val predictionCol: String,
     @Since("2.0.0") val probabilityCol: String,
     @Since("2.0.0") val featuresCol: String,
-    @Since("2.0.0") val k: Int) extends Serializable {
+    @Since("2.0.0") val k: Int)
+    extends Serializable {
 
   /**
    * Cluster centers of the transformed data.

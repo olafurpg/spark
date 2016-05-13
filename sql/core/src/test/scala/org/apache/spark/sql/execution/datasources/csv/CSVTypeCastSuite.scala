@@ -36,10 +36,11 @@ class CSVTypeCastSuite extends SparkFunSuite {
     val decimalValues = Seq(10.05, 1000.01, 158058049.001)
     val decimalType = new DecimalType()
 
-    stringValues.zip(decimalValues).foreach { case (strVal, decimalVal) =>
-      val decimalValue = new BigDecimal(decimalVal.toString)
-      assert(CSVTypeCast.castTo(strVal, decimalType) ===
-        Decimal(decimalValue, decimalType.precision, decimalType.scale))
+    stringValues.zip(decimalValues).foreach {
+      case (strVal, decimalVal) =>
+        val decimalValue = new BigDecimal(decimalVal.toString)
+        assert(CSVTypeCast.castTo(strVal, decimalType) ===
+            Decimal(decimalValue, decimalType.precision, decimalType.scale))
     }
   }
 
@@ -54,14 +55,14 @@ class CSVTypeCastSuite extends SparkFunSuite {
   }
 
   test("Does not accept delimiter larger than one character") {
-    val exception = intercept[IllegalArgumentException]{
+    val exception = intercept[IllegalArgumentException] {
       CSVTypeCast.toChar("ab")
     }
     assert(exception.getMessage.contains("cannot be more than one character"))
   }
 
   test("Throws exception for unsupported escaped characters") {
-    val exception = intercept[IllegalArgumentException]{
+    val exception = intercept[IllegalArgumentException] {
       CSVTypeCast.toChar("""\1""")
     }
     assert(exception.getMessage.contains("Unsupported special character for delimiter"))
@@ -72,16 +73,14 @@ class CSVTypeCastSuite extends SparkFunSuite {
   }
 
   test("String type should always return the same as the input") {
-    assert(
-      CSVTypeCast.castTo("", StringType, nullable = true, CSVOptions()) ==
+    assert(CSVTypeCast.castTo("", StringType, nullable = true, CSVOptions()) ==
         UTF8String.fromString(""))
-    assert(
-      CSVTypeCast.castTo("", StringType, nullable = false, CSVOptions()) ==
+    assert(CSVTypeCast.castTo("", StringType, nullable = false, CSVOptions()) ==
         UTF8String.fromString(""))
   }
 
   test("Throws exception for empty string with non null type") {
-    val exception = intercept[NumberFormatException]{
+    val exception = intercept[NumberFormatException] {
       CSVTypeCast.castTo("", IntegerType, nullable = false, CSVOptions())
     }
     assert(exception.getMessage.contains("For input string: \"\""))
@@ -100,21 +99,21 @@ class CSVTypeCastSuite extends SparkFunSuite {
     val customTimestamp = "31/01/2015 00:00"
     val expectedTime = options.dateFormat.parse("31/01/2015 00:00").getTime
     assert(CSVTypeCast.castTo(customTimestamp, TimestampType, nullable = true, options) ==
-      expectedTime * 1000L)
+        expectedTime * 1000L)
     assert(CSVTypeCast.castTo(customTimestamp, DateType, nullable = true, options) ==
-      DateTimeUtils.millisToDays(expectedTime))
+        DateTimeUtils.millisToDays(expectedTime))
 
     val timestamp = "2015-01-01 00:00:00"
     assert(CSVTypeCast.castTo(timestamp, TimestampType) ==
-      DateTimeUtils.stringToTime(timestamp).getTime  * 1000L)
+        DateTimeUtils.stringToTime(timestamp).getTime * 1000L)
     assert(CSVTypeCast.castTo("2015-01-01", DateType) ==
-      DateTimeUtils.millisToDays(DateTimeUtils.stringToTime("2015-01-01").getTime))
+        DateTimeUtils.millisToDays(DateTimeUtils.stringToTime("2015-01-01").getTime))
   }
 
   test("Float and Double Types are cast correctly with Locale") {
     val originalLocale = Locale.getDefault
     try {
-      val locale : Locale = new Locale("fr", "FR")
+      val locale: Locale = new Locale("fr", "FR")
       Locale.setDefault(locale)
       assert(CSVTypeCast.castTo("1,00", FloatType) == 1.0)
       assert(CSVTypeCast.castTo("1,00", DoubleType) == 1.0)
@@ -124,8 +123,9 @@ class CSVTypeCastSuite extends SparkFunSuite {
   }
 
   test("Float NaN values are parsed correctly") {
-    val floatVal: Float = CSVTypeCast.castTo(
-      "nn", FloatType, nullable = true, CSVOptions("nanValue", "nn")).asInstanceOf[Float]
+    val floatVal: Float = CSVTypeCast
+      .castTo("nn", FloatType, nullable = true, CSVOptions("nanValue", "nn"))
+      .asInstanceOf[Float]
 
     // Java implements the IEEE-754 floating point standard which guarantees that any comparison
     // against NaN will return false (except != which returns true)
@@ -133,52 +133,59 @@ class CSVTypeCastSuite extends SparkFunSuite {
   }
 
   test("Double NaN values are parsed correctly") {
-    val doubleVal: Double = CSVTypeCast.castTo(
-      "-", DoubleType, nullable = true, CSVOptions("nanValue", "-")).asInstanceOf[Double]
+    val doubleVal: Double = CSVTypeCast
+      .castTo("-", DoubleType, nullable = true, CSVOptions("nanValue", "-"))
+      .asInstanceOf[Double]
 
     assert(doubleVal.isNaN)
   }
 
   test("Float infinite values can be parsed") {
-    val floatVal1 = CSVTypeCast.castTo(
-      "max", FloatType, nullable = true, CSVOptions("negativeInf", "max")).asInstanceOf[Float]
+    val floatVal1 = CSVTypeCast
+      .castTo("max", FloatType, nullable = true, CSVOptions("negativeInf", "max"))
+      .asInstanceOf[Float]
 
     assert(floatVal1 == Float.NegativeInfinity)
 
-    val floatVal2 = CSVTypeCast.castTo(
-      "max", FloatType, nullable = true, CSVOptions("positiveInf", "max")).asInstanceOf[Float]
+    val floatVal2 = CSVTypeCast
+      .castTo("max", FloatType, nullable = true, CSVOptions("positiveInf", "max"))
+      .asInstanceOf[Float]
 
     assert(floatVal2 == Float.PositiveInfinity)
   }
 
   test("Double infinite values can be parsed") {
-    val doubleVal1 = CSVTypeCast.castTo(
-      "max", DoubleType, nullable = true, CSVOptions("negativeInf", "max")
-    ).asInstanceOf[Double]
+    val doubleVal1 = CSVTypeCast
+      .castTo(
+          "max",
+          DoubleType,
+          nullable = true,
+          CSVOptions("negativeInf", "max")
+      )
+      .asInstanceOf[Double]
 
     assert(doubleVal1 == Double.NegativeInfinity)
 
-    val doubleVal2 = CSVTypeCast.castTo(
-      "max", DoubleType, nullable = true, CSVOptions("positiveInf", "max")
-    ).asInstanceOf[Double]
+    val doubleVal2 = CSVTypeCast
+      .castTo(
+          "max",
+          DoubleType,
+          nullable = true,
+          CSVOptions("positiveInf", "max")
+      )
+      .asInstanceOf[Double]
 
     assert(doubleVal2 == Double.PositiveInfinity)
   }
 
   test("Type-specific null values are used for casting") {
+    assertNull(CSVTypeCast.castTo("-", ByteType, nullable = true, CSVOptions("nullValue", "-")))
+    assertNull(CSVTypeCast.castTo("-", ShortType, nullable = true, CSVOptions("nullValue", "-")))
+    assertNull(CSVTypeCast.castTo("-", IntegerType, nullable = true, CSVOptions("nullValue", "-")))
+    assertNull(CSVTypeCast.castTo("-", LongType, nullable = true, CSVOptions("nullValue", "-")))
+    assertNull(CSVTypeCast.castTo("-", FloatType, nullable = true, CSVOptions("nullValue", "-")))
+    assertNull(CSVTypeCast.castTo("-", DoubleType, nullable = true, CSVOptions("nullValue", "-")))
     assertNull(
-      CSVTypeCast.castTo("-", ByteType, nullable = true, CSVOptions("nullValue", "-")))
-    assertNull(
-      CSVTypeCast.castTo("-", ShortType, nullable = true, CSVOptions("nullValue", "-")))
-    assertNull(
-      CSVTypeCast.castTo("-", IntegerType, nullable = true, CSVOptions("nullValue", "-")))
-    assertNull(
-      CSVTypeCast.castTo("-", LongType, nullable = true, CSVOptions("nullValue", "-")))
-    assertNull(
-      CSVTypeCast.castTo("-", FloatType, nullable = true, CSVOptions("nullValue", "-")))
-    assertNull(
-      CSVTypeCast.castTo("-", DoubleType, nullable = true, CSVOptions("nullValue", "-")))
-    assertNull(
-      CSVTypeCast.castTo("-", DecimalType.DoubleDecimal, true, CSVOptions("nullValue", "-")))
+        CSVTypeCast.castTo("-", DecimalType.DoubleDecimal, true, CSVOptions("nullValue", "-")))
   }
 }

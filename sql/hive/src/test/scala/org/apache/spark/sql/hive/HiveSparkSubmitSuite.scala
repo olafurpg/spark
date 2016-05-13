@@ -44,11 +44,11 @@ import org.apache.spark.util.{ResetSystemProperties, Utils}
  * This suite tests spark-submit with applications using HiveContext.
  */
 class HiveSparkSubmitSuite
-  extends SparkFunSuite
-  with Matchers
-  with BeforeAndAfterEach
-  with ResetSystemProperties
-  with Timeouts {
+    extends SparkFunSuite
+    with Matchers
+    with BeforeAndAfterEach
+    with ResetSystemProperties
+    with Timeouts {
 
   // TODO: rewrite these or mark them as slow tests to be run sparingly
 
@@ -62,15 +62,23 @@ class HiveSparkSubmitSuite
     val jar1 = TestUtils.createJarWithClasses(Seq("SparkSubmitClassA"))
     val jar2 = TestUtils.createJarWithClasses(Seq("SparkSubmitClassB"))
     val jarsString = Seq(jar1, jar2).map(j => j.toString).mkString(",")
-    val args = Seq(
-      "--class", TemporaryHiveUDFTest.getClass.getName.stripSuffix("$"),
-      "--name", "TemporaryHiveUDFTest",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      "--jars", jarsString,
-      unusedJar.toString, "SparkSubmitClassA", "SparkSubmitClassB")
+    val args = Seq("--class",
+                   TemporaryHiveUDFTest.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "TemporaryHiveUDFTest",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   "--jars",
+                   jarsString,
+                   unusedJar.toString,
+                   "SparkSubmitClassA",
+                   "SparkSubmitClassB")
     runSparkSubmit(args)
   }
 
@@ -79,15 +87,23 @@ class HiveSparkSubmitSuite
     val jar1 = TestUtils.createJarWithClasses(Seq("SparkSubmitClassA"))
     val jar2 = TestUtils.createJarWithClasses(Seq("SparkSubmitClassB"))
     val jarsString = Seq(jar1, jar2).map(j => j.toString).mkString(",")
-    val args = Seq(
-      "--class", PermanentHiveUDFTest1.getClass.getName.stripSuffix("$"),
-      "--name", "PermanentHiveUDFTest1",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      "--jars", jarsString,
-      unusedJar.toString, "SparkSubmitClassA", "SparkSubmitClassB")
+    val args = Seq("--class",
+                   PermanentHiveUDFTest1.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "PermanentHiveUDFTest1",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   "--jars",
+                   jarsString,
+                   unusedJar.toString,
+                   "SparkSubmitClassA",
+                   "SparkSubmitClassB")
     runSparkSubmit(args)
   }
 
@@ -96,15 +112,23 @@ class HiveSparkSubmitSuite
     val jar1 = TestUtils.createJarWithClasses(Seq("SparkSubmitClassA"))
     val jar2 = TestUtils.createJarWithClasses(Seq("SparkSubmitClassB"))
     val jarsString = Seq(jar1, jar2).map(j => j.toString).mkString(",")
-    val args = Seq(
-      "--class", PermanentHiveUDFTest2.getClass.getName.stripSuffix("$"),
-      "--name", "PermanentHiveUDFTest2",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      "--jars", jarsString,
-      unusedJar.toString, "SparkSubmitClassA", "SparkSubmitClassB")
+    val args = Seq("--class",
+                   PermanentHiveUDFTest2.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "PermanentHiveUDFTest2",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   "--jars",
+                   jarsString,
+                   unusedJar.toString,
+                   "SparkSubmitClassA",
+                   "SparkSubmitClassB")
     runSparkSubmit(args)
   }
 
@@ -115,30 +139,45 @@ class HiveSparkSubmitSuite
     val jar3 = TestHive.getHiveFile("hive-contrib-0.13.1.jar").getCanonicalPath
     val jar4 = TestHive.getHiveFile("hive-hcatalog-core-0.13.1.jar").getCanonicalPath
     val jarsString = Seq(jar1, jar2, jar3, jar4).map(j => j.toString).mkString(",")
-    val args = Seq(
-      "--class", SparkSubmitClassLoaderTest.getClass.getName.stripSuffix("$"),
-      "--name", "SparkSubmitClassLoaderTest",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      "--jars", jarsString,
-      unusedJar.toString, "SparkSubmitClassA", "SparkSubmitClassB")
+    val args = Seq("--class",
+                   SparkSubmitClassLoaderTest.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "SparkSubmitClassLoaderTest",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   "--jars",
+                   jarsString,
+                   unusedJar.toString,
+                   "SparkSubmitClassA",
+                   "SparkSubmitClassB")
     runSparkSubmit(args)
   }
 
   test("SPARK-8020: set sql conf in spark conf") {
     val unusedJar = TestUtils.createJarWithClasses(Seq.empty)
-    val args = Seq(
-      "--class", SparkSQLConfTest.getClass.getName.stripSuffix("$"),
-      "--name", "SparkSQLConfTest",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--conf", "spark.sql.hive.metastore.version=0.12",
-      "--conf", "spark.sql.hive.metastore.jars=maven",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      unusedJar.toString)
+    val args = Seq("--class",
+                   SparkSQLConfTest.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "SparkSQLConfTest",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--conf",
+                   "spark.sql.hive.metastore.version=0.12",
+                   "--conf",
+                   "spark.sql.hive.metastore.jars=maven",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   unusedJar.toString)
     runSparkSubmit(args)
   }
 
@@ -153,64 +192,87 @@ class HiveSparkSubmitSuite
       case x => throw new Exception(s"Unsupported Scala Version: $x")
     }
     val testJar = s"sql/hive/src/test/resources/regression-test-SPARK-8489/test-$version.jar"
-    val args = Seq(
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      "--class", "Main",
-      testJar)
+    val args = Seq("--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   "--class",
+                   "Main",
+                   testJar)
     runSparkSubmit(args)
   }
 
   test("SPARK-9757 Persist Parquet relation with decimal column") {
     val unusedJar = TestUtils.createJarWithClasses(Seq.empty)
-    val args = Seq(
-      "--class", SPARK_9757.getClass.getName.stripSuffix("$"),
-      "--name", "SparkSQLConfTest",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      unusedJar.toString)
+    val args = Seq("--class",
+                   SPARK_9757.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "SparkSQLConfTest",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   unusedJar.toString)
     runSparkSubmit(args)
   }
 
   test("SPARK-11009 fix wrong result of Window function in cluster mode") {
     val unusedJar = TestUtils.createJarWithClasses(Seq.empty)
-    val args = Seq(
-      "--class", SPARK_11009.getClass.getName.stripSuffix("$"),
-      "--name", "SparkSQLConfTest",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      unusedJar.toString)
+    val args = Seq("--class",
+                   SPARK_11009.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "SparkSQLConfTest",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   unusedJar.toString)
     runSparkSubmit(args)
   }
 
   test("SPARK-14244 fix window partition size attribute binding failure") {
     val unusedJar = TestUtils.createJarWithClasses(Seq.empty)
-    val args = Seq(
-      "--class", SPARK_14244.getClass.getName.stripSuffix("$"),
-      "--name", "SparkSQLConfTest",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      unusedJar.toString)
+    val args = Seq("--class",
+                   SPARK_14244.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "SparkSQLConfTest",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   unusedJar.toString)
     runSparkSubmit(args)
   }
 
   test("set spark.sql.warehouse.dir") {
     val unusedJar = TestUtils.createJarWithClasses(Seq.empty)
-    val args = Seq(
-      "--class", SetWarehouseLocationTest.getClass.getName.stripSuffix("$"),
-      "--name", "SetWarehouseLocationTest",
-      "--master", "local-cluster[2,1,1024]",
-      "--conf", "spark.ui.enabled=false",
-      "--conf", "spark.master.rest.enabled=false",
-      "--driver-java-options", "-Dderby.system.durability=test",
-      unusedJar.toString)
+    val args = Seq("--class",
+                   SetWarehouseLocationTest.getClass.getName.stripSuffix("$"),
+                   "--name",
+                   "SetWarehouseLocationTest",
+                   "--master",
+                   "local-cluster[2,1,1024]",
+                   "--conf",
+                   "spark.ui.enabled=false",
+                   "--conf",
+                   "spark.master.rest.enabled=false",
+                   "--driver-java-options",
+                   "-Dderby.system.durability=test",
+                   unusedJar.toString)
     runSparkSubmit(args)
   }
 
@@ -263,10 +325,10 @@ class HiveSparkSubmitSuite
     } catch {
       case to: TestFailedDueToTimeoutException =>
         val historyLog = history.mkString("\n")
-        fail(s"Timeout of $commandLine" +
-            s" See the log4j logs for more detail." +
-            s"\n$historyLog", to)
-        case t: Throwable => throw t
+        fail(s"Timeout of $commandLine" + s" See the log4j logs for more detail." +
+             s"\n$historyLog",
+             to)
+      case t: Throwable => throw t
     } finally {
       // Ensure we still kill the process in case it timed out
       process.destroy()
@@ -289,10 +351,7 @@ object SetWarehouseLocationTest extends Logging {
     conf.set("spark.sql.warehouse.dir", warehouseLocation.toString)
     conf.set("hive.metastore.warehouse.dir", hiveWarehouseLocation.toString)
 
-    val sparkSession = SparkSession.builder
-      .config(conf)
-      .enableHiveSupport()
-      .getOrCreate()
+    val sparkSession = SparkSession.builder.config(conf).enableHiveSupport().getOrCreate()
 
     val catalog = sparkSession.sessionState.catalog
 
@@ -303,12 +362,11 @@ object SetWarehouseLocationTest extends Logging {
       sparkSession.sql("create table testLocation (a int)")
       val tableMetadata =
         catalog.getTableMetadata(TableIdentifier("testLocation", Some("default")))
-      val expectedLocation =
-        "file:" + warehouseLocation.toString + "/testlocation"
+      val expectedLocation = "file:" + warehouseLocation.toString + "/testlocation"
       val actualLocation = tableMetadata.storage.locationUri.get
       if (actualLocation != expectedLocation) {
         throw new Exception(
-          s"Expected table location is $expectedLocation. But, it is actually $actualLocation")
+            s"Expected table location is $expectedLocation. But, it is actually $actualLocation")
       }
       sparkSession.sql("drop table testLocation")
     }
@@ -324,7 +382,7 @@ object SetWarehouseLocationTest extends Logging {
       val actualLocation = tableMetadata.storage.locationUri.get
       if (actualLocation != expectedLocation) {
         throw new Exception(
-          s"Expected table location is $expectedLocation. But, it is actually $actualLocation")
+            s"Expected table location is $expectedLocation. But, it is actually $actualLocation")
       }
       sparkSession.sql("drop table testLocation")
       sparkSession.sql("use default")
@@ -347,19 +405,17 @@ object TemporaryHiveUDFTest extends Logging {
     // Load a Hive UDF from the jar.
     logInfo("Registering a temporary Hive UDF provided in a jar.")
     val jar = hiveContext.getHiveFile("hive-contrib-0.13.1.jar").getCanonicalPath
-    hiveContext.sql(
-      s"""
+    hiveContext.sql(s"""
          |CREATE TEMPORARY FUNCTION example_max
          |AS 'org.apache.hadoop.hive.contrib.udaf.example.UDAFExampleMax'
          |USING JAR '$jar'
       """.stripMargin)
-    val source =
-      hiveContext.createDataFrame((1 to 10).map(i => (i, s"str$i"))).toDF("key", "val")
+    val source = hiveContext.createDataFrame((1 to 10).map(i => (i, s"str$i"))).toDF("key", "val")
     source.registerTempTable("sourceTable")
     // Actually use the loaded UDF.
     logInfo("Using the UDF.")
-    val result = hiveContext.sql(
-      "SELECT example_max(key) as key, val FROM sourceTable GROUP BY val")
+    val result =
+      hiveContext.sql("SELECT example_max(key) as key, val FROM sourceTable GROUP BY val")
     logInfo("Running a simple query on the table.")
     val count = result.orderBy("key", "val").count()
     if (count != 10) {
@@ -385,19 +441,17 @@ object PermanentHiveUDFTest1 extends Logging {
     // Load a Hive UDF from the jar.
     logInfo("Registering a permanent Hive UDF provided in a jar.")
     val jar = hiveContext.getHiveFile("hive-contrib-0.13.1.jar").getCanonicalPath
-    hiveContext.sql(
-      s"""
+    hiveContext.sql(s"""
          |CREATE FUNCTION example_max
          |AS 'org.apache.hadoop.hive.contrib.udaf.example.UDAFExampleMax'
          |USING JAR '$jar'
       """.stripMargin)
-    val source =
-      hiveContext.createDataFrame((1 to 10).map(i => (i, s"str$i"))).toDF("key", "val")
+    val source = hiveContext.createDataFrame((1 to 10).map(i => (i, s"str$i"))).toDF("key", "val")
     source.registerTempTable("sourceTable")
     // Actually use the loaded UDF.
     logInfo("Using the UDF.")
-    val result = hiveContext.sql(
-      "SELECT example_max(key) as key, val FROM sourceTable GROUP BY val")
+    val result =
+      hiveContext.sql("SELECT example_max(key) as key, val FROM sourceTable GROUP BY val")
     logInfo("Running a simple query on the table.")
     val count = result.orderBy("key", "val").count()
     if (count != 10) {
@@ -422,18 +476,16 @@ object PermanentHiveUDFTest2 extends Logging {
     // Load a Hive UDF from the jar.
     logInfo("Write the metadata of a permanent Hive UDF into metastore.")
     val jar = hiveContext.getHiveFile("hive-contrib-0.13.1.jar").getCanonicalPath
-    val function = CatalogFunction(
-      FunctionIdentifier("example_max"),
-      "org.apache.hadoop.hive.contrib.udaf.example.UDAFExampleMax",
-      FunctionResource(JarResource, jar) :: Nil)
+    val function = CatalogFunction(FunctionIdentifier("example_max"),
+                                   "org.apache.hadoop.hive.contrib.udaf.example.UDAFExampleMax",
+                                   FunctionResource(JarResource, jar) :: Nil)
     hiveContext.sessionState.catalog.createFunction(function, ignoreIfExists = false)
-    val source =
-      hiveContext.createDataFrame((1 to 10).map(i => (i, s"str$i"))).toDF("key", "val")
+    val source = hiveContext.createDataFrame((1 to 10).map(i => (i, s"str$i"))).toDF("key", "val")
     source.registerTempTable("sourceTable")
     // Actually use the loaded UDF.
     logInfo("Using the UDF.")
-    val result = hiveContext.sql(
-      "SELECT example_max(key) as key, val FROM sourceTable GROUP BY val")
+    val result =
+      hiveContext.sql("SELECT example_max(key) as key, val FROM sourceTable GROUP BY val")
     logInfo("Running a simple query on the table.")
     val count = result.orderBy("key", "val").count()
     if (count != 10) {
@@ -484,25 +536,22 @@ object SparkSubmitClassLoaderTest extends Logging {
 
     // Load a Hive UDF from the jar.
     logInfo("Registering temporary Hive UDF provided in a jar.")
-    hiveContext.sql(
-      """
+    hiveContext.sql("""
         |CREATE TEMPORARY FUNCTION example_max
         |AS 'org.apache.hadoop.hive.contrib.udaf.example.UDAFExampleMax'
       """.stripMargin)
-    val source =
-      hiveContext.createDataFrame((1 to 10).map(i => (i, s"str$i"))).toDF("key", "val")
+    val source = hiveContext.createDataFrame((1 to 10).map(i => (i, s"str$i"))).toDF("key", "val")
     source.registerTempTable("sourceTable")
     // Load a Hive SerDe from the jar.
     logInfo("Creating a Hive table with a SerDe provided in a jar.")
-    hiveContext.sql(
-      """
+    hiveContext.sql("""
         |CREATE TABLE t1(key int, val string)
         |ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
       """.stripMargin)
     // Actually use the loaded UDF and SerDe.
     logInfo("Writing data into the table.")
     hiveContext.sql(
-      "INSERT INTO TABLE t1 SELECT example_max(key) as key, val FROM sourceTable GROUP BY val")
+        "INSERT INTO TABLE t1 SELECT example_max(key) as key, val FROM sourceTable GROUP BY val")
     logInfo("Running a simple query on the table.")
     val count = hiveContext.table("t1").orderBy("key", "val").count()
     if (count != 10) {
@@ -561,10 +610,10 @@ object SPARK_9757 extends QueryTest {
     Utils.configTestLog4j("INFO")
 
     val sparkContext = new SparkContext(
-      new SparkConf()
-        .set("spark.sql.hive.metastore.version", "0.13.1")
-        .set("spark.sql.hive.metastore.jars", "maven")
-        .set("spark.ui.enabled", "false"))
+        new SparkConf()
+          .set("spark.sql.hive.metastore.version", "0.13.1")
+          .set("spark.sql.hive.metastore.jars", "maven")
+          .set("spark.ui.enabled", "false"))
 
     val hiveContext = new TestHiveContext(sparkContext)
     spark = hiveContext.sparkSession
@@ -575,19 +624,15 @@ object SPARK_9757 extends QueryTest {
 
     try {
       {
-        val df =
-          hiveContext
-            .range(10)
-            .select(('id + 0.1) cast DecimalType(10, 3) as 'dec)
+        val df = hiveContext.range(10).select(('id + 0.1) cast DecimalType(10, 3) as 'dec)
         df.write.option("path", dir.getCanonicalPath).mode("overwrite").saveAsTable("t")
         checkAnswer(hiveContext.table("t"), df)
       }
 
       {
-        val df =
-          hiveContext
-            .range(10)
-            .select(callUDF("struct", ('id + 0.2) cast DecimalType(10, 3)) as 'dec_struct)
+        val df = hiveContext
+          .range(10)
+          .select(callUDF("struct", ('id + 0.2) cast DecimalType(10, 3)) as 'dec_struct)
         df.write.option("path", dir.getCanonicalPath).mode("overwrite").saveAsTable("t")
         checkAnswer(hiveContext.table("t"), df)
       }
@@ -608,9 +653,9 @@ object SPARK_11009 extends QueryTest {
     Utils.configTestLog4j("INFO")
 
     val sparkContext = new SparkContext(
-      new SparkConf()
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.shuffle.partitions", "100"))
+        new SparkConf()
+          .set("spark.ui.enabled", "false")
+          .set("spark.sql.shuffle.partitions", "100"))
 
     val hiveContext = new TestHiveContext(sparkContext)
     spark = hiveContext.sparkSession
@@ -639,9 +684,9 @@ object SPARK_14244 extends QueryTest {
     Utils.configTestLog4j("INFO")
 
     val sparkContext = new SparkContext(
-      new SparkConf()
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.shuffle.partitions", "100"))
+        new SparkConf()
+          .set("spark.ui.enabled", "false")
+          .set("spark.sql.shuffle.partitions", "100"))
 
     val hiveContext = new TestHiveContext(sparkContext)
     spark = hiveContext.sparkSession

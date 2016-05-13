@@ -33,9 +33,7 @@ object SparkSqlExample {
       case None => new SparkConf().setAppName("Simple Sql App")
     }
     val sc = new SparkContext(conf)
-    val sparkSession = SparkSession.builder
-      .enableHiveSupport()
-      .getOrCreate()
+    val sparkSession = SparkSession.builder.enableHiveSupport().getOrCreate()
 
     import sparkSession._
     sql("DROP TABLE IF EXISTS src")

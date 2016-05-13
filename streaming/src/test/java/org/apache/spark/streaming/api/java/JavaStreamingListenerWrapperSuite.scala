@@ -29,169 +29,168 @@ class JavaStreamingListenerWrapperSuite extends SparkFunSuite {
     val listener = new TestJavaStreamingListener()
     val listenerWrapper = new JavaStreamingListenerWrapper(listener)
 
-    val receiverStarted = StreamingListenerReceiverStarted(ReceiverInfo(
-      streamId = 2,
-      name = "test",
-      active = true,
-      location = "localhost",
-      executorId = "1"
-    ))
+    val receiverStarted = StreamingListenerReceiverStarted(
+        ReceiverInfo(
+            streamId = 2,
+            name = "test",
+            active = true,
+            location = "localhost",
+            executorId = "1"
+        ))
     listenerWrapper.onReceiverStarted(receiverStarted)
     assertReceiverInfo(listener.receiverStarted.receiverInfo, receiverStarted.receiverInfo)
 
-    val receiverStopped = StreamingListenerReceiverStopped(ReceiverInfo(
-      streamId = 2,
-      name = "test",
-      active = false,
-      location = "localhost",
-      executorId = "1"
-    ))
+    val receiverStopped = StreamingListenerReceiverStopped(
+        ReceiverInfo(
+            streamId = 2,
+            name = "test",
+            active = false,
+            location = "localhost",
+            executorId = "1"
+        ))
     listenerWrapper.onReceiverStopped(receiverStopped)
     assertReceiverInfo(listener.receiverStopped.receiverInfo, receiverStopped.receiverInfo)
 
-    val receiverError = StreamingListenerReceiverError(ReceiverInfo(
-      streamId = 2,
-      name = "test",
-      active = false,
-      location = "localhost",
-      executorId = "1",
-      lastErrorMessage = "failed",
-      lastError = "failed",
-      lastErrorTime = System.currentTimeMillis()
-    ))
+    val receiverError = StreamingListenerReceiverError(
+        ReceiverInfo(
+            streamId = 2,
+            name = "test",
+            active = false,
+            location = "localhost",
+            executorId = "1",
+            lastErrorMessage = "failed",
+            lastError = "failed",
+            lastErrorTime = System.currentTimeMillis()
+        ))
     listenerWrapper.onReceiverError(receiverError)
     assertReceiverInfo(listener.receiverError.receiverInfo, receiverError.receiverInfo)
 
-    val batchSubmitted = StreamingListenerBatchSubmitted(BatchInfo(
-      batchTime = Time(1000L),
-      streamIdToInputInfo = Map(
-        0 -> StreamInputInfo(
-          inputStreamId = 0,
-          numRecords = 1000,
-          metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver1")),
-        1 -> StreamInputInfo(
-          inputStreamId = 1,
-          numRecords = 2000,
-          metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver2"))),
-      submissionTime = 1001L,
-      None,
-      None,
-      outputOperationInfos = Map(
-        0 -> OutputOperationInfo(
-          batchTime = Time(1000L),
-          id = 0,
-          name = "op1",
-          description = "operation1",
-          startTime = None,
-          endTime = None,
-          failureReason = None),
-        1 -> OutputOperationInfo(
-          batchTime = Time(1000L),
-          id = 1,
-          name = "op2",
-          description = "operation2",
-          startTime = None,
-          endTime = None,
-          failureReason = None))
-    ))
+    val batchSubmitted = StreamingListenerBatchSubmitted(
+        BatchInfo(
+            batchTime = Time(1000L),
+            streamIdToInputInfo = Map(
+                  0 -> StreamInputInfo(
+                      inputStreamId = 0,
+                      numRecords = 1000,
+                      metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver1")),
+                  1 -> StreamInputInfo(
+                      inputStreamId = 1,
+                      numRecords = 2000,
+                      metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver2"))),
+            submissionTime = 1001L,
+            None,
+            None,
+            outputOperationInfos = Map(0 -> OutputOperationInfo(batchTime = Time(1000L),
+                                                                id = 0,
+                                                                name = "op1",
+                                                                description = "operation1",
+                                                                startTime = None,
+                                                                endTime = None,
+                                                                failureReason = None),
+                                       1 -> OutputOperationInfo(batchTime = Time(1000L),
+                                                                id = 1,
+                                                                name = "op2",
+                                                                description = "operation2",
+                                                                startTime = None,
+                                                                endTime = None,
+                                                                failureReason = None))
+        ))
     listenerWrapper.onBatchSubmitted(batchSubmitted)
     assertBatchInfo(listener.batchSubmitted.batchInfo, batchSubmitted.batchInfo)
 
-    val batchStarted = StreamingListenerBatchStarted(BatchInfo(
-      batchTime = Time(1000L),
-      streamIdToInputInfo = Map(
-        0 -> StreamInputInfo(
-          inputStreamId = 0,
-          numRecords = 1000,
-          metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver1")),
-        1 -> StreamInputInfo(
-          inputStreamId = 1,
-          numRecords = 2000,
-          metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver2"))),
-      submissionTime = 1001L,
-      Some(1002L),
-      None,
-      outputOperationInfos = Map(
-        0 -> OutputOperationInfo(
-          batchTime = Time(1000L),
-          id = 0,
-          name = "op1",
-          description = "operation1",
-          startTime = Some(1003L),
-          endTime = None,
-          failureReason = None),
-        1 -> OutputOperationInfo(
-          batchTime = Time(1000L),
-          id = 1,
-          name = "op2",
-          description = "operation2",
-          startTime = Some(1005L),
-          endTime = None,
-          failureReason = None))
-    ))
+    val batchStarted = StreamingListenerBatchStarted(
+        BatchInfo(
+            batchTime = Time(1000L),
+            streamIdToInputInfo = Map(
+                  0 -> StreamInputInfo(
+                      inputStreamId = 0,
+                      numRecords = 1000,
+                      metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver1")),
+                  1 -> StreamInputInfo(
+                      inputStreamId = 1,
+                      numRecords = 2000,
+                      metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver2"))),
+            submissionTime = 1001L,
+            Some(1002L),
+            None,
+            outputOperationInfos = Map(0 -> OutputOperationInfo(batchTime = Time(1000L),
+                                                                id = 0,
+                                                                name = "op1",
+                                                                description = "operation1",
+                                                                startTime = Some(1003L),
+                                                                endTime = None,
+                                                                failureReason = None),
+                                       1 -> OutputOperationInfo(batchTime = Time(1000L),
+                                                                id = 1,
+                                                                name = "op2",
+                                                                description = "operation2",
+                                                                startTime = Some(1005L),
+                                                                endTime = None,
+                                                                failureReason = None))
+        ))
     listenerWrapper.onBatchStarted(batchStarted)
     assertBatchInfo(listener.batchStarted.batchInfo, batchStarted.batchInfo)
 
-    val batchCompleted = StreamingListenerBatchCompleted(BatchInfo(
-      batchTime = Time(1000L),
-      streamIdToInputInfo = Map(
-        0 -> StreamInputInfo(
-          inputStreamId = 0,
-          numRecords = 1000,
-          metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver1")),
-        1 -> StreamInputInfo(
-          inputStreamId = 1,
-          numRecords = 2000,
-          metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver2"))),
-      submissionTime = 1001L,
-      Some(1002L),
-      Some(1010L),
-      outputOperationInfos = Map(
-        0 -> OutputOperationInfo(
-          batchTime = Time(1000L),
-          id = 0,
-          name = "op1",
-          description = "operation1",
-          startTime = Some(1003L),
-          endTime = Some(1004L),
-          failureReason = None),
-        1 -> OutputOperationInfo(
-          batchTime = Time(1000L),
-          id = 1,
-          name = "op2",
-          description = "operation2",
-          startTime = Some(1005L),
-          endTime = Some(1010L),
-          failureReason = None))
-    ))
+    val batchCompleted = StreamingListenerBatchCompleted(
+        BatchInfo(
+            batchTime = Time(1000L),
+            streamIdToInputInfo = Map(
+                  0 -> StreamInputInfo(
+                      inputStreamId = 0,
+                      numRecords = 1000,
+                      metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver1")),
+                  1 -> StreamInputInfo(
+                      inputStreamId = 1,
+                      numRecords = 2000,
+                      metadata = Map(StreamInputInfo.METADATA_KEY_DESCRIPTION -> "receiver2"))),
+            submissionTime = 1001L,
+            Some(1002L),
+            Some(1010L),
+            outputOperationInfos = Map(0 -> OutputOperationInfo(batchTime = Time(1000L),
+                                                                id = 0,
+                                                                name = "op1",
+                                                                description = "operation1",
+                                                                startTime = Some(1003L),
+                                                                endTime = Some(1004L),
+                                                                failureReason = None),
+                                       1 -> OutputOperationInfo(batchTime = Time(1000L),
+                                                                id = 1,
+                                                                name = "op2",
+                                                                description = "operation2",
+                                                                startTime = Some(1005L),
+                                                                endTime = Some(1010L),
+                                                                failureReason = None))
+        ))
     listenerWrapper.onBatchCompleted(batchCompleted)
     assertBatchInfo(listener.batchCompleted.batchInfo, batchCompleted.batchInfo)
 
-    val outputOperationStarted = StreamingListenerOutputOperationStarted(OutputOperationInfo(
-      batchTime = Time(1000L),
-      id = 0,
-      name = "op1",
-      description = "operation1",
-      startTime = Some(1003L),
-      endTime = None,
-      failureReason = None
-    ))
+    val outputOperationStarted = StreamingListenerOutputOperationStarted(
+        OutputOperationInfo(
+            batchTime = Time(1000L),
+            id = 0,
+            name = "op1",
+            description = "operation1",
+            startTime = Some(1003L),
+            endTime = None,
+            failureReason = None
+        ))
     listenerWrapper.onOutputOperationStarted(outputOperationStarted)
     assertOutputOperationInfo(listener.outputOperationStarted.outputOperationInfo,
-      outputOperationStarted.outputOperationInfo)
+                              outputOperationStarted.outputOperationInfo)
 
-    val outputOperationCompleted = StreamingListenerOutputOperationCompleted(OutputOperationInfo(
-      batchTime = Time(1000L),
-      id = 0,
-      name = "op1",
-      description = "operation1",
-      startTime = Some(1003L),
-      endTime = Some(1004L),
-      failureReason = None
-    ))
+    val outputOperationCompleted = StreamingListenerOutputOperationCompleted(
+        OutputOperationInfo(
+            batchTime = Time(1000L),
+            id = 0,
+            name = "op1",
+            description = "operation1",
+            startTime = Some(1003L),
+            endTime = Some(1004L),
+            failureReason = None
+        ))
     listenerWrapper.onOutputOperationCompleted(outputOperationCompleted)
     assertOutputOperationInfo(listener.outputOperationCompleted.outputOperationInfo,
-      outputOperationCompleted.outputOperationInfo)
+                              outputOperationCompleted.outputOperationInfo)
   }
 
   private def assertReceiverInfo(
@@ -209,8 +208,9 @@ class JavaStreamingListenerWrapperSuite extends SparkFunSuite {
   private def assertBatchInfo(javaBatchInfo: JavaBatchInfo, batchInfo: BatchInfo): Unit = {
     assert(javaBatchInfo.batchTime === batchInfo.batchTime)
     assert(javaBatchInfo.streamIdToInputInfo.size === batchInfo.streamIdToInputInfo.size)
-    batchInfo.streamIdToInputInfo.foreach { case (streamId, streamInputInfo) =>
-      assertStreamingInfo(javaBatchInfo.streamIdToInputInfo.get(streamId), streamInputInfo)
+    batchInfo.streamIdToInputInfo.foreach {
+      case (streamId, streamInputInfo) =>
+        assertStreamingInfo(javaBatchInfo.streamIdToInputInfo.get(streamId), streamInputInfo)
     }
     assert(javaBatchInfo.submissionTime === batchInfo.submissionTime)
     assert(javaBatchInfo.processingStartTime === batchInfo.processingStartTime.getOrElse(-1))
@@ -220,9 +220,10 @@ class JavaStreamingListenerWrapperSuite extends SparkFunSuite {
     assert(javaBatchInfo.totalDelay === batchInfo.totalDelay.getOrElse(-1))
     assert(javaBatchInfo.numRecords === batchInfo.numRecords)
     assert(javaBatchInfo.outputOperationInfos.size === batchInfo.outputOperationInfos.size)
-    batchInfo.outputOperationInfos.foreach { case (outputOperationId, outputOperationInfo) =>
-      assertOutputOperationInfo(
-        javaBatchInfo.outputOperationInfos.get(outputOperationId), outputOperationInfo)
+    batchInfo.outputOperationInfos.foreach {
+      case (outputOperationId, outputOperationInfo) =>
+        assertOutputOperationInfo(
+            javaBatchInfo.outputOperationInfos.get(outputOperationId), outputOperationInfo)
     }
   }
 
@@ -234,9 +235,8 @@ class JavaStreamingListenerWrapperSuite extends SparkFunSuite {
     assert(javaStreamInputInfo.metadataDescription === streamInputInfo.metadataDescription.orNull)
   }
 
-  private def assertOutputOperationInfo(
-      javaOutputOperationInfo: JavaOutputOperationInfo,
-      outputOperationInfo: OutputOperationInfo): Unit = {
+  private def assertOutputOperationInfo(javaOutputOperationInfo: JavaOutputOperationInfo,
+                                        outputOperationInfo: OutputOperationInfo): Unit = {
     assert(javaOutputOperationInfo.batchTime === outputOperationInfo.batchTime)
     assert(javaOutputOperationInfo.id === outputOperationInfo.id)
     assert(javaOutputOperationInfo.name === outputOperationInfo.name)

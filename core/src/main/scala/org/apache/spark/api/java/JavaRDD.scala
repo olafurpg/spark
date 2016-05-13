@@ -28,7 +28,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
 
 class JavaRDD[T](val rdd: RDD[T])(implicit val classTag: ClassTag[T])
-  extends AbstractJavaRDDLike[T, JavaRDD[T]] {
+    extends AbstractJavaRDDLike[T, JavaRDD[T]] {
 
   override def wrapRDD(rdd: RDD[T]): JavaRDD[T] = JavaRDD.fromRDD(rdd)
 
@@ -120,7 +120,6 @@ class JavaRDD[T](val rdd: RDD[T])(implicit val classTag: ClassTag[T])
   def sample(withReplacement: Boolean, fraction: Double, seed: Long): JavaRDD[T] =
     wrapRDD(rdd.sample(withReplacement, fraction, seed))
 
-
   /**
    * Randomly splits this RDD with the provided weights.
    *
@@ -147,7 +146,6 @@ class JavaRDD[T](val rdd: RDD[T])(implicit val classTag: ClassTag[T])
    * times (use `.distinct()` to eliminate them).
    */
   def union(other: JavaRDD[T]): JavaRDD[T] = wrapRDD(rdd.union(other.rdd))
-
 
   /**
    * Return the intersection of this RDD and another one. The output will not contain any duplicate
@@ -190,12 +188,11 @@ class JavaRDD[T](val rdd: RDD[T])(implicit val classTag: ClassTag[T])
    */
   def sortBy[S](f: JFunction[T, S], ascending: Boolean, numPartitions: Int): JavaRDD[T] = {
     def fn: (T) => S = (x: T) => f.call(x)
-    import com.google.common.collect.Ordering  // shadows scala.math.Ordering
+    import com.google.common.collect.Ordering // shadows scala.math.Ordering
     implicit val ordering = Ordering.natural().asInstanceOf[Ordering[S]]
     implicit val ctag: ClassTag[S] = fakeClassTag
     wrapRDD(rdd.sortBy(fn, ascending, numPartitions))
   }
-
 }
 
 object JavaRDD {

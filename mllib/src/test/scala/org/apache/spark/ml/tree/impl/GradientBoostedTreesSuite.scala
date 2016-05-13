@@ -42,44 +42,44 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
 
     val algos = Array(Regression, Regression, Classification)
     val losses = Array(SquaredError, AbsoluteError, LogLoss)
-    algos.zip(losses).foreach { case (algo, loss) =>
-      val treeStrategy = new Strategy(algo = algo, impurity = Variance, maxDepth = 2,
-        categoricalFeaturesInfo = Map.empty)
-      val boostingStrategy =
-        new BoostingStrategy(treeStrategy, loss, numIterations, validationTol = 0.0)
-      val (validateTrees, validateTreeWeights) = GradientBoostedTrees
-        .runWithValidation(trainRdd, validateRdd, boostingStrategy, 42L)
-      val numTrees = validateTrees.length
-      assert(numTrees !== numIterations)
+    algos.zip(losses).foreach {
+      case (algo, loss) =>
+        val treeStrategy = new Strategy(
+            algo = algo, impurity = Variance, maxDepth = 2, categoricalFeaturesInfo = Map.empty)
+        val boostingStrategy =
+          new BoostingStrategy(treeStrategy, loss, numIterations, validationTol = 0.0)
+        val (validateTrees, validateTreeWeights) =
+          GradientBoostedTrees.runWithValidation(trainRdd, validateRdd, boostingStrategy, 42L)
+        val numTrees = validateTrees.length
+        assert(numTrees !== numIterations)
 
-      // Test that it performs better on the validation dataset.
-      val (trees, treeWeights) = GradientBoostedTrees.run(trainRdd, boostingStrategy, 42L)
-      val (errorWithoutValidation, errorWithValidation) = {
-        if (algo == Classification) {
-          val remappedRdd = validateRdd.map(x => new LabeledPoint(2 * x.label - 1, x.features))
-          (GradientBoostedTrees.computeError(remappedRdd, trees, treeWeights, loss),
-            GradientBoostedTrees.computeError(remappedRdd, validateTrees,
-              validateTreeWeights, loss))
-        } else {
-          (GradientBoostedTrees.computeError(validateRdd, trees, treeWeights, loss),
-            GradientBoostedTrees.computeError(validateRdd, validateTrees,
-              validateTreeWeights, loss))
+        // Test that it performs better on the validation dataset.
+        val (trees, treeWeights) = GradientBoostedTrees.run(trainRdd, boostingStrategy, 42L)
+        val (errorWithoutValidation, errorWithValidation) = {
+          if (algo == Classification) {
+            val remappedRdd = validateRdd.map(x => new LabeledPoint(2 * x.label - 1, x.features))
+            (GradientBoostedTrees.computeError(remappedRdd, trees, treeWeights, loss),
+             GradientBoostedTrees.computeError(
+                 remappedRdd, validateTrees, validateTreeWeights, loss))
+          } else {
+            (GradientBoostedTrees.computeError(validateRdd, trees, treeWeights, loss),
+             GradientBoostedTrees.computeError(
+                 validateRdd, validateTrees, validateTreeWeights, loss))
+          }
         }
-      }
-      assert(errorWithValidation <= errorWithoutValidation)
+        assert(errorWithValidation <= errorWithoutValidation)
 
-      // Test that results from evaluateEachIteration comply with runWithValidation.
-      // Note that convergenceTol is set to 0.0
-      val evaluationArray = GradientBoostedTrees
-        .evaluateEachIteration(validateRdd, trees, treeWeights, loss, algo)
-      assert(evaluationArray.length === numIterations)
-      assert(evaluationArray(numTrees) > evaluationArray(numTrees - 1))
-      var i = 1
-      while (i < numTrees) {
-        assert(evaluationArray(i) <= evaluationArray(i - 1))
-        i += 1
-      }
+        // Test that results from evaluateEachIteration comply with runWithValidation.
+        // Note that convergenceTol is set to 0.0
+        val evaluationArray =
+          GradientBoostedTrees.evaluateEachIteration(validateRdd, trees, treeWeights, loss, algo)
+        assert(evaluationArray.length === numIterations)
+        assert(evaluationArray(numTrees) > evaluationArray(numTrees - 1))
+        var i = 1
+        while (i < numTrees) {
+          assert(evaluationArray(i) <= evaluationArray(i - 1))
+          i += 1
+        }
     }
   }
-
 }

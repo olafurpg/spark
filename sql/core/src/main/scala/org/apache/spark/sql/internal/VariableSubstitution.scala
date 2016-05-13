@@ -80,7 +80,7 @@ class VariableSubstitution(conf: SQLConf) {
 
     if (s > depth) {
       throw new AnalysisException(
-        "Variable substitution depth is deeper than " + depth + " for input " + input)
+          "Variable substitution depth is deeper than " + depth + " for input " + input)
     } else {
       return eval
     }

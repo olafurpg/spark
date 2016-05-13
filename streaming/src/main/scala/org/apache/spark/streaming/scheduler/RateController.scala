@@ -32,7 +32,8 @@ import org.apache.spark.util.{ThreadUtils, Utils}
  * given an estimate computation from a `RateEstimator`
  */
 private[streaming] abstract class RateController(val streamUID: Int, rateEstimator: RateEstimator)
-    extends StreamingListener with Serializable {
+    extends StreamingListener
+    with Serializable {
 
   init()
 
@@ -49,7 +50,7 @@ private[streaming] abstract class RateController(val streamUID: Int, rateEstimat
    */
   private def init() {
     executionContext = ExecutionContext.fromExecutorService(
-      ThreadUtils.newDaemonSingleThreadExecutor("stream-rate-update"))
+        ThreadUtils.newDaemonSingleThreadExecutor("stream-rate-update"))
     rateLimit = new AtomicLong(-1L)
   }
 

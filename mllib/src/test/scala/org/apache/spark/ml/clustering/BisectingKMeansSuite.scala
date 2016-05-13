@@ -23,7 +23,9 @@ import org.apache.spark.mllib.util.MLlibTestSparkContext
 import org.apache.spark.sql.Dataset
 
 class BisectingKMeansSuite
-  extends SparkFunSuite with MLlibTestSparkContext with DefaultReadWriteTest {
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   final val k = 5
   @transient var dataset: Dataset[_] = _
@@ -93,15 +95,15 @@ class BisectingKMeansSuite
     }
     val bisectingKMeans = new BisectingKMeans()
     testEstimatorAndModelReadWrite(
-      bisectingKMeans, dataset, BisectingKMeansSuite.allParamSettings, checkModelData)
+        bisectingKMeans, dataset, BisectingKMeansSuite.allParamSettings, checkModelData)
   }
 }
 
 object BisectingKMeansSuite {
   val allParamSettings: Map[String, Any] = Map(
-    "k" -> 3,
-    "maxIter" -> 2,
-    "seed" -> -1L,
-    "minDivisibleClusterSize" -> 2.0
+      "k" -> 3,
+      "maxIter" -> 2,
+      "seed" -> -1L,
+      "minDivisibleClusterSize" -> 2.0
   )
 }

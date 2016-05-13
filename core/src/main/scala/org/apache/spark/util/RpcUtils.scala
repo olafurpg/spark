@@ -61,7 +61,7 @@ private[spark] object RpcUtils {
     val maxSizeInMB = conf.getInt("spark.rpc.message.maxSize", 128)
     if (maxSizeInMB > MAX_MESSAGE_SIZE_IN_MB) {
       throw new IllegalArgumentException(
-        s"spark.rpc.message.maxSize should not be greater than $MAX_MESSAGE_SIZE_IN_MB MB")
+          s"spark.rpc.message.maxSize should not be greater than $MAX_MESSAGE_SIZE_IN_MB MB")
     }
     maxSizeInMB * 1024 * 1024
   }

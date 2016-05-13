@@ -48,8 +48,12 @@ import org.apache.spark.storage.BlockManagerMessages.BlockManagerHeartbeat
 import org.apache.spark.util._
 import org.apache.spark.util.io.ChunkedByteBuffer
 
-class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterEach
-  with PrivateMethodTester with ResetSystemProperties {
+class BlockManagerSuite
+    extends SparkFunSuite
+    with Matchers
+    with BeforeAndAfterEach
+    with PrivateMethodTester
+    with ResetSystemProperties {
 
   import BlockManagerSuite._
 
@@ -65,7 +69,8 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
   val shuffleManager = new SortShuffleManager(new SparkConf(false))
 
   // Reuse a serializer across tests to avoid creating a new thread-local buffer on each test
-  val serializer = new KryoSerializer(new SparkConf(false).set("spark.kryoserializer.buffer", "1m"))
+  val serializer = new KryoSerializer(
+      new SparkConf(false).set("spark.kryoserializer.buffer", "1m"))
 
   // Implicitly convert strings to BlockIds for test clarity.
   implicit def StringToBlockId(value: String): BlockId = new TestBlockId(value)
@@ -79,12 +84,21 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     conf.set("spark.testing.memory", maxMem.toString)
     conf.set("spark.memory.offHeap.size", maxMem.toString)
     val serializer = new KryoSerializer(conf)
-    val transfer = transferService
-      .getOrElse(new NettyBlockTransferService(conf, securityMgr, "localhost", numCores = 1))
+    val transfer = transferService.getOrElse(
+        new NettyBlockTransferService(conf, securityMgr, "localhost", numCores = 1))
     val memManager = UnifiedMemoryManager(conf, numCores = 1)
     val serializerManager = new SerializerManager(serializer, conf)
-    val blockManager = new BlockManager(name, rpcEnv, master, serializerManager, conf,
-      memManager, mapOutputTracker, shuffleManager, transfer, securityMgr, 0)
+    val blockManager = new BlockManager(name,
+                                        rpcEnv,
+                                        master,
+                                        serializerManager,
+                                        conf,
+                                        memManager,
+                                        mapOutputTracker,
+                                        shuffleManager,
+                                        transfer,
+                                        securityMgr,
+                                        0)
     memManager.setMemoryStore(blockManager.memoryStore)
     blockManager.initialize("app-id")
     blockManager
@@ -107,8 +121,12 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     rpcEnv = RpcEnv.create("test", "localhost", 0, conf, securityMgr)
     conf.set("spark.driver.port", rpcEnv.address.port.toString)
 
-    master = new BlockManagerMaster(rpcEnv.setupEndpoint("blockmanager",
-      new BlockManagerMasterEndpoint(rpcEnv, true, conf, new LiveListenerBus)), conf, true)
+    master = new BlockManagerMaster(
+        rpcEnv.setupEndpoint(
+            "blockmanager",
+            new BlockManagerMasterEndpoint(rpcEnv, true, conf, new LiveListenerBus)),
+        conf,
+        true)
 
     val initialize = PrivateMethod[Unit]('initialize)
     SizeEstimator invokePrivate initialize()
@@ -216,7 +234,8 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
 
     val peers = master.getPeers(store.blockManagerId)
     assert(peers.size === 1, "master did not return the other manager as a peer")
-    assert(peers.head === store2.blockManagerId, "peer returned by master is not the other manager")
+    assert(
+        peers.head === store2.blockManagerId, "peer returned by master is not the other manager")
 
     val a1 = new Array[Byte](400)
     val a2 = new Array[Byte](400)
@@ -269,8 +288,8 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     }
     eventually(timeout(1000 milliseconds), interval(10 milliseconds)) {
       val memStatus = master.getMemoryStatus.head._2
-      memStatus._1 should equal (20000L)
-      memStatus._2 should equal (20000L)
+      memStatus._1 should equal(20000L)
+      memStatus._2 should equal(20000L)
     }
   }
 
@@ -286,11 +305,11 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     master.removeRdd(0, blocking = false)
 
     eventually(timeout(1000 milliseconds), interval(10 milliseconds)) {
-      store.getSingleAndReleaseLock(rdd(0, 0)) should be (None)
+      store.getSingleAndReleaseLock(rdd(0, 0)) should be(None)
       master.getLocations(rdd(0, 0)) should have size 0
     }
     eventually(timeout(1000 milliseconds), interval(10 milliseconds)) {
-      store.getSingleAndReleaseLock(rdd(0, 1)) should be (None)
+      store.getSingleAndReleaseLock(rdd(0, 1)) should be(None)
       master.getLocations(rdd(0, 1)) should have size 0
     }
     eventually(timeout(1000 milliseconds), interval(10 milliseconds)) {
@@ -301,9 +320,9 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     store.putSingle(rdd(0, 0), a1, StorageLevel.MEMORY_ONLY)
     store.putSingle(rdd(0, 1), a2, StorageLevel.MEMORY_ONLY)
     master.removeRdd(0, blocking = true)
-    store.getSingleAndReleaseLock(rdd(0, 0)) should be (None)
+    store.getSingleAndReleaseLock(rdd(0, 0)) should be(None)
     master.getLocations(rdd(0, 0)) should have size 0
-    store.getSingleAndReleaseLock(rdd(0, 1)) should be (None)
+    store.getSingleAndReleaseLock(rdd(0, 1)) should be(None)
     master.getLocations(rdd(0, 1)) should have size 0
   }
 
@@ -322,19 +341,21 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     val broadcast2BlockId2 = BroadcastBlockId(2, "_")
 
     // insert broadcast blocks in both the stores
-    Seq(driverStore, executorStore).foreach { case s =>
-      s.putSingle(broadcast0BlockId, a1, StorageLevel.DISK_ONLY)
-      s.putSingle(broadcast1BlockId, a2, StorageLevel.DISK_ONLY)
-      s.putSingle(broadcast2BlockId, a3, StorageLevel.DISK_ONLY)
-      s.putSingle(broadcast2BlockId2, a4, StorageLevel.DISK_ONLY)
+    Seq(driverStore, executorStore).foreach {
+      case s =>
+        s.putSingle(broadcast0BlockId, a1, StorageLevel.DISK_ONLY)
+        s.putSingle(broadcast1BlockId, a2, StorageLevel.DISK_ONLY)
+        s.putSingle(broadcast2BlockId, a3, StorageLevel.DISK_ONLY)
+        s.putSingle(broadcast2BlockId2, a4, StorageLevel.DISK_ONLY)
     }
 
     // verify whether the blocks exist in both the stores
-    Seq(driverStore, executorStore).foreach { case s =>
-      assert(s.hasLocalBlock(broadcast0BlockId))
-      assert(s.hasLocalBlock(broadcast1BlockId))
-      assert(s.hasLocalBlock(broadcast2BlockId))
-      assert(s.hasLocalBlock(broadcast2BlockId2))
+    Seq(driverStore, executorStore).foreach {
+      case s =>
+        assert(s.hasLocalBlock(broadcast0BlockId))
+        assert(s.hasLocalBlock(broadcast1BlockId))
+        assert(s.hasLocalBlock(broadcast2BlockId))
+        assert(s.hasLocalBlock(broadcast2BlockId2))
     }
 
     // remove broadcast 0 block only from executors
@@ -389,8 +410,8 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     master.removeExecutor(store.blockManagerId.executorId)
     assert(master.getLocations("a1").size == 0, "a1 was not removed from master")
 
-    val reregister = !master.driverEndpoint.askWithRetry[Boolean](
-      BlockManagerHeartbeat(store.blockManagerId))
+    val reregister =
+      !master.driverEndpoint.askWithRetry[Boolean](BlockManagerHeartbeat(store.blockManagerId))
     assert(reregister == true)
   }
 
@@ -422,8 +443,7 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
       master.removeExecutor(store.blockManagerId.executorId)
       val t1 = new Thread {
         override def run() {
-          store.putIterator(
-            "a2", a2.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+          store.putIterator("a2", a2.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
         }
       }
       val t2 = new Thread {
@@ -456,12 +476,9 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     val list2 = List(new Array[Byte](500), new Array[Byte](1000), new Array[Byte](1500))
     val list1SizeEstimate = SizeEstimator.estimate(list1.iterator.toArray)
     val list2SizeEstimate = SizeEstimator.estimate(list2.iterator.toArray)
-    store.putIterator(
-      "list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
-    store.putIterator(
-      "list2memory", list2.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
-    store.putIterator(
-      "list2disk", list2.iterator, StorageLevel.DISK_ONLY, tellMaster = true)
+    store.putIterator("list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store.putIterator("list2memory", list2.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store.putIterator("list2disk", list2.iterator, StorageLevel.DISK_ONLY, tellMaster = true)
     val list1Get = store.get("list1")
     assert(list1Get.isDefined, "list1 expected to be in store")
     assert(list1Get.get.data.size === 2)
@@ -501,10 +518,8 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     store2 = makeBlockManager(8000, "executor2")
     store3 = makeBlockManager(8000, "executor3")
     val list1 = List(new Array[Byte](4000))
-    store2.putIterator(
-      "list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
-    store3.putIterator(
-      "list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store2.putIterator("list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store3.putIterator("list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
     assert(store.getRemoteBytes("list1").isDefined, "list1Get expected to be fetched")
     store2.stop()
     store2 = null
@@ -521,13 +536,14 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     store = makeBlockManager(8000, "executor1")
     store2 = makeBlockManager(8000, "executor2")
     val list1 = List(new Array[Byte](4000))
-    store2.putIterator(
-      "list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
-    assert(store.getOrElseUpdate(
-      "list1",
-      StorageLevel.MEMORY_ONLY,
-      ClassTag.Any,
-      () => throw new AssertionError("attempted to compute locally")).isLeft)
+    store2.putIterator("list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    assert(
+        store
+          .getOrElseUpdate("list1",
+                           StorageLevel.MEMORY_ONLY,
+                           ClassTag.Any,
+                           () => throw new AssertionError("attempted to compute locally"))
+          .isLeft)
   }
 
   test("in-memory LRU storage") {
@@ -539,11 +555,12 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
   }
 
   test("in-memory LRU storage with off-heap") {
-    testInMemoryLRUStorage(StorageLevel(
-      useDisk = false,
-      useMemory = true,
-      useOffHeap = true,
-      deserialized = false, replication = 1))
+    testInMemoryLRUStorage(
+        StorageLevel(useDisk = false,
+                     useMemory = true,
+                     useOffHeap = true,
+                     deserialized = false,
+                     replication = 1))
   }
 
   private def testInMemoryLRUStorage(storageLevel: StorageLevel): Unit = {
@@ -644,9 +661,7 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     testDiskAndMemoryStorage(StorageLevel.OFF_HEAP, getAsBytes = true)
   }
 
-  def testDiskAndMemoryStorage(
-      storageLevel: StorageLevel,
-      getAsBytes: Boolean): Unit = {
+  def testDiskAndMemoryStorage(storageLevel: StorageLevel, getAsBytes: Boolean): Unit = {
     store = makeBlockManager(12000)
     val accessMethod =
       if (getAsBytes) store.getLocalBytesAndReleaseLock else store.getSingleAndReleaseLock
@@ -702,12 +717,9 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     val list1 = List(new Array[Byte](2000), new Array[Byte](2000))
     val list2 = List(new Array[Byte](2000), new Array[Byte](2000))
     val list3 = List(new Array[Byte](2000), new Array[Byte](2000))
-    store.putIterator(
-      "list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
-    store.putIterator(
-      "list2", list2.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
-    store.putIterator(
-      "list3", list3.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store.putIterator("list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store.putIterator("list2", list2.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store.putIterator("list3", list3.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
     assert(store.getAndReleaseLock("list2").isDefined, "list2 was not in store")
     assert(store.get("list2").get.data.size === 2)
     assert(store.getAndReleaseLock("list3").isDefined, "list3 was not in store")
@@ -716,8 +728,7 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     assert(store.getAndReleaseLock("list2").isDefined, "list2 was not in store")
     assert(store.get("list2").get.data.size === 2)
     // At this point list2 was gotten last, so LRU will getSingle rid of list3
-    store.putIterator(
-      "list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store.putIterator("list1", list1.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
     assert(store.getAndReleaseLock("list1").isDefined, "list1 was not in store")
     assert(store.get("list1").get.data.size === 2)
     assert(store.getAndReleaseLock("list2").isDefined, "list2 was not in store")
@@ -732,12 +743,9 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     val list3 = List(new Array[Byte](2000), new Array[Byte](2000))
     val list4 = List(new Array[Byte](2000), new Array[Byte](2000))
     // First store list1 and list2, both in memory, and list3, on disk only
-    store.putIterator(
-      "list1", list1.iterator, StorageLevel.MEMORY_ONLY_SER, tellMaster = true)
-    store.putIterator(
-      "list2", list2.iterator, StorageLevel.MEMORY_ONLY_SER, tellMaster = true)
-    store.putIterator(
-      "list3", list3.iterator, StorageLevel.DISK_ONLY, tellMaster = true)
+    store.putIterator("list1", list1.iterator, StorageLevel.MEMORY_ONLY_SER, tellMaster = true)
+    store.putIterator("list2", list2.iterator, StorageLevel.MEMORY_ONLY_SER, tellMaster = true)
+    store.putIterator("list3", list3.iterator, StorageLevel.DISK_ONLY, tellMaster = true)
     val listForSizeEstimate = new ArrayBuffer[Any]
     listForSizeEstimate ++= list1.iterator
     val listSize = SizeEstimator.estimate(listForSizeEstimate)
@@ -755,8 +763,7 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     assert(store.getAndReleaseLock("list3").isDefined, "list3 was not in store")
     assert(store.get("list3").get.data.size === 2)
     // Now let's add in list4, which uses both disk and memory; list1 should drop out
-    store.putIterator(
-      "list4", list4.iterator, StorageLevel.MEMORY_AND_DISK_SER, tellMaster = true)
+    store.putIterator("list4", list4.iterator, StorageLevel.MEMORY_AND_DISK_SER, tellMaster = true)
     assert(store.getAndReleaseLock("list1") === None, "list1 was in store")
     assert(store.getAndReleaseLock("list2").isDefined, "list2 was not in store")
     assert(store.get("list2").get.data.size === 2)
@@ -791,35 +798,32 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     try {
       conf.set("spark.shuffle.compress", "true")
       store = makeBlockManager(20000, "exec1")
-      store.putSingle(
-        ShuffleBlockId(0, 0, 0), new Array[Byte](1000), StorageLevel.MEMORY_ONLY_SER)
+      store.putSingle(ShuffleBlockId(0, 0, 0), new Array[Byte](1000), StorageLevel.MEMORY_ONLY_SER)
       assert(store.memoryStore.getSize(ShuffleBlockId(0, 0, 0)) <= 100,
-        "shuffle_0_0_0 was not compressed")
+             "shuffle_0_0_0 was not compressed")
       store.stop()
       store = null
 
       conf.set("spark.shuffle.compress", "false")
       store = makeBlockManager(20000, "exec2")
       store.putSingle(
-        ShuffleBlockId(0, 0, 0), new Array[Byte](10000), StorageLevel.MEMORY_ONLY_SER)
+          ShuffleBlockId(0, 0, 0), new Array[Byte](10000), StorageLevel.MEMORY_ONLY_SER)
       assert(store.memoryStore.getSize(ShuffleBlockId(0, 0, 0)) >= 10000,
-        "shuffle_0_0_0 was compressed")
+             "shuffle_0_0_0 was compressed")
       store.stop()
       store = null
 
       conf.set("spark.broadcast.compress", "true")
       store = makeBlockManager(20000, "exec3")
-      store.putSingle(
-        BroadcastBlockId(0), new Array[Byte](10000), StorageLevel.MEMORY_ONLY_SER)
-      assert(store.memoryStore.getSize(BroadcastBlockId(0)) <= 1000,
-        "broadcast_0 was not compressed")
+      store.putSingle(BroadcastBlockId(0), new Array[Byte](10000), StorageLevel.MEMORY_ONLY_SER)
+      assert(
+          store.memoryStore.getSize(BroadcastBlockId(0)) <= 1000, "broadcast_0 was not compressed")
       store.stop()
       store = null
 
       conf.set("spark.broadcast.compress", "false")
       store = makeBlockManager(20000, "exec4")
-      store.putSingle(
-        BroadcastBlockId(0), new Array[Byte](10000), StorageLevel.MEMORY_ONLY_SER)
+      store.putSingle(BroadcastBlockId(0), new Array[Byte](10000), StorageLevel.MEMORY_ONLY_SER)
       assert(store.memoryStore.getSize(BroadcastBlockId(0)) >= 10000, "broadcast_0 was compressed")
       store.stop()
       store = null
@@ -857,9 +861,17 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     val transfer = new NettyBlockTransferService(conf, securityMgr, "localhost", numCores = 1)
     val memoryManager = UnifiedMemoryManager(conf, numCores = 1)
     val serializerManager = new SerializerManager(new JavaSerializer(conf), conf)
-    store = new BlockManager(SparkContext.DRIVER_IDENTIFIER, rpcEnv, master,
-      serializerManager, conf, memoryManager, mapOutputTracker,
-      shuffleManager, transfer, securityMgr, 0)
+    store = new BlockManager(SparkContext.DRIVER_IDENTIFIER,
+                             rpcEnv,
+                             master,
+                             serializerManager,
+                             conf,
+                             memoryManager,
+                             mapOutputTracker,
+                             shuffleManager,
+                             transfer,
+                             securityMgr,
+                             0)
     memoryManager.setMemoryStore(store.memoryStore)
 
     // The put should fail since a1 is not serializable.
@@ -894,8 +906,7 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
 
     // 1 updated block (i.e. list1)
     val updatedBlocks1 = getUpdatedBlocks {
-      store.putIterator(
-        "list1", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+      store.putIterator("list1", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
     }
     assert(updatedBlocks1.size === 1)
     assert(updatedBlocks1.head._1 === TestBlockId("list1"))
@@ -903,8 +914,7 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
 
     // 1 updated block (i.e. list2)
     val updatedBlocks2 = getUpdatedBlocks {
-      store.putIterator(
-        "list2", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
+      store.putIterator("list2", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
     }
     assert(updatedBlocks2.size === 1)
     assert(updatedBlocks2.head._1 === TestBlockId("list2"))
@@ -912,39 +922,38 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
 
     // 2 updated blocks - list1 is kicked out of memory while list3 is added
     val updatedBlocks3 = getUpdatedBlocks {
-      store.putIterator(
-        "list3", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+      store.putIterator("list3", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
     }
     assert(updatedBlocks3.size === 2)
-    updatedBlocks3.foreach { case (id, status) =>
-      id match {
-        case TestBlockId("list1") => assert(status.storageLevel === StorageLevel.NONE)
-        case TestBlockId("list3") => assert(status.storageLevel === StorageLevel.MEMORY_ONLY)
-        case _ => fail("Updated block is neither list1 nor list3")
-      }
+    updatedBlocks3.foreach {
+      case (id, status) =>
+        id match {
+          case TestBlockId("list1") => assert(status.storageLevel === StorageLevel.NONE)
+          case TestBlockId("list3") => assert(status.storageLevel === StorageLevel.MEMORY_ONLY)
+          case _ => fail("Updated block is neither list1 nor list3")
+        }
     }
     assert(store.memoryStore.contains("list3"), "list3 was not in memory store")
 
     // 2 updated blocks - list2 is kicked out of memory (but put on disk) while list4 is added
     val updatedBlocks4 = getUpdatedBlocks {
-      store.putIterator(
-        "list4", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+      store.putIterator("list4", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
     }
     assert(updatedBlocks4.size === 2)
-    updatedBlocks4.foreach { case (id, status) =>
-      id match {
-        case TestBlockId("list2") => assert(status.storageLevel === StorageLevel.DISK_ONLY)
-        case TestBlockId("list4") => assert(status.storageLevel === StorageLevel.MEMORY_ONLY)
-        case _ => fail("Updated block is neither list2 nor list4")
-      }
+    updatedBlocks4.foreach {
+      case (id, status) =>
+        id match {
+          case TestBlockId("list2") => assert(status.storageLevel === StorageLevel.DISK_ONLY)
+          case TestBlockId("list4") => assert(status.storageLevel === StorageLevel.MEMORY_ONLY)
+          case _ => fail("Updated block is neither list2 nor list4")
+        }
     }
     assert(store.diskStore.contains("list2"), "list2 was not in disk store")
     assert(store.memoryStore.contains("list4"), "list4 was not in memory store")
 
     // No updated blocks - list5 is too big to fit in store and nothing is kicked out
     val updatedBlocks5 = getUpdatedBlocks {
-      store.putIterator(
-        "list5", bigList.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+      store.putIterator("list5", bigList.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
     }
     assert(updatedBlocks5.size === 0)
 
@@ -964,8 +973,7 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
 
     // remove block - list2 should be removed from disk
     val updatedBlocks6 = getUpdatedBlocks {
-      store.removeBlock(
-        "list2", tellMaster = true)
+      store.removeBlock("list2", tellMaster = true)
     }
     assert(updatedBlocks6.size === 1)
     assert(updatedBlocks6.head._1 === TestBlockId("list2"))
@@ -978,12 +986,9 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     val list = List.fill(2)(new Array[Byte](2000))
 
     // Tell master. By LRU, only list2 and list3 remains.
-    store.putIterator(
-      "list1", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
-    store.putIterator(
-      "list2", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
-    store.putIterator(
-      "list3", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store.putIterator("list1", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+    store.putIterator("list2", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
+    store.putIterator("list3", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
 
     // getLocations and getBlockStatus should yield the same locations
     assert(store.master.getLocations("list1").size === 0)
@@ -997,12 +1002,9 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     assert(store.master.getBlockStatus("list3", askSlaves = true).size === 1)
 
     // This time don't tell master and see what happens. By LRU, only list5 and list6 remains.
-    store.putIterator(
-      "list4", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = false)
-    store.putIterator(
-      "list5", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = false)
-    store.putIterator(
-      "list6", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = false)
+    store.putIterator("list4", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = false)
+    store.putIterator("list5", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = false)
+    store.putIterator("list6", list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = false)
 
     // getLocations should return nothing because the master is not informed
     // getBlockStatus without asking slaves should have the same result
@@ -1023,37 +1025,30 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     val list = List.fill(2)(new Array[Byte](100))
 
     // insert some blocks
-    store.putIterator(
-      "list1", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
-    store.putIterator(
-      "list2", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
-    store.putIterator(
-      "list3", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
+    store.putIterator("list1", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
+    store.putIterator("list2", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
+    store.putIterator("list3", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
 
     // getLocations and getBlockStatus should yield the same locations
-    assert(store.master.getMatchingBlockIds(_.toString.contains("list"), askSlaves = false).size
-      === 3)
-    assert(store.master.getMatchingBlockIds(_.toString.contains("list1"), askSlaves = false).size
-      === 1)
+    assert(
+        store.master.getMatchingBlockIds(_.toString.contains("list"), askSlaves = false).size === 3)
+    assert(
+        store.master.getMatchingBlockIds(_.toString.contains("list1"), askSlaves = false).size === 1)
 
     // insert some more blocks
-    store.putIterator(
-      "newlist1", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
-    store.putIterator(
-      "newlist2", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = false)
-    store.putIterator(
-      "newlist3", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = false)
+    store.putIterator("newlist1", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = true)
+    store.putIterator("newlist2", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = false)
+    store.putIterator("newlist3", list.iterator, StorageLevel.MEMORY_AND_DISK, tellMaster = false)
 
     // getLocations and getBlockStatus should yield the same locations
-    assert(store.master.getMatchingBlockIds(_.toString.contains("newlist"), askSlaves = false).size
-      === 1)
-    assert(store.master.getMatchingBlockIds(_.toString.contains("newlist"), askSlaves = true).size
-      === 3)
+    assert(
+        store.master.getMatchingBlockIds(_.toString.contains("newlist"), askSlaves = false).size === 1)
+    assert(
+        store.master.getMatchingBlockIds(_.toString.contains("newlist"), askSlaves = true).size === 3)
 
     val blockIds = Seq(RDDBlockId(1, 0), RDDBlockId(1, 1), RDDBlockId(2, 0))
     blockIds.foreach { blockId =>
-      store.putIterator(
-        blockId, list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
+      store.putIterator(blockId, list.iterator, StorageLevel.MEMORY_ONLY, tellMaster = true)
     }
     val matchedBlockIds = store.master.getMatchingBlockIds(_ match {
       case RDDBlockId(1, _) => true
@@ -1153,17 +1148,18 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
     val maxFailuresBeforeLocationRefresh =
       conf.getInt("spark.block.failures.beforeLocationRefresh", 5)
     val mockBlockManagerMaster = mock(classOf[BlockManagerMaster])
-    val mockBlockTransferService =
-      new MockBlockTransferService(maxFailuresBeforeLocationRefresh)
+    val mockBlockTransferService = new MockBlockTransferService(maxFailuresBeforeLocationRefresh)
     // make sure we have more than maxFailuresBeforeLocationRefresh locations
     // so that we have a chance to do location refresh
-    val blockManagerIds = (0 to maxFailuresBeforeLocationRefresh)
-      .map { i => BlockManagerId(s"id-$i", s"host-$i", i + 1) }
+    val blockManagerIds = (0 to maxFailuresBeforeLocationRefresh).map { i =>
+      BlockManagerId(s"id-$i", s"host-$i", i + 1)
+    }
     when(mockBlockManagerMaster.getLocations(mc.any[BlockId])).thenReturn(blockManagerIds)
-    store = makeBlockManager(8000, "executor1", mockBlockManagerMaster,
-      transferService = Option(mockBlockTransferService))
-    val block = store.getRemoteBytes("item")
-      .asInstanceOf[Option[ByteBuffer]]
+    store = makeBlockManager(8000,
+                             "executor1",
+                             mockBlockManagerMaster,
+                             transferService = Option(mockBlockTransferService))
+    val block = store.getRemoteBytes("item").asInstanceOf[Option[ByteBuffer]]
     assert(block.isDefined)
     verify(mockBlockManagerMaster, times(2)).getLocations("item")
   }
@@ -1173,12 +1169,11 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
 
     override def init(blockDataManager: BlockDataManager): Unit = {}
 
-    override def fetchBlocks(
-        host: String,
-        port: Int,
-        execId: String,
-        blockIds: Array[String],
-        listener: BlockFetchingListener): Unit = {
+    override def fetchBlocks(host: String,
+                             port: Int,
+                             execId: String,
+                             blockIds: Array[String],
+                             listener: BlockFetchingListener): Unit = {
       listener.onBlockFetchSuccess("mockBlockId", new NioManagedBuffer(ByteBuffer.allocate(1)))
     }
 
@@ -1188,22 +1183,19 @@ class BlockManagerSuite extends SparkFunSuite with Matchers with BeforeAndAfterE
 
     override def port: Int = { 63332 }
 
-    override def uploadBlock(
-        hostname: String,
-        port: Int, execId: String,
-        blockId: BlockId,
-        blockData: ManagedBuffer,
-        level: StorageLevel,
-        classTag: ClassTag[_]): Future[Unit] = {
+    override def uploadBlock(hostname: String,
+                             port: Int,
+                             execId: String,
+                             blockId: BlockId,
+                             blockData: ManagedBuffer,
+                             level: StorageLevel,
+                             classTag: ClassTag[_]): Future[Unit] = {
       import scala.concurrent.ExecutionContext.Implicits.global
       Future {}
     }
 
     override def fetchBlockSync(
-        host: String,
-        port: Int,
-        execId: String,
-        blockId: String): ManagedBuffer = {
+        host: String, port: Int, execId: String, blockId: String): ManagedBuffer = {
       numCalls += 1
       if (numCalls <= maxFailures) {
         throw new RuntimeException("Failing block fetch in the mock block transfer service")
@@ -1218,8 +1210,7 @@ private object BlockManagerSuite {
   private implicit class BlockManagerTestUtils(store: BlockManager) {
 
     def dropFromMemoryIfExists(
-        blockId: BlockId,
-        data: () => Either[Array[Any], ChunkedByteBuffer]): Unit = {
+        blockId: BlockId, data: () => Either[Array[Any], ChunkedByteBuffer]): Unit = {
       store.blockInfoManager.lockForWriting(blockId).foreach { info =>
         val newEffectiveStorageLevel = store.dropFromMemory(blockId, data)
         if (newEffectiveStorageLevel.isValid) {
@@ -1253,5 +1244,4 @@ private object BlockManagerSuite {
       wrapGet(store.getLocalBytes)
     }
   }
-
 }

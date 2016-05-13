@@ -94,22 +94,25 @@ abstract class Expression extends TreeNode[Expression] {
    * @return [[ExprCode]]
    */
   def genCode(ctx: CodegenContext): ExprCode = {
-    ctx.subExprEliminationExprs.get(this).map { subExprState =>
-      // This expression is repeated which means that the code to evaluate it has already been added
-      // as a function before. In that case, we just re-use it.
-      val code = s"/* ${toCommentSafeString(this.toString)} */"
-      ExprCode(code, subExprState.isNull, subExprState.value)
-    }.getOrElse {
-      val isNull = ctx.freshName("isNull")
-      val value = ctx.freshName("value")
-      val ve = doGenCode(ctx, ExprCode("", isNull, value))
-      if (ve.code.nonEmpty) {
-        // Add `this` in the comment.
-        ve.copy(s"/* ${toCommentSafeString(this.toString)} */\n" + ve.code.trim)
-      } else {
-        ve
+    ctx.subExprEliminationExprs
+      .get(this)
+      .map { subExprState =>
+        // This expression is repeated which means that the code to evaluate it has already been added
+        // as a function before. In that case, we just re-use it.
+        val code = s"/* ${toCommentSafeString(this.toString)} */"
+        ExprCode(code, subExprState.isNull, subExprState.value)
       }
-    }
+      .getOrElse {
+        val isNull = ctx.freshName("isNull")
+        val value = ctx.freshName("value")
+        val ve = doGenCode(ctx, ExprCode("", isNull, value))
+        if (ve.code.nonEmpty) {
+          // Add `this` in the comment.
+          ve.copy(s"/* ${toCommentSafeString(this.toString)} */\n" + ve.code.trim)
+        } else {
+          ve
+        }
+      }
   }
 
   /**
@@ -206,7 +209,6 @@ abstract class Expression extends TreeNode[Expression] {
   }
 }
 
-
 /**
  * An expression that cannot be evaluated. Some expressions don't live past analysis or optimization
  * time (e.g. Star). This trait is used by those expressions.
@@ -220,13 +222,13 @@ trait Unevaluable extends Expression {
     throw new UnsupportedOperationException(s"Cannot evaluate expression: $this")
 }
 
-
 /**
  * An expression that gets replaced at runtime (currently by the optimizer) into a different
  * expression for evaluation. This is mainly used to provide compatibility with other databases.
  * For example, we use this to support "nvl" by replacing it with "coalesce".
  */
 trait RuntimeReplaceable extends Unevaluable {
+
   /**
    * Method for concrete implementations to override that specifies how to construct the expression
    * that should replace the current one.
@@ -247,7 +249,6 @@ trait RuntimeReplaceable extends Unevaluable {
   override def checkInputDataTypes(): TypeCheckResult = replaced.checkInputDataTypes()
 }
 
-
 /**
  * Expressions that don't have SQL representation should extend this trait.  Examples are
  * `ScalaUDF`, `ScalaUDAF`, and object expressions like `MapObjects` and `Invoke`.
@@ -259,7 +260,6 @@ trait NonSQLExpression extends Expression {
     }.toString
   }
 }
-
 
 /**
  * An expression that is nondeterministic.
@@ -285,7 +285,6 @@ trait Nondeterministic extends Expression {
   protected def evalInternal(input: InternalRow): Any
 }
 
-
 /**
  * A leaf expression, i.e. one without any child expressions.
  */
@@ -293,7 +292,6 @@ abstract class LeafExpression extends Expression {
 
   def children: Seq[Expression] = Nil
 }
-
 
 /**
  * An expression with one input and one output. The output is by default evaluated to null
@@ -340,10 +338,7 @@ abstract class UnaryExpression extends Expression {
    *
    * @param f function that accepts a variable name and returns Java code to compute the output.
    */
-  protected def defineCodeGen(
-      ctx: CodegenContext,
-      ev: ExprCode,
-      f: String => String): ExprCode = {
+  protected def defineCodeGen(ctx: CodegenContext, ev: ExprCode, f: String => String): ExprCode = {
     nullSafeCodeGen(ctx, ev, eval => {
       s"${ev.value} = ${f(eval)};"
     })
@@ -356,10 +351,7 @@ abstract class UnaryExpression extends Expression {
    * @param f function that accepts the non-null evaluation result name of child and returns Java
    *          code to compute the output.
    */
-  protected def nullSafeCodeGen(
-      ctx: CodegenContext,
-      ev: ExprCode,
-      f: String => String): ExprCode = {
+  protected def nullSafeCodeGen(ctx: CodegenContext, ev: ExprCode, f: String => String): ExprCode = {
     val childGen = child.genCode(ctx)
     val resultCode = f(childGen.value)
 
@@ -429,9 +421,7 @@ abstract class BinaryExpression extends Expression {
    * @param f accepts two variable names and returns Java code to compute the output.
    */
   protected def defineCodeGen(
-      ctx: CodegenContext,
-      ev: ExprCode,
-      f: (String, String) => String): ExprCode = {
+      ctx: CodegenContext, ev: ExprCode, f: (String, String) => String): ExprCode = {
     nullSafeCodeGen(ctx, ev, (eval1, eval2) => {
       s"${ev.value} = ${f(eval1, eval2)};"
     })
@@ -446,9 +436,7 @@ abstract class BinaryExpression extends Expression {
    *          and returns Java code to compute the output.
    */
   protected def nullSafeCodeGen(
-      ctx: CodegenContext,
-      ev: ExprCode,
-      f: (String, String) => String): ExprCode = {
+      ctx: CodegenContext, ev: ExprCode, f: (String, String) => String): ExprCode = {
     val leftGen = left.genCode(ctx)
     val rightGen = right.genCode(ctx)
     val resultCode = f(leftGen.value, rightGen.value)
@@ -462,7 +450,7 @@ abstract class BinaryExpression extends Expression {
               $resultCode
             """
           }
-      }
+        }
 
       ev.copy(code = s"""
         boolean ${ev.isNull} = true;
@@ -478,7 +466,6 @@ abstract class BinaryExpression extends Expression {
     }
   }
 }
-
 
 /**
  * A [[BinaryExpression]] that is an operator, with two properties:
@@ -507,10 +494,10 @@ abstract class BinaryOperator extends BinaryExpression with ExpectsInputTypes {
     // First check whether left and right have the same type, then check if the type is acceptable.
     if (left.dataType != right.dataType) {
       TypeCheckResult.TypeCheckFailure(s"differing types in '$sql' " +
-        s"(${left.dataType.simpleString} and ${right.dataType.simpleString}).")
+          s"(${left.dataType.simpleString} and ${right.dataType.simpleString}).")
     } else if (!inputType.acceptsType(left.dataType)) {
       TypeCheckResult.TypeCheckFailure(s"'$sql' requires ${inputType.simpleString} type," +
-        s" not ${left.dataType.simpleString}")
+          s" not ${left.dataType.simpleString}")
     } else {
       TypeCheckResult.TypeCheckSuccess
     }
@@ -518,7 +505,6 @@ abstract class BinaryOperator extends BinaryExpression with ExpectsInputTypes {
 
   override def sql: String = s"(${left.sql} $sqlOperator ${right.sql})"
 }
-
 
 private[sql] object BinaryOperator {
   def unapply(e: BinaryOperator): Option[(Expression, Expression)] = Some((e.left, e.right))
@@ -569,9 +555,7 @@ abstract class TernaryExpression extends Expression {
    * @param f accepts three variable names and returns Java code to compute the output.
    */
   protected def defineCodeGen(
-    ctx: CodegenContext,
-    ev: ExprCode,
-    f: (String, String, String) => String): ExprCode = {
+      ctx: CodegenContext, ev: ExprCode, f: (String, String, String) => String): ExprCode = {
     nullSafeCodeGen(ctx, ev, (eval1, eval2, eval3) => {
       s"${ev.value} = ${f(eval1, eval2, eval3)};"
     })
@@ -586,9 +570,7 @@ abstract class TernaryExpression extends Expression {
    *          and returns Java code to compute the output.
    */
   protected def nullSafeCodeGen(
-    ctx: CodegenContext,
-    ev: ExprCode,
-    f: (String, String, String) => String): ExprCode = {
+      ctx: CodegenContext, ev: ExprCode, f: (String, String, String) => String): ExprCode = {
     val leftGen = children(0).genCode(ctx)
     val midGen = children(1).genCode(ctx)
     val rightGen = children(2).genCode(ctx)
@@ -605,7 +587,7 @@ abstract class TernaryExpression extends Expression {
               """
             }
           }
-      }
+        }
 
       ev.copy(code = s"""
         boolean ${ev.isNull} = true;

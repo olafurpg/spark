@@ -40,20 +40,26 @@ private[ui] class AllStagesPage(parent: StagesTab) extends WebUIPage("") {
       val numFailedStages = listener.numFailedStages
       val now = System.currentTimeMillis
 
-      val activeStagesTable =
-        new StageTableBase(activeStages.sortBy(_.submissionTime).reverse,
-          parent.basePath, parent.progressListener, isFairScheduler = parent.isFairScheduler,
-          killEnabled = parent.killEnabled)
-      val pendingStagesTable =
-        new StageTableBase(pendingStages.sortBy(_.submissionTime).reverse,
-          parent.basePath, parent.progressListener, isFairScheduler = parent.isFairScheduler,
-          killEnabled = false)
+      val activeStagesTable = new StageTableBase(activeStages.sortBy(_.submissionTime).reverse,
+                                                 parent.basePath,
+                                                 parent.progressListener,
+                                                 isFairScheduler = parent.isFairScheduler,
+                                                 killEnabled = parent.killEnabled)
+      val pendingStagesTable = new StageTableBase(pendingStages.sortBy(_.submissionTime).reverse,
+                                                  parent.basePath,
+                                                  parent.progressListener,
+                                                  isFairScheduler = parent.isFairScheduler,
+                                                  killEnabled = false)
       val completedStagesTable =
-        new StageTableBase(completedStages.sortBy(_.submissionTime).reverse, parent.basePath,
-          parent.progressListener, isFairScheduler = parent.isFairScheduler, killEnabled = false)
-      val failedStagesTable =
-        new FailedStageTable(failedStages.sortBy(_.submissionTime).reverse, parent.basePath,
-          parent.progressListener, isFairScheduler = parent.isFairScheduler)
+        new StageTableBase(completedStages.sortBy(_.submissionTime).reverse,
+                           parent.basePath,
+                           parent.progressListener,
+                           isFairScheduler = parent.isFairScheduler,
+                           killEnabled = false)
+      val failedStagesTable = new FailedStageTable(failedStages.sortBy(_.submissionTime).reverse,
+                                                   parent.basePath,
+                                                   parent.progressListener,
+                                                   isFairScheduler = parent.isFairScheduler)
 
       // For now, pool information is only accessible in live UIs
       val pools = sc.map(_.getAllPools).getOrElse(Seq.empty[Schedulable])
@@ -64,14 +70,14 @@ private[ui] class AllStagesPage(parent: StagesTab) extends WebUIPage("") {
       val shouldShowCompletedStages = completedStages.nonEmpty
       val shouldShowFailedStages = failedStages.nonEmpty
 
-      val completedStageNumStr = if (numCompletedStages == completedStages.size) {
-        s"$numCompletedStages"
-      } else {
-        s"$numCompletedStages, only showing ${completedStages.size}"
-      }
+      val completedStageNumStr =
+        if (numCompletedStages == completedStages.size) {
+          s"$numCompletedStages"
+        } else {
+          s"$numCompletedStages, only showing ${completedStages.size}"
+        }
 
-      val summary: NodeSeq =
-        <div>
+      val summary: NodeSeq = <div>
           <ul class="unstyled">
             {
               if (shouldShowActiveStages) {
@@ -108,8 +114,8 @@ private[ui] class AllStagesPage(parent: StagesTab) extends WebUIPage("") {
           </ul>
         </div>
 
-      var content = summary ++
-        {
+      var content =
+        summary ++ {
           if (sc.isDefined && isFairScheduler) {
             <h4>{pools.size} Fair Scheduler Pools</h4> ++ poolTable.toNodeSeq
           } else {

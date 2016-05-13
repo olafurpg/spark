@@ -53,9 +53,8 @@ private[v1] class ApiRootResource extends UIRootFromServletContext {
   }
 
   @Path("applications/{appId}/{attemptId}/jobs")
-  def getJobs(
-      @PathParam("appId") appId: String,
-      @PathParam("attemptId") attemptId: String): AllJobsResource = {
+  def getJobs(@PathParam("appId") appId: String,
+              @PathParam("attemptId") attemptId: String): AllJobsResource = {
     uiRoot.withSparkUI(appId, Some(attemptId)) { ui =>
       new AllJobsResource(ui)
     }
@@ -76,9 +75,8 @@ private[v1] class ApiRootResource extends UIRootFromServletContext {
   }
 
   @Path("applications/{appId}/{attemptId}/jobs/{jobId: \\d+}")
-  def getJob(
-      @PathParam("appId") appId: String,
-      @PathParam("attemptId") attemptId: String): OneJobResource = {
+  def getJob(@PathParam("appId") appId: String,
+             @PathParam("attemptId") attemptId: String): OneJobResource = {
     uiRoot.withSparkUI(appId, Some(attemptId)) { ui =>
       new OneJobResource(ui)
     }
@@ -92,14 +90,12 @@ private[v1] class ApiRootResource extends UIRootFromServletContext {
   }
 
   @Path("applications/{appId}/{attemptId}/executors")
-  def getExecutors(
-      @PathParam("appId") appId: String,
-      @PathParam("attemptId") attemptId: String): ExecutorListResource = {
+  def getExecutors(@PathParam("appId") appId: String,
+                   @PathParam("attemptId") attemptId: String): ExecutorListResource = {
     uiRoot.withSparkUI(appId, Some(attemptId)) { ui =>
       new ExecutorListResource(ui)
     }
   }
-
 
   @Path("applications/{appId}/stages")
   def getStages(@PathParam("appId") appId: String): AllStagesResource = {
@@ -109,9 +105,8 @@ private[v1] class ApiRootResource extends UIRootFromServletContext {
   }
 
   @Path("applications/{appId}/{attemptId}/stages")
-  def getStages(
-      @PathParam("appId") appId: String,
-      @PathParam("attemptId") attemptId: String): AllStagesResource = {
+  def getStages(@PathParam("appId") appId: String,
+                @PathParam("attemptId") attemptId: String): AllStagesResource = {
     uiRoot.withSparkUI(appId, Some(attemptId)) { ui =>
       new AllStagesResource(ui)
     }
@@ -125,9 +120,8 @@ private[v1] class ApiRootResource extends UIRootFromServletContext {
   }
 
   @Path("applications/{appId}/{attemptId}/stages/{stageId: \\d+}")
-  def getStage(
-      @PathParam("appId") appId: String,
-      @PathParam("attemptId") attemptId: String): OneStageResource = {
+  def getStage(@PathParam("appId") appId: String,
+               @PathParam("attemptId") attemptId: String): OneStageResource = {
     uiRoot.withSparkUI(appId, Some(attemptId)) { ui =>
       new OneStageResource(ui)
     }
@@ -141,9 +135,8 @@ private[v1] class ApiRootResource extends UIRootFromServletContext {
   }
 
   @Path("applications/{appId}/{attemptId}/storage/rdd")
-  def getRdds(
-      @PathParam("appId") appId: String,
-      @PathParam("attemptId") attemptId: String): AllRDDResource = {
+  def getRdds(@PathParam("appId") appId: String,
+              @PathParam("attemptId") attemptId: String): AllRDDResource = {
     uiRoot.withSparkUI(appId, Some(attemptId)) { ui =>
       new AllRDDResource(ui)
     }
@@ -157,24 +150,21 @@ private[v1] class ApiRootResource extends UIRootFromServletContext {
   }
 
   @Path("applications/{appId}/{attemptId}/storage/rdd/{rddId: \\d+}")
-  def getRdd(
-      @PathParam("appId") appId: String,
-      @PathParam("attemptId") attemptId: String): OneRDDResource = {
+  def getRdd(@PathParam("appId") appId: String,
+             @PathParam("attemptId") attemptId: String): OneRDDResource = {
     uiRoot.withSparkUI(appId, Some(attemptId)) { ui =>
       new OneRDDResource(ui)
     }
   }
 
   @Path("applications/{appId}/logs")
-  def getEventLogs(
-      @PathParam("appId") appId: String): EventLogDownloadResource = {
+  def getEventLogs(@PathParam("appId") appId: String): EventLogDownloadResource = {
     new EventLogDownloadResource(uiRoot, appId, None)
   }
 
   @Path("applications/{appId}/{attemptId}/logs")
-  def getEventLogs(
-      @PathParam("appId") appId: String,
-      @PathParam("attemptId") attemptId: String): EventLogDownloadResource = {
+  def getEventLogs(@PathParam("appId") appId: String,
+                   @PathParam("attemptId") attemptId: String): EventLogDownloadResource = {
     new EventLogDownloadResource(uiRoot, appId, Some(attemptId))
   }
 
@@ -182,7 +172,6 @@ private[v1] class ApiRootResource extends UIRootFromServletContext {
   def getVersion(): VersionResource = {
     new VersionResource(uiRoot)
   }
-
 }
 
 private[spark] object ApiRootResource {
@@ -212,7 +201,8 @@ private[spark] trait UIRoot {
    * [[None]], event logs for all attempts of this application will be written out.
    */
   def writeEventLogs(appId: String, attemptId: Option[String], zipStream: ZipOutputStream): Unit = {
-    Response.serverError()
+    Response
+      .serverError()
       .entity("Event logs are only available through the history server.")
       .status(Response.Status.SERVICE_UNAVAILABLE)
       .build()
@@ -253,21 +243,17 @@ private[v1] trait UIRootFromServletContext {
   def uiRoot: UIRoot = UIRootFromServletContext.getUiRoot(servletContext)
 }
 
-private[v1] class NotFoundException(msg: String) extends WebApplicationException(
-  new NoSuchElementException(msg),
-    Response
-      .status(Response.Status.NOT_FOUND)
-      .entity(ErrorWrapper(msg))
-      .build()
-)
+private[v1] class NotFoundException(msg: String)
+    extends WebApplicationException(
+        new NoSuchElementException(msg),
+        Response.status(Response.Status.NOT_FOUND).entity(ErrorWrapper(msg)).build()
+    )
 
-private[v1] class BadParameterException(msg: String) extends WebApplicationException(
-  new IllegalArgumentException(msg),
-  Response
-    .status(Response.Status.BAD_REQUEST)
-    .entity(ErrorWrapper(msg))
-    .build()
-) {
+private[v1] class BadParameterException(msg: String)
+    extends WebApplicationException(
+        new IllegalArgumentException(msg),
+        Response.status(Response.Status.BAD_REQUEST).entity(ErrorWrapper(msg)).build()
+    ) {
   def this(param: String, exp: String, actual: String) = {
     this(raw"""Bad value for parameter "$param".  Expected a $exp, got "$actual"""")
   }

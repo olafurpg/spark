@@ -24,19 +24,21 @@ import org.apache.spark.ml.{Estimator, Model}
 import org.apache.spark.ml.param._
 import org.apache.spark.ml.param.shared._
 import org.apache.spark.ml.util._
-import org.apache.spark.mllib.clustering.
-  {BisectingKMeans => MLlibBisectingKMeans, BisectingKMeansModel => MLlibBisectingKMeansModel}
+import org.apache.spark.mllib.clustering.{BisectingKMeans => MLlibBisectingKMeans, BisectingKMeansModel => MLlibBisectingKMeansModel}
 import org.apache.spark.mllib.linalg.{Vector, VectorUDT}
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.apache.spark.sql.functions.{col, udf}
 import org.apache.spark.sql.types.{IntegerType, StructType}
 
-
 /**
  * Common params for BisectingKMeans and BisectingKMeansModel
  */
-private[clustering] trait BisectingKMeansParams extends Params
-  with HasMaxIter with HasFeaturesCol with HasSeed with HasPredictionCol {
+private[clustering] trait BisectingKMeansParams
+    extends Params
+    with HasMaxIter
+    with HasFeaturesCol
+    with HasSeed
+    with HasPredictionCol {
 
   /**
    * Set the number of clusters to create (k). Must be > 1. Default: 2.
@@ -52,10 +54,10 @@ private[clustering] trait BisectingKMeansParams extends Params
   /** @group expertParam */
   @Since("2.0.0")
   final val minDivisibleClusterSize = new DoubleParam(
-    this,
-    "minDivisibleClusterSize",
-    "the minimum number of points (if >= 1.0) or the minimum proportion",
-    (value: Double) => value > 0)
+      this,
+      "minDivisibleClusterSize",
+      "the minimum number of points (if >= 1.0) or the minimum proportion",
+      (value: Double) => value > 0)
 
   /** @group expertGetParam */
   @Since("2.0.0")
@@ -80,10 +82,13 @@ private[clustering] trait BisectingKMeansParams extends Params
  */
 @Since("2.0.0")
 @Experimental
-class BisectingKMeansModel private[ml] (
+class BisectingKMeansModel private[ml](
     @Since("2.0.0") override val uid: String,
     private val parentModel: MLlibBisectingKMeansModel
-  ) extends Model[BisectingKMeansModel] with BisectingKMeansParams with MLWritable {
+)
+    extends Model[BisectingKMeansModel]
+    with BisectingKMeansParams
+    with MLWritable {
 
   @Since("2.0.0")
   override def copy(extra: ParamMap): BisectingKMeansModel = {
@@ -130,8 +135,8 @@ object BisectingKMeansModel extends MLReadable[BisectingKMeansModel] {
   override def load(path: String): BisectingKMeansModel = super.load(path)
 
   /** [[MLWriter]] instance for [[BisectingKMeansModel]] */
-  private[BisectingKMeansModel]
-  class BisectingKMeansModelWriter(instance: BisectingKMeansModel) extends MLWriter {
+  private[BisectingKMeansModel] class BisectingKMeansModelWriter(instance: BisectingKMeansModel)
+      extends MLWriter {
 
     override protected def saveImpl(path: String): Unit = {
       // Save metadata and Params
@@ -175,14 +180,12 @@ object BisectingKMeansModel extends MLReadable[BisectingKMeansModel] {
  */
 @Since("2.0.0")
 @Experimental
-class BisectingKMeans @Since("2.0.0") (
-    @Since("2.0.0") override val uid: String)
-  extends Estimator[BisectingKMeansModel] with BisectingKMeansParams with DefaultParamsWritable {
+class BisectingKMeans @Since("2.0.0")(@Since("2.0.0") override val uid: String)
+    extends Estimator[BisectingKMeansModel]
+    with BisectingKMeansParams
+    with DefaultParamsWritable {
 
-  setDefault(
-    k -> 4,
-    maxIter -> 20,
-    minDivisibleClusterSize -> 1.0)
+  setDefault(k -> 4, maxIter -> 20, minDivisibleClusterSize -> 1.0)
 
   @Since("2.0.0")
   override def copy(extra: ParamMap): BisectingKMeans = defaultCopy(extra)
@@ -233,7 +236,6 @@ class BisectingKMeans @Since("2.0.0") (
     validateAndTransformSchema(schema)
   }
 }
-
 
 @Since("2.0.0")
 object BisectingKMeans extends DefaultParamsReadable[BisectingKMeans] {

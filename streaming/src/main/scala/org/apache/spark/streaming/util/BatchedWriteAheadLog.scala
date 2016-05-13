@@ -53,7 +53,8 @@ import org.apache.spark.util.{ThreadUtils, Utils}
  * All other methods of the WriteAheadLog interface will be passed on to the wrapped WriteAheadLog.
  */
 private[util] class BatchedWriteAheadLog(val wrappedLog: WriteAheadLog, conf: SparkConf)
-  extends WriteAheadLog with Logging {
+    extends WriteAheadLog
+    with Logging {
 
   import BatchedWriteAheadLog._
 
@@ -81,10 +82,11 @@ private[util] class BatchedWriteAheadLog(val wrappedLog: WriteAheadLog, conf: Sp
     }
     if (putSuccessfully) {
       ThreadUtils.awaitResult(
-        promise.future, WriteAheadLogUtils.getBatchingTimeout(conf).milliseconds)
+          promise.future, WriteAheadLogUtils.getBatchingTimeout(conf).milliseconds)
     } else {
-      throw new IllegalStateException("close() was called on BatchedWriteAheadLog before " +
-        s"write request with time $time could be fulfilled.")
+      throw new IllegalStateException(
+          "close() was called on BatchedWriteAheadLog before " +
+          s"write request with time $time could be fulfilled.")
     }
   }
 
@@ -95,7 +97,7 @@ private[util] class BatchedWriteAheadLog(val wrappedLog: WriteAheadLog, conf: Sp
    */
   override def read(segment: WriteAheadLogRecordHandle): ByteBuffer = {
     throw new UnsupportedOperationException("read() is not supported for BatchedWriteAheadLog " +
-      "as the data may require de-aggregation.")
+        "as the data may require de-aggregation.")
   }
 
   /**
@@ -115,7 +117,6 @@ private[util] class BatchedWriteAheadLog(val wrappedLog: WriteAheadLog, conf: Sp
     wrappedLog.clean(threshTime, waitForCompletion)
   }
 
-
   /**
    * Stop the batched writer thread, fulfill promises with failures and close the wrapped WAL.
    */
@@ -129,7 +130,7 @@ private[util] class BatchedWriteAheadLog(val wrappedLog: WriteAheadLog, conf: Sp
     while (!walWriteQueue.isEmpty) {
       val Record(_, time, promise) = walWriteQueue.poll()
       promise.failure(new IllegalStateException("close() was called on BatchedWriteAheadLog " +
-        s"before write request with time $time could be fulfilled."))
+              s"before write request with time $time could be fulfilled."))
     }
     wrappedLog.close()
   }
@@ -205,7 +206,7 @@ private[util] object BatchedWriteAheadLog {
   /** Aggregate multiple serialized ReceivedBlockTrackerLogEvents in a single ByteBuffer. */
   def aggregate(records: Seq[Record]): ByteBuffer = {
     ByteBuffer.wrap(Utils.serialize[Array[Array[Byte]]](
-      records.map(record => JavaUtils.bufferToArray(record.data)).toArray))
+            records.map(record => JavaUtils.bufferToArray(record.data)).toArray))
   }
 
   /**

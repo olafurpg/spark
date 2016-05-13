@@ -108,8 +108,14 @@ class GenerateUnsafeRowJoinerBitsetSuite extends SparkFunSuite {
 
   private def testBitsetsOnce(numFields1: Int, numFields2: Int): Unit = {
     info(s"num fields: $numFields1 and $numFields2")
-    val schema1 = StructType(Seq.tabulate(numFields1) { i => StructField(s"a_$i", IntegerType) })
-    val schema2 = StructType(Seq.tabulate(numFields2) { i => StructField(s"b_$i", IntegerType) })
+    val schema1 = StructType(
+        Seq.tabulate(numFields1) { i =>
+      StructField(s"a_$i", IntegerType)
+    })
+    val schema2 = StructType(
+        Seq.tabulate(numFields2) { i =>
+      StructField(s"b_$i", IntegerType)
+    })
 
     val row1 = createUnsafeRow(numFields1)
     val row2 = createUnsafeRow(numFields2)
@@ -129,9 +135,15 @@ class GenerateUnsafeRowJoinerBitsetSuite extends SparkFunSuite {
     val output = concater.join(row1, row2)
 
     def dumpDebug(): String = {
-      val set1 = Seq.tabulate(numFields1) { i => if (row1.isNullAt(i)) "1" else "0" }
-      val set2 = Seq.tabulate(numFields2) { i => if (row2.isNullAt(i)) "1" else "0" }
-      val out = Seq.tabulate(numFields1 + numFields2) { i => if (output.isNullAt(i)) "1" else "0" }
+      val set1 = Seq.tabulate(numFields1) { i =>
+        if (row1.isNullAt(i)) "1" else "0"
+      }
+      val set2 = Seq.tabulate(numFields2) { i =>
+        if (row2.isNullAt(i)) "1" else "0"
+      }
+      val out = Seq.tabulate(numFields1 + numFields2) { i =>
+        if (output.isNullAt(i)) "1" else "0"
+      }
 
       s"""
          |input1: ${set1.mkString}

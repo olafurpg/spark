@@ -59,9 +59,11 @@ class OrcHadoopFsRelationSuite extends HadoopFsRelationTest {
         StructType(dataSchema.fields :+ StructField("p1", IntegerType, nullable = true))
 
       checkQueries(
-        hiveContext.read.options(Map(
-          "path" -> file.getCanonicalPath,
-          "dataSchema" -> dataSchemaWithPartition.json)).format(dataSourceName).load())
+          hiveContext.read
+            .options(
+                Map("path" -> file.getCanonicalPath, "dataSchema" -> dataSchemaWithPartition.json))
+            .format(dataSourceName)
+            .load())
     }
   }
 
@@ -73,13 +75,11 @@ class OrcHadoopFsRelationSuite extends HadoopFsRelationTest {
         val path = s"${dir.getCanonicalPath}/table1"
         (1 to 5).map(i => (i, (i % 2).toString)).toDF("a", "b").write.orc(path)
 
-        checkAnswer(
-          spark.read.orc(path).where("not (a = 2) or not(b in ('1'))"),
-          (1 to 5).map(i => Row(i, (i % 2).toString)))
+        checkAnswer(spark.read.orc(path).where("not (a = 2) or not(b in ('1'))"),
+                    (1 to 5).map(i => Row(i, (i % 2).toString)))
 
-        checkAnswer(
-          spark.read.orc(path).where("not (a = 2 and b in ('1'))"),
-          (1 to 5).map(i => Row(i, (i % 2).toString)))
+        checkAnswer(spark.read.orc(path).where("not (a = 2 and b in ('1'))"),
+                    (1 to 5).map(i => Row(i, (i % 2).toString)))
       }
     }
   }
@@ -88,9 +88,7 @@ class OrcHadoopFsRelationSuite extends HadoopFsRelationTest {
     withTempPath { dir =>
       val path = s"${dir.getCanonicalPath}/table1"
       val df = (1 to 5).map(i => (i, (i % 2).toString)).toDF("a", "b")
-      df.write
-        .option("compression", "ZlIb")
-        .orc(path)
+      df.write.option("compression", "ZlIb").orc(path)
 
       // Check if this is compressed as ZLIB.
       val conf = spark.sessionState.newHadoopConf()
@@ -98,21 +96,17 @@ class OrcHadoopFsRelationSuite extends HadoopFsRelationTest {
       val maybeOrcFile = new File(path).listFiles().find(_.getName.endsWith(".zlib.orc"))
       assert(maybeOrcFile.isDefined)
       val orcFilePath = maybeOrcFile.get.toPath.toString
-      val expectedCompressionKind =
-        OrcFileOperator.getFileReader(orcFilePath).get.getCompression
+      val expectedCompressionKind = OrcFileOperator.getFileReader(orcFilePath).get.getCompression
       assert("ZLIB" === expectedCompressionKind.name())
 
-      val copyDf = spark
-        .read
-        .orc(path)
+      val copyDf = spark.read.orc(path)
       checkAnswer(df, copyDf)
     }
   }
 
   test("Default compression codec is snappy for ORC compression") {
     withTempPath { file =>
-      spark.range(0, 10).write
-        .orc(file.getCanonicalPath)
+      spark.range(0, 10).write.orc(file.getCanonicalPath)
       val expectedCompressionKind =
         OrcFileOperator.getFileReader(file.getCanonicalPath).get.getCompression
       assert("SNAPPY" === expectedCompressionKind.name())

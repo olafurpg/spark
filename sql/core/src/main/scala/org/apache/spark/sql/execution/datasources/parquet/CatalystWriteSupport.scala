@@ -85,8 +85,7 @@ private[parquet] class CatalystWriteSupport extends WriteSupport[InternalRow] wi
     val messageType = new CatalystSchemaConverter(configuration).convert(schema)
     val metadata = Map(CatalystReadSupport.SPARK_METADATA_KEY -> schemaString).asJava
 
-    logInfo(
-      s"""Initialized Parquet WriteSupport with Catalyst schema:
+    logInfo(s"""Initialized Parquet WriteSupport with Catalyst schema:
          |${schema.prettyJson}
          |and corresponding Parquet message type:
          |$messageType
@@ -124,55 +123,56 @@ private[parquet] class CatalystWriteSupport extends WriteSupport[InternalRow] wi
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addBoolean(row.getBoolean(ordinal))
 
-      case ByteType =>
+        case ByteType =>
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addInteger(row.getByte(ordinal))
 
-      case ShortType =>
+        case ShortType =>
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addInteger(row.getShort(ordinal))
 
-      case IntegerType | DateType =>
+        case IntegerType | DateType =>
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addInteger(row.getInt(ordinal))
 
-      case LongType =>
+        case LongType =>
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addLong(row.getLong(ordinal))
 
-      case FloatType =>
+        case FloatType =>
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addFloat(row.getFloat(ordinal))
 
-      case DoubleType =>
+        case DoubleType =>
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addDouble(row.getDouble(ordinal))
 
-      case StringType =>
+        case StringType =>
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addBinary(Binary.fromByteArray(row.getUTF8String(ordinal).getBytes))
 
-      case TimestampType =>
-        (row: SpecializedGetters, ordinal: Int) => {
-          // TODO Writes `TimestampType` values as `TIMESTAMP_MICROS` once parquet-mr implements it
-          // Currently we only support timestamps stored as INT96, which is compatible with Hive
-          // and Impala.  However, INT96 is to be deprecated.  We plan to support `TIMESTAMP_MICROS`
-          // defined in the parquet-format spec.  But up until writing, the most recent parquet-mr
-          // version (1.8.1) hasn't implemented it yet.
+        case TimestampType =>
+        (row: SpecializedGetters, ordinal: Int) =>
+          {
+            // TODO Writes `TimestampType` values as `TIMESTAMP_MICROS` once parquet-mr implements it
+            // Currently we only support timestamps stored as INT96, which is compatible with Hive
+            // and Impala.  However, INT96 is to be deprecated.  We plan to support `TIMESTAMP_MICROS`
+            // defined in the parquet-format spec.  But up until writing, the most recent parquet-mr
+            // version (1.8.1) hasn't implemented it yet.
 
-          // NOTE: Starting from Spark 1.5, Spark SQL `TimestampType` only has microsecond
-          // precision.  Nanosecond parts of timestamp values read from INT96 are simply stripped.
-          val (julianDay, timeOfDayNanos) = DateTimeUtils.toJulianDay(row.getLong(ordinal))
-          val buf = ByteBuffer.wrap(timestampBuffer)
-          buf.order(ByteOrder.LITTLE_ENDIAN).putLong(timeOfDayNanos).putInt(julianDay)
-          recordConsumer.addBinary(Binary.fromByteArray(timestampBuffer))
-        }
+            // NOTE: Starting from Spark 1.5, Spark SQL `TimestampType` only has microsecond
+            // precision.  Nanosecond parts of timestamp values read from INT96 are simply stripped.
+            val (julianDay, timeOfDayNanos) = DateTimeUtils.toJulianDay(row.getLong(ordinal))
+            val buf = ByteBuffer.wrap(timestampBuffer)
+            buf.order(ByteOrder.LITTLE_ENDIAN).putLong(timeOfDayNanos).putInt(julianDay)
+            recordConsumer.addBinary(Binary.fromByteArray(timestampBuffer))
+          }
 
-      case BinaryType =>
+        case BinaryType =>
         (row: SpecializedGetters, ordinal: Int) =>
           recordConsumer.addBinary(Binary.fromByteArray(row.getBinary(ordinal)))
 
-      case DecimalType.Fixed(precision, scale) =>
+        case DecimalType.Fixed(precision, scale) =>
         makeDecimalWriter(precision, scale)
 
       case t: StructType =>
@@ -182,7 +182,7 @@ private[parquet] class CatalystWriteSupport extends WriteSupport[InternalRow] wi
             writeFields(row.getStruct(ordinal, t.length), t, fieldWriters)
           }
 
-      case t: ArrayType => makeArrayWriter(t)
+        case t: ArrayType => makeArrayWriter(t)
 
       case t: MapType => makeMapWriter(t)
 
@@ -194,47 +194,43 @@ private[parquet] class CatalystWriteSupport extends WriteSupport[InternalRow] wi
   }
 
   private def makeDecimalWriter(precision: Int, scale: Int): ValueWriter = {
-    assert(
-      precision <= DecimalType.MAX_PRECISION,
-      s"Decimal precision $precision exceeds max precision ${DecimalType.MAX_PRECISION}")
+    assert(precision <= DecimalType.MAX_PRECISION,
+           s"Decimal precision $precision exceeds max precision ${DecimalType.MAX_PRECISION}")
 
     val numBytes = minBytesForPrecision(precision)
 
-    val int32Writer =
-      (row: SpecializedGetters, ordinal: Int) => {
-        val unscaledLong = row.getDecimal(ordinal, precision, scale).toUnscaledLong
-        recordConsumer.addInteger(unscaledLong.toInt)
+    val int32Writer = (row: SpecializedGetters, ordinal: Int) => {
+      val unscaledLong = row.getDecimal(ordinal, precision, scale).toUnscaledLong
+      recordConsumer.addInteger(unscaledLong.toInt)
+    }
+
+    val int64Writer = (row: SpecializedGetters, ordinal: Int) => {
+      val unscaledLong = row.getDecimal(ordinal, precision, scale).toUnscaledLong
+      recordConsumer.addLong(unscaledLong)
+    }
+
+    val binaryWriterUsingUnscaledLong = (row: SpecializedGetters, ordinal: Int) => {
+      // When the precision is low enough (<= 18) to squeeze the decimal value into a `Long`, we
+      // can build a fixed-length byte array with length `numBytes` using the unscaled `Long`
+      // value and the `decimalBuffer` for better performance.
+      val unscaled = row.getDecimal(ordinal, precision, scale).toUnscaledLong
+      var i = 0
+      var shift = 8 * (numBytes - 1)
+
+      while (i < numBytes) {
+        decimalBuffer(i) = (unscaled >> shift).toByte
+        i += 1
+        shift -= 8
       }
 
-    val int64Writer =
-      (row: SpecializedGetters, ordinal: Int) => {
-        val unscaledLong = row.getDecimal(ordinal, precision, scale).toUnscaledLong
-        recordConsumer.addLong(unscaledLong)
-      }
+      recordConsumer.addBinary(Binary.fromByteArray(decimalBuffer, 0, numBytes))
+    }
 
-    val binaryWriterUsingUnscaledLong =
-      (row: SpecializedGetters, ordinal: Int) => {
-        // When the precision is low enough (<= 18) to squeeze the decimal value into a `Long`, we
-        // can build a fixed-length byte array with length `numBytes` using the unscaled `Long`
-        // value and the `decimalBuffer` for better performance.
-        val unscaled = row.getDecimal(ordinal, precision, scale).toUnscaledLong
-        var i = 0
-        var shift = 8 * (numBytes - 1)
-
-        while (i < numBytes) {
-          decimalBuffer(i) = (unscaled >> shift).toByte
-          i += 1
-          shift -= 8
-        }
-
-        recordConsumer.addBinary(Binary.fromByteArray(decimalBuffer, 0, numBytes))
-      }
-
-    val binaryWriterUsingUnscaledBytes =
-      (row: SpecializedGetters, ordinal: Int) => {
-        val decimal = row.getDecimal(ordinal, precision, scale)
-        val bytes = decimal.toJavaBigDecimal.unscaledValue().toByteArray
-        val fixedLengthBytes = if (bytes.length == numBytes) {
+    val binaryWriterUsingUnscaledBytes = (row: SpecializedGetters, ordinal: Int) => {
+      val decimal = row.getDecimal(ordinal, precision, scale)
+      val bytes = decimal.toJavaBigDecimal.unscaledValue().toByteArray
+      val fixedLengthBytes =
+        if (bytes.length == numBytes) {
           // If the length of the underlying byte array of the unscaled `BigInteger` happens to be
           // `numBytes`, just reuse it, so that we don't bother copying it to `decimalBuffer`.
           bytes
@@ -248,8 +244,8 @@ private[parquet] class CatalystWriteSupport extends WriteSupport[InternalRow] wi
           decimalBuffer
         }
 
-        recordConsumer.addBinary(Binary.fromByteArray(fixedLengthBytes, 0, numBytes))
-      }
+      recordConsumer.addBinary(Binary.fromByteArray(fixedLengthBytes, 0, numBytes))
+    }
 
     writeLegacyParquetFormat match {
       // Standard mode, 1 <= precision <= 9, writes as INT32
@@ -349,59 +345,61 @@ private[parquet] class CatalystWriteSupport extends WriteSupport[InternalRow] wi
   private def makeMapWriter(mapType: MapType): ValueWriter = {
     val keyWriter = makeWriter(mapType.keyType)
     val valueWriter = makeWriter(mapType.valueType)
-    val repeatedGroupName = if (writeLegacyParquetFormat) {
-      // Legacy mode:
-      //
-      //   <map-repetition> group <name> (MAP) {
-      //     repeated group map (MAP_KEY_VALUE) {
-      //                    ^~~  repeatedGroupName
-      //       required <key-type> key;
-      //       <value-repetition> <value-type> value;
-      //     }
-      //   }
-      "map"
-    } else {
-      // Standard mode:
-      //
-      //   <map-repetition> group <name> (MAP) {
-      //     repeated group key_value {
-      //                    ^~~~~~~~~  repeatedGroupName
-      //       required <key-type> key;
-      //       <value-repetition> <value-type> value;
-      //     }
-      //   }
-      "key_value"
-    }
+    val repeatedGroupName =
+      if (writeLegacyParquetFormat) {
+        // Legacy mode:
+        //
+        //   <map-repetition> group <name> (MAP) {
+        //     repeated group map (MAP_KEY_VALUE) {
+        //                    ^~~  repeatedGroupName
+        //       required <key-type> key;
+        //       <value-repetition> <value-type> value;
+        //     }
+        //   }
+        "map"
+      } else {
+        // Standard mode:
+        //
+        //   <map-repetition> group <name> (MAP) {
+        //     repeated group key_value {
+        //                    ^~~~~~~~~  repeatedGroupName
+        //       required <key-type> key;
+        //       <value-repetition> <value-type> value;
+        //     }
+        //   }
+        "key_value"
+      }
 
-    (row: SpecializedGetters, ordinal: Int) => {
-      val map = row.getMap(ordinal)
-      val keyArray = map.keyArray()
-      val valueArray = map.valueArray()
+    (row: SpecializedGetters, ordinal: Int) =>
+      {
+        val map = row.getMap(ordinal)
+        val keyArray = map.keyArray()
+        val valueArray = map.valueArray()
 
-      consumeGroup {
-        // Only creates the repeated field if the map is non-empty.
-        if (map.numElements() > 0) {
-          consumeField(repeatedGroupName, 0) {
-            var i = 0
-            while (i < map.numElements()) {
-              consumeGroup {
-                consumeField("key", 0) {
-                  keyWriter.apply(keyArray, i)
-                }
+        consumeGroup {
+          // Only creates the repeated field if the map is non-empty.
+          if (map.numElements() > 0) {
+            consumeField(repeatedGroupName, 0) {
+              var i = 0
+              while (i < map.numElements()) {
+                consumeGroup {
+                  consumeField("key", 0) {
+                    keyWriter.apply(keyArray, i)
+                  }
 
-                // Only creates the "value" field if the value if non-empty
-                if (!map.valueArray().isNullAt(i)) {
-                  consumeField("value", 1) {
-                    valueWriter.apply(valueArray, i)
+                  // Only creates the "value" field if the value if non-empty
+                  if (!map.valueArray().isNullAt(i)) {
+                    consumeField("value", 1) {
+                      valueWriter.apply(valueArray, i)
+                    }
                   }
                 }
+                i += 1
               }
-              i += 1
             }
           }
         }
       }
-    }
   }
 
   private def consumeMessage(f: => Unit): Unit = {
@@ -430,7 +428,6 @@ private[parquet] object CatalystWriteSupport {
     schema.map(_.name).foreach(CatalystSchemaConverter.checkFieldName)
     configuration.set(SPARK_ROW_SCHEMA, schema.json)
     configuration.setIfUnset(
-      ParquetOutputFormat.WRITER_VERSION,
-      ParquetProperties.WriterVersion.PARQUET_1_0.toString)
+        ParquetOutputFormat.WRITER_VERSION, ParquetProperties.WriterVersion.PARQUET_1_0.toString)
   }
 }

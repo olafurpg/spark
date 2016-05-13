@@ -21,17 +21,13 @@ import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
-
-case class CacheTableCommand(
-  tableName: String,
-  plan: Option[LogicalPlan],
-  isLazy: Boolean)
-  extends RunnableCommand {
+case class CacheTableCommand(tableName: String, plan: Option[LogicalPlan], isLazy: Boolean)
+    extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     plan.foreach { logicalPlan =>
       sparkSession.createTempView(
-        tableName, Dataset.ofRows(sparkSession, logicalPlan), replaceIfExists = true)
+          tableName, Dataset.ofRows(sparkSession, logicalPlan), replaceIfExists = true)
     }
     sparkSession.catalog.cacheTable(tableName)
 
@@ -45,7 +41,6 @@ case class CacheTableCommand(
 
   override def output: Seq[Attribute] = Seq.empty
 }
-
 
 case class UncacheTableCommand(tableName: String) extends RunnableCommand {
 

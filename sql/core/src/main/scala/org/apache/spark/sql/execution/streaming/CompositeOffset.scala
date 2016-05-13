@@ -23,6 +23,7 @@ package org.apache.spark.sql.execution.streaming
  * vector clock that must progress linearly forward.
  */
 case class CompositeOffset(offsets: Seq[Option[Offset]]) extends Offset {
+
   /**
    * Returns a negative integer, zero, or a positive integer as this object is less than, equal to,
    * or greater than the specified object.
@@ -37,11 +38,11 @@ case class CompositeOffset(offsets: Seq[Option[Offset]]) extends Offset {
       }
       val nonZeroSigns = comparisons.map(sign).filter(_ != 0).toSet
       nonZeroSigns.size match {
-        case 0 => 0                       // if both empty or only 0s
-        case 1 => nonZeroSigns.head       // if there are only (0s and 1s) or (0s and -1s)
-        case _ =>                         // there are both 1s and -1s
+        case 0 => 0 // if both empty or only 0s
+        case 1 => nonZeroSigns.head // if there are only (0s and 1s) or (0s and -1s)
+        case _ => // there are both 1s and -1s
           throw new IllegalArgumentException(
-            s"Invalid comparison between non-linear histories: $this <=> $other")
+              s"Invalid comparison between non-linear histories: $this <=> $other")
       }
     case _ =>
       throw new IllegalArgumentException(s"Cannot compare $this <=> $other")
@@ -70,6 +71,7 @@ case class CompositeOffset(offsets: Seq[Option[Offset]]) extends Offset {
 }
 
 object CompositeOffset {
+
   /**
    * Returns a [[CompositeOffset]] with a variable sequence of offsets.
    * `nulls` in the sequence are converted to `None`s.

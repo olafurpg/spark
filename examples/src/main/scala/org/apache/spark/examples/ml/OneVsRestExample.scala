@@ -33,27 +33,20 @@ import org.apache.spark.sql.SparkSession
  * ./bin/run-example ml.OneVsRestExample
  * }}}
  */
-
 object OneVsRestExample {
   def main(args: Array[String]) {
-    val spark = SparkSession
-      .builder
-      .appName(s"OneVsRestExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName(s"OneVsRestExample").getOrCreate()
 
     // $example on$
     // load data file.
-    val inputData: DataFrame = spark.read.format("libsvm")
-      .load("data/mllib/sample_multiclass_classification_data.txt")
+    val inputData: DataFrame =
+      spark.read.format("libsvm").load("data/mllib/sample_multiclass_classification_data.txt")
 
     // generate the train/test split.
     val Array(train, test) = inputData.randomSplit(Array(0.8, 0.2))
 
     // instantiate the base classifier
-    val classifier = new LogisticRegression()
-      .setMaxIter(10)
-      .setTol(1E-6)
-      .setFitIntercept(true)
+    val classifier = new LogisticRegression().setMaxIter(10).setTol(1E-6).setFitIntercept(true)
 
     // instantiate the One Vs Rest Classifier.
     val ovr = new OneVsRest().setClassifier(classifier)
@@ -65,8 +58,7 @@ object OneVsRestExample {
     val predictions = ovrModel.transform(test)
 
     // obtain evaluator.
-    val evaluator = new MulticlassClassificationEvaluator()
-      .setMetricName("precision")
+    val evaluator = new MulticlassClassificationEvaluator().setMetricName("precision")
 
     // compute the classification error on test data.
     val precision = evaluator.evaluate(predictions)
@@ -75,6 +67,5 @@ object OneVsRestExample {
 
     spark.stop()
   }
-
 }
 // scalastyle:on println

@@ -27,42 +27,61 @@ import org.apache.spark.sql.types.{BinaryType, StructField, StructType}
 /**
  * A function wrapper that applies the given R function to each partition.
  */
-private[sql] case class MapPartitionsRWrapper(
-    func: Array[Byte],
-    packageNames: Array[Byte],
-    broadcastVars: Array[Broadcast[Object]],
-    inputSchema: StructType,
-    outputSchema: StructType) extends (Iterator[Any] => Iterator[Any]) {
+private[sql] case class MapPartitionsRWrapper(func: Array[Byte],
+                                              packageNames: Array[Byte],
+                                              broadcastVars: Array[Broadcast[Object]],
+                                              inputSchema: StructType,
+                                              outputSchema: StructType)
+    extends (Iterator[Any] => Iterator[Any]) {
   def apply(iter: Iterator[Any]): Iterator[Any] = {
     // If the content of current DataFrame is serialized R data?
-    val isSerializedRData =
-      if (inputSchema == SERIALIZED_R_DATA_SCHEMA) true else false
+    val isSerializedRData = if (inputSchema == SERIALIZED_R_DATA_SCHEMA) true else false
 
     val (newIter, deserializer, colNames) =
       if (!isSerializedRData) {
         // Serialize each row into an byte array that can be deserialized in the R worker
-        (iter.asInstanceOf[Iterator[Row]].map {row => rowToRBytes(row)},
-         SerializationFormats.ROW, inputSchema.fieldNames)
+        (iter
+           .asInstanceOf[Iterator[Row]]
+           .map { row =>
+             rowToRBytes(row)
+           },
+         SerializationFormats.ROW,
+         inputSchema.fieldNames)
       } else {
-        (iter.asInstanceOf[Iterator[Row]].map { row => row(0) }, SerializationFormats.BYTE, null)
+        (iter
+           .asInstanceOf[Iterator[Row]]
+           .map { row =>
+             row(0)
+           },
+         SerializationFormats.BYTE,
+         null)
       }
 
-    val serializer = if (outputSchema != SERIALIZED_R_DATA_SCHEMA) {
-      SerializationFormats.ROW
-    } else {
-      SerializationFormats.BYTE
-    }
+    val serializer =
+      if (outputSchema != SERIALIZED_R_DATA_SCHEMA) {
+        SerializationFormats.ROW
+      } else {
+        SerializationFormats.BYTE
+      }
 
-    val runner = new RRunner[Array[Byte]](
-      func, deserializer, serializer, packageNames, broadcastVars,
-      isDataFrame = true, colNames = colNames)
+    val runner = new RRunner[Array[Byte]](func,
+                                          deserializer,
+                                          serializer,
+                                          packageNames,
+                                          broadcastVars,
+                                          isDataFrame = true,
+                                          colNames = colNames)
     // Partition index is ignored. Dataset has no support for mapPartitionsWithIndex.
     val outputIter = runner.compute(newIter, -1)
 
     if (serializer == SerializationFormats.ROW) {
-      outputIter.map { bytes => bytesToRow(bytes, outputSchema) }
+      outputIter.map { bytes =>
+        bytesToRow(bytes, outputSchema)
+      }
     } else {
-      outputIter.map { bytes => Row.fromSeq(Seq(bytes)) }
+      outputIter.map { bytes =>
+        Row.fromSeq(Seq(bytes))
+      }
     }
   }
 }

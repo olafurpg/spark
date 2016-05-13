@@ -35,7 +35,6 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.SQLTestUtils
 import org.apache.spark.sql.types._
 
-
 abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with TestHiveSingleton {
   import spark.implicits._
 
@@ -43,107 +42,110 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
 
   protected def supportsDataType(dataType: DataType): Boolean = true
 
-  val dataSchema =
-    StructType(
-      Seq(
-        StructField("a", IntegerType, nullable = false),
-        StructField("b", StringType, nullable = false)))
+  val dataSchema = StructType(
+      Seq(StructField("a", IntegerType, nullable = false),
+          StructField("b", StringType, nullable = false)))
 
   lazy val testDF = (1 to 3).map(i => (i, s"val_$i")).toDF("a", "b")
 
   lazy val partitionedTestDF1 = (for {
-    i <- 1 to 3
-    p2 <- Seq("foo", "bar")
-  } yield (i, s"val_$i", 1, p2)).toDF("a", "b", "p1", "p2")
+                                   i <- 1 to 3
+                                   p2 <- Seq("foo", "bar")
+                                 } yield (i, s"val_$i", 1, p2)).toDF("a", "b", "p1", "p2")
 
   lazy val partitionedTestDF2 = (for {
-    i <- 1 to 3
-    p2 <- Seq("foo", "bar")
-  } yield (i, s"val_$i", 2, p2)).toDF("a", "b", "p1", "p2")
+                                   i <- 1 to 3
+                                   p2 <- Seq("foo", "bar")
+                                 } yield (i, s"val_$i", 2, p2)).toDF("a", "b", "p1", "p2")
 
   lazy val partitionedTestDF = partitionedTestDF1.union(partitionedTestDF2)
 
   def checkQueries(df: DataFrame): Unit = {
     // Selects everything
-    checkAnswer(
-      df,
-      for (i <- 1 to 3; p1 <- 1 to 2; p2 <- Seq("foo", "bar")) yield Row(i, s"val_$i", p1, p2))
+    checkAnswer(df,
+                for (i <- 1 to 3; p1 <- 1 to 2; p2 <- Seq("foo", "bar")) yield
+                  Row(i, s"val_$i", p1, p2))
 
     // Simple filtering and partition pruning
-    checkAnswer(
-      df.filter('a > 1 && 'p1 === 2),
-      for (i <- 2 to 3; p2 <- Seq("foo", "bar")) yield Row(i, s"val_$i", 2, p2))
+    checkAnswer(df.filter('a > 1 && 'p1 === 2),
+                for (i <- 2 to 3; p2 <- Seq("foo", "bar")) yield Row(i, s"val_$i", 2, p2))
 
     // Simple projection and filtering
-    checkAnswer(
-      df.filter('a > 1).select('b, 'a + 1),
-      for (i <- 2 to 3; _ <- 1 to 2; _ <- Seq("foo", "bar")) yield Row(s"val_$i", i + 1))
+    checkAnswer(df.filter('a > 1).select('b, 'a + 1),
+                for (i <- 2 to 3; _ <- 1 to 2; _ <- Seq("foo", "bar")) yield Row(s"val_$i", i + 1))
 
     // Simple projection and partition pruning
-    checkAnswer(
-      df.filter('a > 1 && 'p1 < 2).select('b, 'p1),
-      for (i <- 2 to 3; _ <- Seq("foo", "bar")) yield Row(s"val_$i", 1))
+    checkAnswer(df.filter('a > 1 && 'p1 < 2).select('b, 'p1),
+                for (i <- 2 to 3; _ <- Seq("foo", "bar")) yield Row(s"val_$i", 1))
 
     // Project many copies of columns with different types (reproduction for SPARK-7858)
-    checkAnswer(
-      df.filter('a > 1 && 'p1 < 2).select('b, 'b, 'b, 'b, 'p1, 'p1, 'p1, 'p1),
-      for (i <- 2 to 3; _ <- Seq("foo", "bar"))
-        yield Row(s"val_$i", s"val_$i", s"val_$i", s"val_$i", 1, 1, 1, 1))
+    checkAnswer(df.filter('a > 1 && 'p1 < 2).select('b, 'b, 'b, 'b, 'p1, 'p1, 'p1, 'p1),
+                for (i <- 2 to 3; _ <- Seq("foo", "bar")) yield
+                  Row(s"val_$i", s"val_$i", s"val_$i", s"val_$i", 1, 1, 1, 1))
 
     // Self-join
     df.registerTempTable("t")
     withTempTable("t") {
-      checkAnswer(
-        sql(
-          """SELECT l.a, r.b, l.p1, r.p2
+      checkAnswer(sql("""SELECT l.a, r.b, l.p1, r.p2
             |FROM t l JOIN t r
             |ON l.a = r.a AND l.p1 = r.p1 AND l.p2 = r.p2
           """.stripMargin),
-        for (i <- 1 to 3; p1 <- 1 to 2; p2 <- Seq("foo", "bar")) yield Row(i, s"val_$i", p1, p2))
+                  for (i <- 1 to 3; p1 <- 1 to 2; p2 <- Seq("foo", "bar")) yield
+                    Row(i, s"val_$i", p1, p2))
     }
   }
 
   private val supportedDataTypes = Seq(
-    StringType, BinaryType,
-    NullType, BooleanType,
-    ByteType, ShortType, IntegerType, LongType,
-    FloatType, DoubleType, DecimalType(25, 5), DecimalType(6, 5),
-    DateType, TimestampType,
-    ArrayType(IntegerType),
-    MapType(StringType, LongType),
-    new StructType()
-      .add("f1", FloatType, nullable = true)
-      .add("f2", ArrayType(BooleanType, containsNull = true), nullable = true),
-    new UDT.MyDenseVectorUDT()
+      StringType,
+      BinaryType,
+      NullType,
+      BooleanType,
+      ByteType,
+      ShortType,
+      IntegerType,
+      LongType,
+      FloatType,
+      DoubleType,
+      DecimalType(25, 5),
+      DecimalType(6, 5),
+      DateType,
+      TimestampType,
+      ArrayType(IntegerType),
+      MapType(StringType, LongType),
+      new StructType()
+        .add("f1", FloatType, nullable = true)
+        .add("f2", ArrayType(BooleanType, containsNull = true), nullable = true),
+      new UDT.MyDenseVectorUDT()
   ).filter(supportsDataType)
 
   for (dataType <- supportedDataTypes) {
     for (parquetDictionaryEncodingEnabled <- Seq(true, false)) {
       test(s"test all data types - $dataType with parquet.enable.dictionary = " +
-        s"$parquetDictionaryEncodingEnabled") {
+          s"$parquetDictionaryEncodingEnabled") {
 
         val extraOptions = Map[String, String](
-          "parquet.enable.dictionary" -> parquetDictionaryEncodingEnabled.toString
+            "parquet.enable.dictionary" -> parquetDictionaryEncodingEnabled.toString
         )
 
         withTempPath { file =>
           val path = file.getCanonicalPath
 
-          val dataGenerator = RandomDataGenerator.forType(
-            dataType = dataType,
-            nullable = true,
-            new Random(System.nanoTime())
-          ).getOrElse {
-            fail(s"Failed to create data generator for schema $dataType")
-          }
+          val dataGenerator = RandomDataGenerator
+            .forType(
+                dataType = dataType,
+                nullable = true,
+                new Random(System.nanoTime())
+            )
+            .getOrElse {
+              fail(s"Failed to create data generator for schema $dataType")
+            }
 
           // Create a DF for the schema with random data. The index field is used to sort the
           // DataFrame.  This is a workaround for SPARK-10591.
           val schema = new StructType()
             .add("index", IntegerType, nullable = false)
             .add("col", dataType, nullable = true)
-          val rdd =
-            spark.sparkContext.parallelize((1 to 10).map(i => Row(i, dataGenerator())))
+          val rdd = spark.sparkContext.parallelize((1 to 10).map(i => Row(i, dataGenerator())))
           val df = spark.createDataFrame(rdd, schema).orderBy("index").coalesce(1)
 
           df.write
@@ -153,8 +155,7 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
             .options(extraOptions)
             .save(path)
 
-          val loadedDF = spark
-            .read
+          val loadedDF = spark.read
             .format(dataSourceName)
             .option("dataSchema", df.schema.json)
             .schema(df.schema)
@@ -173,12 +174,12 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
       testDF.write.mode(SaveMode.Overwrite).format(dataSourceName).save(file.getCanonicalPath)
       testDF.write.mode(SaveMode.Overwrite).format(dataSourceName).save(file.getCanonicalPath)
 
-      checkAnswer(
-        spark.read.format(dataSourceName)
-          .option("path", file.getCanonicalPath)
-          .option("dataSchema", dataSchema.json)
-          .load(),
-        testDF.collect())
+      checkAnswer(spark.read
+                    .format(dataSourceName)
+                    .option("path", file.getCanonicalPath)
+                    .option("dataSchema", dataSchema.json)
+                    .load(),
+                  testDF.collect())
     }
   }
 
@@ -187,18 +188,22 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
       testDF.write.mode(SaveMode.Overwrite).format(dataSourceName).save(file.getCanonicalPath)
       testDF.write.mode(SaveMode.Append).format(dataSourceName).save(file.getCanonicalPath)
 
-      checkAnswer(
-        spark.read.format(dataSourceName)
-          .option("dataSchema", dataSchema.json)
-          .load(file.getCanonicalPath).orderBy("a"),
-        testDF.union(testDF).orderBy("a").collect())
+      checkAnswer(spark.read
+                    .format(dataSourceName)
+                    .option("dataSchema", dataSchema.json)
+                    .load(file.getCanonicalPath)
+                    .orderBy("a"),
+                  testDF.union(testDF).orderBy("a").collect())
     }
   }
 
   test("save()/load() - non-partitioned table - ErrorIfExists") {
     withTempDir { file =>
       intercept[AnalysisException] {
-        testDF.write.format(dataSourceName).mode(SaveMode.ErrorIfExists).save(file.getCanonicalPath)
+        testDF.write
+          .format(dataSourceName)
+          .mode(SaveMode.ErrorIfExists)
+          .save(file.getCanonicalPath)
       }
     }
   }
@@ -221,10 +226,10 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
         .partitionBy("p1", "p2")
         .save(file.getCanonicalPath)
 
-      checkQueries(
-        spark.read.format(dataSourceName)
-          .option("dataSchema", dataSchema.json)
-          .load(file.getCanonicalPath))
+      checkQueries(spark.read
+            .format(dataSourceName)
+            .option("dataSchema", dataSchema.json)
+            .load(file.getCanonicalPath))
     }
   }
 
@@ -242,11 +247,11 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
         .partitionBy("p1", "p2")
         .save(file.getCanonicalPath)
 
-      checkAnswer(
-        spark.read.format(dataSourceName)
-          .option("dataSchema", dataSchema.json)
-          .load(file.getCanonicalPath),
-        partitionedTestDF.collect())
+      checkAnswer(spark.read
+                    .format(dataSourceName)
+                    .option("dataSchema", dataSchema.json)
+                    .load(file.getCanonicalPath),
+                  partitionedTestDF.collect())
     }
   }
 
@@ -264,11 +269,11 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
         .partitionBy("p1", "p2")
         .save(file.getCanonicalPath)
 
-      checkAnswer(
-        spark.read.format(dataSourceName)
-          .option("dataSchema", dataSchema.json)
-          .load(file.getCanonicalPath),
-        partitionedTestDF.union(partitionedTestDF).collect())
+      checkAnswer(spark.read
+                    .format(dataSourceName)
+                    .option("dataSchema", dataSchema.json)
+                    .load(file.getCanonicalPath),
+                  partitionedTestDF.union(partitionedTestDF).collect())
     }
   }
 
@@ -286,11 +291,11 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
         .partitionBy("p1", "p2")
         .save(file.getCanonicalPath)
 
-      checkAnswer(
-        spark.read.format(dataSourceName)
-          .option("dataSchema", dataSchema.json)
-          .load(file.getCanonicalPath),
-        partitionedTestDF.collect())
+      checkAnswer(spark.read
+                    .format(dataSourceName)
+                    .option("dataSchema", dataSchema.json)
+                    .load(file.getCanonicalPath),
+                  partitionedTestDF.collect())
     }
   }
 
@@ -309,7 +314,9 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
   test("save()/load() - partitioned table - Ignore") {
     withTempDir { file =>
       partitionedTestDF.write
-        .format(dataSourceName).mode(SaveMode.Ignore).save(file.getCanonicalPath)
+        .format(dataSourceName)
+        .mode(SaveMode.Ignore)
+        .save(file.getCanonicalPath)
 
       val path = new Path(file.getCanonicalPath)
       val fs = path.getFileSystem(SparkHadoopUtil.get.conf)
@@ -318,7 +325,9 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
   }
 
   test("saveAsTable()/load() - non-partitioned table - Overwrite") {
-    testDF.write.format(dataSourceName).mode(SaveMode.Overwrite)
+    testDF.write
+      .format(dataSourceName)
+      .mode(SaveMode.Overwrite)
       .option("dataSchema", dataSchema.json)
       .saveAsTable("t")
 
@@ -356,7 +365,8 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
   }
 
   test("saveAsTable()/load() - partitioned table - simple queries") {
-    partitionedTestDF.write.format(dataSourceName)
+    partitionedTestDF.write
+      .format(dataSourceName)
       .mode(SaveMode.Overwrite)
       .option("dataSchema", dataSchema.json)
       .saveAsTable("t")
@@ -367,14 +377,12 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
   }
 
   test("saveAsTable()/load() - partitioned table - boolean type") {
-    spark.range(2)
-      .select('id, ('id % 2 === 0).as("b"))
-      .write.partitionBy("b").saveAsTable("t")
+    spark.range(2).select('id, ('id % 2 === 0).as("b")).write.partitionBy("b").saveAsTable("t")
 
     withTable("t") {
       checkAnswer(
-        spark.table("t").sort('id),
-        Row(0, true) :: Row(1, false) :: Nil
+          spark.table("t").sort('id),
+          Row(0, true) :: Row(1, false) :: Nil
       )
     }
   }
@@ -506,7 +514,7 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
           |___ subsubdir
                     |
                     |___ [ files of dataInSubdir ]
-      */
+       */
 
       // Generated dataInSubdir, not data in dir
       dataInSubdir.write
@@ -524,8 +532,8 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
           assert(e.getMessage.contains("infer"))
 
         case _: java.util.NoSuchElementException if e.getMessage.contains("dataSchema") =>
-          // Ignore error, the source format requires schema to be provided by user
-          // This is needed for SimpleTextHadoopFsRelationSuite as SimpleTextSource needs schema
+        // Ignore error, the source format requires schema to be provided by user
+        // This is needed for SimpleTextHadoopFsRelationSuite as SimpleTextSource needs schema
 
         case _ =>
           fail("Unexpected error trying to infer schema from empty dir", e)
@@ -549,7 +557,7 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
       // Verify that if there is data in dir, then reading by path 'dir/' reads only dataInDir
       dataInDir.write
         .format(dataSourceName)
-        .mode(SaveMode.Append)   // append to prevent subdir from being deleted
+        .mode(SaveMode.Append) // append to prevent subdir from being deleted
         .save(dir.getCanonicalPath)
       require(dir.listFiles().exists(!_.isDirectory))
       require(subdir.exists())
@@ -560,31 +568,29 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
 
   test("Hadoop style globbing - unpartitioned data") {
     withTempPath { file =>
-
       val dir = file.getCanonicalPath
       val subdir = new File(dir, "subdir")
       val subsubdir = new File(subdir, "subsubdir")
-      val anotherSubsubdir =
-        new File(new File(dir, "another-subdir"), "another-subsubdir")
+      val anotherSubsubdir = new File(new File(dir, "another-subdir"), "another-subsubdir")
 
       val dataInSubdir = Seq(1, 2, 3).toDF("value")
       val dataInSubsubdir = Seq(4, 5, 6).toDF("value")
       val dataInAnotherSubsubdir = Seq(7, 8, 9).toDF("value")
 
       dataInSubdir.write
-        .format (dataSourceName)
-        .mode (SaveMode.Overwrite)
-        .save (subdir.getCanonicalPath)
+        .format(dataSourceName)
+        .mode(SaveMode.Overwrite)
+        .save(subdir.getCanonicalPath)
 
       dataInSubsubdir.write
-        .format (dataSourceName)
-        .mode (SaveMode.Overwrite)
-        .save (subsubdir.getCanonicalPath)
+        .format(dataSourceName)
+        .mode(SaveMode.Overwrite)
+        .save(subsubdir.getCanonicalPath)
 
       dataInAnotherSubsubdir.write
-        .format (dataSourceName)
-        .mode (SaveMode.Overwrite)
-        .save (anotherSubsubdir.getCanonicalPath)
+        .format(dataSourceName)
+        .mode(SaveMode.Overwrite)
+        .save(anotherSubsubdir.getCanonicalPath)
 
       require(subdir.exists)
       require(subdir.listFiles().exists(!_.isDirectory))
@@ -652,25 +658,22 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
           path: String,
           expectedResult: Either[DataFrame, String],
           basePath: Option[String] = None
-        ): Unit = {
+      ): Unit = {
         try {
           val reader = spark.read
           basePath.foreach(reader.option("basePath", _))
-          val testDf = reader
-            .format(dataSourceName)
-            .load(path)
+          val testDf = reader.format(dataSourceName).load(path)
           assert(expectedResult.isLeft, s"Error was expected with $path but result found")
           checkAnswer(testDf, expectedResult.left.get)
         } catch {
           case e: java.util.NoSuchElementException if e.getMessage.contains("dataSchema") =>
-            // Ignore error, the source format requires schema to be provided by user
-            // This is needed for SimpleTextHadoopFsRelationSuite as SimpleTextSource needs schema
+          // Ignore error, the source format requires schema to be provided by user
+          // This is needed for SimpleTextHadoopFsRelationSuite as SimpleTextSource needs schema
 
           case e: Throwable =>
             assert(expectedResult.isRight, s"Was not expecting error with $path: " + e)
-            assert(
-              e.getMessage.contains(expectedResult.right.get),
-              s"Did not find expected error message wiht $path")
+            assert(e.getMessage.contains(expectedResult.right.get),
+                   s"Did not find expected error message wiht $path")
         }
       }
 
@@ -710,28 +713,26 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
   test("SPARK-9735 Partition column type casting") {
     withTempPath { file =>
       val df = (for {
-        i <- 1 to 3
-        p2 <- Seq("foo", "bar")
-      } yield (i, s"val_$i", 1.0d, p2, 123, 123.123f)).toDF("a", "b", "p1", "p2", "p3", "f")
+                  i <- 1 to 3
+                  p2 <- Seq("foo", "bar")
+                } yield (i, s"val_$i", 1.0d, p2, 123, 123.123f)).toDF(
+          "a", "b", "p1", "p2", "p3", "f")
 
-      val input = df.select(
-        'a,
-        'b,
-        'p1.cast(StringType).as('ps1),
-        'p2,
-        'p3.cast(FloatType).as('pf1),
-        'f)
+      val input = df.select('a,
+                            'b,
+                            'p1.cast(StringType).as('ps1),
+                            'p2,
+                            'p3.cast(FloatType).as('pf1),
+                            'f)
 
       withTempTable("t") {
-        input
-          .write
+        input.write
           .format(dataSourceName)
           .mode(SaveMode.Overwrite)
           .partitionBy("ps1", "p2", "pf1", "f")
           .saveAsTable("t")
 
-        input
-          .write
+        input.write
           .format(dataSourceName)
           .mode(SaveMode.Append)
           .partitionBy("ps1", "p2", "pf1", "f")
@@ -747,11 +748,7 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
   test("SPARK-7616: adjust column name order accordingly when saving partitioned table") {
     val df = (1 to 3).map(i => (i, s"val_$i", i * 2)).toDF("a", "b", "c")
 
-    df.write
-      .format(dataSourceName)
-      .mode(SaveMode.Overwrite)
-      .partitionBy("c", "a")
-      .saveAsTable("t")
+    df.write.format(dataSourceName).mode(SaveMode.Overwrite).partitionBy("c", "a").saveAsTable("t")
 
     withTable("t") {
       checkAnswer(spark.table("t").select('b, 'c, 'a), df.select('b, 'c, 'a).collect())
@@ -775,8 +772,7 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
         .save(path)
 
       assertResult(10000) {
-        spark
-          .read
+        spark.read
           .format(dataSourceName)
           .option("dataSchema", StructType(StructField("id", LongType) :: Nil).json)
           .load(path)
@@ -787,10 +783,10 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
 
   test("SPARK-8578 specified custom output committer will not be used to append data") {
     val extraOptions = Map[String, String](
-      SQLConf.OUTPUT_COMMITTER_CLASS.key -> classOf[AlwaysFailOutputCommitter].getName,
-      // Since Parquet has its own output committer setting, also set it
-      // to AlwaysFailParquetOutputCommitter at here.
-      "spark.sql.parquet.output.committer.class" ->
+        SQLConf.OUTPUT_COMMITTER_CLASS.key -> classOf[AlwaysFailOutputCommitter].getName,
+        // Since Parquet has its own output committer setting, also set it
+        // to AlwaysFailParquetOutputCommitter at here.
+        "spark.sql.parquet.output.committer.class" ->
         classOf[AlwaysFailParquetOutputCommitter].getName
     )
 
@@ -801,18 +797,20 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
       // this append should succeed because we will use the output committer associated
       // with file format and AlwaysFailOutputCommitter will not be used.
       df.write.mode("append").format(dataSourceName).save(dir.getCanonicalPath)
-      checkAnswer(
-        spark.read
-          .format(dataSourceName)
-          .option("dataSchema", df.schema.json)
-          .options(extraOptions)
-          .load(dir.getCanonicalPath),
-        df.union(df))
+      checkAnswer(spark.read
+                    .format(dataSourceName)
+                    .option("dataSchema", df.schema.json)
+                    .options(extraOptions)
+                    .load(dir.getCanonicalPath),
+                  df.union(df))
 
       // This will fail because AlwaysFailOutputCommitter is used when we do append.
       intercept[Exception] {
-        df.write.mode("overwrite")
-          .options(extraOptions).format(dataSourceName).save(dir.getCanonicalPath)
+        df.write
+          .mode("overwrite")
+          .options(extraOptions)
+          .format(dataSourceName)
+          .save(dir.getCanonicalPath)
       }
     }
     withTempPath { dir =>
@@ -820,7 +818,8 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
       // this append will fail because AlwaysFailOutputCommitter is used when we do append
       // and there is no existing data.
       intercept[Exception] {
-        df.write.mode("append")
+        df.write
+          .mode("append")
           .options(extraOptions)
           .format(dataSourceName)
           .save(dir.getCanonicalPath)
@@ -830,9 +829,9 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
 
   test("SPARK-8887: Explicitly define which data types can be used as dynamic partition columns") {
     val df = Seq(
-      (1, "v1", Array(1, 2, 3), Map("k1" -> "v1"), Tuple2(1, "4")),
-      (2, "v2", Array(4, 5, 6), Map("k2" -> "v2"), Tuple2(2, "5")),
-      (3, "v3", Array(7, 8, 9), Map("k3" -> "v3"), Tuple2(3, "6"))).toDF("a", "b", "c", "d", "e")
+        (1, "v1", Array(1, 2, 3), Map("k1" -> "v1"), Tuple2(1, "4")),
+        (2, "v2", Array(4, 5, 6), Map("k2" -> "v2"), Tuple2(2, "5")),
+        (3, "v3", Array(7, 8, 9), Map("k3" -> "v3"), Tuple2(3, "6"))).toDF("a", "b", "c", "d", "e")
     withTempDir { file =>
       intercept[AnalysisException] {
         df.write.format(dataSourceName).partitionBy("c", "d", "e").save(file.getCanonicalPath)
@@ -845,8 +844,8 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
 
   test("Locality support for FileScanRDD") {
     val options = Map[String, String](
-      "fs.file.impl" -> classOf[LocalityTestFileSystem].getName,
-      "fs.file.impl.disable.cache" -> "true"
+        "fs.file.impl" -> classOf[LocalityTestFileSystem].getName,
+        "fs.file.impl.disable.cache" -> "true"
     )
     withTempPath { dir =>
       val path = "file://" + dir.getCanonicalPath
@@ -883,10 +882,8 @@ abstract class HadoopFsRelationTest extends QueryTest with SQLTestUtils with Tes
 
 // This class is used to test SPARK-8578. We should not use any custom output committer when
 // we actually append data to an existing dir.
-class AlwaysFailOutputCommitter(
-    outputPath: Path,
-    context: TaskAttemptContext)
-  extends FileOutputCommitter(outputPath, context) {
+class AlwaysFailOutputCommitter(outputPath: Path, context: TaskAttemptContext)
+    extends FileOutputCommitter(outputPath, context) {
 
   override def commitJob(context: JobContext): Unit = {
     sys.error("Intentional job commitment failure for testing purpose.")
@@ -895,10 +892,8 @@ class AlwaysFailOutputCommitter(
 
 // This class is used to test SPARK-8578. We should not use any custom output committer when
 // we actually append data to an existing dir.
-class AlwaysFailParquetOutputCommitter(
-    outputPath: Path,
-    context: TaskAttemptContext)
-  extends ParquetOutputCommitter(outputPath, context) {
+class AlwaysFailParquetOutputCommitter(outputPath: Path, context: TaskAttemptContext)
+    extends ParquetOutputCommitter(outputPath, context) {
 
   override def commitJob(context: JobContext): Unit = {
     sys.error("Intentional job commitment failure for testing purpose.")

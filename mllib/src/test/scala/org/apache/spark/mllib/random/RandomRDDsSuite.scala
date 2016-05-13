@@ -35,11 +35,11 @@ import org.apache.spark.util.StatCounter
 class RandomRDDsSuite extends SparkFunSuite with MLlibTestSparkContext with Serializable {
 
   def testGeneratedRDD(rdd: RDD[Double],
-      expectedSize: Long,
-      expectedNumPartitions: Int,
-      expectedMean: Double,
-      expectedStddev: Double,
-      epsilon: Double = 0.01) {
+                       expectedSize: Long,
+                       expectedNumPartitions: Int,
+                       expectedMean: Double,
+                       expectedStddev: Double,
+                       epsilon: Double = 0.01) {
     val stats = rdd.stats()
     assert(expectedSize === stats.count)
     assert(expectedNumPartitions === rdd.partitions.size)
@@ -49,18 +49,20 @@ class RandomRDDsSuite extends SparkFunSuite with MLlibTestSparkContext with Seri
 
   // assume test RDDs are small
   def testGeneratedVectorRDD(rdd: RDD[Vector],
-      expectedRows: Long,
-      expectedColumns: Int,
-      expectedNumPartitions: Int,
-      expectedMean: Double,
-      expectedStddev: Double,
-      epsilon: Double = 0.01) {
+                             expectedRows: Long,
+                             expectedColumns: Int,
+                             expectedNumPartitions: Int,
+                             expectedMean: Double,
+                             expectedStddev: Double,
+                             epsilon: Double = 0.01) {
     assert(expectedNumPartitions === rdd.partitions.size)
     val values = new ArrayBuffer[Double]()
-    rdd.collect.foreach { vector => {
-      assert(vector.size === expectedColumns)
-      values ++= vector.toArray
-    }}
+    rdd.collect.foreach { vector =>
+      {
+        assert(vector.size === expectedColumns)
+        values ++= vector.toArray
+      }
+    }
     assert(expectedRows === values.size / expectedColumns)
     val stats = new StatCounter(values)
     assert(math.abs(stats.mean - expectedMean) < epsilon)
@@ -76,8 +78,8 @@ class RandomRDDsSuite extends SparkFunSuite with MLlibTestSparkContext with Seri
       assert(rdd.partitions.size === numPartitions)
 
       // check that partition sizes are balanced
-      val partSizes = rdd.partitions.map(p =>
-        p.asInstanceOf[RandomRDDPartition[Double]].size.toDouble)
+      val partSizes =
+        rdd.partitions.map(p => p.asInstanceOf[RandomRDDPartition[Double]].size.toDouble)
 
       val partStats = new StatCounter(partSizes)
       assert(partStats.max - partStats.min <= 1)
@@ -140,7 +142,6 @@ class RandomRDDsSuite extends SparkFunSuite with MLlibTestSparkContext with Seri
 
       val gamma = RandomRDDs.gammaRDD(sc, gammaShape, gammaScale, size, numPartitions, seed)
       testGeneratedRDD(gamma, size, numPartitions, gammaMean, gammaStd, 0.1)
-
     }
 
     // mock distribution to check that partitions have unique seeds

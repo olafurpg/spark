@@ -30,7 +30,6 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.hive.client.HiveClient
 
-
 /**
  * A persistent implementation of the system catalog using Hive.
  * All public methods must be synchronized for thread-safety.
@@ -40,8 +39,7 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
 
   // Exceptions thrown by the hive client that we would like to wrap
   private val clientExceptions = Set(
-    classOf[HiveException].getCanonicalName,
-    classOf[TException].getCanonicalName)
+      classOf[HiveException].getCanonicalName, classOf[TException].getCanonicalName)
 
   /**
    * Whether this is an exception thrown by the hive client that should be wrapped.
@@ -75,8 +73,8 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
   private def requireDbMatches(db: String, table: CatalogTable): Unit = {
     if (table.identifier.database != Some(db)) {
       throw new AnalysisException(
-        s"Provided database '$db' does not match the one specified in the " +
-        s"table definition (${table.identifier.database.getOrElse("n/a")})")
+          s"Provided database '$db' does not match the one specified in the " +
+          s"table definition (${table.identifier.database.getOrElse("n/a")})")
     }
   }
 
@@ -88,18 +86,15 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
   // Databases
   // --------------------------------------------------------------------------
 
-  override def createDatabase(
-      dbDefinition: CatalogDatabase,
-      ignoreIfExists: Boolean): Unit = withClient {
-    client.createDatabase(dbDefinition, ignoreIfExists)
-  }
+  override def createDatabase(dbDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
+    withClient {
+      client.createDatabase(dbDefinition, ignoreIfExists)
+    }
 
-  override def dropDatabase(
-      db: String,
-      ignoreIfNotExists: Boolean,
-      cascade: Boolean): Unit = withClient {
-    client.dropDatabase(db, ignoreIfNotExists, cascade)
-  }
+  override def dropDatabase(db: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit =
+    withClient {
+      client.dropDatabase(db, ignoreIfNotExists, cascade)
+    }
 
   /**
    * Alter a database whose name matches the one specified in `dbDefinition`,
@@ -110,9 +105,10 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
   override def alterDatabase(dbDefinition: CatalogDatabase): Unit = withClient {
     val existingDb = getDatabase(dbDefinition.name)
     if (existingDb.properties == dbDefinition.properties) {
-      logWarning(s"Request to alter database ${dbDefinition.name} is a no-op because " +
-        s"the provided database properties are the same as the old ones. Hive does not " +
-        s"currently support altering other database fields.")
+      logWarning(
+          s"Request to alter database ${dbDefinition.name} is a no-op because " +
+          s"the provided database properties are the same as the old ones. Hive does not " +
+          s"currently support altering other database fields.")
     }
     client.alterDatabase(dbDefinition)
   }
@@ -142,25 +138,21 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
   // --------------------------------------------------------------------------
 
   override def createTable(
-      db: String,
-      tableDefinition: CatalogTable,
-      ignoreIfExists: Boolean): Unit = withClient {
+      db: String, tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = withClient {
     requireDbExists(db)
     requireDbMatches(db, tableDefinition)
     client.createTable(tableDefinition, ignoreIfExists)
   }
 
-  override def dropTable(
-      db: String,
-      table: String,
-      ignoreIfNotExists: Boolean): Unit = withClient {
-    requireDbExists(db)
-    client.dropTable(db, table, ignoreIfNotExists)
-  }
+  override def dropTable(db: String, table: String, ignoreIfNotExists: Boolean): Unit =
+    withClient {
+      requireDbExists(db)
+      client.dropTable(db, table, ignoreIfNotExists)
+    }
 
   override def renameTable(db: String, oldName: String, newName: String): Unit = withClient {
-    val newTable = client.getTable(db, oldName)
-      .copy(identifier = TableIdentifier(newName, Some(db)))
+    val newTable =
+      client.getTable(db, oldName).copy(identifier = TableIdentifier(newName, Some(db)))
     client.alterTable(oldName, newTable)
   }
 
@@ -199,29 +191,23 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
     client.listTables(db, pattern)
   }
 
-  override def loadTable(
-      db: String,
-      table: String,
-      loadPath: String,
-      isOverwrite: Boolean,
-      holdDDLTime: Boolean): Unit = withClient {
+  override def loadTable(db: String,
+                         table: String,
+                         loadPath: String,
+                         isOverwrite: Boolean,
+                         holdDDLTime: Boolean): Unit = withClient {
     requireTableExists(db, table)
-    client.loadTable(
-      loadPath,
-      s"$db.$table",
-      isOverwrite,
-      holdDDLTime)
+    client.loadTable(loadPath, s"$db.$table", isOverwrite, holdDDLTime)
   }
 
-  override def loadPartition(
-      db: String,
-      table: String,
-      loadPath: String,
-      partition: TablePartitionSpec,
-      isOverwrite: Boolean,
-      holdDDLTime: Boolean,
-      inheritTableSpecs: Boolean,
-      isSkewedStoreAsSubdir: Boolean): Unit = withClient {
+  override def loadPartition(db: String,
+                             table: String,
+                             loadPath: String,
+                             partition: TablePartitionSpec,
+                             isOverwrite: Boolean,
+                             holdDDLTime: Boolean,
+                             inheritTableSpecs: Boolean,
+                             isSkewedStoreAsSubdir: Boolean): Unit = withClient {
     requireTableExists(db, table)
 
     val orderedPartitionSpec = new util.LinkedHashMap[String, String]()
@@ -229,57 +215,49 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
       orderedPartitionSpec.put(colName, partition(colName))
     }
 
-    client.loadPartition(
-      loadPath,
-      s"$db.$table",
-      orderedPartitionSpec,
-      isOverwrite,
-      holdDDLTime,
-      inheritTableSpecs,
-      isSkewedStoreAsSubdir)
+    client.loadPartition(loadPath,
+                         s"$db.$table",
+                         orderedPartitionSpec,
+                         isOverwrite,
+                         holdDDLTime,
+                         inheritTableSpecs,
+                         isSkewedStoreAsSubdir)
   }
 
   // --------------------------------------------------------------------------
   // Partitions
   // --------------------------------------------------------------------------
 
-  override def createPartitions(
-      db: String,
-      table: String,
-      parts: Seq[CatalogTablePartition],
-      ignoreIfExists: Boolean): Unit = withClient {
+  override def createPartitions(db: String,
+                                table: String,
+                                parts: Seq[CatalogTablePartition],
+                                ignoreIfExists: Boolean): Unit = withClient {
     requireTableExists(db, table)
     client.createPartitions(db, table, parts, ignoreIfExists)
   }
 
-  override def dropPartitions(
-      db: String,
-      table: String,
-      parts: Seq[TablePartitionSpec],
-      ignoreIfNotExists: Boolean): Unit = withClient {
+  override def dropPartitions(db: String,
+                              table: String,
+                              parts: Seq[TablePartitionSpec],
+                              ignoreIfNotExists: Boolean): Unit = withClient {
     requireTableExists(db, table)
     client.dropPartitions(db, table, parts, ignoreIfNotExists)
   }
 
-  override def renamePartitions(
-      db: String,
-      table: String,
-      specs: Seq[TablePartitionSpec],
-      newSpecs: Seq[TablePartitionSpec]): Unit = withClient {
+  override def renamePartitions(db: String,
+                                table: String,
+                                specs: Seq[TablePartitionSpec],
+                                newSpecs: Seq[TablePartitionSpec]): Unit = withClient {
     client.renamePartitions(db, table, specs, newSpecs)
   }
 
   override def alterPartitions(
-      db: String,
-      table: String,
-      newParts: Seq[CatalogTablePartition]): Unit = withClient {
+      db: String, table: String, newParts: Seq[CatalogTablePartition]): Unit = withClient {
     client.alterPartitions(db, table, newParts)
   }
 
   override def getPartition(
-      db: String,
-      table: String,
-      spec: TablePartitionSpec): CatalogTablePartition = withClient {
+      db: String, table: String, spec: TablePartitionSpec): CatalogTablePartition = withClient {
     client.getPartition(db, table, spec)
   }
 
@@ -297,9 +275,7 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
   // Functions
   // --------------------------------------------------------------------------
 
-  override def createFunction(
-      db: String,
-      funcDefinition: CatalogFunction): Unit = withClient {
+  override def createFunction(db: String, funcDefinition: CatalogFunction): Unit = withClient {
     // Hive's metastore is case insensitive. However, Hive's createFunction does
     // not normalize the function name (unlike the getFunction part). So,
     // we are normalizing the function name.
@@ -327,5 +303,4 @@ private[spark] class HiveExternalCatalog(client: HiveClient) extends ExternalCat
   override def listFunctions(db: String, pattern: String): Seq[String] = withClient {
     client.listFunctions(db, pattern)
   }
-
 }

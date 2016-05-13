@@ -44,16 +44,15 @@ import org.apache.spark.shuffle.ShuffleWriter
  * @param metrics a [[TaskMetrics]] that is created at driver side and sent to executor side.
  * @param localProperties copy of thread-local properties set by the user on the driver side.
  */
-private[spark] class ShuffleMapTask(
-    stageId: Int,
-    stageAttemptId: Int,
-    taskBinary: Broadcast[Array[Byte]],
-    partition: Partition,
-    @transient private var locs: Seq[TaskLocation],
-    metrics: TaskMetrics,
-    localProperties: Properties)
-  extends Task[MapStatus](stageId, stageAttemptId, partition.index, metrics, localProperties)
-  with Logging {
+private[spark] class ShuffleMapTask(stageId: Int,
+                                    stageAttemptId: Int,
+                                    taskBinary: Broadcast[Array[Byte]],
+                                    partition: Partition,
+                                    @transient private var locs: Seq[TaskLocation],
+                                    metrics: TaskMetrics,
+                                    localProperties: Properties)
+    extends Task[MapStatus](stageId, stageAttemptId, partition.index, metrics, localProperties)
+    with Logging {
 
   /** A constructor used only in test suites. This does not require passing in an RDD. */
   def this(partitionId: Int) {
@@ -69,14 +68,15 @@ private[spark] class ShuffleMapTask(
     val deserializeStartTime = System.currentTimeMillis()
     val ser = SparkEnv.get.closureSerializer.newInstance()
     val (rdd, dep) = ser.deserialize[(RDD[_], ShuffleDependency[_, _, _])](
-      ByteBuffer.wrap(taskBinary.value), Thread.currentThread.getContextClassLoader)
+        ByteBuffer.wrap(taskBinary.value), Thread.currentThread.getContextClassLoader)
     _executorDeserializeTime = System.currentTimeMillis() - deserializeStartTime
 
     var writer: ShuffleWriter[Any, Any] = null
     try {
       val manager = SparkEnv.get.shuffleManager
       writer = manager.getWriter[Any, Any](dep.shuffleHandle, partitionId, context)
-      writer.write(rdd.iterator(partition, context).asInstanceOf[Iterator[_ <: Product2[Any, Any]]])
+      writer.write(
+          rdd.iterator(partition, context).asInstanceOf[Iterator[_ <: Product2[Any, Any]]])
       writer.stop(success = true).get
     } catch {
       case e: Exception =>

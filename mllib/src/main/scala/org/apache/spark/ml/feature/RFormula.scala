@@ -71,7 +71,9 @@ private[feature] trait RFormulaBase extends HasFeaturesCol with HasLabelCol {
  */
 @Experimental
 class RFormula(override val uid: String)
-  extends Estimator[RFormulaModel] with RFormulaBase with DefaultParamsWritable {
+    extends Estimator[RFormulaModel]
+    with RFormulaBase
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("rFormula"))
 
@@ -123,9 +125,7 @@ class RFormula(override val uid: String)
       dataset.schema(term) match {
         case column if column.dataType == StringType =>
           val indexCol = tmpColumn("stridx")
-          encoderStages += new StringIndexer()
-            .setInputCol(term)
-            .setOutputCol(indexCol)
+          encoderStages += new StringIndexer().setInputCol(term).setOutputCol(indexCol)
           prefixesToRewrite(indexCol + "_") = term + "_"
           (term, indexCol)
         case _ =>
@@ -137,33 +137,28 @@ class RFormula(override val uid: String)
     val encodedTerms = resolvedFormula.terms.map {
       case Seq(term) if dataset.schema(term).dataType == StringType =>
         val encodedCol = tmpColumn("onehot")
-        encoderStages += new OneHotEncoder()
-          .setInputCol(indexed(term))
-          .setOutputCol(encodedCol)
+        encoderStages += new OneHotEncoder().setInputCol(indexed(term)).setOutputCol(encodedCol)
         prefixesToRewrite(encodedCol + "_") = term + "_"
         encodedCol
       case Seq(term) =>
         term
       case terms =>
         val interactionCol = tmpColumn("interaction")
-        encoderStages += new Interaction()
-          .setInputCols(terms.map(indexed).toArray)
-          .setOutputCol(interactionCol)
+        encoderStages +=
+          new Interaction().setInputCols(terms.map(indexed).toArray).setOutputCol(interactionCol)
         prefixesToRewrite(interactionCol + "_") = ""
         interactionCol
     }
 
-    encoderStages += new VectorAssembler(uid)
-      .setInputCols(encodedTerms.toArray)
-      .setOutputCol($(featuresCol))
+    encoderStages +=
+      new VectorAssembler(uid).setInputCols(encodedTerms.toArray).setOutputCol($(featuresCol))
     encoderStages += new VectorAttributeRewriter($(featuresCol), prefixesToRewrite.toMap)
     encoderStages += new ColumnPruner(tempColumns.toSet)
 
     if (dataset.schema.fieldNames.contains(resolvedFormula.label) &&
-      dataset.schema(resolvedFormula.label).dataType == StringType) {
-      encoderStages += new StringIndexer()
-        .setInputCol(resolvedFormula.label)
-        .setOutputCol($(labelCol))
+        dataset.schema(resolvedFormula.label).dataType == StringType) {
+      encoderStages +=
+        new StringIndexer().setInputCol(resolvedFormula.label).setOutputCol($(labelCol))
     }
 
     val pipelineModel = new Pipeline(uid).setStages(encoderStages.toArray).fit(dataset)
@@ -176,7 +171,7 @@ class RFormula(override val uid: String)
       StructType(schema.fields :+ StructField($(featuresCol), new VectorUDT, true))
     } else {
       StructType(schema.fields :+ StructField($(featuresCol), new VectorUDT, true) :+
-        StructField($(labelCol), DoubleType, true))
+          StructField($(labelCol), DoubleType, true))
     }
   }
 
@@ -199,11 +194,12 @@ object RFormula extends DefaultParamsReadable[RFormula] {
  * @param pipelineModel the fitted feature model, including factor to index mappings.
  */
 @Experimental
-class RFormulaModel private[feature](
-    override val uid: String,
-    private[ml] val resolvedFormula: ResolvedRFormula,
-    private[ml] val pipelineModel: PipelineModel)
-  extends Model[RFormulaModel] with RFormulaBase with MLWritable {
+class RFormulaModel private[feature](override val uid: String,
+                                     private[ml] val resolvedFormula: ResolvedRFormula,
+                                     private[ml] val pipelineModel: PipelineModel)
+    extends Model[RFormulaModel]
+    with RFormulaBase
+    with MLWritable {
 
   @Since("2.0.0")
   override def transform(dataset: Dataset[_]): DataFrame = {
@@ -229,8 +225,8 @@ class RFormulaModel private[feature](
     }
   }
 
-  override def copy(extra: ParamMap): RFormulaModel = copyValues(
-    new RFormulaModel(uid, resolvedFormula, pipelineModel))
+  override def copy(extra: ParamMap): RFormulaModel =
+    copyValues(new RFormulaModel(uid, resolvedFormula, pipelineModel))
 
   override def toString: String = s"RFormulaModel($resolvedFormula) (uid=$uid)"
 
@@ -255,9 +251,9 @@ class RFormulaModel private[feature](
   private def checkCanTransform(schema: StructType) {
     val columnNames = schema.map(_.name)
     require(!columnNames.contains($(featuresCol)), "Features column already exists.")
-    require(
-      !columnNames.contains($(labelCol)) || schema($(labelCol)).dataType.isInstanceOf[NumericType],
-      "Label column already exists and is not of type NumericType.")
+    require(!columnNames.contains($(labelCol)) ||
+            schema($(labelCol)).dataType.isInstanceOf[NumericType],
+            "Label column already exists and is not of type NumericType.")
   }
 
   @Since("2.0.0")
@@ -281,8 +277,11 @@ object RFormulaModel extends MLReadable[RFormulaModel] {
       DefaultParamsWriter.saveMetadata(instance, path, sc)
       // Save model data: resolvedFormula
       val dataPath = new Path(path, "data").toString
-      sqlContext.createDataFrame(Seq(instance.resolvedFormula))
-        .repartition(1).write.parquet(dataPath)
+      sqlContext
+        .createDataFrame(Seq(instance.resolvedFormula))
+        .repartition(1)
+        .write
+        .parquet(dataPath)
       // Save pipeline model
       val pmPath = new Path(path, "pipelineModel").toString
       instance.pipelineModel.save(pmPath)
@@ -320,7 +319,8 @@ object RFormulaModel extends MLReadable[RFormulaModel] {
  * TODO(ekl) make this a public transformer
  */
 private class ColumnPruner(override val uid: String, val columnsToPrune: Set[String])
-  extends Transformer with MLWritable {
+    extends Transformer
+    with MLWritable {
 
   def this(columnsToPrune: Set[String]) =
     this(Identifiable.randomUID("columnPruner"), columnsToPrune)
@@ -389,11 +389,11 @@ private object ColumnPruner extends MLReadable[ColumnPruner] {
  *                          map. When a key prefixes a name, the matching prefix will be replaced
  *                          by the value in the map.
  */
-private class VectorAttributeRewriter(
-    override val uid: String,
-    val vectorCol: String,
-    val prefixesToRewrite: Map[String, String])
-  extends Transformer with MLWritable {
+private class VectorAttributeRewriter(override val uid: String,
+                                      val vectorCol: String,
+                                      val prefixesToRewrite: Map[String, String])
+    extends Transformer
+    with MLWritable {
 
   def this(vectorCol: String, prefixesToRewrite: Map[String, String]) =
     this(Identifiable.randomUID("vectorAttrRewriter"), vectorCol, prefixesToRewrite)
@@ -403,8 +403,9 @@ private class VectorAttributeRewriter(
       val group = AttributeGroup.fromStructField(dataset.schema(vectorCol))
       val attrs = group.attributes.get.map { attr =>
         if (attr.name.isDefined) {
-          val name = prefixesToRewrite.foldLeft(attr.name.get) { case (curName, (from, to)) =>
-            curName.replace(from, to)
+          val name = prefixesToRewrite.foldLeft(attr.name.get) {
+            case (curName, (from, to)) =>
+              curName.replace(from, to)
           }
           attr.withName(name)
         } else {
@@ -415,13 +416,12 @@ private class VectorAttributeRewriter(
     }
     val otherCols = dataset.columns.filter(_ != vectorCol).map(dataset.col)
     val rewrittenCol = dataset.col(vectorCol).as(vectorCol, metadata)
-    dataset.select(otherCols :+ rewrittenCol : _*)
+    dataset.select(otherCols :+ rewrittenCol: _*)
   }
 
   override def transformSchema(schema: StructType): StructType = {
-    StructType(
-      schema.fields.filter(_.name != vectorCol) ++
-      schema.fields.filter(_.name == vectorCol))
+    StructType(schema.fields.filter(_.name != vectorCol) ++
+        schema.fields.filter(_.name == vectorCol))
   }
 
   override def copy(extra: ParamMap): VectorAttributeRewriter = defaultCopy(extra)
@@ -436,8 +436,9 @@ private object VectorAttributeRewriter extends MLReadable[VectorAttributeRewrite
   override def load(path: String): VectorAttributeRewriter = super.load(path)
 
   /** [[MLWriter]] instance for [[VectorAttributeRewriter]] */
-  private[VectorAttributeRewriter]
-  class VectorAttributeRewriterWriter(instance: VectorAttributeRewriter) extends MLWriter {
+  private[VectorAttributeRewriter] class VectorAttributeRewriterWriter(
+      instance: VectorAttributeRewriter)
+      extends MLWriter {
 
     private case class Data(vectorCol: String, prefixesToRewrite: Map[String, String])
 

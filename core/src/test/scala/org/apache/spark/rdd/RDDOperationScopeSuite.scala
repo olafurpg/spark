@@ -133,7 +133,6 @@ class RDDOperationScopeSuite extends SparkFunSuite with BeforeAndAfter {
     assert(rdd2.scope.get.getAllScopes.map(_.name) === Seq("scope1", "scope2"))
     assert(rdd3.scope.get.getAllScopes.map(_.name) === Seq("scope1", "scope2", "scope3"))
   }
-
 }
 
 private class MyCoolRDD(sc: SparkContext) extends RDD[Int](sc, Nil) {

@@ -24,7 +24,7 @@ import org.scalatest.Matchers
 
 import org.apache.spark.SparkFunSuite
 
-class UIUtilsSuite extends SparkFunSuite with Matchers{
+class UIUtilsSuite extends SparkFunSuite with Matchers {
 
   test("shortTimeUnitString") {
     assert("ns" === UIUtils.shortTimeUnitString(TimeUnit.NANOSECONDS))
@@ -47,8 +47,8 @@ class UIUtilsSuite extends SparkFunSuite with Matchers{
   private def verifyNormalizedTime(
       expectedTime: Double, expectedUnit: TimeUnit, input: Long): Unit = {
     val (time, unit) = UIUtils.normalizeDuration(input)
-    time should be (expectedTime +- 1E-6)
-    unit should be (expectedUnit)
+    time should be(expectedTime +- 1E-6)
+    unit should be(expectedUnit)
   }
 
   test("convertToTimeUnit") {
@@ -64,15 +64,16 @@ class UIUtilsSuite extends SparkFunSuite with Matchers{
   private def verifyConvertToTimeUnit(
       expectedTime: Double, milliseconds: Long, unit: TimeUnit): Unit = {
     val convertedTime = UIUtils.convertToTimeUnit(milliseconds, unit)
-    convertedTime should be (expectedTime +- 1E-6)
+    convertedTime should be(expectedTime +- 1E-6)
   }
 
   test("formatBatchTime") {
     val tzForTest = TimeZone.getTimeZone("America/Los_Angeles")
     val batchTime = 1431637480452L // Thu May 14 14:04:40 PDT 2015
-    assert("2015/05/14 14:04:40" === UIUtils.formatBatchTime(batchTime, 1000, timezone = tzForTest))
+    assert(
+        "2015/05/14 14:04:40" === UIUtils.formatBatchTime(batchTime, 1000, timezone = tzForTest))
     assert("2015/05/14 14:04:40.452" ===
-      UIUtils.formatBatchTime(batchTime, 999, timezone = tzForTest))
+        UIUtils.formatBatchTime(batchTime, 999, timezone = tzForTest))
     assert("14:04:40" === UIUtils.formatBatchTime(batchTime, 1000, false, timezone = tzForTest))
     assert("14:04:40.452" === UIUtils.formatBatchTime(batchTime, 999, false, timezone = tzForTest))
   }

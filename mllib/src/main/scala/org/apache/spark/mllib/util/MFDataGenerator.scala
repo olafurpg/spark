@@ -58,8 +58,9 @@ object MFDataGenerator {
   def main(args: Array[String]) {
     if (args.length < 2) {
       // scalastyle:off println
-      println("Usage: MFDataGenerator " +
-        "<master> <outputDir> [m] [n] [rank] [trainSampFact] [noise] [sigma] [test] [testSampFact]")
+      println(
+          "Usage: MFDataGenerator " +
+          "<master> <outputDir> [m] [n] [rank] [trainSampFact] [noise] [sigma] [test] [testSampFact]")
       // scalastyle:on println
       System.exit(1)
     }
@@ -93,8 +94,8 @@ object MFDataGenerator {
 
     val omega = shuffled.slice(0, sampSize)
     val ordered = omega.sortWith(_ < _).toArray
-    val trainData: RDD[(Int, Int, Double)] = sc.parallelize(ordered)
-      .map(x => (x % m, x / m, fullData.values(x)))
+    val trainData: RDD[(Int, Int, Double)] =
+      sc.parallelize(ordered).map(x => (x % m, x / m, fullData.values(x)))
 
     // optionally add gaussian noise
     if (noise) {
@@ -108,12 +109,11 @@ object MFDataGenerator {
       val testSampSize = math.min(math.round(sampSize * testSampFact).toInt, mn - sampSize)
       val testOmega = shuffled.slice(sampSize, sampSize + testSampSize)
       val testOrdered = testOmega.sortWith(_ < _).toArray
-      val testData: RDD[(Int, Int, Double)] = sc.parallelize(testOrdered)
-        .map(x => (x % m, x / m, fullData.values(x)))
+      val testData: RDD[(Int, Int, Double)] =
+        sc.parallelize(testOrdered).map(x => (x % m, x / m, fullData.values(x)))
       testData.map(x => x._1 + "," + x._2 + "," + x._3).saveAsTextFile(outputPath)
     }
 
     sc.stop()
-
   }
 }

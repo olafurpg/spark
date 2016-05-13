@@ -43,6 +43,7 @@ private[sql] trait RunnableCommand extends LogicalPlan with logical.Command {
  * saves the result to prevent multiple executions.
  */
 private[sql] case class ExecutedCommandExec(cmd: RunnableCommand) extends SparkPlan {
+
   /**
    * A concrete command should override this lazy field to wrap up any side effects caused by the
    * command or any other computation that should be evaluated exactly once. The value of this field
@@ -72,7 +73,6 @@ private[sql] case class ExecutedCommandExec(cmd: RunnableCommand) extends SparkP
   override def argString: String = cmd.toString
 }
 
-
 /**
  * An explain command for users to see how a command will be executed.
  *
@@ -88,27 +88,28 @@ private[sql] case class ExecutedCommandExec(cmd: RunnableCommand) extends SparkP
  * @param extended whether to do extended explain or not
  * @param codegen whether to output generated code from whole-stage codegen or not
  */
-case class ExplainCommand(
-    logicalPlan: LogicalPlan,
-    override val output: Seq[Attribute] =
-      Seq(AttributeReference("plan", StringType, nullable = true)()),
-    extended: Boolean = false,
-    codegen: Boolean = false)
-  extends RunnableCommand {
+case class ExplainCommand(logicalPlan: LogicalPlan,
+                          override val output: Seq[Attribute] = Seq(
+                                AttributeReference("plan", StringType, nullable = true)()),
+                          extended: Boolean = false,
+                          codegen: Boolean = false)
+    extends RunnableCommand {
 
   // Run through the optimizer to generate the physical plan.
-  override def run(sparkSession: SparkSession): Seq[Row] = try {
-    val queryExecution = sparkSession.executePlan(logicalPlan)
-    val outputString =
-      if (codegen) {
-        codegenString(queryExecution.executedPlan)
-      } else if (extended) {
-        queryExecution.toString
-      } else {
-        queryExecution.simpleString
-      }
-    Seq(Row(outputString))
-  } catch { case cause: TreeNodeException[_] =>
-    ("Error occurred during query planning: \n" + cause.getMessage).split("\n").map(Row(_))
-  }
+  override def run(sparkSession: SparkSession): Seq[Row] =
+    try {
+      val queryExecution = sparkSession.executePlan(logicalPlan)
+      val outputString =
+        if (codegen) {
+          codegenString(queryExecution.executedPlan)
+        } else if (extended) {
+          queryExecution.toString
+        } else {
+          queryExecution.simpleString
+        }
+      Seq(Row(outputString))
+    } catch {
+      case cause: TreeNodeException[_] =>
+        ("Error occurred during query planning: \n" + cause.getMessage).split("\n").map(Row(_))
+    }
 }

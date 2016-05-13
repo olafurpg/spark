@@ -39,8 +39,7 @@ import org.apache.spark.util.IntParam
 object FlumePollingEventCount {
   def main(args: Array[String]) {
     if (args.length < 2) {
-      System.err.println(
-        "Usage: FlumePollingEventCount <host> <port>")
+      System.err.println("Usage: FlumePollingEventCount <host> <port>")
       System.exit(1)
     }
 
@@ -58,7 +57,7 @@ object FlumePollingEventCount {
     val stream = FlumeUtils.createPollingStream(ssc, host, port)
 
     // Print out the count of events received from this server in each batch
-    stream.count().map(cnt => "Received " + cnt + " flume events." ).print()
+    stream.count().map(cnt => "Received " + cnt + " flume events.").print()
 
     ssc.start()
     ssc.awaitTermination()

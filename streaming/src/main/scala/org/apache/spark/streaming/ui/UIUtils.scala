@@ -97,11 +97,10 @@ private[streaming] object UIUtils {
    *                     only `HH:mm:ss` or `HH:mm:ss.SSS` depending on `batchInterval`
    * @param timezone only for test
    */
-  def formatBatchTime(
-      batchTime: Long,
-      batchInterval: Long,
-      showYYYYMMSS: Boolean = true,
-      timezone: TimeZone = null): String = {
+  def formatBatchTime(batchTime: Long,
+                      batchInterval: Long,
+                      showYYYYMMSS: Boolean = true,
+                      timezone: TimeZone = null): String = {
     val oldTimezones =
       (batchTimeFormat.get.getTimeZone, batchTimeFormatWithMilliseconds.get.getTimeZone)
     if (timezone != null) {
@@ -143,18 +142,17 @@ private[streaming] object UIUtils {
     }
   }
 
-  def failureReasonCell(
-      failureReason: String,
-      rowspan: Int = 1,
-      includeFirstLineInExpandDetails: Boolean = true): Seq[Node] = {
+  def failureReasonCell(failureReason: String,
+                        rowspan: Int = 1,
+                        includeFirstLineInExpandDetails: Boolean = true): Seq[Node] = {
     val isMultiline = failureReason.indexOf('\n') >= 0
     // Display the first line by default
     val failureReasonSummary = StringEscapeUtils.escapeHtml4(
-      if (isMultiline) {
-        failureReason.substring(0, failureReason.indexOf('\n'))
-      } else {
-        failureReason
-      })
+        if (isMultiline) {
+      failureReason.substring(0, failureReason.indexOf('\n'))
+    } else {
+      failureReason
+    })
     val failureDetails =
       if (isMultiline && !includeFirstLineInExpandDetails) {
         // Skip the first line
@@ -162,19 +160,20 @@ private[streaming] object UIUtils {
       } else {
         failureReason
       }
-    val details = if (isMultiline) {
-      // scalastyle:off
-      <span onclick="this.parentNode.querySelector('.stacktrace-details').classList.toggle('collapsed')"
+    val details =
+      if (isMultiline) {
+        // scalastyle:off
+        <span onclick="this.parentNode.querySelector('.stacktrace-details').classList.toggle('collapsed')"
             class="expand-details">
         +details
       </span> ++
         <div class="stacktrace-details collapsed">
           <pre>{failureDetails}</pre>
         </div>
-      // scalastyle:on
-    } else {
-      ""
-    }
+        // scalastyle:on
+      } else {
+        ""
+      }
 
     if (rowspan == 1) {
       <td valign="middle" style="max-width: 300px">{failureReasonSummary}{details}</td>

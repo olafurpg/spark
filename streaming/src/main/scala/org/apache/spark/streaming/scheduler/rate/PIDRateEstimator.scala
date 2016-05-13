@@ -51,40 +51,36 @@ private[streaming] class PIDRateEstimator(
     integral: Double,
     derivative: Double,
     minRate: Double
-  ) extends RateEstimator with Logging {
+)
+    extends RateEstimator
+    with Logging {
 
   private var firstRun: Boolean = true
   private var latestTime: Long = -1L
   private var latestRate: Double = -1D
   private var latestError: Double = -1L
 
+  require(batchIntervalMillis > 0,
+          s"Specified batch interval $batchIntervalMillis in PIDRateEstimator is invalid.")
   require(
-    batchIntervalMillis > 0,
-    s"Specified batch interval $batchIntervalMillis in PIDRateEstimator is invalid.")
-  require(
-    proportional >= 0,
-    s"Proportional term $proportional in PIDRateEstimator should be >= 0.")
-  require(
-    integral >= 0,
-    s"Integral term $integral in PIDRateEstimator should be >= 0.")
-  require(
-    derivative >= 0,
-    s"Derivative term $derivative in PIDRateEstimator should be >= 0.")
-  require(
-    minRate > 0,
-    s"Minimum rate in PIDRateEstimator should be > 0")
+      proportional >= 0, s"Proportional term $proportional in PIDRateEstimator should be >= 0.")
+  require(integral >= 0, s"Integral term $integral in PIDRateEstimator should be >= 0.")
+  require(derivative >= 0, s"Derivative term $derivative in PIDRateEstimator should be >= 0.")
+  require(minRate > 0, s"Minimum rate in PIDRateEstimator should be > 0")
 
-  logInfo(s"Created PIDRateEstimator with proportional = $proportional, integral = $integral, " +
-    s"derivative = $derivative, min rate = $minRate")
+  logInfo(
+      s"Created PIDRateEstimator with proportional = $proportional, integral = $integral, " +
+      s"derivative = $derivative, min rate = $minRate")
 
   def compute(
       time: Long, // in milliseconds
       numElements: Long,
       processingDelay: Long, // in milliseconds
       schedulingDelay: Long // in milliseconds
-    ): Option[Double] = {
-    logTrace(s"\ntime = $time, # records = $numElements, " +
-      s"processing time = $processingDelay, scheduling delay = $schedulingDelay")
+  ): Option[Double] = {
+    logTrace(
+        s"\ntime = $time, # records = $numElements, " +
+        s"processing time = $processingDelay, scheduling delay = $schedulingDelay")
     this.synchronized {
       if (time > latestTime && numElements > 0 && processingDelay > 0) {
 
@@ -115,9 +111,8 @@ private[streaming] class PIDRateEstimator(
         // in elements/(second ^ 2)
         val dError = (error - latestError) / delaySinceUpdate
 
-        val newRate = (latestRate - proportional * error -
-                                    integral * historicalError -
-                                    derivative * dError).max(minRate)
+        val newRate = (latestRate - proportional * error - integral * historicalError -
+            derivative * dError).max(minRate)
         logTrace(s"""
             | latestRate = $latestRate, error = $error
             | latestError = $latestError, historicalError = $historicalError

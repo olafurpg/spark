@@ -23,15 +23,15 @@ import org.apache.spark.annotation.Experimental
  * Represents the host and port info for a Kafka broker.
  * Differs from the Kafka project's internal kafka.cluster.Broker, which contains a server ID.
  */
-final class Broker private(
-    /** Broker's hostname */
-    val host: String,
-    /** Broker's port */
-    val port: Int) extends Serializable {
+final class Broker private (
+                            /** Broker's hostname */
+                            val host: String,
+                            /** Broker's port */
+                            val port: Int)
+    extends Serializable {
   override def equals(obj: Any): Boolean = obj match {
     case that: Broker =>
-      this.host == that.host &&
-      this.port == that.port
+      this.host == that.host && this.port == that.port
     case _ => false
   }
 

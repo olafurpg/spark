@@ -23,9 +23,10 @@ import scala.reflect.ClassTag
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 
-private[mllib]
-class SlidingRDDPartition[T](val idx: Int, val prev: Partition, val tail: Seq[T], val offset: Int)
-  extends Partition with Serializable {
+private[mllib] class SlidingRDDPartition[T](
+    val idx: Int, val prev: Partition, val tail: Seq[T], val offset: Int)
+    extends Partition
+    with Serializable {
   override val index: Int = idx
 }
 
@@ -45,13 +46,13 @@ class SlidingRDDPartition[T](val idx: Int, val prev: Partition, val tail: Seq[T]
  * @see [[org.apache.spark.mllib.rdd.RDDFunctions.sliding(Int, Int)*]]
  * @see [[scala.collection.IterableLike.sliding(Int, Int)*]]
  */
-private[mllib]
-class SlidingRDD[T: ClassTag](@transient val parent: RDD[T], val windowSize: Int, val step: Int)
-  extends RDD[Array[T]](parent) {
+private[mllib] class SlidingRDD[T: ClassTag](
+    @transient val parent: RDD[T], val windowSize: Int, val step: Int)
+    extends RDD[Array[T]](parent) {
 
   require(windowSize > 0 && step > 0 && !(windowSize == 1 && step == 1),
-    "Window size and step must be greater than 0, " +
-      s"and they cannot be both 1, but got windowSize = $windowSize and step = $step.")
+          "Window size and step must be greater than 0, " +
+          s"and they cannot be both 1, but got windowSize = $windowSize and step = $step.")
 
   override def compute(split: Partition, context: TaskContext): Iterator[Array[T]] = {
     val part = split.asInstanceOf[SlidingRDDPartition[T]]

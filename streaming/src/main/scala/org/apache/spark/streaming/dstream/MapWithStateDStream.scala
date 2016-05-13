@@ -41,7 +41,8 @@ import org.apache.spark.streaming.rdd.{MapWithStateRDD, MapWithStateRDDRecord}
  */
 @Experimental
 sealed abstract class MapWithStateDStream[KeyType, ValueType, StateType, MappedType: ClassTag](
-    ssc: StreamingContext) extends DStream[MappedType](ssc) {
+    ssc: StreamingContext)
+    extends DStream[MappedType](ssc) {
 
   /** Return a pair DStream where each RDD is the snapshot of the state of all the keys. */
   def stateSnapshots(): DStream[(KeyType, StateType)]
@@ -52,7 +53,7 @@ private[streaming] class MapWithStateDStreamImpl[
     KeyType: ClassTag, ValueType: ClassTag, StateType: ClassTag, MappedType: ClassTag](
     dataStream: DStream[(KeyType, ValueType)],
     spec: StateSpecImpl[KeyType, ValueType, StateType, MappedType])
-  extends MapWithStateDStream[KeyType, ValueType, StateType, MappedType](dataStream.context) {
+    extends MapWithStateDStream[KeyType, ValueType, StateType, MappedType](dataStream.context) {
 
   private val internalStream =
     new InternalMapWithStateDStream[KeyType, ValueType, StateType, MappedType](dataStream, spec)
@@ -77,7 +78,8 @@ private[streaming] class MapWithStateDStreamImpl[
   /** Return a pair DStream where each RDD is the snapshot of the state of all the keys. */
   def stateSnapshots(): DStream[(KeyType, StateType)] = {
     internalStream.flatMap {
-      _.stateMap.getAll().map { case (k, s, _) => (k, s) }.toTraversable }
+      _.stateMap.getAll().map { case (k, s, _) => (k, s) }.toTraversable
+    }
   }
 
   def keyClass: Class[_] = implicitly[ClassTag[KeyType]].runtimeClass
@@ -101,15 +103,15 @@ private[streaming] class MapWithStateDStreamImpl[
  * @tparam S   Type of the state maintained
  * @tparam E   Type of the mapped data
  */
-private[streaming]
-class InternalMapWithStateDStream[K: ClassTag, V: ClassTag, S: ClassTag, E: ClassTag](
+private[streaming] class InternalMapWithStateDStream[
+    K: ClassTag, V: ClassTag, S: ClassTag, E: ClassTag](
     parent: DStream[(K, V)], spec: StateSpecImpl[K, V, S, E])
-  extends DStream[MapWithStateRDDRecord[K, S, E]](parent.context) {
+    extends DStream[MapWithStateRDDRecord[K, S, E]](parent.context) {
 
   persist(StorageLevel.MEMORY_ONLY)
 
-  private val partitioner = spec.getPartitioner().getOrElse(
-    new HashPartitioner(ssc.sc.defaultParallelism))
+  private val partitioner =
+    spec.getPartitioner().getOrElse(new HashPartitioner(ssc.sc.defaultParallelism))
 
   private val mappingFunction = spec.getFunction()
 
@@ -138,18 +140,17 @@ class InternalMapWithStateDStream[K: ClassTag, V: ClassTag, S: ClassTag, E: Clas
           // partition index as the key. This is to ensure that state RDD is always partitioned
           // before creating another state RDD using it
           MapWithStateRDD.createFromRDD[K, V, S, E](
-            rdd.flatMap { _.stateMap.getAll() }, partitioner, validTime)
+              rdd.flatMap { _.stateMap.getAll() }, partitioner, validTime)
         } else {
           rdd
         }
       case None =>
         MapWithStateRDD.createFromPairRDD[K, V, S, E](
-          spec.getInitialStateRDD().getOrElse(new EmptyRDD[(K, S)](ssc.sparkContext)),
-          partitioner,
-          validTime
+            spec.getInitialStateRDD().getOrElse(new EmptyRDD[(K, S)](ssc.sparkContext)),
+            partitioner,
+            validTime
         )
     }
-
 
     // Compute the new state RDD with previous state RDD and partitioned data RDD
     // Even if there is no data RDD, use an empty one to create a new state RDD
@@ -161,7 +162,7 @@ class InternalMapWithStateDStream[K: ClassTag, V: ClassTag, S: ClassTag, E: Clas
       (validTime - interval).milliseconds
     }
     Some(new MapWithStateRDD(
-      prevStateRDD, partitionedDataRDD, mappingFunction, validTime, timeoutThresholdTime))
+            prevStateRDD, partitionedDataRDD, mappingFunction, validTime, timeoutThresholdTime))
   }
 }
 

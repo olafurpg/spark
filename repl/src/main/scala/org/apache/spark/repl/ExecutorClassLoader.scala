@@ -39,12 +39,13 @@ import org.apache.spark.util.{ParentClassLoader, Utils}
  * This class loader delegates getting/finding resources to parent loader,
  * which makes sense until REPL never provide resource dynamically.
  */
-class ExecutorClassLoader(
-    conf: SparkConf,
-    env: SparkEnv,
-    classUri: String,
-    parent: ClassLoader,
-    userClassPathFirst: Boolean) extends ClassLoader with Logging {
+class ExecutorClassLoader(conf: SparkConf,
+                          env: SparkEnv,
+                          classUri: String,
+                          parent: ClassLoader,
+                          userClassPathFirst: Boolean)
+    extends ClassLoader
+    with Logging {
   val uri = new URI(classUri)
   val directory = uri.getPath
 
@@ -115,15 +116,17 @@ class ExecutorClassLoader(
   }
 
   private def getClassFileInputStreamFromHttpServer(pathInDirectory: String): InputStream = {
-    val url = if (SparkEnv.get.securityManager.isAuthenticationEnabled()) {
-      val uri = new URI(classUri + "/" + urlEncode(pathInDirectory))
-      val newuri = Utils.constructURIForAuthentication(uri, SparkEnv.get.securityManager)
-      newuri.toURL
-    } else {
-      new URL(classUri + "/" + urlEncode(pathInDirectory))
-    }
-    val connection: HttpURLConnection = Utils.setupSecureURLConnection(url.openConnection(),
-      SparkEnv.get.securityManager).asInstanceOf[HttpURLConnection]
+    val url =
+      if (SparkEnv.get.securityManager.isAuthenticationEnabled()) {
+        val uri = new URI(classUri + "/" + urlEncode(pathInDirectory))
+        val newuri = Utils.constructURIForAuthentication(uri, SparkEnv.get.securityManager)
+        newuri.toURL
+      } else {
+        new URL(classUri + "/" + urlEncode(pathInDirectory))
+      }
+    val connection: HttpURLConnection = Utils
+      .setupSecureURLConnection(url.openConnection(), SparkEnv.get.securityManager)
+      .asInstanceOf[HttpURLConnection]
     // Set the connection timeouts (for testing purposes)
     if (httpUrlConnectionTimeoutMillis != -1) {
       connection.setConnectTimeout(httpUrlConnectionTimeoutMillis)
@@ -195,8 +198,7 @@ class ExecutorClassLoader(
       // initialization code placed there by the REPL. The val or var will
       // be initialized later through reflection when it is used in a task.
       val cr = new ClassReader(in)
-      val cw = new ClassWriter(
-        ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
+      val cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
       val cleaner = new ConstructorCleaner(name, cw)
       cr.accept(cleaner, 0)
       return cw.toByteArray
@@ -225,10 +227,12 @@ class ExecutorClassLoader(
   }
 }
 
-class ConstructorCleaner(className: String, cv: ClassVisitor)
-extends ClassVisitor(ASM5, cv) {
-  override def visitMethod(access: Int, name: String, desc: String,
-      sig: String, exceptions: Array[String]): MethodVisitor = {
+class ConstructorCleaner(className: String, cv: ClassVisitor) extends ClassVisitor(ASM5, cv) {
+  override def visitMethod(access: Int,
+                           name: String,
+                           desc: String,
+                           sig: String,
+                           exceptions: Array[String]): MethodVisitor = {
     val mv = cv.visitMethod(access, name, desc, sig, exceptions)
     if (name == "<init>" && (access & ACC_STATIC) == 0) {
       // This is the constructor, time to clean it; just output some new

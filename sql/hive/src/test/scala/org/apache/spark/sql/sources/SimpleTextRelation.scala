@@ -36,25 +36,22 @@ import org.apache.spark.util.SerializableConfiguration
 class SimpleTextSource extends FileFormat with DataSourceRegister {
   override def shortName(): String = "test"
 
-  override def inferSchema(
-      sparkSession: SparkSession,
-      options: Map[String, String],
-      files: Seq[FileStatus]): Option[StructType] = {
+  override def inferSchema(sparkSession: SparkSession,
+                           options: Map[String, String],
+                           files: Seq[FileStatus]): Option[StructType] = {
     Some(DataType.fromJson(options("dataSchema")).asInstanceOf[StructType])
   }
 
-  override def prepareWrite(
-      sparkSession: SparkSession,
-      job: Job,
-      options: Map[String, String],
-      dataSchema: StructType): OutputWriterFactory = {
+  override def prepareWrite(sparkSession: SparkSession,
+                            job: Job,
+                            options: Map[String, String],
+                            dataSchema: StructType): OutputWriterFactory = {
     SimpleTextRelation.lastHadoopConf = Option(job.getConfiguration)
     new OutputWriterFactory {
-      override def newInstance(
-          path: String,
-          bucketId: Option[Int],
-          dataSchema: StructType,
-          context: TaskAttemptContext): OutputWriter = {
+      override def newInstance(path: String,
+                               bucketId: Option[Int],
+                               dataSchema: StructType,
+                               context: TaskAttemptContext): OutputWriter = {
         new SimpleTextOutputWriter(path, context)
       }
     }
@@ -81,42 +78,47 @@ class SimpleTextSource extends FileFormat with DataSourceRegister {
     val broadcastedHadoopConf =
       sparkSession.sparkContext.broadcast(new SerializableConfiguration(hadoopConf))
 
-    (file: PartitionedFile) => {
-      val predicate = {
-        val filterCondition: Expression = filters.collect {
-          // According to `unhandledFilters`, `SimpleTextRelation` only handles `GreaterThan` filter
-          case sources.GreaterThan(column, value) =>
-            val dataType = dataSchema(column).dataType
-            val literal = Literal.create(value, dataType)
-            val attribute = inputAttributes.find(_.name == column).get
-            expressions.GreaterThan(attribute, literal)
-        }.reduceOption(expressions.And).getOrElse(Literal(true))
-        InterpretedPredicate.create(filterCondition, inputAttributes)
+    (file: PartitionedFile) =>
+      {
+        val predicate = {
+          val filterCondition: Expression = filters.collect {
+            // According to `unhandledFilters`, `SimpleTextRelation` only handles `GreaterThan` filter
+            case sources.GreaterThan(column, value) =>
+              val dataType = dataSchema(column).dataType
+              val literal = Literal.create(value, dataType)
+              val attribute = inputAttributes.find(_.name == column).get
+              expressions.GreaterThan(attribute, literal)
+          }.reduceOption(expressions.And).getOrElse(Literal(true))
+          InterpretedPredicate.create(filterCondition, inputAttributes)
+        }
+
+        // Uses a simple projection to simulate column pruning
+        val projection = new InterpretedProjection(outputAttributes, inputAttributes)
+
+        val unsafeRowIterator =
+          new HadoopFileLinesReader(file, broadcastedHadoopConf.value.value).map { line =>
+            val record = line.toString
+            new GenericInternalRow(
+                record
+                  .split(",", -1)
+                  .zip(fieldTypes)
+                  .map {
+                case (v, dataType) =>
+                  val value = if (v == "") null else v
+                  // `Cast`ed values are always of internal types (e.g. UTF8String instead of String)
+                  Cast(Literal(value), dataType).eval()
+              })
+          }.filter(predicate).map(projection)
+
+        // Appends partition values
+        val fullOutput = requiredSchema.toAttributes ++ partitionSchema.toAttributes
+        val joinedRow = new JoinedRow()
+        val appendPartitionColumns = GenerateUnsafeProjection.generate(fullOutput, fullOutput)
+
+        unsafeRowIterator.map { dataRow =>
+          appendPartitionColumns(joinedRow(dataRow, file.partitionValues))
+        }
       }
-
-      // Uses a simple projection to simulate column pruning
-      val projection = new InterpretedProjection(outputAttributes, inputAttributes)
-
-      val unsafeRowIterator =
-        new HadoopFileLinesReader(file, broadcastedHadoopConf.value.value).map { line =>
-          val record = line.toString
-          new GenericInternalRow(record.split(",", -1).zip(fieldTypes).map {
-            case (v, dataType) =>
-              val value = if (v == "") null else v
-              // `Cast`ed values are always of internal types (e.g. UTF8String instead of String)
-              Cast(Literal(value), dataType).eval()
-          })
-        }.filter(predicate).map(projection)
-
-      // Appends partition values
-      val fullOutput = requiredSchema.toAttributes ++ partitionSchema.toAttributes
-      val joinedRow = new JoinedRow()
-      val appendPartitionColumns = GenerateUnsafeProjection.generate(fullOutput, fullOutput)
-
-      unsafeRowIterator.map { dataRow =>
-        appendPartitionColumns(joinedRow(dataRow, file.partitionValues))
-      }
-    }
   }
 }
 

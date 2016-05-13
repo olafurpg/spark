@@ -35,10 +35,11 @@ object HashBenchmark {
     val attrs = schema.toAttributes
     val safeProjection = GenerateSafeProjection.generate(attrs, attrs)
 
-    val rows = (1 to numRows).map(_ =>
-      // The output of encoder is UnsafeRow, use safeProjection to turn in into safe format.
-      safeProjection(encoder.toRow(generator().asInstanceOf[Row])).copy()
-    ).toArray
+    val rows = (1 to numRows)
+      .map(_ =>
+            // The output of encoder is UnsafeRow, use safeProjection to turn in into safe format.
+            safeProjection(encoder.toRow(generator().asInstanceOf[Row])).copy())
+      .toArray
 
     val benchmark = new Benchmark("Hash For " + name, iters * numRows)
     benchmark.addCase("interpreted version") { _: Int =>
@@ -128,9 +129,8 @@ object HashBenchmark {
     test("normal", normal, 1 << 10, 1 << 11)
 
     val arrayOfInt = ArrayType(IntegerType)
-    val array = new StructType()
-      .add("array", arrayOfInt)
-      .add("arrayOfArray", ArrayType(arrayOfInt))
+    val array =
+      new StructType().add("array", arrayOfInt).add("arrayOfArray", ArrayType(arrayOfInt))
     /*
     Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz
     Hash For array:                     Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
@@ -142,9 +142,7 @@ object HashBenchmark {
     test("array", array, 1 << 8, 1 << 9)
 
     val mapOfInt = MapType(IntegerType, IntegerType)
-    val map = new StructType()
-      .add("map", mapOfInt)
-      .add("mapOfMap", MapType(IntegerType, mapOfInt))
+    val map = new StructType().add("map", mapOfInt).add("mapOfMap", MapType(IntegerType, mapOfInt))
     /*
     Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz
     Hash For map:                       Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative

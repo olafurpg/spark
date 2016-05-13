@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql
 
@@ -33,42 +33,37 @@ class ListTablesSuite extends QueryTest with BeforeAndAfter with SharedSQLContex
   }
 
   after {
-    spark.sessionState.catalog.dropTable(
-      TableIdentifier("listtablessuitetable"), ignoreIfNotExists = true)
+    spark.sessionState.catalog
+      .dropTable(TableIdentifier("listtablessuitetable"), ignoreIfNotExists = true)
   }
 
   test("get all tables") {
-    checkAnswer(
-      spark.wrapped.tables().filter("tableName = 'listtablessuitetable'"),
-      Row("listtablessuitetable", true))
+    checkAnswer(spark.wrapped.tables().filter("tableName = 'listtablessuitetable'"),
+                Row("listtablessuitetable", true))
 
-    checkAnswer(
-      sql("SHOW tables").filter("tableName = 'listtablessuitetable'"),
-      Row("listtablessuitetable", true))
+    checkAnswer(sql("SHOW tables").filter("tableName = 'listtablessuitetable'"),
+                Row("listtablessuitetable", true))
 
-    spark.sessionState.catalog.dropTable(
-      TableIdentifier("listtablessuitetable"), ignoreIfNotExists = true)
+    spark.sessionState.catalog
+      .dropTable(TableIdentifier("listtablessuitetable"), ignoreIfNotExists = true)
     assert(spark.wrapped.tables().filter("tableName = 'listtablessuitetable'").count() === 0)
   }
 
   test("getting all tables with a database name has no impact on returned table names") {
-    checkAnswer(
-      spark.wrapped.tables("default").filter("tableName = 'listtablessuitetable'"),
-      Row("listtablessuitetable", true))
+    checkAnswer(spark.wrapped.tables("default").filter("tableName = 'listtablessuitetable'"),
+                Row("listtablessuitetable", true))
 
-    checkAnswer(
-      sql("show TABLES in default").filter("tableName = 'listtablessuitetable'"),
-      Row("listtablessuitetable", true))
+    checkAnswer(sql("show TABLES in default").filter("tableName = 'listtablessuitetable'"),
+                Row("listtablessuitetable", true))
 
-    spark.sessionState.catalog.dropTable(
-      TableIdentifier("listtablessuitetable"), ignoreIfNotExists = true)
+    spark.sessionState.catalog
+      .dropTable(TableIdentifier("listtablessuitetable"), ignoreIfNotExists = true)
     assert(spark.wrapped.tables().filter("tableName = 'listtablessuitetable'").count() === 0)
   }
 
   test("query the returned DataFrame of tables") {
-    val expectedSchema = StructType(
-      StructField("tableName", StringType, false) ::
-      StructField("isTemporary", BooleanType, false) :: Nil)
+    val expectedSchema = StructType(StructField("tableName", StringType, false) ::
+        StructField("isTemporary", BooleanType, false) :: Nil)
 
     Seq(spark.wrapped.tables(), sql("SHOW TABLes")).foreach {
       case tableDF =>
@@ -76,13 +71,14 @@ class ListTablesSuite extends QueryTest with BeforeAndAfter with SharedSQLContex
 
         tableDF.registerTempTable("tables")
         checkAnswer(
-          sql(
-            "SELECT isTemporary, tableName from tables WHERE tableName = 'listtablessuitetable'"),
-          Row(true, "listtablessuitetable")
+            sql("SELECT isTemporary, tableName from tables WHERE tableName = 'listtablessuitetable'"),
+            Row(true, "listtablessuitetable")
         )
-        checkAnswer(
-          spark.wrapped.tables().filter("tableName = 'tables'").select("tableName", "isTemporary"),
-          Row("tables", true))
+        checkAnswer(spark.wrapped
+                      .tables()
+                      .filter("tableName = 'tables'")
+                      .select("tableName", "isTemporary"),
+                    Row("tables", true))
         spark.catalog.dropTempView("tables")
     }
   }

@@ -25,9 +25,9 @@ import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.util.random.RandomSampler
 import org.apache.spark.util.Utils
 
-private[spark]
-class PartitionwiseSampledRDDPartition(val prev: Partition, val seed: Long)
-  extends Partition with Serializable {
+private[spark] class PartitionwiseSampledRDDPartition(val prev: Partition, val seed: Long)
+    extends Partition
+    with Serializable {
   override val index: Int = prev.index
 }
 
@@ -49,7 +49,7 @@ private[spark] class PartitionwiseSampledRDD[T: ClassTag, U: ClassTag](
     sampler: RandomSampler[T, U],
     preservesPartitioning: Boolean,
     @transient private val seed: Long = Utils.random.nextLong)
-  extends RDD[U](prev) {
+    extends RDD[U](prev) {
 
   @transient override val partitioner = if (preservesPartitioning) prev.partitioner else None
 

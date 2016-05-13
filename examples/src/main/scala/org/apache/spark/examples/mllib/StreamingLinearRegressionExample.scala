@@ -42,8 +42,8 @@ object StreamingLinearRegressionExample {
     val testData = ssc.textFileStream(args(1)).map(LabeledPoint.parse)
 
     val numFeatures = 3
-    val model = new StreamingLinearRegressionWithSGD()
-      .setInitialWeights(Vectors.zeros(numFeatures))
+    val model =
+      new StreamingLinearRegressionWithSGD().setInitialWeights(Vectors.zeros(numFeatures))
 
     model.trainOn(trainingData)
     model.predictOnValues(testData.map(lp => (lp.label, lp.features))).print()

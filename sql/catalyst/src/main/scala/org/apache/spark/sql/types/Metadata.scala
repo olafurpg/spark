@@ -24,7 +24,6 @@ import org.json4s.jackson.JsonMethods._
 
 import org.apache.spark.annotation.DeveloperApi
 
-
 /**
  * :: DeveloperApi ::
  *
@@ -38,8 +37,8 @@ import org.apache.spark.annotation.DeveloperApi
  * @param map an immutable map that stores the data
  */
 @DeveloperApi
-sealed class Metadata private[types] (private[types] val map: Map[String, Any])
-  extends Serializable {
+sealed class Metadata private[types](private[types] val map: Map[String, Any])
+    extends Serializable {
 
   /** No-arg constructor for kryo. */
   protected def this() = this(null)
@@ -153,7 +152,7 @@ object Metadata {
               builder.putStringArray(key, value.asInstanceOf[List[JString]].map(_.s).toArray)
             case _: JObject =>
               builder.putMetadataArray(
-                key, value.asInstanceOf[List[JObject]].map(fromJObject).toArray)
+                  key, value.asInstanceOf[List[JObject]].map(fromJObject).toArray)
             case other =>
               throw new RuntimeException(s"Do not support array of type ${other.getClass}.")
           }

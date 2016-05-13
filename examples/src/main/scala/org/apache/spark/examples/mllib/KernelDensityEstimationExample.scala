@@ -37,9 +37,7 @@ object KernelDensityEstimationExample {
 
     // Construct the density estimator with the sample data and a standard deviation
     // for the Gaussian kernels
-    val kd = new KernelDensity()
-      .setSample(data)
-      .setBandwidth(3.0)
+    val kd = new KernelDensity().setSample(data).setBandwidth(3.0)
 
     // Find density estimates for the given values
     val densities = kd.estimate(Array(-1.0, 2.0, 5.0))
@@ -51,4 +49,3 @@ object KernelDensityEstimationExample {
   }
 }
 // scalastyle:on println
-

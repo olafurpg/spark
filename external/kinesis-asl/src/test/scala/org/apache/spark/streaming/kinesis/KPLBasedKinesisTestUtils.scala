@@ -60,8 +60,8 @@ private[kinesis] class KPLDataGenerator(regionName: String) extends KinesisDataG
         override def onSuccess(result: UserRecordResult): Unit = {
           val shardId = result.getShardId
           val seqNumber = result.getSequenceNumber()
-          val sentSeqNumbers = shardIdToSeqNumbers.getOrElseUpdate(shardId,
-            new ArrayBuffer[(Int, String)]())
+          val sentSeqNumbers =
+            shardIdToSeqNumbers.getOrElseUpdate(shardId, new ArrayBuffer[(Int, String)]())
           sentSeqNumbers += ((num, seqNumber))
         }
       }

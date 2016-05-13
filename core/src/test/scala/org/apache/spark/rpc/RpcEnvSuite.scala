@@ -362,7 +362,6 @@ abstract class RpcEnvSuite extends SparkFunSuite with BeforeAndAfterAll {
         override def receive: PartialFunction[Any, Unit] = {
           case m => result += 1
         }
-
       })
 
       (0 until 10) foreach { _ =>
@@ -492,8 +491,7 @@ abstract class RpcEnvSuite extends SparkFunSuite with BeforeAndAfterAll {
    * @return the [[RpcEndpointRef]] and an `ConcurrentLinkedQueue` that contains network events.
    */
   private def setupNetworkEndpoint(
-      _env: RpcEnv,
-      name: String): (RpcEndpointRef, ConcurrentLinkedQueue[(Any, Any)]) = {
+      _env: RpcEnv, name: String): (RpcEndpointRef, ConcurrentLinkedQueue[(Any, Any)]) = {
     val events = new ConcurrentLinkedQueue[(Any, Any)]
     val ref = _env.setupEndpoint("network-events-non-client", new ThreadSafeRpcEndpoint {
       override val rpcEnv = _env
@@ -514,7 +512,6 @@ abstract class RpcEnvSuite extends SparkFunSuite with BeforeAndAfterAll {
       override def onNetworkError(cause: Throwable, remoteAddress: RpcAddress): Unit = {
         events.add("onNetworkError" -> remoteAddress)
       }
-
     })
     (ref, events)
   }
@@ -707,18 +704,18 @@ abstract class RpcEnvSuite extends SparkFunSuite with BeforeAndAfterAll {
 
     // Construct RpcTimeout with a single property
     val rt1 = RpcTimeout(conf, testProp)
-    assert( testDurationSeconds === rt1.duration.toSeconds )
+    assert(testDurationSeconds === rt1.duration.toSeconds)
 
     // Construct RpcTimeout with prioritized list of properties
     val rt2 = RpcTimeout(conf, Seq("spark.ask.invalid.timeout", testProp, secondaryProp), "1s")
-    assert( testDurationSeconds === rt2.duration.toSeconds )
+    assert(testDurationSeconds === rt2.duration.toSeconds)
 
     // Construct RpcTimeout with default value,
     val defaultProp = "spark.ask.default.timeout"
     val defaultDurationSeconds = 1
     val rt3 = RpcTimeout(conf, Seq(defaultProp), defaultDurationSeconds.toString + "s")
-    assert( defaultDurationSeconds === rt3.duration.toSeconds )
-    assert( rt3.timeoutProp.contains(defaultProp) )
+    assert(defaultDurationSeconds === rt3.duration.toSeconds)
+    assert(rt3.timeoutProp.contains(defaultProp))
 
     // Try to construct RpcTimeout with an unconfigured property
     intercept[NoSuchElementException] {
@@ -748,10 +745,9 @@ abstract class RpcEnvSuite extends SparkFunSuite with BeforeAndAfterAll {
 
     // Ask with a delayed response and wait for response immediately that should timeout
     val fut2 = rpcEndpointRef.ask[String](NeverReply("doh"), shortTimeout)
-    val reply2 =
-      intercept[RpcTimeoutException] {
-        shortTimeout.awaitResult(fut2)
-      }.getMessage
+    val reply2 = intercept[RpcTimeoutException] {
+      shortTimeout.awaitResult(fut2)
+    }.getMessage
 
     // RpcTimeout.awaitResult should have added the property to the TimeoutException message
     assert(reply2.contains(shortTimeout.timeoutProp))
@@ -762,10 +758,9 @@ abstract class RpcEnvSuite extends SparkFunSuite with BeforeAndAfterAll {
     // scalastyle:off awaitresult
     // Allow future to complete with failure using plain Await.result, this will return
     // once the future is complete to verify addMessageIfTimeout was invoked
-    val reply3 =
-      intercept[RpcTimeoutException] {
-        Await.result(fut3, 2000 millis)
-      }.getMessage
+    val reply3 = intercept[RpcTimeoutException] {
+      Await.result(fut3, 2000 millis)
+    }.getMessage
     // scalastyle:on awaitresult
 
     // When the future timed out, the recover callback should have used
@@ -774,10 +769,9 @@ abstract class RpcEnvSuite extends SparkFunSuite with BeforeAndAfterAll {
 
     // Use RpcTimeout.awaitResult to process Future, since it has already failed with
     // RpcTimeoutException, the same RpcTimeoutException should be thrown
-    val reply4 =
-      intercept[RpcTimeoutException] {
-        shortTimeout.awaitResult(fut3)
-      }.getMessage
+    val reply4 = intercept[RpcTimeoutException] {
+      shortTimeout.awaitResult(fut3)
+    }.getMessage
 
     // Ensure description is not in message twice after addMessageIfTimeout and awaitResult
     assert(shortTimeout.timeoutProp.r.findAllIn(reply4).length === 1)
@@ -823,17 +817,17 @@ abstract class RpcEnvSuite extends SparkFunSuite with BeforeAndAfterAll {
     val sm = new SecurityManager(conf)
     val hc = SparkHadoopUtil.get.conf
 
-    val files = Seq(
-      (file, fileUri),
-      (fileWithSpecialChars, fileWithSpecialCharsUri),
-      (empty, emptyUri),
-      (jar, jarUri),
-      (subFile1, dir1Uri + "/file1"),
-      (subFile2, dir2Uri + "/file2"))
-    files.foreach { case (f, uri) =>
-      val destFile = new File(destDir, f.getName())
-      Utils.fetchFile(uri, destDir, conf, sm, hc, 0L, false)
-      assert(Files.equal(f, destFile))
+    val files = Seq((file, fileUri),
+                    (fileWithSpecialChars, fileWithSpecialCharsUri),
+                    (empty, emptyUri),
+                    (jar, jarUri),
+                    (subFile1, dir1Uri + "/file1"),
+                    (subFile2, dir2Uri + "/file2"))
+    files.foreach {
+      case (f, uri) =>
+        val destFile = new File(destDir, f.getName())
+        Utils.fetchFile(uri, destDir, conf, sm, hc, 0L, false)
+        assert(Files.equal(f, destFile))
     }
 
     // Try to download files that do not exist.

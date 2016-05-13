@@ -30,7 +30,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.util.{RedirectThread, Utils}
 
 private[spark] class PythonWorkerFactory(pythonExec: String, envVars: Map[String, String])
-  extends Logging {
+    extends Logging {
 
   import PythonWorkerFactory._
 
@@ -50,10 +50,9 @@ private[spark] class PythonWorkerFactory(pythonExec: String, envVars: Map[String
 
   var simpleWorkers = new mutable.WeakHashMap[Socket, Process]()
 
-  val pythonPath = PythonUtils.mergePythonPaths(
-    PythonUtils.sparkPythonPath,
-    envVars.getOrElse("PYTHONPATH", ""),
-    sys.env.getOrElse("PYTHONPATH", ""))
+  val pythonPath = PythonUtils.mergePythonPaths(PythonUtils.sparkPythonPath,
+                                                envVars.getOrElse("PYTHONPATH", ""),
+                                                sys.env.getOrElse("PYTHONPATH", ""))
 
   def create(): Socket = {
     if (useDaemon) {
@@ -123,7 +122,7 @@ private[spark] class PythonWorkerFactory(pythonExec: String, envVars: Map[String
       redirectStreamsToStderr(worker.getInputStream, worker.getErrorStream)
 
       // Tell the worker our port
-      val out = new  OutputStreamWriter(worker.getOutputStream, StandardCharsets.UTF_8)
+      val out = new OutputStreamWriter(worker.getOutputStream, StandardCharsets.UTF_8)
       out.write(serverSocket.getLocalPort + "\n")
       out.flush()
 
@@ -167,14 +166,12 @@ private[spark] class PythonWorkerFactory(pythonExec: String, envVars: Map[String
 
         // Redirect daemon stdout and stderr
         redirectStreamsToStderr(in, daemon.getErrorStream)
-
       } catch {
         case e: Exception =>
-
           // If the daemon exists, wait for it to finish and get its stderr
-          val stderr = Option(daemon)
-            .flatMap { d => Utils.getStderr(d, PROCESS_WAIT_TIMEOUT_MS) }
-            .getOrElse("")
+          val stderr = Option(daemon).flatMap { d =>
+            Utils.getStderr(d, PROCESS_WAIT_TIMEOUT_MS)
+          }.getOrElse("")
 
           stopDaemon()
 
@@ -308,5 +305,5 @@ private[spark] class PythonWorkerFactory(pythonExec: String, envVars: Map[String
 
 private object PythonWorkerFactory {
   val PROCESS_WAIT_TIMEOUT_MS = 10000
-  val IDLE_WORKER_TIMEOUT_MS = 60000  // kill idle workers after 1 minute
+  val IDLE_WORKER_TIMEOUT_MS = 60000 // kill idle workers after 1 minute
 }

@@ -38,9 +38,9 @@ import org.apache.spark.util.{ShutdownHookManager, Utils}
  *
  * Optionally requires SASL authentication in order to read. See [[SecurityManager]].
  */
-private[deploy]
-class ExternalShuffleService(sparkConf: SparkConf, securityManager: SecurityManager)
-  extends Logging {
+private[deploy] class ExternalShuffleService(
+    sparkConf: SparkConf, securityManager: SecurityManager)
+    extends Logging {
 
   private val enabled = sparkConf.getBoolean("spark.shuffle.service.enabled", false)
   private val port = sparkConf.getInt("spark.shuffle.service.port", 7337)
@@ -49,8 +49,8 @@ class ExternalShuffleService(sparkConf: SparkConf, securityManager: SecurityMana
   private val transportConf =
     SparkTransportConf.fromSparkConf(sparkConf, "shuffle", numUsableCores = 0)
   private val blockHandler = newShuffleBlockHandler(transportConf)
-  private val transportContext: TransportContext =
-    new TransportContext(transportConf, blockHandler, true)
+  private val transportContext: TransportContext = new TransportContext(
+      transportConf, blockHandler, true)
 
   private var server: TransportServer = _
 
@@ -81,7 +81,7 @@ class ExternalShuffleService(sparkConf: SparkConf, securityManager: SecurityMana
 
   /** Clean up all shuffle files associated with an application that has exited. */
   def applicationRemoved(appId: String): Unit = {
-    blockHandler.applicationRemoved(appId, true /* cleanupLocalDirs */)
+    blockHandler.applicationRemoved(appId, true /* cleanupLocalDirs */ )
   }
 
   def stop() {
@@ -106,9 +106,9 @@ object ExternalShuffleService extends Logging {
   }
 
   /** A helper main method that allows the caller to call this with a custom shuffle service. */
-  private[spark] def main(
-      args: Array[String],
-      newShuffleService: (SparkConf, SecurityManager) => ExternalShuffleService): Unit = {
+  private[spark] def main(args: Array[String],
+                          newShuffleService: (SparkConf,
+                          SecurityManager) => ExternalShuffleService): Unit = {
     Utils.initDaemon(log)
     val sparkConf = new SparkConf
     Utils.loadDefaultSparkProperties(sparkConf)

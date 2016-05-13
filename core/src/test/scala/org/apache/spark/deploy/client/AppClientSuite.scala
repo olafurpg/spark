@@ -148,8 +148,15 @@ class AppClientSuite extends SparkFunSuite with LocalSparkContext with BeforeAnd
   private def makeWorkers(cores: Int, memory: Int): Seq[Worker] = {
     (0 until numWorkers).map { i =>
       val rpcEnv = workerRpcEnvs(i)
-      val worker = new Worker(rpcEnv, 0, cores, memory, Array(masterRpcEnv.address),
-        Worker.ENDPOINT_NAME, null, conf, securityManager)
+      val worker = new Worker(rpcEnv,
+                              0,
+                              cores,
+                              memory,
+                              Array(masterRpcEnv.address),
+                              Worker.ENDPOINT_NAME,
+                              null,
+                              conf,
+                              securityManager)
       rpcEnv.setupEndpoint(Worker.ENDPOINT_NAME, worker)
       worker
     }
@@ -187,12 +194,11 @@ class AppClientSuite extends SparkFunSuite with LocalSparkContext with BeforeAnd
       deadReasonList.add(reason)
     }
 
-    def executorAdded(
-        id: String,
-        workerId: String,
-        hostPort: String,
-        cores: Int,
-        memory: Int): Unit = {
+    def executorAdded(id: String,
+                      workerId: String,
+                      hostPort: String,
+                      cores: Int,
+                      memory: Int): Unit = {
       execAddedList.add(id)
     }
 
@@ -205,10 +211,13 @@ class AppClientSuite extends SparkFunSuite with LocalSparkContext with BeforeAnd
   private class AppClientInst(masterUrl: String) {
     val rpcEnv = RpcEnv.create("spark", Utils.localHostName(), 0, conf, securityManager)
     private val cmd = new Command(TestExecutor.getClass.getCanonicalName.stripSuffix("$"),
-      List(), Map(), Seq(), Seq(), Seq())
+                                  List(),
+                                  Map(),
+                                  Seq(),
+                                  Seq(),
+                                  Seq())
     private val desc = new ApplicationDescription("AppClientSuite", Some(1), 512, cmd, "ignored")
     val listener = new AppClientCollector
     val client = new AppClient(rpcEnv, Array(masterUrl), desc, listener, new SparkConf)
   }
-
 }

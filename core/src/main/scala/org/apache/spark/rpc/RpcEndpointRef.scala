@@ -27,8 +27,7 @@ import org.apache.spark.util.RpcUtils
 /**
  * A reference for a remote [[RpcEndpoint]]. [[RpcEndpointRef]] is thread-safe.
  */
-private[spark] abstract class RpcEndpointRef(conf: SparkConf)
-  extends Serializable with Logging {
+private[spark] abstract class RpcEndpointRef(conf: SparkConf) extends Serializable with Logging {
 
   private[this] val maxRetries = RpcUtils.numRetries(conf)
   private[this] val retryWaitMs = RpcUtils.retryWaitMs(conf)
@@ -116,8 +115,6 @@ private[spark] abstract class RpcEndpointRef(conf: SparkConf)
       }
     }
 
-    throw new SparkException(
-      s"Error sending message [message = $message]", lastException)
+    throw new SparkException(s"Error sending message [message = $message]", lastException)
   }
-
 }

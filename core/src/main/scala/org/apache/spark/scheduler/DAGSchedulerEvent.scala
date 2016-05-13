@@ -34,24 +34,22 @@ import org.apache.spark.util.{AccumulatorV2, CallSite}
 private[scheduler] sealed trait DAGSchedulerEvent
 
 /** A result-yielding job was submitted on a target RDD */
-private[scheduler] case class JobSubmitted(
-    jobId: Int,
-    finalRDD: RDD[_],
-    func: (TaskContext, Iterator[_]) => _,
-    partitions: Array[Int],
-    callSite: CallSite,
-    listener: JobListener,
-    properties: Properties = null)
-  extends DAGSchedulerEvent
+private[scheduler] case class JobSubmitted(jobId: Int,
+                                           finalRDD: RDD[_],
+                                           func: (TaskContext, Iterator[_]) => _,
+                                           partitions: Array[Int],
+                                           callSite: CallSite,
+                                           listener: JobListener,
+                                           properties: Properties = null)
+    extends DAGSchedulerEvent
 
 /** A map stage as submitted to run as a separate job */
-private[scheduler] case class MapStageSubmitted(
-  jobId: Int,
-  dependency: ShuffleDependency[_, _, _],
-  callSite: CallSite,
-  listener: JobListener,
-  properties: Properties = null)
-  extends DAGSchedulerEvent
+private[scheduler] case class MapStageSubmitted(jobId: Int,
+                                                dependency: ShuffleDependency[_, _, _],
+                                                callSite: CallSite,
+                                                listener: JobListener,
+                                                properties: Properties = null)
+    extends DAGSchedulerEvent
 
 private[scheduler] case class StageCancelled(stageId: Int) extends DAGSchedulerEvent
 
@@ -61,26 +59,24 @@ private[scheduler] case class JobGroupCancelled(groupId: String) extends DAGSche
 
 private[scheduler] case object AllJobsCancelled extends DAGSchedulerEvent
 
-private[scheduler]
-case class BeginEvent(task: Task[_], taskInfo: TaskInfo) extends DAGSchedulerEvent
+private[scheduler] case class BeginEvent(task: Task[_], taskInfo: TaskInfo)
+    extends DAGSchedulerEvent
 
-private[scheduler]
-case class GettingResultEvent(taskInfo: TaskInfo) extends DAGSchedulerEvent
+private[scheduler] case class GettingResultEvent(taskInfo: TaskInfo) extends DAGSchedulerEvent
 
-private[scheduler] case class CompletionEvent(
-    task: Task[_],
-    reason: TaskEndReason,
-    result: Any,
-    accumUpdates: Seq[AccumulatorV2[_, _]],
-    taskInfo: TaskInfo)
-  extends DAGSchedulerEvent
+private[scheduler] case class CompletionEvent(task: Task[_],
+                                              reason: TaskEndReason,
+                                              result: Any,
+                                              accumUpdates: Seq[AccumulatorV2[_, _]],
+                                              taskInfo: TaskInfo)
+    extends DAGSchedulerEvent
 
 private[scheduler] case class ExecutorAdded(execId: String, host: String) extends DAGSchedulerEvent
 
 private[scheduler] case class ExecutorLost(execId: String) extends DAGSchedulerEvent
 
-private[scheduler]
-case class TaskSetFailed(taskSet: TaskSet, reason: String, exception: Option[Throwable])
-  extends DAGSchedulerEvent
+private[scheduler] case class TaskSetFailed(
+    taskSet: TaskSet, reason: String, exception: Option[Throwable])
+    extends DAGSchedulerEvent
 
 private[scheduler] case object ResubmitFailedStages extends DAGSchedulerEvent

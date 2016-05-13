@@ -35,8 +35,11 @@ import org.apache.spark.sql.types.DoubleType
  */
 @Since("1.2.0")
 @Experimental
-class BinaryClassificationEvaluator @Since("1.4.0") (@Since("1.4.0") override val uid: String)
-  extends Evaluator with HasRawPredictionCol with HasLabelCol with DefaultParamsWritable {
+class BinaryClassificationEvaluator @Since("1.4.0")(@Since("1.4.0") override val uid: String)
+    extends Evaluator
+    with HasRawPredictionCol
+    with HasLabelCol
+    with DefaultParamsWritable {
 
   @Since("1.2.0")
   def this() = this(Identifiable.randomUID("binEval"))
@@ -49,7 +52,7 @@ class BinaryClassificationEvaluator @Since("1.4.0") (@Since("1.4.0") override va
   val metricName: Param[String] = {
     val allowedParams = ParamValidators.inArray(Array("areaUnderROC", "areaUnderPR"))
     new Param(
-      this, "metricName", "metric name in evaluation (areaUnderROC|areaUnderPR)", allowedParams)
+        this, "metricName", "metric name in evaluation (areaUnderROC|areaUnderPR)", allowedParams)
   }
 
   /** @group getParam */

@@ -27,12 +27,11 @@ import org.apache.spark.util.Utils
  * Stores information about a SQL SparkPlan.
  */
 @DeveloperApi
-class SparkPlanInfo(
-    val nodeName: String,
-    val simpleString: String,
-    val children: Seq[SparkPlanInfo],
-    val metadata: Map[String, String],
-    val metrics: Seq[SQLMetricInfo]) {
+class SparkPlanInfo(val nodeName: String,
+                    val simpleString: String,
+                    val children: Seq[SparkPlanInfo],
+                    val metadata: Map[String, String],
+                    val metrics: Seq[SQLMetricInfo]) {
 
   override def hashCode(): Int = {
     // hashCode of simpleString should be good enough to distinguish the plans from each other
@@ -54,11 +53,12 @@ private[sql] object SparkPlanInfo {
       case ReusedExchangeExec(_, child) => child :: Nil
       case _ => plan.children ++ plan.subqueries
     }
-    val metrics = plan.metrics.toSeq.map { case (key, metric) =>
-      new SQLMetricInfo(metric.name.getOrElse(key), metric.id, metric.metricType)
+    val metrics = plan.metrics.toSeq.map {
+      case (key, metric) =>
+        new SQLMetricInfo(metric.name.getOrElse(key), metric.id, metric.metricType)
     }
 
-    new SparkPlanInfo(plan.nodeName, plan.simpleString, children.map(fromSparkPlan),
-      plan.metadata, metrics)
+    new SparkPlanInfo(
+        plan.nodeName, plan.simpleString, children.map(fromSparkPlan), plan.metadata, metrics)
   }
 }

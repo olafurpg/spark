@@ -21,7 +21,6 @@ import java.util.UUID
 
 import org.apache.spark.annotation.DeveloperApi
 
-
 /**
  * :: DeveloperApi ::
  *

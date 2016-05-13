@@ -182,8 +182,12 @@ class BroadcastSuite extends SparkFunSuite with LocalSparkContext {
       assert(statuses.size === expectedNumBlocks)
     }
 
-    testUnpersistBroadcast(distributed, numSlaves, afterCreation,
-      afterUsingBroadcast, afterUnpersist, removeFromDriver)
+    testUnpersistBroadcast(distributed,
+                           numSlaves,
+                           afterCreation,
+                           afterUsingBroadcast,
+                           afterUnpersist,
+                           removeFromDriver)
   }
 
   /**
@@ -195,29 +199,28 @@ class BroadcastSuite extends SparkFunSuite with LocalSparkContext {
    * 3) Unpersist the broadcast, and verify that all state is removed where they should be.
    * 4) [Optional] If removeFromDriver is false, we verify that the broadcast is re-usable.
    */
-  private def testUnpersistBroadcast(
-      distributed: Boolean,
-      numSlaves: Int,  // used only when distributed = true
-      afterCreation: (Long, BlockManagerMaster) => Unit,
-      afterUsingBroadcast: (Long, BlockManagerMaster) => Unit,
-      afterUnpersist: (Long, BlockManagerMaster) => Unit,
-      removeFromDriver: Boolean) {
+  private def testUnpersistBroadcast(distributed: Boolean,
+                                     numSlaves: Int, // used only when distributed = true
+                                     afterCreation: (Long, BlockManagerMaster) => Unit,
+                                     afterUsingBroadcast: (Long, BlockManagerMaster) => Unit,
+                                     afterUnpersist: (Long, BlockManagerMaster) => Unit,
+                                     removeFromDriver: Boolean) {
 
-    sc = if (distributed) {
-      val _sc =
-        new SparkContext("local-cluster[%d, 1, 1024]".format(numSlaves), "test")
-      // Wait until all salves are up
-      try {
-        _sc.jobProgressListener.waitUntilExecutorsUp(numSlaves, 60000)
-        _sc
-      } catch {
-        case e: Throwable =>
-          _sc.stop()
-          throw e
+    sc =
+      if (distributed) {
+        val _sc = new SparkContext("local-cluster[%d, 1, 1024]".format(numSlaves), "test")
+        // Wait until all salves are up
+        try {
+          _sc.jobProgressListener.waitUntilExecutorsUp(numSlaves, 60000)
+          _sc
+        } catch {
+          case e: Throwable =>
+            _sc.stop()
+            throw e
+        }
+      } else {
+        new SparkContext("local", "test")
       }
-    } else {
-      new SparkContext("local", "test")
-    }
     val blockManagerMaster = sc.env.blockManager.master
     val list = List[Int](1, 2, 3, 4)
 
@@ -263,5 +266,4 @@ package object testPackage extends Assertions {
     val thrown = intercept[SparkException] { broadcast.value }
     assert(thrown.getMessage.contains("BroadcastSuite.scala"))
   }
-
 }

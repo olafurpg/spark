@@ -30,9 +30,9 @@ class ExchangeSuite extends SparkPlanTest with SharedSQLContext {
   test("shuffling UnsafeRows in exchange") {
     val input = (1 to 1000).map(Tuple1.apply)
     checkAnswer(
-      input.toDF(),
-      plan => ShuffleExchange(SinglePartition, plan),
-      input.map(Row.fromTuple)
+        input.toDF(),
+        plan => ShuffleExchange(SinglePartition, plan),
+        input.map(Row.fromTuple)
     )
   }
 
@@ -58,8 +58,7 @@ class ExchangeSuite extends SparkPlanTest with SharedSQLContext {
     val exchange1 = BroadcastExchangeExec(IdentityBroadcastMode, plan)
     val hashMode = HashedRelationBroadcastMode(output)
     val exchange2 = BroadcastExchangeExec(hashMode, plan)
-    val hashMode2 =
-      HashedRelationBroadcastMode(Alias(output.head, "id2")() :: Nil)
+    val hashMode2 = HashedRelationBroadcastMode(Alias(output.head, "id2")() :: Nil)
     val exchange3 = BroadcastExchangeExec(hashMode2, plan)
     val exchange4 = ReusedExchangeExec(output, exchange3)
 

@@ -10,24 +10,23 @@ package org.apache.spark.repl
 import scala.tools.nsc._
 import scala.tools.nsc.interpreter._
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{mutable, immutable}
 
-private[repl] trait SparkImports {
-  self: SparkIMain =>
+private[repl] trait SparkImports { self: SparkIMain =>
 
   import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
+  import definitions.{ScalaPackage, JavaLangPackage, PredefModule}
   import memberHandlers._
 
   def isNoImports = settings.noimports.value
-  def isNoPredef  = settings.nopredef.value
+  def isNoPredef = settings.nopredef.value
 
   /** Synthetic import handlers for the language defined imports. */
   private def makeWildcardImportHandler(sym: Symbol): ImportHandler = {
     val hd :: tl = sym.fullName.split('.').toList map newTermName
     val tree = Import(
-      tl.foldLeft(Ident(hd): Tree)((x, y) => Select(x, y)),
-      ImportSelector.wildList
+        tl.foldLeft(Ident(hd): Tree)((x, y) => Select(x, y)),
+        ImportSelector.wildList
     )
     tree setSymbol sym
     new ImportHandler(tree)
@@ -39,8 +38,8 @@ private[repl] trait SparkImports {
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
 
   def allImportedNames = importHandlers flatMap (_.importedNames)
-  def importedTerms    = onlyTerms(allImportedNames)
-  def importedTypes    = onlyTypes(allImportedNames)
+  def importedTerms = onlyTerms(allImportedNames)
+  def importedTypes = onlyTypes(allImportedNames)
 
   /** Types which have been wildcard imported, such as:
    *    val x = "abc" ; import x._  // type java.lang.String
@@ -58,12 +57,12 @@ private[repl] trait SparkImports {
   }
   def wildcardTypes = languageWildcards ++ sessionWildcards
 
-  def languageSymbols        = languageWildcardSyms flatMap membersAtPickler
+  def languageSymbols = languageWildcardSyms flatMap membersAtPickler
   def sessionImportedSymbols = importHandlers flatMap (_.importedSymbols)
-  def importedSymbols        = languageSymbols ++ sessionImportedSymbols
-  def importedTermSymbols    = importedSymbols collect { case x: TermSymbol => x }
-  def importedTypeSymbols    = importedSymbols collect { case x: TypeSymbol => x }
-  def implicitSymbols        = importedSymbols filter (_.isImplicit)
+  def importedSymbols = languageSymbols ++ sessionImportedSymbols
+  def importedTermSymbols = importedSymbols collect { case x: TermSymbol => x }
+  def importedTypeSymbols = importedSymbols collect { case x: TypeSymbol => x }
+  def implicitSymbols = importedSymbols filter (_.isImplicit)
 
   def importedTermNamed(name: String): Symbol =
     importedTermSymbols find (_.name.toString == name) getOrElse NoSymbol
@@ -71,10 +70,11 @@ private[repl] trait SparkImports {
   /** Tuples of (source, imported symbols) in the order they were imported.
    */
   def importedSymbolsBySource: List[(Symbol, List[Symbol])] = {
-    val lang    = languageWildcardSyms map (sym => (sym, membersAtPickler(sym)))
-    val session = importHandlers filter (_.targetType != NoType) map { mh =>
-      (mh.targetType.typeSymbol, mh.importedSymbols)
-    }
+    val lang = languageWildcardSyms map (sym => (sym, membersAtPickler(sym)))
+    val session =
+      importHandlers filter (_.targetType != NoType) map { mh =>
+        (mh.targetType.typeSymbol, mh.importedSymbols)
+      }
 
     lang ++ session
   }
@@ -111,13 +111,15 @@ private[repl] trait SparkImports {
   def fallback = System.getProperty("spark.repl.fallback", "false").toBoolean
 
   protected def importsCode(wanted: Set[Name], definedClass: Boolean): SparkComputedImports = {
+
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
      */
-    case class ReqAndHandler(req: Request, handler: MemberHandler) { }
+    case class ReqAndHandler(req: Request, handler: MemberHandler) {}
 
     def reqsToUse: List[ReqAndHandler] = {
+
       /**
        * Loop through a list of MemberHandlers and select which ones to keep.
        * 'wanted' is the set of names that need to be imported.
@@ -126,20 +128,20 @@ private[repl] trait SparkImports {
         // Single symbol imports might be implicits! See bug #1752.  Rather than
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
-       /* This case clause tries to "precisely" import only what is required. And in this
-        * it may miss out on some implicits, because implicits are not known in `wanted`. Thus 
-        * it is suitable for defining classes. AFAIK while defining classes implicits are not
-        * needed.*/
-          case h: ImportHandler if definedClass && !fallback => 
+          /* This case clause tries to "precisely" import only what is required. And in this
+           * it may miss out on some implicits, because implicits are not known in `wanted`. Thus 
+           * it is suitable for defining classes. AFAIK while defining classes implicits are not
+           * needed.*/
+          case h: ImportHandler if definedClass && !fallback =>
             h.importedNames.exists(x => wanted.contains(x))
-          case _: ImportHandler  => true
-          case x                 => x.definesImplicit || (x.definedNames exists wanted)
+          case _: ImportHandler => true
+          case x => x.definesImplicit || (x.definedNames exists wanted)
         }
 
         reqs match {
-          case Nil                                    => Nil
+          case Nil => Nil
           case rh :: rest if !keepHandler(rh.handler) => select(rest, wanted)
-          case rh :: rest                             =>
+          case rh :: rest =>
             import rh.handler._
             val newWanted = wanted ++ referencedNames -- definedNames -- importedNames
             rh :: select(rest, newWanted)
@@ -191,11 +193,11 @@ private[repl] trait SparkImports {
         // the name of the variable, so that we don't need to
         // handle quoting keywords separately.
         case x: ClassHandler if !fallback =>
-        // I am trying to guess if the import is a defined class
-        // This is an ugly hack, I am not 100% sure of the consequences.
-        // Here we, let everything but "defined classes" use the import with val.
-        // The reason for this is, otherwise the remote executor tries to pull the
-        // classes involved and may fail.
+          // I am trying to guess if the import is a defined class
+          // This is an ugly hack, I am not 100% sure of the consequences.
+          // Here we, let everything but "defined classes" use the import with val.
+          // The reason for this is, otherwise the remote executor tries to pull the
+          // classes involved and may fail.
           for (imv <- x.definedNames) {
             val objName = req.lineRep.readPath
             code.append("import " + objName + ".INSTANCE" + req.accessPath + ".`" + imv + "`\n")
@@ -207,9 +209,10 @@ private[repl] trait SparkImports {
             val objName = req.lineRep.readPath
             val valName = "$VAL" + newValId()
 
-            if(!code.toString.endsWith(".`" + imv + "`;\n")) { // Which means already imported
-                code.append("val " + valName + " = " + objName + ".INSTANCE;\n")
-                code.append("import " + valName + req.accessPath + ".`" + imv + "`;\n")
+            if (!code.toString.endsWith(".`" + imv + "`;\n")) {
+              // Which means already imported
+              code.append("val " + valName + " = " + objName + ".INSTANCE;\n")
+              code.append("import " + valName + req.accessPath + ".`" + imv + "`;\n")
             }
             // code.append("val " + valName + " = " + objName + ".INSTANCE;\n")
             // code.append("import " + valName + req.accessPath + ".`" + imv + "`;\n")

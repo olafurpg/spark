@@ -47,10 +47,7 @@ class DCTSuite extends SparkFunSuite with MLlibTestSparkContext with DefaultRead
   }
 
   test("read/write") {
-    val t = new DCT()
-      .setInputCol("myInputCol")
-      .setOutputCol("myOutputCol")
-      .setInverse(true)
+    val t = new DCT().setInputCol("myInputCol").setOutputCol("myOutputCol").setInverse(true)
     testDefaultReadWrite(t)
   }
 
@@ -63,20 +60,16 @@ class DCTSuite extends SparkFunSuite with MLlibTestSparkContext with DefaultRead
     }
     val expectedResult = Vectors.dense(expectedResultBuffer)
 
-    val dataset = spark.createDataFrame(Seq(
-      DCTTestData(data, expectedResult)
-    ))
+    val dataset = spark.createDataFrame(
+        Seq(
+            DCTTestData(data, expectedResult)
+        ))
 
-    val transformer = new DCT()
-      .setInputCol("vec")
-      .setOutputCol("resultVec")
-      .setInverse(inverse)
+    val transformer = new DCT().setInputCol("vec").setOutputCol("resultVec").setInverse(inverse)
 
-    transformer.transform(dataset)
-      .select("resultVec", "wantedVec")
-      .collect()
-      .foreach { case Row(resultVec: Vector, wantedVec: Vector) =>
-      assert(Vectors.sqdist(resultVec, wantedVec) < 1e-6)
+    transformer.transform(dataset).select("resultVec", "wantedVec").collect().foreach {
+      case Row(resultVec: Vector, wantedVec: Vector) =>
+        assert(Vectors.sqdist(resultVec, wantedVec) < 1e-6)
     }
   }
 }

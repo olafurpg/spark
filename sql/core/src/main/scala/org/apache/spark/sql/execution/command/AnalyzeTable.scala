@@ -25,7 +25,6 @@ import org.apache.spark.sql.{AnalysisException, Row, SparkSession}
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.catalog.{CatalogRelation, CatalogTable}
 
-
 /**
  * Analyzes the given table in the current database to generate statistics, which will be
  * used in query optimizations.
@@ -55,52 +54,54 @@ case class AnalyzeTable(tableName: String) extends RunnableCommand {
 
         def calculateTableSize(fs: FileSystem, path: Path): Long = {
           val fileStatus = fs.getFileStatus(path)
-          val size = if (fileStatus.isDirectory) {
-            fs.listStatus(path)
-              .map { status =>
-                if (!status.getPath.getName.startsWith(stagingDir)) {
-                  calculateTableSize(fs, status.getPath)
-                } else {
-                  0L
+          val size =
+            if (fileStatus.isDirectory) {
+              fs.listStatus(path)
+                .map { status =>
+                  if (!status.getPath.getName.startsWith(stagingDir)) {
+                    calculateTableSize(fs, status.getPath)
+                  } else {
+                    0L
+                  }
                 }
-              }.sum
-          } else {
-            fileStatus.getLen
-          }
+                .sum
+            } else {
+              fileStatus.getLen
+            }
 
           size
         }
 
         val tableParameters = catalogTable.properties
         val oldTotalSize = tableParameters.get("totalSize").map(_.toLong).getOrElse(0L)
-        val newTotalSize =
-          catalogTable.storage.locationUri.map { p =>
-            val path = new Path(p)
-            try {
-              val fs = path.getFileSystem(sparkSession.sessionState.newHadoopConf())
-              calculateTableSize(fs, path)
-            } catch {
-              case NonFatal(e) =>
-                logWarning(
+        val newTotalSize = catalogTable.storage.locationUri.map { p =>
+          val path = new Path(p)
+          try {
+            val fs = path.getFileSystem(sparkSession.sessionState.newHadoopConf())
+            calculateTableSize(fs, path)
+          } catch {
+            case NonFatal(e) =>
+              logWarning(
                   s"Failed to get the size of table ${catalogTable.identifier.table} in the " +
-                    s"database ${catalogTable.identifier.database} because of ${e.toString}", e)
-                0L
-            }
-          }.getOrElse(0L)
+                  s"database ${catalogTable.identifier.database} because of ${e.toString}",
+                  e)
+              0L
+          }
+        }.getOrElse(0L)
 
         // Update the Hive metastore if the total size of the table is different than the size
         // recorded in the Hive metastore.
         // This logic is based on org.apache.hadoop.hive.ql.exec.StatsTask.aggregateStats().
         if (newTotalSize > 0 && newTotalSize != oldTotalSize) {
           sessionState.catalog.alterTable(
-            catalogTable.copy(
-              properties = relation.catalogTable.properties +
-                (AnalyzeTable.TOTAL_SIZE_FIELD -> newTotalSize.toString)))
+              catalogTable.copy(properties = relation.catalogTable.properties +
+                    (AnalyzeTable.TOTAL_SIZE_FIELD -> newTotalSize.toString)))
         }
 
       case otherRelation =>
-        throw new AnalysisException(s"ANALYZE TABLE is only supported for Hive tables, " +
-          s"but '${tableIdent.unquotedString}' is a ${otherRelation.nodeName}.")
+        throw new AnalysisException(
+            s"ANALYZE TABLE is only supported for Hive tables, " +
+            s"but '${tableIdent.unquotedString}' is a ${otherRelation.nodeName}.")
     }
     Seq.empty[Row]
   }

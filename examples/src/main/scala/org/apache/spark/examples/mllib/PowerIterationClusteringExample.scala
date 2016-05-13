@@ -59,7 +59,8 @@ object PowerIterationClusteringExample {
       k: Int = 2,
       numPoints: Int = 10,
       maxIterations: Int = 15
-    ) extends AbstractParams[Params]
+  )
+      extends AbstractParams[Params]
 
   def main(args: Array[String]) {
     val defaultParams = Params()
@@ -77,17 +78,19 @@ object PowerIterationClusteringExample {
         .action((x, c) => c.copy(maxIterations = x))
     }
 
-    parser.parse(args, defaultParams).map { params =>
-      run(params)
-    }.getOrElse {
-      sys.exit(1)
-    }
+    parser
+      .parse(args, defaultParams)
+      .map { params =>
+        run(params)
+      }
+      .getOrElse {
+        sys.exit(1)
+      }
   }
 
   def run(params: Params) {
-    val conf = new SparkConf()
-      .setMaster("local")
-      .setAppName(s"PowerIterationClustering with $params")
+    val conf =
+      new SparkConf().setMaster("local").setAppName(s"PowerIterationClustering with $params")
     val sc = new SparkContext(conf)
 
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -102,10 +105,10 @@ object PowerIterationClusteringExample {
 
     val clusters = model.assignments.collect().groupBy(_.cluster).mapValues(_.map(_.id))
     val assignments = clusters.toList.sortBy { case (k, v) => v.length }
-    val assignmentsStr = assignments
-      .map { case (k, v) =>
+    val assignmentsStr = assignments.map {
+      case (k, v) =>
         s"$k -> ${v.sorted.mkString("[", ",", "]")}"
-      }.mkString(", ")
+    }.mkString(", ")
     val sizesStr = assignments.map {
       _._2.length
     }.sorted.mkString("(", ",", ")")
@@ -123,19 +126,18 @@ object PowerIterationClusteringExample {
   }
 
   def generateCirclesRdd(
-      sc: SparkContext,
-      nCircles: Int,
-      nPoints: Int): RDD[(Long, Long, Double)] = {
+      sc: SparkContext, nCircles: Int, nPoints: Int): RDD[(Long, Long, Double)] = {
     val points = (1 to nCircles).flatMap { i =>
       generateCircle(i, i * nPoints)
     }.zipWithIndex
     val rdd = sc.parallelize(points)
-    val distancesRdd = rdd.cartesian(rdd).flatMap { case (((x0, y0), i0), ((x1, y1), i1)) =>
-      if (i0 < i1) {
-        Some((i0.toLong, i1.toLong, gaussianSimilarity((x0, y0), (x1, y1))))
-      } else {
-        None
-      }
+    val distancesRdd = rdd.cartesian(rdd).flatMap {
+      case (((x0, y0), i0), ((x1, y1), i1)) =>
+        if (i0 < i1) {
+          Some((i0.toLong, i1.toLong, gaussianSimilarity((x0, y0), (x1, y1))))
+        } else {
+          None
+        }
     }
     distancesRdd
   }

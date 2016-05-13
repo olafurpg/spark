@@ -39,120 +39,102 @@ object RowEncoder {
     val inputObject = BoundReference(0, ObjectType(cls), nullable = false)
     val serializer = serializerFor(inputObject, schema)
     val deserializer = deserializerFor(schema)
-    new ExpressionEncoder[Row](
-      schema,
-      flat = false,
-      serializer.asInstanceOf[CreateStruct].children,
-      deserializer,
-      ClassTag(cls))
+    new ExpressionEncoder[Row](schema,
+                               flat = false,
+                               serializer.asInstanceOf[CreateStruct].children,
+                               deserializer,
+                               ClassTag(cls))
   }
 
-  private def serializerFor(
-      inputObject: Expression,
-      inputType: DataType): Expression = inputType match {
-    case NullType | BooleanType | ByteType | ShortType | IntegerType | LongType |
-         FloatType | DoubleType | BinaryType | CalendarIntervalType => inputObject
+  private def serializerFor(inputObject: Expression, inputType: DataType): Expression =
+    inputType match {
+      case NullType | BooleanType | ByteType | ShortType | IntegerType | LongType | FloatType |
+          DoubleType | BinaryType | CalendarIntervalType =>
+        inputObject
 
-    case p: PythonUserDefinedType => serializerFor(inputObject, p.sqlType)
+      case p: PythonUserDefinedType => serializerFor(inputObject, p.sqlType)
 
-    case udt: UserDefinedType[_] =>
-      val annotation = udt.userClass.getAnnotation(classOf[SQLUserDefinedType])
-      val udtClass: Class[_] = if (annotation != null) {
-        annotation.udt()
-      } else {
-        UDTRegistration.getUDTFor(udt.userClass.getName).getOrElse {
-          throw new SparkException(s"${udt.userClass.getName} is not annotated with " +
-            "SQLUserDefinedType nor registered with UDTRegistration.}")
+      case udt: UserDefinedType[_] =>
+        val annotation = udt.userClass.getAnnotation(classOf[SQLUserDefinedType])
+        val udtClass: Class[_] =
+          if (annotation != null) {
+            annotation.udt()
+          } else {
+            UDTRegistration.getUDTFor(udt.userClass.getName).getOrElse {
+              throw new SparkException(s"${udt.userClass.getName} is not annotated with " +
+                  "SQLUserDefinedType nor registered with UDTRegistration.}")
+            }
+          }
+        val obj = NewInstance(udtClass, Nil, dataType = ObjectType(udtClass), false)
+        Invoke(obj, "serialize", udt.sqlType, inputObject :: Nil)
+
+      case TimestampType =>
+        StaticInvoke(DateTimeUtils.getClass,
+                     TimestampType,
+                     "fromJavaTimestamp",
+                     inputObject :: Nil)
+
+      case DateType =>
+        StaticInvoke(DateTimeUtils.getClass, DateType, "fromJavaDate", inputObject :: Nil)
+
+      case d: DecimalType =>
+        StaticInvoke(Decimal.getClass, d, "fromDecimal", inputObject :: Nil)
+
+      case StringType =>
+        StaticInvoke(classOf[UTF8String], StringType, "fromString", inputObject :: Nil)
+
+      case t @ ArrayType(et, _) =>
+        et match {
+          case BooleanType | ByteType | ShortType | IntegerType | LongType | FloatType |
+              DoubleType =>
+            NewInstance(classOf[GenericArrayData], inputObject :: Nil, dataType = t)
+          case _ => MapObjects(serializerFor(_, et), inputObject, externalDataTypeForInput(et))
         }
-      }
-      val obj = NewInstance(
-        udtClass,
-        Nil,
-        dataType = ObjectType(udtClass), false)
-      Invoke(obj, "serialize", udt.sqlType, inputObject :: Nil)
 
-    case TimestampType =>
-      StaticInvoke(
-        DateTimeUtils.getClass,
-        TimestampType,
-        "fromJavaTimestamp",
-        inputObject :: Nil)
+      case t @ MapType(kt, vt, valueNullable) =>
+        val keys = Invoke(
+            Invoke(inputObject, "keysIterator", ObjectType(classOf[scala.collection.Iterator[_]])),
+            "toSeq",
+            ObjectType(classOf[scala.collection.Seq[_]]))
+        val convertedKeys = serializerFor(keys, ArrayType(kt, false))
 
-    case DateType =>
-      StaticInvoke(
-        DateTimeUtils.getClass,
-        DateType,
-        "fromJavaDate",
-        inputObject :: Nil)
+        val values = Invoke(
+            Invoke(
+                inputObject, "valuesIterator", ObjectType(classOf[scala.collection.Iterator[_]])),
+            "toSeq",
+            ObjectType(classOf[scala.collection.Seq[_]]))
+        val convertedValues = serializerFor(values, ArrayType(vt, valueNullable))
 
-    case d: DecimalType =>
-      StaticInvoke(
-        Decimal.getClass,
-        d,
-        "fromDecimal",
-        inputObject :: Nil)
+        NewInstance(classOf[ArrayBasedMapData],
+                    convertedKeys :: convertedValues :: Nil,
+                    dataType = t)
 
-    case StringType =>
-      StaticInvoke(
-        classOf[UTF8String],
-        StringType,
-        "fromString",
-        inputObject :: Nil)
+      case StructType(fields) =>
+        val convertedFields = fields.zipWithIndex.map {
+          case (f, i) =>
+            val fieldValue = serializerFor(
+                GetExternalRowField(inputObject, i, externalDataTypeForInput(f.dataType)),
+                f.dataType
+            )
+            if (f.nullable) {
+              If(
+                  Invoke(inputObject, "isNullAt", BooleanType, Literal(i) :: Nil),
+                  Literal.create(null, f.dataType),
+                  fieldValue
+              )
+            } else {
+              fieldValue
+            }
+        }
 
-    case t @ ArrayType(et, _) => et match {
-      case BooleanType | ByteType | ShortType | IntegerType | LongType | FloatType | DoubleType =>
-        NewInstance(
-          classOf[GenericArrayData],
-          inputObject :: Nil,
-          dataType = t)
-      case _ => MapObjects(serializerFor(_, et), inputObject, externalDataTypeForInput(et))
-    }
-
-    case t @ MapType(kt, vt, valueNullable) =>
-      val keys =
-        Invoke(
-          Invoke(inputObject, "keysIterator", ObjectType(classOf[scala.collection.Iterator[_]])),
-          "toSeq",
-          ObjectType(classOf[scala.collection.Seq[_]]))
-      val convertedKeys = serializerFor(keys, ArrayType(kt, false))
-
-      val values =
-        Invoke(
-          Invoke(inputObject, "valuesIterator", ObjectType(classOf[scala.collection.Iterator[_]])),
-          "toSeq",
-          ObjectType(classOf[scala.collection.Seq[_]]))
-      val convertedValues = serializerFor(values, ArrayType(vt, valueNullable))
-
-      NewInstance(
-        classOf[ArrayBasedMapData],
-        convertedKeys :: convertedValues :: Nil,
-        dataType = t)
-
-    case StructType(fields) =>
-      val convertedFields = fields.zipWithIndex.map { case (f, i) =>
-        val fieldValue = serializerFor(
-          GetExternalRowField(inputObject, i, externalDataTypeForInput(f.dataType)),
-          f.dataType
-        )
-        if (f.nullable) {
-          If(
-            Invoke(inputObject, "isNullAt", BooleanType, Literal(i) :: Nil),
-            Literal.create(null, f.dataType),
-            fieldValue
-          )
+        if (inputObject.nullable) {
+          If(IsNull(inputObject),
+             Literal.create(null, inputType),
+             CreateStruct(convertedFields))
         } else {
-          fieldValue
+          CreateStruct(convertedFields)
         }
-      }
-
-      if (inputObject.nullable) {
-        If(IsNull(inputObject),
-          Literal.create(null, inputType),
-          CreateStruct(convertedFields))
-      } else {
-        CreateStruct(convertedFields)
-      }
-  }
+    }
 
   /**
    * Returns the `DataType` that can be used when generating code that converts input data
@@ -184,54 +166,52 @@ object RowEncoder {
   }
 
   private def deserializerFor(schema: StructType): Expression = {
-    val fields = schema.zipWithIndex.map { case (f, i) =>
-      val dt = f.dataType match {
-        case p: PythonUserDefinedType => p.sqlType
-        case other => other
-      }
-      val field = BoundReference(i, dt, f.nullable)
-      If(
-        IsNull(field),
-        Literal.create(null, externalDataTypeFor(dt)),
-        deserializerFor(field)
-      )
+    val fields = schema.zipWithIndex.map {
+      case (f, i) =>
+        val dt = f.dataType match {
+          case p: PythonUserDefinedType => p.sqlType
+          case other => other
+        }
+        val field = BoundReference(i, dt, f.nullable)
+        If(
+            IsNull(field),
+            Literal.create(null, externalDataTypeFor(dt)),
+            deserializerFor(field)
+        )
     }
     CreateExternalRow(fields, schema)
   }
 
   private def deserializerFor(input: Expression): Expression = input.dataType match {
-    case NullType | BooleanType | ByteType | ShortType | IntegerType | LongType |
-         FloatType | DoubleType | BinaryType | CalendarIntervalType => input
+    case NullType | BooleanType | ByteType | ShortType | IntegerType |
+        LongType | FloatType | DoubleType | BinaryType | CalendarIntervalType =>
+      input
 
     case udt: UserDefinedType[_] =>
       val annotation = udt.userClass.getAnnotation(classOf[SQLUserDefinedType])
-      val udtClass: Class[_] = if (annotation != null) {
-        annotation.udt()
-      } else {
-        UDTRegistration.getUDTFor(udt.userClass.getName).getOrElse {
-          throw new SparkException(s"${udt.userClass.getName} is not annotated with " +
-            "SQLUserDefinedType nor registered with UDTRegistration.}")
+      val udtClass: Class[_] =
+        if (annotation != null) {
+          annotation.udt()
+        } else {
+          UDTRegistration.getUDTFor(udt.userClass.getName).getOrElse {
+            throw new SparkException(s"${udt.userClass.getName} is not annotated with " +
+                "SQLUserDefinedType nor registered with UDTRegistration.}")
+          }
         }
-      }
-      val obj = NewInstance(
-        udtClass,
-        Nil,
-        dataType = ObjectType(udtClass))
+      val obj = NewInstance(udtClass, Nil, dataType = ObjectType(udtClass))
       Invoke(obj, "deserialize", ObjectType(udt.userClass), input :: Nil)
 
     case TimestampType =>
-      StaticInvoke(
-        DateTimeUtils.getClass,
-        ObjectType(classOf[java.sql.Timestamp]),
-        "toJavaTimestamp",
-        input :: Nil)
+      StaticInvoke(DateTimeUtils.getClass,
+                   ObjectType(classOf[java.sql.Timestamp]),
+                   "toJavaTimestamp",
+                   input :: Nil)
 
     case DateType =>
-      StaticInvoke(
-        DateTimeUtils.getClass,
-        ObjectType(classOf[java.sql.Date]),
-        "toJavaDate",
-        input :: Nil)
+      StaticInvoke(DateTimeUtils.getClass,
+                   ObjectType(classOf[java.sql.Date]),
+                   "toJavaDate",
+                   input :: Nil)
 
     case _: DecimalType =>
       Invoke(input, "toJavaBigDecimal", ObjectType(classOf[java.math.BigDecimal]))
@@ -240,16 +220,13 @@ object RowEncoder {
       Invoke(input, "toString", ObjectType(classOf[String]))
 
     case ArrayType(et, nullable) =>
-      val arrayData =
-        Invoke(
-          MapObjects(deserializerFor(_), input, et),
-          "array",
-          ObjectType(classOf[Array[_]]))
-      StaticInvoke(
-        scala.collection.mutable.WrappedArray.getClass,
-        ObjectType(classOf[Seq[_]]),
-        "make",
-        arrayData :: Nil)
+      val arrayData = Invoke(MapObjects(deserializerFor(_), input, et),
+                             "array",
+                             ObjectType(classOf[Array[_]]))
+      StaticInvoke(scala.collection.mutable.WrappedArray.getClass,
+                   ObjectType(classOf[Seq[_]]),
+                   "make",
+                   arrayData :: Nil)
 
     case MapType(kt, vt, valueNullable) =>
       val keyArrayType = ArrayType(kt, false)
@@ -258,21 +235,20 @@ object RowEncoder {
       val valueArrayType = ArrayType(vt, valueNullable)
       val valueData = deserializerFor(Invoke(input, "valueArray", valueArrayType))
 
-      StaticInvoke(
-        ArrayBasedMapData.getClass,
-        ObjectType(classOf[Map[_, _]]),
-        "toScalaMap",
-        keyData :: valueData :: Nil)
+      StaticInvoke(ArrayBasedMapData.getClass,
+                   ObjectType(classOf[Map[_, _]]),
+                   "toScalaMap",
+                   keyData :: valueData :: Nil)
 
     case schema @ StructType(fields) =>
-      val convertedFields = fields.zipWithIndex.map { case (f, i) =>
-        If(
-          Invoke(input, "isNullAt", BooleanType, Literal(i) :: Nil),
-          Literal.create(null, externalDataTypeFor(f.dataType)),
-          deserializerFor(GetStructField(input, i)))
+      val convertedFields = fields.zipWithIndex.map {
+        case (f, i) =>
+          If(Invoke(input, "isNullAt", BooleanType, Literal(i) :: Nil),
+             Literal.create(null, externalDataTypeFor(f.dataType)),
+             deserializerFor(GetStructField(input, i)))
       }
       If(IsNull(input),
-        Literal.create(null, externalDataTypeFor(input.dataType)),
-        CreateExternalRow(convertedFields, schema))
+         Literal.create(null, externalDataTypeFor(input.dataType)),
+         CreateExternalRow(convertedFields, schema))
   }
 }

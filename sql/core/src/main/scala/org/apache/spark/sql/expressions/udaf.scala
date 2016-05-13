@@ -106,13 +106,10 @@ abstract class UserDefinedAggregateFunction extends Serializable {
   /**
    * Creates a [[Column]] for this UDAF using given [[Column]]s as input arguments.
    */
-  @_root_.scala.annotation.varargs
+  @ _root_.scala.annotation.varargs
   def apply(exprs: Column*): Column = {
-    val aggregateExpression =
-      AggregateExpression(
-        ScalaUDAF(exprs.map(_.expr), this),
-        Complete,
-        isDistinct = false)
+    val aggregateExpression = AggregateExpression(
+        ScalaUDAF(exprs.map(_.expr), this), Complete, isDistinct = false)
     Column(aggregateExpression)
   }
 
@@ -120,13 +117,10 @@ abstract class UserDefinedAggregateFunction extends Serializable {
    * Creates a [[Column]] for this UDAF using the distinct values of the given
    * [[Column]]s as input arguments.
    */
-  @_root_.scala.annotation.varargs
+  @ _root_.scala.annotation.varargs
   def distinct(exprs: Column*): Column = {
-    val aggregateExpression =
-      AggregateExpression(
-        ScalaUDAF(exprs.map(_.expr), this),
-        Complete,
-        isDistinct = true)
+    val aggregateExpression = AggregateExpression(
+        ScalaUDAF(exprs.map(_.expr), this), Complete, isDistinct = true)
     Column(aggregateExpression)
   }
 }

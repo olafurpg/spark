@@ -19,7 +19,6 @@ package org.apache.spark.sql.jdbc
 
 import org.apache.spark.sql.types._
 
-
 private object MsSqlServerDialect extends JdbcDialect {
 
   override def canHandle(url: String): Boolean = url.startsWith("jdbc:sqlserver")

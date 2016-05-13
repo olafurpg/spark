@@ -26,13 +26,15 @@ import scala.util.Try
 private[spark] object DockerUtils {
 
   def getDockerIp(): String = {
+
     /** If docker-machine is setup on this box, attempts to find the ip from it. */
     def findFromDockerMachine(): Option[String] = {
       sys.env.get("DOCKER_MACHINE_NAME").flatMap { name =>
         Try(Seq("/bin/bash", "-c", s"docker-machine ip $name 2>/dev/null").!!.trim).toOption
       }
     }
-    sys.env.get("DOCKER_IP")
+    sys.env
+      .get("DOCKER_IP")
       .orElse(findFromDockerMachine())
       .orElse(Try(Seq("/bin/bash", "-c", "boot2docker ip 2>/dev/null").!!.trim).toOption)
       .getOrElse {
@@ -45,8 +47,8 @@ private[spark] object DockerUtils {
         // on unix-like system. On windows, it returns in index order.
         // It's more proper to pick ip address following system output order.
         val blackListedIFs = Seq(
-          "vboxnet0",  // Mac
-          "docker0"    // Linux
+            "vboxnet0", // Mac
+            "docker0" // Linux
         )
         val activeNetworkIFs = NetworkInterface.getNetworkInterfaces.asScala.toSeq.filter { i =>
           !blackListedIFs.contains(i.getName)
@@ -54,7 +56,8 @@ private[spark] object DockerUtils {
         val reOrderedNetworkIFs = activeNetworkIFs.reverse
         for (ni <- reOrderedNetworkIFs) {
           val addresses = ni.getInetAddresses.asScala
-            .filterNot(addr => addr.isLinkLocalAddress || addr.isLoopbackAddress).toSeq
+            .filterNot(addr => addr.isLinkLocalAddress || addr.isLoopbackAddress)
+            .toSeq
           if (addresses.nonEmpty) {
             val addr = addresses.find(_.isInstanceOf[Inet4Address]).getOrElse(addresses.head)
             // because of Inet6Address.toHostName may add interface at the end if it knows about it

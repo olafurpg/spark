@@ -24,14 +24,13 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.ScalaReflectionLock
 import org.apache.spark.sql.catalyst.util.TypeUtils
 
-
 /**
  * :: DeveloperApi ::
  * The data type representing `Array[Byte]` values.
  * Please use the singleton [[DataTypes.BinaryType]].
  */
 @DeveloperApi
-class BinaryType private() extends AtomicType {
+class BinaryType private () extends AtomicType {
   // The companion object and this class is separated so the companion object also subclasses
   // this type. Otherwise, the companion object would be of type "BinaryType$" in byte code.
   // Defined with a private constructor so the companion object is the only possible instantiation.
@@ -53,6 +52,5 @@ class BinaryType private() extends AtomicType {
 
   private[spark] override def asNullable: BinaryType = this
 }
-
 
 case object BinaryType extends BinaryType

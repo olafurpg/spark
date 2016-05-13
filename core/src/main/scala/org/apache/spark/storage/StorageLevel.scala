@@ -36,20 +36,19 @@ import org.apache.spark.util.Utils
  * factory method of the singleton object (`StorageLevel(...)`).
  */
 @DeveloperApi
-class StorageLevel private(
-    private var _useDisk: Boolean,
-    private var _useMemory: Boolean,
-    private var _useOffHeap: Boolean,
-    private var _deserialized: Boolean,
-    private var _replication: Int = 1)
-  extends Externalizable {
+class StorageLevel private (private var _useDisk: Boolean,
+                            private var _useMemory: Boolean,
+                            private var _useOffHeap: Boolean,
+                            private var _deserialized: Boolean,
+                            private var _replication: Int = 1)
+    extends Externalizable {
 
   // TODO: Also add fields for caching priority, dataset ID, and flushing.
   private def this(flags: Int, replication: Int) {
     this((flags & 8) != 0, (flags & 4) != 0, (flags & 2) != 0, (flags & 1) != 0, replication)
   }
 
-  def this() = this(false, true, false, false)  // For deserialization
+  def this() = this(false, true, false, false) // For deserialization
 
   def useDisk: Boolean = _useDisk
   def useMemory: Boolean = _useMemory
@@ -74,11 +73,8 @@ class StorageLevel private(
 
   override def equals(other: Any): Boolean = other match {
     case s: StorageLevel =>
-      s.useDisk == useDisk &&
-      s.useMemory == useMemory &&
-      s.useOffHeap == useOffHeap &&
-      s.deserialized == deserialized &&
-      s.replication == replication
+      s.useDisk == useDisk && s.useMemory == useMemory && s.useOffHeap == useOffHeap &&
+      s.deserialized == deserialized && s.replication == replication
     case _ =>
       false
   }
@@ -121,7 +117,7 @@ class StorageLevel private(
 
   override def toString: String = {
     s"StorageLevel(disk=$useDisk, memory=$useMemory, offheap=$useOffHeap, " +
-      s"deserialized=$deserialized, replication=$replication)"
+    s"deserialized=$deserialized, replication=$replication)"
   }
 
   override def hashCode(): Int = toInt * 41 + replication
@@ -137,7 +133,6 @@ class StorageLevel private(
     result
   }
 }
-
 
 /**
  * Various [[org.apache.spark.storage.StorageLevel]] defined and utility functions for creating
@@ -183,14 +178,13 @@ object StorageLevel {
    * Create a new StorageLevel object.
    */
   @DeveloperApi
-  def apply(
-      useDisk: Boolean,
-      useMemory: Boolean,
-      useOffHeap: Boolean,
-      deserialized: Boolean,
-      replication: Int): StorageLevel = {
+  def apply(useDisk: Boolean,
+            useMemory: Boolean,
+            useOffHeap: Boolean,
+            deserialized: Boolean,
+            replication: Int): StorageLevel = {
     getCachedStorageLevel(
-      new StorageLevel(useDisk, useMemory, useOffHeap, deserialized, replication))
+        new StorageLevel(useDisk, useMemory, useOffHeap, deserialized, replication))
   }
 
   /**
@@ -198,11 +192,10 @@ object StorageLevel {
    * Create a new StorageLevel object without setting useOffHeap.
    */
   @DeveloperApi
-  def apply(
-      useDisk: Boolean,
-      useMemory: Boolean,
-      deserialized: Boolean,
-      replication: Int = 1): StorageLevel = {
+  def apply(useDisk: Boolean,
+            useMemory: Boolean,
+            deserialized: Boolean,
+            replication: Int = 1): StorageLevel = {
     getCachedStorageLevel(new StorageLevel(useDisk, useMemory, false, deserialized, replication))
   }
 

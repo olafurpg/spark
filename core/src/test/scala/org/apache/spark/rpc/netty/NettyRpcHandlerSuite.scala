@@ -61,8 +61,7 @@ class NettyRpcHandlerSuite extends SparkFunSuite {
     nettyRpcHandler.channelInactive(client)
 
     verify(dispatcher, times(1)).postToAll(RemoteProcessConnected(RpcAddress("localhost", 40000)))
-    verify(dispatcher, times(1)).postToAll(
-      RemoteProcessDisconnected(RpcAddress("localhost", 40000)))
+    verify(dispatcher, times(1))
+      .postToAll(RemoteProcessDisconnected(RpcAddress("localhost", 40000)))
   }
-
 }

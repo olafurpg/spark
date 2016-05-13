@@ -52,9 +52,8 @@ import org.apache.spark.storage.StorageLevel
  *
  * @tparam VD the vertex attribute associated with each vertex in the set.
  */
-abstract class VertexRDD[VD](
-    sc: SparkContext,
-    deps: Seq[Dependency[_]]) extends RDD[(VertexId, VD)](sc, deps) {
+abstract class VertexRDD[VD](sc: SparkContext, deps: Seq[Dependency[_]])
+    extends RDD[(VertexId, VD)](sc, deps) {
 
   implicit protected def vdTag: ClassTag[VD]
 
@@ -80,8 +79,7 @@ abstract class VertexRDD[VD](
    * Applies a function to each `VertexPartition` of this RDD and returns a new VertexRDD.
    */
   private[graphx] def mapVertexPartitions[VD2: ClassTag](
-      f: ShippableVertexPartition[VD] => ShippableVertexPartition[VD2])
-    : VertexRDD[VD2]
+      f: ShippableVertexPartition[VD] => ShippableVertexPartition[VD2]): VertexRDD[VD2]
 
   /**
    * Restricts the vertex set to the set of vertices satisfying the given predicate. This operation
@@ -167,8 +165,8 @@ abstract class VertexRDD[VD](
    * to a new vertex attribute.
    * @return a VertexRDD containing the results of `f`
    */
-  def leftZipJoin[VD2: ClassTag, VD3: ClassTag]
-      (other: VertexRDD[VD2])(f: (VertexId, VD, Option[VD2]) => VD3): VertexRDD[VD3]
+  def leftZipJoin[VD2: ClassTag, VD3: ClassTag](other: VertexRDD[VD2])(
+      f: (VertexId, VD, Option[VD2]) => VD3): VertexRDD[VD3]
 
   /**
    * Left joins this VertexRDD with an RDD containing vertex attribute pairs. If the other RDD is
@@ -186,17 +184,15 @@ abstract class VertexRDD[VD](
    * @return a VertexRDD containing all the vertices in this VertexRDD with the attributes emitted
    * by `f`.
    */
-  def leftJoin[VD2: ClassTag, VD3: ClassTag]
-      (other: RDD[(VertexId, VD2)])
-      (f: (VertexId, VD, Option[VD2]) => VD3)
-    : VertexRDD[VD3]
+  def leftJoin[VD2: ClassTag, VD3: ClassTag](other: RDD[(VertexId, VD2)])(
+      f: (VertexId, VD, Option[VD2]) => VD3): VertexRDD[VD3]
 
   /**
    * Efficiently inner joins this VertexRDD with another VertexRDD sharing the same index. See
    * [[innerJoin]] for the behavior of the join.
    */
-  def innerZipJoin[U: ClassTag, VD2: ClassTag](other: VertexRDD[U])
-      (f: (VertexId, VD, U) => VD2): VertexRDD[VD2]
+  def innerZipJoin[U: ClassTag, VD2: ClassTag](other: VertexRDD[U])(
+      f: (VertexId, VD, U) => VD2): VertexRDD[VD2]
 
   /**
    * Inner joins this VertexRDD with an RDD containing vertex attribute pairs. If the other RDD is
@@ -209,8 +205,8 @@ abstract class VertexRDD[VD](
    * @return a VertexRDD co-indexed with `this`, containing only vertices that appear in both
    *         `this` and `other`, with values supplied by `f`
    */
-  def innerJoin[U: ClassTag, VD2: ClassTag](other: RDD[(VertexId, U)])
-      (f: (VertexId, VD, U) => VD2): VertexRDD[VD2]
+  def innerJoin[U: ClassTag, VD2: ClassTag](other: RDD[(VertexId, U)])(
+      f: (VertexId, VD, U) => VD2): VertexRDD[VD2]
 
   /**
    * Aggregates vertices in `messages` that have the same ids using `reduceFunc`, returning a
@@ -246,8 +242,7 @@ abstract class VertexRDD[VD](
    * This does not actually trigger a cache; to do this, call
    * [[org.apache.spark.graphx.VertexRDD#cache]] on the returned VertexRDD.
    */
-  private[graphx] def withTargetStorageLevel(
-      targetStorageLevel: StorageLevel): VertexRDD[VD]
+  private[graphx] def withTargetStorageLevel(targetStorageLevel: StorageLevel): VertexRDD[VD]
 
   /** Generates an RDD of vertex attributes suitable for shipping to the edge partitions. */
   private[graphx] def shipVertexAttributes(
@@ -255,9 +250,7 @@ abstract class VertexRDD[VD](
 
   /** Generates an RDD of vertex IDs suitable for shipping to the edge partitions. */
   private[graphx] def shipVertexIds(): RDD[(PartitionID, Array[VertexId])]
-
 } // end of VertexRDD
-
 
 /**
  * The VertexRDD singleton is used to construct VertexRDDs.
@@ -278,8 +271,7 @@ object VertexRDD {
       case None => vertices.partitionBy(new HashPartitioner(vertices.partitions.length))
     }
     val vertexPartitions = vPartitioned.mapPartitions(
-      iter => Iterator(ShippableVertexPartition(iter)),
-      preservesPartitioning = true)
+        iter => Iterator(ShippableVertexPartition(iter)), preservesPartitioning = true)
     new VertexRDDImpl(vertexPartitions)
   }
 
@@ -312,19 +304,23 @@ object VertexRDD {
    * @param mergeFunc the commutative, associative duplicate vertex attribute merge function
    */
   def apply[VD: ClassTag](
-      vertices: RDD[(VertexId, VD)], edges: EdgeRDD[_], defaultVal: VD, mergeFunc: (VD, VD) => VD
-    ): VertexRDD[VD] = {
+      vertices: RDD[(VertexId, VD)],
+      edges: EdgeRDD[_],
+      defaultVal: VD,
+      mergeFunc: (VD, VD) => VD
+  ): VertexRDD[VD] = {
     val vPartitioned: RDD[(VertexId, VD)] = vertices.partitioner match {
       case Some(p) => vertices
       case None => vertices.partitionBy(new HashPartitioner(vertices.partitions.length))
     }
     val routingTables = createRoutingTables(edges, vPartitioned.partitioner.get)
-    val vertexPartitions = vPartitioned.zipPartitions(routingTables, preservesPartitioning = true) {
-      (vertexIter, routingTableIter) =>
-        val routingTable =
-          if (routingTableIter.hasNext) routingTableIter.next() else RoutingTablePartition.empty
-        Iterator(ShippableVertexPartition(vertexIter, routingTable, defaultVal, mergeFunc))
-    }
+    val vertexPartitions =
+      vPartitioned.zipPartitions(routingTables, preservesPartitioning = true) {
+        (vertexIter, routingTableIter) =>
+          val routingTable =
+            if (routingTableIter.hasNext) routingTableIter.next() else RoutingTablePartition.empty
+          Iterator(ShippableVertexPartition(vertexIter, routingTable, defaultVal, mergeFunc))
+      }
     new VertexRDDImpl(vertexPartitions)
   }
 
@@ -353,13 +349,14 @@ object VertexRDD {
   private[graphx] def createRoutingTables(
       edges: EdgeRDD[_], vertexPartitioner: Partitioner): RDD[RoutingTablePartition] = {
     // Determine which vertices each edge partition needs by creating a mapping from vid to pid.
-    val vid2pid = edges.partitionsRDD.mapPartitions(_.flatMap(
-      Function.tupled(RoutingTablePartition.edgePartitionToMsgs)))
+    val vid2pid = edges.partitionsRDD
+      .mapPartitions(_.flatMap(Function.tupled(RoutingTablePartition.edgePartitionToMsgs)))
       .setName("VertexRDD.createRoutingTables - vid2pid (aggregation)")
 
     val numEdgePartitions = edges.partitions.length
-    vid2pid.partitionBy(vertexPartitioner).mapPartitions(
-      iter => Iterator(RoutingTablePartition.fromMsgs(numEdgePartitions, iter)),
-      preservesPartitioning = true)
+    vid2pid
+      .partitionBy(vertexPartitioner)
+      .mapPartitions(iter => Iterator(RoutingTablePartition.fromMsgs(numEdgePartitions, iter)),
+                     preservesPartitioning = true)
   }
 }

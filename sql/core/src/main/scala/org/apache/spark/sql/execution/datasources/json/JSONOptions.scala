@@ -27,22 +27,17 @@ import org.apache.spark.sql.execution.datasources.{CompressionCodecs, ParseModes
  *
  * Most of these map directly to Jackson's internal options, specified in [[JsonParser.Feature]].
  */
-private[sql] class JSONOptions(
-    @transient private val parameters: Map[String, String])
-  extends Logging with Serializable  {
+private[sql] class JSONOptions(@transient private val parameters: Map[String, String])
+    extends Logging
+    with Serializable {
 
-  val samplingRatio =
-    parameters.get("samplingRatio").map(_.toDouble).getOrElse(1.0)
-  val primitivesAsString =
-    parameters.get("primitivesAsString").map(_.toBoolean).getOrElse(false)
-  val prefersDecimal =
-    parameters.get("prefersDecimal").map(_.toBoolean).getOrElse(false)
-  val allowComments =
-    parameters.get("allowComments").map(_.toBoolean).getOrElse(false)
+  val samplingRatio = parameters.get("samplingRatio").map(_.toDouble).getOrElse(1.0)
+  val primitivesAsString = parameters.get("primitivesAsString").map(_.toBoolean).getOrElse(false)
+  val prefersDecimal = parameters.get("prefersDecimal").map(_.toBoolean).getOrElse(false)
+  val allowComments = parameters.get("allowComments").map(_.toBoolean).getOrElse(false)
   val allowUnquotedFieldNames =
     parameters.get("allowUnquotedFieldNames").map(_.toBoolean).getOrElse(false)
-  val allowSingleQuotes =
-    parameters.get("allowSingleQuotes").map(_.toBoolean).getOrElse(true)
+  val allowSingleQuotes = parameters.get("allowSingleQuotes").map(_.toBoolean).getOrElse(true)
   val allowNumericLeadingZeros =
     parameters.get("allowNumericLeadingZeros").map(_.toBoolean).getOrElse(false)
   val allowNonNumericNumbers =
@@ -70,6 +65,6 @@ private[sql] class JSONOptions(
     factory.configure(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS, allowNumericLeadingZeros)
     factory.configure(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS, allowNonNumericNumbers)
     factory.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER,
-      allowBackslashEscapingAnyCharacter)
+                      allowBackslashEscapingAnyCharacter)
   }
 }

@@ -73,9 +73,10 @@ private[ml] object OneVsRestParams extends ClassifierTypeTrait {
     def checkElement(elem: Params, name: String): Unit = elem match {
       case stage: MLWritable => // good
       case other =>
-        throw new UnsupportedOperationException("OneVsRest write will fail " +
-          s" because it contains $name which does not implement MLWritable." +
-          s" Non-Writable $name: ${other.uid} of type ${other.getClass}")
+        throw new UnsupportedOperationException(
+            "OneVsRest write will fail " +
+            s" because it contains $name which does not implement MLWritable." +
+            s" Non-Writable $name: ${other.uid} of type ${other.getClass}")
     }
 
     instance match {
@@ -86,17 +87,16 @@ private[ml] object OneVsRestParams extends ClassifierTypeTrait {
     checkElement(instance.getClassifier, "classifier")
   }
 
-  def saveImpl(
-      path: String,
-      instance: OneVsRestParams,
-      sc: SparkContext,
-      extraMetadata: Option[JObject] = None): Unit = {
+  def saveImpl(path: String,
+               instance: OneVsRestParams,
+               sc: SparkContext,
+               extraMetadata: Option[JObject] = None): Unit = {
 
     val params = instance.extractParamMap().toSeq
-    val jsonParams = render(params
-      .filter { case ParamPair(p, v) => p.name != "classifier" }
-      .map { case ParamPair(p, v) => p.name -> parse(p.jsonEncode(v)) }
-      .toList)
+    val jsonParams = render(
+        params.filter { case ParamPair(p, v) => p.name != "classifier" }.map {
+      case ParamPair(p, v) => p.name -> parse(p.jsonEncode(v))
+    }.toList)
 
     DefaultParamsWriter.saveMetadata(instance, path, sc, extraMetadata, Some(jsonParams))
 
@@ -104,10 +104,9 @@ private[ml] object OneVsRestParams extends ClassifierTypeTrait {
     instance.getClassifier.asInstanceOf[MLWritable].save(classifierPath)
   }
 
-  def loadImpl(
-      path: String,
-      sc: SparkContext,
-      expectedClassName: String): (DefaultParamsReader.Metadata, ClassifierType) = {
+  def loadImpl(path: String,
+               sc: SparkContext,
+               expectedClassName: String): (DefaultParamsReader.Metadata, ClassifierType) = {
 
     val metadata = DefaultParamsReader.loadMetadata(path, sc, expectedClassName)
     val classifierPath = new Path(path, "classifier").toString
@@ -131,11 +130,13 @@ private[ml] object OneVsRestParams extends ClassifierTypeTrait {
  */
 @Since("1.4.0")
 @Experimental
-final class OneVsRestModel private[ml] (
+final class OneVsRestModel private[ml](
     @Since("1.4.0") override val uid: String,
     private[ml] val labelMetadata: Metadata,
     @Since("1.4.0") val models: Array[_ <: ClassificationModel[_, _]])
-  extends Model[OneVsRestModel] with OneVsRestParams with MLWritable {
+    extends Model[OneVsRestModel]
+    with OneVsRestParams
+    with MLWritable {
 
   /** A Python-friendly auxiliary constructor. */
   private[ml] def this(uid: String, models: JList[_ <: ClassificationModel[_, _]]) = {
@@ -157,7 +158,9 @@ final class OneVsRestModel private[ml] (
 
     // add an accumulator column to store predictions of all the models
     val accColName = "mbc$acc" + UUID.randomUUID().toString
-    val initUDF = udf { () => Map[Int, Double]() }
+    val initUDF = udf { () =>
+      Map[Int, Double]()
+    }
     val newDataset = dataset.withColumn(accColName, initUDF())
 
     // persist if underlying dataset is not persistent.
@@ -178,8 +181,8 @@ final class OneVsRestModel private[ml] (
           predictions + ((index, prediction(1)))
         }
         val transformedDataset = model.transform(df).select(columns: _*)
-        val updatedDataset = transformedDataset
-          .withColumn(tmpColName, updateUDF(col(accColName), col(rawPredictionCol)))
+        val updatedDataset = transformedDataset.withColumn(
+            tmpColName, updateUDF(col(accColName), col(rawPredictionCol)))
         val newColumns = origCols ++ List(col(tmpColName))
 
         // switch out the intermediate column with the accumulator column
@@ -204,7 +207,7 @@ final class OneVsRestModel private[ml] (
   @Since("1.4.1")
   override def copy(extra: ParamMap): OneVsRestModel = {
     val copied = new OneVsRestModel(
-      uid, labelMetadata, models.map(_.copy(extra).asInstanceOf[ClassificationModel[_, _]]))
+        uid, labelMetadata, models.map(_.copy(extra).asInstanceOf[ClassificationModel[_, _]]))
     copyValues(copied, extra).setParent(parent)
   }
 
@@ -227,12 +230,14 @@ object OneVsRestModel extends MLReadable[OneVsRestModel] {
     OneVsRestParams.validateParams(instance)
 
     override protected def saveImpl(path: String): Unit = {
-      val extraJson = ("labelMetadata" -> instance.labelMetadata.json) ~
+      val extraJson =
+        ("labelMetadata" -> instance.labelMetadata.json) ~
         ("numClasses" -> instance.models.length)
       OneVsRestParams.saveImpl(path, instance, sc, Some(extraJson))
-      instance.models.zipWithIndex.foreach { case (model: MLWritable, idx) =>
-        val modelPath = new Path(path, s"model_$idx").toString
-        model.save(modelPath)
+      instance.models.zipWithIndex.foreach {
+        case (model: MLWritable, idx) =>
+          val modelPath = new Path(path, s"model_$idx").toString
+          model.save(modelPath)
       }
     }
   }
@@ -270,9 +275,10 @@ object OneVsRestModel extends MLReadable[OneVsRestModel] {
  */
 @Since("1.4.0")
 @Experimental
-final class OneVsRest @Since("1.4.0") (
-    @Since("1.4.0") override val uid: String)
-  extends Estimator[OneVsRestModel] with OneVsRestParams with MLWritable {
+final class OneVsRest @Since("1.4.0")(@Since("1.4.0") override val uid: String)
+    extends Estimator[OneVsRestModel]
+    with OneVsRestParams
+    with MLWritable {
 
   @Since("1.4.0")
   def this() = this(Identifiable.randomUID("oneVsRest"))
@@ -326,8 +332,10 @@ final class OneVsRest @Since("1.4.0") (
       // generate new label metadata for the binary problem.
       val newLabelMeta = BinaryAttribute.defaultAttr.withName("label").toMetadata()
       val labelColName = "mc2b$" + index
-      val trainingDataset = multiclassLabeled.withColumn(
-        labelColName, when(col($(labelCol)) === index.toDouble, 1.0).otherwise(0.0), newLabelMeta)
+      val trainingDataset =
+        multiclassLabeled.withColumn(labelColName,
+                                     when(col($(labelCol)) === index.toDouble, 1.0).otherwise(0.0),
+                                     newLabelMeta)
       val classifier = getClassifier
       val paramMap = new ParamMap()
       paramMap.put(classifier.labelCol -> labelColName)

@@ -76,15 +76,21 @@ private[ui] class MasterPage(parent: MasterWebUI) extends WebUIPage("") {
     val aliveWorkers = state.workers.filter(_.state == WorkerState.ALIVE)
     val workerTable = UIUtils.listingTable(workerHeaders, workerRow, workers)
 
-    val appHeaders = Seq("Application ID", "Name", "Cores", "Memory per Node", "Submitted Time",
-      "User", "State", "Duration")
+    val appHeaders = Seq("Application ID",
+                         "Name",
+                         "Cores",
+                         "Memory per Node",
+                         "Submitted Time",
+                         "User",
+                         "State",
+                         "Duration")
     val activeApps = state.activeApps.sortBy(_.startTime).reverse
     val activeAppsTable = UIUtils.listingTable(appHeaders, appRow, activeApps)
     val completedApps = state.completedApps.sortBy(_.endTime).reverse
     val completedAppsTable = UIUtils.listingTable(appHeaders, appRow, completedApps)
 
-    val driverHeaders = Seq("Submission ID", "Submitted Time", "Worker", "State", "Cores",
-      "Memory", "Main Class")
+    val driverHeaders = Seq(
+        "Submission ID", "Submitted Time", "Worker", "State", "Cores", "Memory", "Main Class")
     val activeDrivers = state.activeDrivers.sortBy(_.startTime).reverse
     val activeDriversTable = UIUtils.listingTable(driverHeaders, driverRow, activeDrivers)
     val completedDrivers = state.completedDrivers.sortBy(_.startTime).reverse
@@ -94,8 +100,7 @@ private[ui] class MasterPage(parent: MasterWebUI) extends WebUIPage("") {
     // This is until we integrate the notion of drivers and applications in the UI.
     def hasDrivers: Boolean = activeDrivers.length > 0 || completedDrivers.length > 0
 
-    val content =
-        <div class="row-fluid">
+    val content = <div class="row-fluid">
           <div class="span12">
             <ul class="unstyled">
               <li><strong>URL:</strong> {state.uri}</li>
@@ -189,17 +194,18 @@ private[ui] class MasterPage(parent: MasterWebUI) extends WebUIPage("") {
   }
 
   private def appRow(app: ApplicationInfo): Seq[Node] = {
-    val killLink = if (parent.killEnabled &&
-      (app.state == ApplicationState.RUNNING || app.state == ApplicationState.WAITING)) {
-      val confirm =
-        s"if (window.confirm('Are you sure you want to kill application ${app.id} ?')) " +
+    val killLink =
+      if (parent.killEnabled &&
+          (app.state == ApplicationState.RUNNING || app.state == ApplicationState.WAITING)) {
+        val confirm =
+          s"if (window.confirm('Are you sure you want to kill application ${app.id} ?')) " +
           "{ this.parentNode.submit(); return true; } else { return false; }"
-      <form action="app/kill/" method="POST" style="display:inline">
+        <form action="app/kill/" method="POST" style="display:inline">
         <input type="hidden" name="id" value={app.id.toString}/>
         <input type="hidden" name="terminate" value="true"/>
         <a href="#" onclick={confirm} class="kill-link">(kill)</a>
       </form>
-    }
+      }
     <tr>
       <td>
         <a href={"app?appId=" + app.id}>{app.id}</a>
@@ -228,19 +234,19 @@ private[ui] class MasterPage(parent: MasterWebUI) extends WebUIPage("") {
   }
 
   private def driverRow(driver: DriverInfo): Seq[Node] = {
-    val killLink = if (parent.killEnabled &&
-      (driver.state == DriverState.RUNNING ||
-        driver.state == DriverState.SUBMITTED ||
-        driver.state == DriverState.RELAUNCHING)) {
-      val confirm =
-        s"if (window.confirm('Are you sure you want to kill driver ${driver.id} ?')) " +
+    val killLink =
+      if (parent.killEnabled &&
+          (driver.state == DriverState.RUNNING || driver.state == DriverState.SUBMITTED ||
+              driver.state == DriverState.RELAUNCHING)) {
+        val confirm =
+          s"if (window.confirm('Are you sure you want to kill driver ${driver.id} ?')) " +
           "{ this.parentNode.submit(); return true; } else { return false; }"
-      <form action="driver/kill/" method="POST" style="display:inline">
+        <form action="driver/kill/" method="POST" style="display:inline">
         <input type="hidden" name="id" value={driver.id.toString}/>
         <input type="hidden" name="terminate" value="true"/>
         <a href="#" onclick={confirm} class="kill-link">(kill)</a>
       </form>
-    }
+      }
     <tr>
       <td>{driver.id} {killLink}</td>
       <td>{driver.submitDate}</td>

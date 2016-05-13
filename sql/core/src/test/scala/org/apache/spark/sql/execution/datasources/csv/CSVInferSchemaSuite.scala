@@ -80,15 +80,12 @@ class CSVInferSchemaSuite extends SparkFunSuite {
   }
 
   test("Type arrays are merged to highest common type") {
-    assert(
-      CSVInferSchema.mergeRowTypes(Array(StringType),
-        Array(DoubleType)).deep == Array(StringType).deep)
-    assert(
-      CSVInferSchema.mergeRowTypes(Array(IntegerType),
-        Array(LongType)).deep == Array(LongType).deep)
-    assert(
-      CSVInferSchema.mergeRowTypes(Array(DoubleType),
-        Array(LongType)).deep == Array(DoubleType).deep)
+    assert(CSVInferSchema.mergeRowTypes(Array(StringType), Array(DoubleType)).deep == Array(
+            StringType).deep)
+    assert(CSVInferSchema.mergeRowTypes(Array(IntegerType), Array(LongType)).deep == Array(
+            LongType).deep)
+    assert(CSVInferSchema.mergeRowTypes(Array(DoubleType), Array(LongType)).deep == Array(
+            DoubleType).deep)
   }
 
   test("Null fields are handled properly when a nullValue is specified") {

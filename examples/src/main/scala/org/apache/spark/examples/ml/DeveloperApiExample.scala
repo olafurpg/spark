@@ -37,18 +37,15 @@ import org.apache.spark.sql.{Dataset, Row, SparkSession}
 object DeveloperApiExample {
 
   def main(args: Array[String]) {
-    val spark = SparkSession
-      .builder
-      .appName("DeveloperApiExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("DeveloperApiExample").getOrCreate()
     import spark.implicits._
 
     // Prepare training data.
-    val training = spark.createDataFrame(Seq(
-      LabeledPoint(1.0, Vectors.dense(0.0, 1.1, 0.1)),
-      LabeledPoint(0.0, Vectors.dense(2.0, 1.0, -1.0)),
-      LabeledPoint(0.0, Vectors.dense(2.0, 1.3, 1.0)),
-      LabeledPoint(1.0, Vectors.dense(0.0, 1.2, -0.5))))
+    val training = spark.createDataFrame(
+        Seq(LabeledPoint(1.0, Vectors.dense(0.0, 1.1, 0.1)),
+            LabeledPoint(0.0, Vectors.dense(2.0, 1.0, -1.0)),
+            LabeledPoint(0.0, Vectors.dense(2.0, 1.3, 1.0)),
+            LabeledPoint(1.0, Vectors.dense(0.0, 1.2, -0.5))))
 
     // Create a LogisticRegression instance. This instance is an Estimator.
     val lr = new MyLogisticRegression()
@@ -62,20 +59,24 @@ object DeveloperApiExample {
     val model = lr.fit(training.toDF())
 
     // Prepare test data.
-    val test = spark.createDataFrame(Seq(
-      LabeledPoint(1.0, Vectors.dense(-1.0, 1.5, 1.3)),
-      LabeledPoint(0.0, Vectors.dense(3.0, 2.0, -0.1)),
-      LabeledPoint(1.0, Vectors.dense(0.0, 2.2, -1.5))))
+    val test = spark.createDataFrame(
+        Seq(LabeledPoint(1.0, Vectors.dense(-1.0, 1.5, 1.3)),
+            LabeledPoint(0.0, Vectors.dense(3.0, 2.0, -0.1)),
+            LabeledPoint(1.0, Vectors.dense(0.0, 2.2, -1.5))))
 
     // Make predictions on test data.
-    val sumPredictions: Double = model.transform(test)
+    val sumPredictions: Double = model
+      .transform(test)
       .select("features", "label", "prediction")
       .collect()
-      .map { case Row(features: Vector, label: Double, prediction: Double) =>
-        prediction
-      }.sum
-    assert(sumPredictions == 0.0,
-      "MyLogisticRegression predicted something other than 0, even though all coefficients are 0!")
+      .map {
+        case Row(features: Vector, label: Double, prediction: Double) =>
+          prediction
+      }
+      .sum
+    assert(
+        sumPredictions == 0.0,
+        "MyLogisticRegression predicted something other than 0, even though all coefficients are 0!")
 
     spark.stop()
   }
@@ -109,8 +110,8 @@ private trait MyLogisticRegressionParams extends ClassifierParams {
  * NOTE: This is private since it is an example. In practice, you may not want it to be private.
  */
 private class MyLogisticRegression(override val uid: String)
-  extends Classifier[Vector, MyLogisticRegression, MyLogisticRegressionModel]
-  with MyLogisticRegressionParams {
+    extends Classifier[Vector, MyLogisticRegression, MyLogisticRegressionModel]
+    with MyLogisticRegressionParams {
 
   def this() = this(Identifiable.randomUID("myLogReg"))
 
@@ -140,11 +141,9 @@ private class MyLogisticRegression(override val uid: String)
  *
  * NOTE: This is private since it is an example. In practice, you may not want it to be private.
  */
-private class MyLogisticRegressionModel(
-    override val uid: String,
-    val coefficients: Vector)
-  extends ClassificationModel[Vector, MyLogisticRegressionModel]
-  with MyLogisticRegressionParams {
+private class MyLogisticRegressionModel(override val uid: String, val coefficients: Vector)
+    extends ClassificationModel[Vector, MyLogisticRegressionModel]
+    with MyLogisticRegressionParams {
 
   // This uses the default implementation of transform(), which reads column "features" and outputs
   // columns "prediction" and "rawPrediction."

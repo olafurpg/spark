@@ -38,7 +38,8 @@ private[spark] case class TimeStampedValue[V](value: V, timestamp: Long)
  * @param updateTimeStampOnGet Whether timestamp of a pair will be updated when it is accessed
  */
 private[spark] class TimeStampedHashMap[A, B](updateTimeStampOnGet: Boolean = false)
-  extends mutable.Map[A, B]() with Logging {
+    extends mutable.Map[A, B]()
+    with Logging {
 
   private val internalMap = new ConcurrentHashMap[A, TimeStampedValue[B]]()
 
@@ -56,7 +57,7 @@ private[spark] class TimeStampedHashMap[A, B](updateTimeStampOnGet: Boolean = fa
 
   def getEntrySet: Set[Entry[A, TimeStampedValue[B]]] = internalMap.entrySet
 
-  override def + [B1 >: B](kv: (A, B1)): mutable.Map[A, B1] = {
+  override def +[B1 >: B](kv: (A, B1)): mutable.Map[A, B1] = {
     val newMap = new TimeStampedHashMap[A, B1]
     val oldInternalMap = this.internalMap.asInstanceOf[ConcurrentHashMap[A, TimeStampedValue[B1]]]
     newMap.internalMap.putAll(oldInternalMap)
@@ -64,19 +65,19 @@ private[spark] class TimeStampedHashMap[A, B](updateTimeStampOnGet: Boolean = fa
     newMap
   }
 
-  override def - (key: A): mutable.Map[A, B] = {
+  override def -(key: A): mutable.Map[A, B] = {
     val newMap = new TimeStampedHashMap[A, B]
     newMap.internalMap.putAll(this.internalMap)
     newMap.internalMap.remove(key)
     newMap
   }
 
-  override def += (kv: (A, B)): this.type = {
+  override def +=(kv: (A, B)): this.type = {
     kv match { case (a, b) => internalMap.put(a, TimeStampedValue(b, currentTime)) }
     this
   }
 
-  override def -= (key: A): this.type = {
+  override def -=(key: A): this.type = {
     internalMap.remove(key)
     this
   }
@@ -99,7 +100,7 @@ private[spark] class TimeStampedHashMap[A, B](updateTimeStampOnGet: Boolean = fa
 
   override def foreach[U](f: ((A, B)) => U) {
     val it = getEntrySet.iterator
-    while(it.hasNext) {
+    while (it.hasNext) {
       val entry = it.next()
       val kv = (entry.getKey, entry.getValue.value)
       f(kv)

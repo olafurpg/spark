@@ -53,8 +53,8 @@ trait RandomSampler[T, U] extends Pseudorandom with Cloneable with Serializable 
     throw new NotImplementedError("clone() is not implemented.")
 }
 
-private[spark]
-object RandomSampler {
+private[spark] object RandomSampler {
+
   /** Default random number generator used by random samplers. */
   def newDefaultRNG: Random = new XORShiftRandom
 
@@ -97,18 +97,13 @@ object RandomSampler {
  */
 @DeveloperApi
 class BernoulliCellSampler[T](lb: Double, ub: Double, complement: Boolean = false)
-  extends RandomSampler[T, T] {
+    extends RandomSampler[T, T] {
 
   /** epsilon slop to avoid failure from floating point jitter. */
-  require(
-    lb <= (ub + RandomSampler.roundingEpsilon),
-    s"Lower bound ($lb) must be <= upper bound ($ub)")
-  require(
-    lb >= (0.0 - RandomSampler.roundingEpsilon),
-    s"Lower bound ($lb) must be >= 0.0")
-  require(
-    ub <= (1.0 + RandomSampler.roundingEpsilon),
-    s"Upper bound ($ub) must be <= 1.0")
+  require(lb <= (ub + RandomSampler.roundingEpsilon),
+          s"Lower bound ($lb) must be <= upper bound ($ub)")
+  require(lb >= (0.0 - RandomSampler.roundingEpsilon), s"Lower bound ($lb) must be >= 0.0")
+  require(ub <= (1.0 + RandomSampler.roundingEpsilon), s"Upper bound ($ub) must be <= 1.0")
 
   private val rng: Random = new XORShiftRandom
 
@@ -133,7 +128,6 @@ class BernoulliCellSampler[T](lb: Double, ub: Double, complement: Boolean = fals
   override def clone: BernoulliCellSampler[T] = new BernoulliCellSampler[T](lb, ub, complement)
 }
 
-
 /**
  * :: DeveloperApi ::
  * A sampler based on Bernoulli trials.
@@ -145,17 +139,16 @@ class BernoulliCellSampler[T](lb: Double, ub: Double, complement: Boolean = fals
 class BernoulliSampler[T: ClassTag](fraction: Double) extends RandomSampler[T, T] {
 
   /** epsilon slop to avoid failure from floating point jitter */
-  require(
-    fraction >= (0.0 - RandomSampler.roundingEpsilon)
-      && fraction <= (1.0 + RandomSampler.roundingEpsilon),
-    s"Sampling fraction ($fraction) must be on interval [0, 1]")
+  require(fraction >= (0.0 - RandomSampler.roundingEpsilon) &&
+          fraction <= (1.0 + RandomSampler.roundingEpsilon),
+          s"Sampling fraction ($fraction) must be on interval [0, 1]")
 
   private val rng: Random = RandomSampler.newDefaultRNG
 
   override def setSeed(seed: Long): Unit = rng.setSeed(seed)
 
-  private lazy val gapSampling: GapSampling =
-    new GapSampling(fraction, rng, RandomSampler.rngEpsilon)
+  private lazy val gapSampling: GapSampling = new GapSampling(
+      fraction, rng, RandomSampler.rngEpsilon)
 
   override def sample(): Int = {
     if (fraction <= 0.0) {
@@ -176,7 +169,6 @@ class BernoulliSampler[T: ClassTag](fraction: Double) extends RandomSampler[T, T
   override def clone: BernoulliSampler[T] = new BernoulliSampler[T](fraction)
 }
 
-
 /**
  * :: DeveloperApi ::
  * A sampler for sampling with replacement, based on values drawn from Poisson distribution.
@@ -186,16 +178,14 @@ class BernoulliSampler[T: ClassTag](fraction: Double) extends RandomSampler[T, T
  * @tparam T item type
  */
 @DeveloperApi
-class PoissonSampler[T](
-    fraction: Double,
-    useGapSamplingIfPossible: Boolean) extends RandomSampler[T, T] {
+class PoissonSampler[T](fraction: Double, useGapSamplingIfPossible: Boolean)
+    extends RandomSampler[T, T] {
 
   def this(fraction: Double) = this(fraction, useGapSamplingIfPossible = true)
 
   /** Epsilon slop to avoid failure from floating point jitter. */
-  require(
-    fraction >= (0.0 - RandomSampler.roundingEpsilon),
-    s"Sampling fraction ($fraction) must be >= 0")
+  require(fraction >= (0.0 - RandomSampler.roundingEpsilon),
+          s"Sampling fraction ($fraction) must be >= 0")
 
   // PoissonDistribution throws an exception when fraction <= 0
   // If fraction is <= 0, Iterator.empty is used below, so we can use any placeholder value.
@@ -207,8 +197,8 @@ class PoissonSampler[T](
     rngGap.setSeed(seed)
   }
 
-  private lazy val gapSamplingReplacement =
-    new GapSamplingReplacement(fraction, rngGap, RandomSampler.rngEpsilon)
+  private lazy val gapSamplingReplacement = new GapSamplingReplacement(
+      fraction, rngGap, RandomSampler.rngEpsilon)
 
   override def sample(): Int = {
     if (fraction <= 0.0) {
@@ -225,8 +215,8 @@ class PoissonSampler[T](
     if (fraction <= 0.0) {
       Iterator.empty
     } else {
-      val useGapSampling = useGapSamplingIfPossible &&
-        fraction <= RandomSampler.defaultMaxGapSamplingFraction
+      val useGapSampling =
+        useGapSamplingIfPossible && fraction <= RandomSampler.defaultMaxGapSamplingFraction
 
       items.flatMap { item =>
         val count = if (useGapSampling) gapSamplingReplacement.sample() else rng.sample()
@@ -238,14 +228,12 @@ class PoissonSampler[T](
   override def clone: PoissonSampler[T] = new PoissonSampler[T](fraction, useGapSamplingIfPossible)
 }
 
+private[spark] class GapSampling(f: Double,
+                                 rng: Random = RandomSampler.newDefaultRNG,
+                                 epsilon: Double = RandomSampler.rngEpsilon)
+    extends Serializable {
 
-private[spark]
-class GapSampling(
-    f: Double,
-    rng: Random = RandomSampler.newDefaultRNG,
-    epsilon: Double = RandomSampler.rngEpsilon) extends Serializable {
-
-  require(f > 0.0  &&  f < 1.0, s"Sampling fraction ($f) must reside on open interval (0, 1)")
+  require(f > 0.0 && f < 1.0, s"Sampling fraction ($f) must reside on open interval (0, 1)")
   require(epsilon > 0.0, s"epsilon ($epsilon) must be > 0")
 
   private val lnq = math.log1p(-f)
@@ -279,12 +267,10 @@ class GapSampling(
   // work reliably.
 }
 
-
-private[spark]
-class GapSamplingReplacement(
-    val f: Double,
-    val rng: Random = RandomSampler.newDefaultRNG,
-    epsilon: Double = RandomSampler.rngEpsilon) extends Serializable {
+private[spark] class GapSamplingReplacement(val f: Double,
+                                            val rng: Random = RandomSampler.newDefaultRNG,
+                                            epsilon: Double = RandomSampler.rngEpsilon)
+    extends Serializable {
 
   require(f > 0.0, s"Sampling fraction ($f) must be > 0")
   require(epsilon > 0.0, s"epsilon ($epsilon) must be > 0")

@@ -49,5 +49,4 @@ private[ui] class StagesTab(parent: SparkUI) extends SparkUITab(parent, "stages"
       Thread.sleep(100)
     }
   }
-
 }

@@ -27,12 +27,8 @@ import org.apache.spark.sql.catalyst.rules._
 class SetOperationSuite extends PlanTest {
   object Optimize extends RuleExecutor[LogicalPlan] {
     val batches =
-      Batch("Subqueries", Once,
-        EliminateSubqueryAliases) ::
-      Batch("Union Pushdown", Once,
-        CombineUnions,
-        SetOperationPushDown,
-        PruneFilters) :: Nil
+      Batch("Subqueries", Once, EliminateSubqueryAliases) ::
+      Batch("Union Pushdown", Once, CombineUnions, SetOperationPushDown, PruneFilters) :: Nil
   }
 
   val testRelation = LocalRelation('a.int, 'b.int, 'c.int)
@@ -58,8 +54,8 @@ class SetOperationSuite extends PlanTest {
   test("union: filter to each side") {
     val unionQuery = testUnion.where('a === 1)
     val unionOptimized = Optimize.execute(unionQuery.analyze)
-    val unionCorrectAnswer =
-      Union(testRelation.where('a === 1) ::
+    val unionCorrectAnswer = Union(
+        testRelation.where('a === 1) ::
         testRelation2.where('d === 1) ::
         testRelation3.where('g === 1) :: Nil).analyze
 
@@ -69,8 +65,8 @@ class SetOperationSuite extends PlanTest {
   test("union: project to each side") {
     val unionQuery = testUnion.select('a)
     val unionOptimized = Optimize.execute(unionQuery.analyze)
-    val unionCorrectAnswer =
-      Union(testRelation.select('a) ::
+    val unionCorrectAnswer = Union(
+        testRelation.select('a) ::
         testRelation2.select('d) ::
         testRelation3.select('g) :: Nil).analyze
     comparePlans(unionOptimized, unionCorrectAnswer)

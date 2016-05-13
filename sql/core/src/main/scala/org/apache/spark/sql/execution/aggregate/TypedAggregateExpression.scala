@@ -29,7 +29,7 @@ import org.apache.spark.sql.expressions.Aggregator
 import org.apache.spark.sql.types._
 
 object TypedAggregateExpression {
-  def apply[BUF : Encoder, OUT : Encoder](
+  def apply[BUF: Encoder, OUT: Encoder](
       aggregator: Aggregator[_, BUF, OUT]): TypedAggregateExpression = {
     val bufferEncoder = encoderFor[BUF]
     val bufferSerializer = bufferEncoder.namedExpressions
@@ -38,34 +38,35 @@ object TypedAggregateExpression {
     }
 
     val outputEncoder = encoderFor[OUT]
-    val outputType = if (outputEncoder.flat) {
-      outputEncoder.schema.head.dataType
-    } else {
-      outputEncoder.schema
-    }
+    val outputType =
+      if (outputEncoder.flat) {
+        outputEncoder.schema.head.dataType
+      } else {
+        outputEncoder.schema
+      }
 
-    new TypedAggregateExpression(
-      aggregator.asInstanceOf[Aggregator[Any, Any, Any]],
-      None,
-      bufferSerializer,
-      bufferDeserializer,
-      outputEncoder.serializer,
-      outputEncoder.deserializer.dataType,
-      outputType)
+    new TypedAggregateExpression(aggregator.asInstanceOf[Aggregator[Any, Any, Any]],
+                                 None,
+                                 bufferSerializer,
+                                 bufferDeserializer,
+                                 outputEncoder.serializer,
+                                 outputEncoder.deserializer.dataType,
+                                 outputType)
   }
 }
 
 /**
  * A helper class to hook [[Aggregator]] into the aggregation system.
  */
-case class TypedAggregateExpression(
-    aggregator: Aggregator[Any, Any, Any],
-    inputDeserializer: Option[Expression],
-    bufferSerializer: Seq[NamedExpression],
-    bufferDeserializer: Expression,
-    outputSerializer: Seq[Expression],
-    outputExternalType: DataType,
-    dataType: DataType) extends DeclarativeAggregate with NonSQLExpression {
+case class TypedAggregateExpression(aggregator: Aggregator[Any, Any, Any],
+                                    inputDeserializer: Option[Expression],
+                                    bufferSerializer: Seq[NamedExpression],
+                                    bufferDeserializer: Expression,
+                                    outputSerializer: Seq[Expression],
+                                    outputExternalType: DataType,
+                                    dataType: DataType)
+    extends DeclarativeAggregate
+    with NonSQLExpression {
 
   override def nullable: Boolean = true
 
@@ -93,37 +94,34 @@ case class TypedAggregateExpression(
   }
 
   override lazy val updateExpressions: Seq[Expression] = {
-    val reduced = Invoke(
-      aggregatorLiteral,
-      "reduce",
-      bufferExternalType,
-      bufferDeserializer :: inputDeserializer.get :: Nil)
+    val reduced = Invoke(aggregatorLiteral,
+                         "reduce",
+                         bufferExternalType,
+                         bufferDeserializer :: inputDeserializer.get :: Nil)
 
     bufferSerializer.map(ReferenceToExpressions(_, reduced :: Nil))
   }
 
   override lazy val mergeExpressions: Seq[Expression] = {
-    val leftBuffer = bufferDeserializer transform {
-      case a: AttributeReference => a.left
-    }
-    val rightBuffer = bufferDeserializer transform {
-      case a: AttributeReference => a.right
-    }
-    val merged = Invoke(
-      aggregatorLiteral,
-      "merge",
-      bufferExternalType,
-      leftBuffer :: rightBuffer :: Nil)
+    val leftBuffer =
+      bufferDeserializer transform {
+        case a: AttributeReference => a.left
+      }
+    val rightBuffer =
+      bufferDeserializer transform {
+        case a: AttributeReference => a.right
+      }
+    val merged = Invoke(aggregatorLiteral,
+                        "merge",
+                        bufferExternalType,
+                        leftBuffer :: rightBuffer :: Nil)
 
     bufferSerializer.map(ReferenceToExpressions(_, merged :: Nil))
   }
 
   override lazy val evaluateExpression: Expression = {
     val resultObj = Invoke(
-      aggregatorLiteral,
-      "finish",
-      outputExternalType,
-      bufferDeserializer :: Nil)
+        aggregatorLiteral, "finish", outputExternalType, bufferDeserializer :: Nil)
 
     dataType match {
       case s: StructType =>

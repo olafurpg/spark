@@ -60,24 +60,21 @@ class MLUtilsSuite extends SparkFunSuite with MLlibTestSparkContext {
         fastSquaredDistance(v1, norm1, Vectors.dense(v2.toArray), norm2, precision)
       assert((fastSquaredDist2 - squaredDist) <= precision * squaredDist, s"failed with m = $m")
       val squaredDist2 = breezeSquaredDistance(v2.toBreeze, v3.toBreeze)
-      val fastSquaredDist3 =
-        fastSquaredDistance(v2, norm2, v3, norm3, precision)
+      val fastSquaredDist3 = fastSquaredDistance(v2, norm2, v3, norm3, precision)
       assert((fastSquaredDist3 - squaredDist2) <= precision * squaredDist2, s"failed with m = $m")
       if (m > 10) {
-        val v4 = Vectors.sparse(n, indices.slice(0, m - 10),
-          indices.map(i => a(i) + 0.5).slice(0, m - 10))
+        val v4 = Vectors.sparse(
+            n, indices.slice(0, m - 10), indices.map(i => a(i) + 0.5).slice(0, m - 10))
         val norm4 = Vectors.norm(v4, 2.0)
         val squaredDist = breezeSquaredDistance(v2.toBreeze, v4.toBreeze)
-        val fastSquaredDist =
-          fastSquaredDistance(v2, norm2, v4, norm4, precision)
+        val fastSquaredDist = fastSquaredDistance(v2, norm2, v4, norm4, precision)
         assert((fastSquaredDist - squaredDist) <= precision * squaredDist, s"failed with m = $m")
       }
     }
   }
 
   test("loadLibSVMFile") {
-    val lines =
-      """
+    val lines = """
         |1 1:1.0 3:2.0 5:3.0
         |0
         |0 2:4.0 4:5.0 6:6.0
@@ -110,8 +107,7 @@ class MLUtilsSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("loadLibSVMFile throws IllegalArgumentException when indices is zero-based") {
-    val lines =
-      """
+    val lines = """
         |0
         |0 0:4.0 4:5.0 6:6.0
       """.stripMargin
@@ -127,8 +123,7 @@ class MLUtilsSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("loadLibSVMFile throws IllegalArgumentException when indices is not in ascending order") {
-    val lines =
-      """
+    val lines = """
         |0
         |0 3:4.0 2:5.0 6:6.0
       """.stripMargin
@@ -144,14 +139,17 @@ class MLUtilsSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("saveAsLibSVMFile") {
-    val examples = sc.parallelize(Seq(
-      LabeledPoint(1.1, Vectors.sparse(3, Seq((0, 1.23), (2, 4.56)))),
-      LabeledPoint(0.0, Vectors.dense(1.01, 2.02, 3.03))
-    ), 2)
+    val examples =
+      sc.parallelize(Seq(
+                         LabeledPoint(1.1, Vectors.sparse(3, Seq((0, 1.23), (2, 4.56)))),
+                         LabeledPoint(0.0, Vectors.dense(1.01, 2.02, 3.03))
+                     ),
+                     2)
     val tempDir = Utils.createTempDir()
     val outputDir = new File(tempDir, "output")
     MLUtils.saveAsLibSVMFile(examples, outputDir.toURI.toString)
-    val lines = outputDir.listFiles()
+    val lines = outputDir
+      .listFiles()
       .filter(_.getName.startsWith("part-"))
       .flatMap(Source.fromFile(_).getLines())
       .toSet
@@ -183,37 +181,39 @@ class MLUtilsSuite extends SparkFunSuite with MLlibTestSparkContext {
       for (seed <- 1 to 5) {
         val foldedRdds = kFold(data, folds, seed)
         assert(foldedRdds.length === folds)
-        foldedRdds.foreach { case (training, validation) =>
-          val result = validation.union(training).collect().sorted
-          val validationSize = validation.collect().size.toFloat
-          assert(validationSize > 0, "empty validation data")
-          val p = 1 / folds.toFloat
-          // Within 3 standard deviations of the mean
-          val range = 3 * math.sqrt(100 * p * (1 - p))
-          val expected = 100 * p
-          val lowerBound = expected - range
-          val upperBound = expected + range
-          assert(validationSize > lowerBound,
-            s"Validation data ($validationSize) smaller than expected ($lowerBound)" )
-          assert(validationSize < upperBound,
-            s"Validation data ($validationSize) larger than expected ($upperBound)" )
-          assert(training.collect().size > 0, "empty training data")
-          assert(result ===  collectedData,
-            "Each training+validation set combined should contain all of the data.")
+        foldedRdds.foreach {
+          case (training, validation) =>
+            val result = validation.union(training).collect().sorted
+            val validationSize = validation.collect().size.toFloat
+            assert(validationSize > 0, "empty validation data")
+            val p = 1 / folds.toFloat
+            // Within 3 standard deviations of the mean
+            val range = 3 * math.sqrt(100 * p * (1 - p))
+            val expected = 100 * p
+            val lowerBound = expected - range
+            val upperBound = expected + range
+            assert(validationSize > lowerBound,
+                   s"Validation data ($validationSize) smaller than expected ($lowerBound)")
+            assert(validationSize < upperBound,
+                   s"Validation data ($validationSize) larger than expected ($upperBound)")
+            assert(training.collect().size > 0, "empty training data")
+            assert(result === collectedData,
+                   "Each training+validation set combined should contain all of the data.")
         }
         // K fold cross validation should only have each element in the validation set exactly once
         assert(foldedRdds.map(_._2).reduce((x, y) => x.union(y)).collect().sorted ===
-          data.collect().sorted)
+            data.collect().sorted)
       }
     }
   }
 
   test("loadVectors") {
     val vectors = sc.parallelize(Seq(
-      Vectors.dense(1.0, 2.0),
-      Vectors.sparse(2, Array(1), Array(-1.0)),
-      Vectors.dense(0.0, 1.0)
-    ), 2)
+                                     Vectors.dense(1.0, 2.0),
+                                     Vectors.sparse(2, Array(1), Array(-1.0)),
+                                     Vectors.dense(0.0, 1.0)
+                                 ),
+                                 2)
     val tempDir = Utils.createTempDir()
     val outputDir = new File(tempDir, "vectors")
     val path = outputDir.toURI.toString
@@ -225,10 +225,11 @@ class MLUtilsSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   test("loadLabeledPoints") {
     val points = sc.parallelize(Seq(
-      LabeledPoint(1.0, Vectors.dense(1.0, 2.0)),
-      LabeledPoint(0.0, Vectors.sparse(2, Array(1), Array(-1.0))),
-      LabeledPoint(1.0, Vectors.dense(0.0, 1.0))
-    ), 2)
+                                    LabeledPoint(1.0, Vectors.dense(1.0, 2.0)),
+                                    LabeledPoint(0.0, Vectors.sparse(2, Array(1), Array(-1.0))),
+                                    LabeledPoint(1.0, Vectors.dense(0.0, 1.0))
+                                ),
+                                2)
     val tempDir = Utils.createTempDir()
     val outputDir = new File(tempDir, "points")
     val path = outputDir.toURI.toString

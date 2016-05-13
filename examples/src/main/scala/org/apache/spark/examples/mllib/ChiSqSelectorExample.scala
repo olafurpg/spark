@@ -40,7 +40,9 @@ object ChiSqSelectorExample {
     // Discretize data in 16 equal bins since ChiSqSelector requires categorical features
     // Even though features are doubles, the ChiSqSelector treats each unique value as a category
     val discretizedData = data.map { lp =>
-      LabeledPoint(lp.label, Vectors.dense(lp.features.toArray.map { x => (x / 16).floor }))
+      LabeledPoint(lp.label, Vectors.dense(lp.features.toArray.map { x =>
+        (x / 16).floor
+      }))
     }
     // Create ChiSqSelector that will select top 50 of 692 features
     val selector = new ChiSqSelector(50)

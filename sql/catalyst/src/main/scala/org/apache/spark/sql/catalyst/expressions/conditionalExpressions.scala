@@ -25,10 +25,10 @@ import org.apache.spark.sql.types._
 
 // scalastyle:off line.size.limit
 @ExpressionDescription(
-  usage = "_FUNC_(expr1,expr2,expr3) - If expr1 is TRUE then IF() returns expr2; otherwise it returns expr3.")
+    usage = "_FUNC_(expr1,expr2,expr3) - If expr1 is TRUE then IF() returns expr2; otherwise it returns expr3.")
 // scalastyle:on line.size.limit
 case class If(predicate: Expression, trueValue: Expression, falseValue: Expression)
-  extends Expression {
+    extends Expression {
 
   override def children: Seq[Expression] = predicate :: trueValue :: falseValue :: Nil
   override def nullable: Boolean = trueValue.nullable || falseValue.nullable
@@ -36,10 +36,10 @@ case class If(predicate: Expression, trueValue: Expression, falseValue: Expressi
   override def checkInputDataTypes(): TypeCheckResult = {
     if (predicate.dataType != BooleanType) {
       TypeCheckResult.TypeCheckFailure(
-        s"type of predicate expression in If should be boolean, not ${predicate.dataType}")
+          s"type of predicate expression in If should be boolean, not ${predicate.dataType}")
     } else if (trueValue.dataType.asNullable != falseValue.dataType.asNullable) {
       TypeCheckResult.TypeCheckFailure(s"differing types in '$sql' " +
-        s"(${trueValue.dataType.simpleString} and ${falseValue.dataType.simpleString}).")
+          s"(${trueValue.dataType.simpleString} and ${falseValue.dataType.simpleString}).")
     } else {
       TypeCheckResult.TypeCheckSuccess
     }
@@ -86,10 +86,9 @@ case class If(predicate: Expression, trueValue: Expression, falseValue: Expressi
  * @param branches seq of (branch condition, branch value)
  * @param elseValue optional value for the else branch
  */
-abstract class CaseWhenBase(
-    branches: Seq[(Expression, Expression)],
-    elseValue: Option[Expression])
-  extends Expression with Serializable {
+abstract class CaseWhenBase(branches: Seq[(Expression, Expression)], elseValue: Option[Expression])
+    extends Expression
+    with Serializable {
 
   override def children: Seq[Expression] = branches.flatMap(b => b._1 :: b._2 :: Nil) ++ elseValue
 
@@ -115,12 +114,12 @@ abstract class CaseWhenBase(
       } else {
         val index = branches.indexWhere(_._1.dataType != BooleanType)
         TypeCheckResult.TypeCheckFailure(
-          s"WHEN expressions in CaseWhen should all be boolean type, " +
+            s"WHEN expressions in CaseWhen should all be boolean type, " +
             s"but the ${index + 1}th when expression's type is ${branches(index)._1}")
       }
     } else {
       TypeCheckResult.TypeCheckFailure(
-        "THEN and ELSE expressions should all be same type or coercible to a common type")
+          "THEN and ELSE expressions should all be same type or coercible to a common type")
     }
   }
 
@@ -152,7 +151,6 @@ abstract class CaseWhenBase(
   }
 }
 
-
 /**
  * Case statements of the form "CASE WHEN a THEN b [WHEN c THEN d]* [ELSE e] END".
  * When a = true, returns b; when c = true, returns d; else returns e.
@@ -162,15 +160,16 @@ abstract class CaseWhenBase(
  */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
-  usage = "CASE WHEN a THEN b [WHEN c THEN d]* [ELSE e] END - When a = true, returns b; when c = true, return d; else return e.")
+    usage = "CASE WHEN a THEN b [WHEN c THEN d]* [ELSE e] END - When a = true, returns b; when c = true, return d; else return e.")
 // scalastyle:on line.size.limit
 case class CaseWhen(
-    val branches: Seq[(Expression, Expression)],
-    val elseValue: Option[Expression] = None)
-  extends CaseWhenBase(branches, elseValue) with CodegenFallback with Serializable {
+    val branches: Seq[(Expression, Expression)], val elseValue: Option[Expression] = None)
+    extends CaseWhenBase(branches, elseValue)
+    with CodegenFallback
+    with Serializable {
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    super[CodegenFallback].doGenCode(ctx, ev)
+    super [CodegenFallback].doGenCode(ctx, ev)
   }
 
   def toCodegen(): CaseWhenCodegen = {
@@ -186,9 +185,9 @@ case class CaseWhen(
  * @param elseValue optional value for the else branch
  */
 case class CaseWhenCodegen(
-    val branches: Seq[(Expression, Expression)],
-    val elseValue: Option[Expression] = None)
-  extends CaseWhenBase(branches, elseValue) with Serializable {
+    val branches: Seq[(Expression, Expression)], val elseValue: Option[Expression] = None)
+    extends CaseWhenBase(branches, elseValue)
+    with Serializable {
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     // Generate code that looks like:
@@ -209,10 +208,11 @@ case class CaseWhenCodegen(
     //     }
     //   }
     // }
-    val cases = branches.map { case (condExpr, valueExpr) =>
-      val cond = condExpr.genCode(ctx)
-      val res = valueExpr.genCode(ctx)
-      s"""
+    val cases = branches.map {
+      case (condExpr, valueExpr) =>
+        val cond = condExpr.genCode(ctx)
+        val res = valueExpr.genCode(ctx)
+        s"""
         ${cond.code}
         if (!${cond.isNull} && ${cond.value}) {
           ${res.code}
@@ -226,8 +226,7 @@ case class CaseWhenCodegen(
 
     elseValue.foreach { elseExpr =>
       val res = elseExpr.genCode(ctx)
-      generatedCode +=
-        s"""
+      generatedCode += s"""
           ${res.code}
           ${ev.isNull} = ${res.isNull};
           ${ev.value} = ${res.value};
@@ -256,10 +255,14 @@ object CaseWhen {
    *                 position are branch values.
    */
   def createFromParser(branches: Seq[Expression]): CaseWhen = {
-    val cases = branches.grouped(2).flatMap {
-      case cond :: value :: Nil => Some((cond, value))
-      case value :: Nil => None
-    }.toArray.toSeq  // force materialization to make the seq serializable
+    val cases = branches
+      .grouped(2)
+      .flatMap {
+        case cond :: value :: Nil => Some((cond, value))
+        case value :: Nil => None
+      }
+      .toArray
+      .toSeq // force materialization to make the seq serializable
     val elseValue = if (branches.size % 2 == 1) Some(branches.last) else None
     CaseWhen(cases, elseValue)
   }
@@ -271,10 +274,14 @@ object CaseWhen {
  */
 object CaseKeyWhen {
   def apply(key: Expression, branches: Seq[Expression]): CaseWhen = {
-    val cases = branches.grouped(2).flatMap {
-      case cond :: value :: Nil => Some((EqualTo(key, cond), value))
-      case value :: Nil => None
-    }.toArray.toSeq  // force materialization to make the seq serializable
+    val cases = branches
+      .grouped(2)
+      .flatMap {
+        case cond :: value :: Nil => Some((EqualTo(key, cond), value))
+        case value :: Nil => None
+      }
+      .toArray
+      .toSeq // force materialization to make the seq serializable
     val elseValue = if (branches.size % 2 == 1) Some(branches.last) else None
     CaseWhen(cases, elseValue)
   }
@@ -285,7 +292,7 @@ object CaseKeyWhen {
  * It takes at least 2 parameters, and returns null iff all parameters are null.
  */
 @ExpressionDescription(
-  usage = "_FUNC_(n1, ...) - Returns the least value of all parameters, skipping null values.")
+    usage = "_FUNC_(n1, ...) - Returns the least value of all parameters, skipping null values.")
 case class Least(children: Seq[Expression]) extends Expression {
 
   override def nullable: Boolean = children.forall(_.nullable)
@@ -297,8 +304,7 @@ case class Least(children: Seq[Expression]) extends Expression {
     if (children.length <= 1) {
       TypeCheckResult.TypeCheckFailure(s"LEAST requires at least 2 arguments")
     } else if (children.map(_.dataType).distinct.count(_ != NullType) > 1) {
-      TypeCheckResult.TypeCheckFailure(
-        s"The expressions should all have the same type," +
+      TypeCheckResult.TypeCheckFailure(s"The expressions should all have the same type," +
           s" got LEAST (${children.map(_.dataType)}).")
     } else {
       TypeUtils.checkForOrderingExpr(dataType, "function " + prettyName)
@@ -308,7 +314,8 @@ case class Least(children: Seq[Expression]) extends Expression {
   override def dataType: DataType = children.head.dataType
 
   override def eval(input: InternalRow): Any = {
-    children.foldLeft[Any](null)((r, c) => {
+    children.foldLeft[Any](null)(
+        (r, c) => {
       val evalc = c.eval(input)
       if (evalc != null) {
         if (r == null || ordering.lt(evalc, r)) evalc else r
@@ -345,7 +352,7 @@ case class Least(children: Seq[Expression]) extends Expression {
  * It takes at least 2 parameters, and returns null iff all parameters are null.
  */
 @ExpressionDescription(
-  usage = "_FUNC_(n1, ...) - Returns the greatest value of all parameters, skipping null values.")
+    usage = "_FUNC_(n1, ...) - Returns the greatest value of all parameters, skipping null values.")
 case class Greatest(children: Seq[Expression]) extends Expression {
 
   override def nullable: Boolean = children.forall(_.nullable)
@@ -357,8 +364,7 @@ case class Greatest(children: Seq[Expression]) extends Expression {
     if (children.length <= 1) {
       TypeCheckResult.TypeCheckFailure(s"GREATEST requires at least 2 arguments")
     } else if (children.map(_.dataType).distinct.count(_ != NullType) > 1) {
-      TypeCheckResult.TypeCheckFailure(
-        s"The expressions should all have the same type," +
+      TypeCheckResult.TypeCheckFailure(s"The expressions should all have the same type," +
           s" got GREATEST (${children.map(_.dataType)}).")
     } else {
       TypeUtils.checkForOrderingExpr(dataType, "function " + prettyName)
@@ -368,7 +374,8 @@ case class Greatest(children: Seq[Expression]) extends Expression {
   override def dataType: DataType = children.head.dataType
 
   override def eval(input: InternalRow): Any = {
-    children.foldLeft[Any](null)((r, c) => {
+    children.foldLeft[Any](null)(
+        (r, c) => {
       val evalc = c.eval(input)
       if (evalc != null) {
         if (r == null || ordering.gt(evalc, r)) evalc else r
@@ -399,4 +406,3 @@ case class Greatest(children: Seq[Expression]) extends Expression {
       ${rest.map(updateEval).mkString("\n")}""")
   }
 }
-

@@ -34,16 +34,16 @@ import org.apache.spark.rdd.RDD
  *
  */
 @Since("0.8.0")
-class LinearRegressionModel @Since("1.1.0") (
-    @Since("1.0.0") override val weights: Vector,
-    @Since("0.8.0") override val intercept: Double)
-  extends GeneralizedLinearModel(weights, intercept) with RegressionModel with Serializable
-  with Saveable with PMMLExportable {
+class LinearRegressionModel @Since("1.1.0")(
+    @Since("1.0.0") override val weights: Vector, @Since("0.8.0") override val intercept: Double)
+    extends GeneralizedLinearModel(weights, intercept)
+    with RegressionModel
+    with Serializable
+    with Saveable
+    with PMMLExportable {
 
   override protected def predictPoint(
-      dataMatrix: Vector,
-      weightMatrix: Vector,
-      intercept: Double): Double = {
+      dataMatrix: Vector, weightMatrix: Vector, intercept: Double): Double = {
     weightMatrix.toBreeze.dot(dataMatrix.toBreeze) + intercept
   }
 
@@ -68,10 +68,10 @@ object LinearRegressionModel extends Loader[LinearRegressionModel] {
         val numFeatures = RegressionModel.getNumFeatures(metadata)
         val data = GLMRegressionModel.SaveLoadV1_0.loadData(sc, path, classNameV1_0, numFeatures)
         new LinearRegressionModel(data.weights, data.intercept)
-      case _ => throw new Exception(
-        s"LinearRegressionModel.load did not recognize model with (className, format version):" +
-        s"($loadedClassName, $version).  Supported:\n" +
-        s"  ($classNameV1_0, 1.0)")
+      case _ =>
+        throw new Exception(
+            s"LinearRegressionModel.load did not recognize model with (className, format version):" +
+            s"($loadedClassName, $version).  Supported:\n" + s"  ($classNameV1_0, 1.0)")
     }
   }
 }
@@ -87,12 +87,12 @@ object LinearRegressionModel extends Loader[LinearRegressionModel] {
  */
 @Since("0.8.0")
 @deprecated("Use ml.regression.LinearRegression or LBFGS", "2.0.0")
-class LinearRegressionWithSGD private[mllib] (
-    private var stepSize: Double,
-    private var numIterations: Int,
-    private var regParam: Double,
-    private var miniBatchFraction: Double)
-  extends GeneralizedLinearAlgorithm[LinearRegressionModel] with Serializable {
+class LinearRegressionWithSGD private[mllib](private var stepSize: Double,
+                                             private var numIterations: Int,
+                                             private var regParam: Double,
+                                             private var miniBatchFraction: Double)
+    extends GeneralizedLinearAlgorithm[LinearRegressionModel]
+    with Serializable {
 
   private val gradient = new LeastSquaresGradient()
   private val updater = new SimpleUpdater()
@@ -139,12 +139,11 @@ object LinearRegressionWithSGD {
    *
    */
   @Since("1.0.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double,
-      miniBatchFraction: Double,
-      initialWeights: Vector): LinearRegressionModel = {
+  def train(input: RDD[LabeledPoint],
+            numIterations: Int,
+            stepSize: Double,
+            miniBatchFraction: Double,
+            initialWeights: Vector): LinearRegressionModel = {
     new LinearRegressionWithSGD(stepSize, numIterations, 0.0, miniBatchFraction)
       .run(input, initialWeights)
   }
@@ -162,11 +161,10 @@ object LinearRegressionWithSGD {
    *
    */
   @Since("0.8.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double,
-      miniBatchFraction: Double): LinearRegressionModel = {
+  def train(input: RDD[LabeledPoint],
+            numIterations: Int,
+            stepSize: Double,
+            miniBatchFraction: Double): LinearRegressionModel = {
     new LinearRegressionWithSGD(stepSize, numIterations, 0.0, miniBatchFraction).run(input)
   }
 
@@ -184,9 +182,7 @@ object LinearRegressionWithSGD {
    */
   @Since("0.8.0")
   def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double): LinearRegressionModel = {
+      input: RDD[LabeledPoint], numIterations: Int, stepSize: Double): LinearRegressionModel = {
     train(input, numIterations, stepSize, 1.0)
   }
 
@@ -202,9 +198,7 @@ object LinearRegressionWithSGD {
    *
    */
   @Since("0.8.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int): LinearRegressionModel = {
+  def train(input: RDD[LabeledPoint], numIterations: Int): LinearRegressionModel = {
     train(input, numIterations, 1.0, 1.0)
   }
 }

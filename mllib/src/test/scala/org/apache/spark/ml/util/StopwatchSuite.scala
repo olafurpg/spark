@@ -70,9 +70,7 @@ class StopwatchSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("MultiStopwatch") {
-    val sw = new MultiStopwatch(sc)
-      .addLocal("local")
-      .addDistributed("spark")
+    val sw = new MultiStopwatch(sc).addLocal("local").addDistributed("spark")
     assert(sw("local").name === "local")
     assert(sw("spark").name === "spark")
     intercept[NoSuchElementException] {
@@ -86,7 +84,7 @@ class StopwatchSuite extends SparkFunSuite with MLlibTestSparkContext {
     assert(localElapsed === localDuration)
     assert(sparkElapsed === sparkDuration)
     assert(sw.toString ===
-      s"{\n  local: ${localElapsed}ms,\n  spark: ${sparkElapsed}ms\n}")
+        s"{\n  local: ${localElapsed}ms,\n  spark: ${sparkElapsed}ms\n}")
     val rdd = sc.parallelize(0 until 4, 4)
     val acc = sc.accumulator(0L)
     rdd.foreach { i =>

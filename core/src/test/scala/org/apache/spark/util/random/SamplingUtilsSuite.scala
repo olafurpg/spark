@@ -62,7 +62,8 @@ class SamplingUtilsSuite extends SparkFunSuite {
     for (s <- List(1, 10, 100, 1000)) {
       val frac = SamplingUtils.computeFractionForSampleSize(s, n, false)
       val binomial = new BinomialDistribution(n, frac)
-      assert(binomial.inverseCumulativeProbability(0.0001)*n >= s, "Computed fraction is too low")
+      assert(
+          binomial.inverseCumulativeProbability(0.0001) * n >= s, "Computed fraction is too low")
     }
   }
 }

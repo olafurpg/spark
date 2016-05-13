@@ -39,8 +39,8 @@ import org.apache.spark.sql.Dataset
  * @param dataset the training dataset
  * @tparam E the type of the estimator
  */
-private[spark] class Instrumentation[E <: Estimator[_]] private (
-    estimator: E, dataset: RDD[_]) extends Logging {
+private[spark] class Instrumentation[E <: Estimator[_]] private (estimator: E, dataset: RDD[_])
+    extends Logging {
 
   private val id = Instrumentation.counter.incrementAndGet()
   private val prefix = {
@@ -51,8 +51,9 @@ private[spark] class Instrumentation[E <: Estimator[_]] private (
   init()
 
   private def init(): Unit = {
-    log(s"training: numPartitions=${dataset.partitions.length}" +
-      s" storageLevel=${dataset.getStorageLevel}")
+    log(
+        s"training: numPartitions=${dataset.partitions.length}" +
+        s" storageLevel=${dataset.getStorageLevel}")
   }
 
   /**
@@ -108,17 +109,14 @@ private[spark] object Instrumentation {
   /**
    * Creates an instrumentation object for a training session.
    */
-  def create[E <: Estimator[_]](
-      estimator: E, dataset: Dataset[_]): Instrumentation[E] = {
+  def create[E <: Estimator[_]](estimator: E, dataset: Dataset[_]): Instrumentation[E] = {
     create[E](estimator, dataset.rdd)
   }
 
   /**
    * Creates an instrumentation object for a training session.
    */
-  def create[E <: Estimator[_]](
-      estimator: E, dataset: RDD[_]): Instrumentation[E] = {
+  def create[E <: Estimator[_]](estimator: E, dataset: RDD[_]): Instrumentation[E] = {
     new Instrumentation[E](estimator, dataset)
   }
-
 }

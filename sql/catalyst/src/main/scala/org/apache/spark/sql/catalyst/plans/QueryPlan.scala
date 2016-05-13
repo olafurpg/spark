@@ -35,7 +35,7 @@ abstract class QueryPlan[PlanType <: QueryPlan[PlanType]] extends TreeNode[PlanT
       .union(inferAdditionalConstraints(constraints))
       .union(constructIsNotNullConstraints(constraints))
       .filter(constraint =>
-        constraint.references.nonEmpty && constraint.references.subsetOf(outputSet))
+            constraint.references.nonEmpty && constraint.references.subsetOf(outputSet))
   }
 
   /**
@@ -261,7 +261,7 @@ abstract class QueryPlan[PlanType <: QueryPlan[PlanType]] extends TreeNode[PlanT
    * All the subqueries of current plan.
    */
   def subqueries: Seq[PlanType] = {
-    expressions.flatMap(_.collect {case e: SubqueryExpression => e.plan.asInstanceOf[PlanType]})
+    expressions.flatMap(_.collect { case e: SubqueryExpression => e.plan.asInstanceOf[PlanType] })
   }
 
   override def innerChildren: Seq[PlanType] = subqueries
@@ -287,10 +287,9 @@ abstract class QueryPlan[PlanType <: QueryPlan[PlanType]] extends TreeNode[PlanT
   def sameResult(plan: PlanType): Boolean = {
     val left = this.canonicalized
     val right = plan.canonicalized
-    left.getClass == right.getClass &&
-      left.children.size == right.children.size &&
-      left.cleanArgs == right.cleanArgs &&
-      (left.children, right.children).zipped.forall(_ sameResult _)
+    left.getClass == right.getClass && left.children.size == right.children.size &&
+    left.cleanArgs == right.cleanArgs &&
+    (left.children, right.children).zipped.forall(_ sameResult _)
   }
 
   /**

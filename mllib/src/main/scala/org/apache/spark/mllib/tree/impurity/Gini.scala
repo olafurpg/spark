@@ -72,7 +72,6 @@ object Gini extends Impurity {
    */
   @Since("1.1.0")
   def instance: this.type = this
-
 }
 
 /**
@@ -82,7 +81,8 @@ object Gini extends Impurity {
  * @param numClasses  Number of classes for label.
  */
 private[spark] class GiniAggregator(numClasses: Int)
-  extends ImpurityAggregator(numClasses) with Serializable {
+    extends ImpurityAggregator(numClasses)
+    with Serializable {
 
   /**
    * Update stats for one (node, feature, bin) with the given label.
@@ -91,12 +91,13 @@ private[spark] class GiniAggregator(numClasses: Int)
    */
   def update(allStats: Array[Double], offset: Int, label: Double, instanceWeight: Double): Unit = {
     if (label >= statsSize) {
-      throw new IllegalArgumentException(s"GiniAggregator given label $label" +
-        s" but requires label < numClasses (= $statsSize).")
+      throw new IllegalArgumentException(
+          s"GiniAggregator given label $label" +
+          s" but requires label < numClasses (= $statsSize).")
     }
     if (label < 0) {
-      throw new IllegalArgumentException(s"GiniAggregator given label $label" +
-        s"but requires label is non-negative.")
+      throw new IllegalArgumentException(
+          s"GiniAggregator given label $label" + s"but requires label is non-negative.")
     }
     allStats(offset + label.toInt) += instanceWeight
   }
@@ -137,11 +138,12 @@ private[spark] class GiniCalculator(stats: Array[Double]) extends ImpurityCalcul
   /**
    * Prediction which should be made based on the sufficient statistics.
    */
-  def predict: Double = if (count == 0) {
-    0
-  } else {
-    indexOfLargestArrayElement(stats)
-  }
+  def predict: Double =
+    if (count == 0) {
+      0
+    } else {
+      indexOfLargestArrayElement(stats)
+    }
 
   /**
    * Probability of the label given by [[predict]].
@@ -149,7 +151,7 @@ private[spark] class GiniCalculator(stats: Array[Double]) extends ImpurityCalcul
   override def prob(label: Double): Double = {
     val lbl = label.toInt
     require(lbl < stats.length,
-      s"GiniCalculator.prob given invalid label: $lbl (should be < ${stats.length}")
+            s"GiniCalculator.prob given invalid label: $lbl (should be < ${stats.length}")
     require(lbl >= 0, "GiniImpurity does not support negative labels")
     val cnt = count
     if (cnt == 0) {
@@ -160,5 +162,4 @@ private[spark] class GiniCalculator(stats: Array[Double]) extends ImpurityCalcul
   }
 
   override def toString: String = s"GiniCalculator(stats = [${stats.mkString(", ")}])"
-
 }

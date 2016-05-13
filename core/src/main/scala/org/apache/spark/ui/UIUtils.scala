@@ -93,17 +93,18 @@ private[spark] object UIUtils extends Logging {
       val yearString = toString(ms / year, "year")
 
       Seq(
-        second -> millisecondsString,
-        minute -> s"$secondString $millisecondsString",
-        hour -> s"$minuteString $secondString",
-        day -> s"$hourString $minuteString $secondString",
-        week -> s"$dayString $hourString $minuteString",
-        year -> s"$weekString $dayString $hourString"
-      ).foreach { case (durationLimit, durationString) =>
-        if (ms < durationLimit) {
-          // if time is less than the limit (upto year)
-          return durationString
-        }
+          second -> millisecondsString,
+          minute -> s"$secondString $millisecondsString",
+          hour -> s"$minuteString $secondString",
+          day -> s"$hourString $minuteString $secondString",
+          week -> s"$dayString $hourString $minuteString",
+          year -> s"$weekString $dayString $hourString"
+      ).foreach {
+        case (durationLimit, durationString) =>
+          if (ms < durationLimit) {
+            // if time is less than the limit (upto year)
+            return durationString
+          }
       }
       // if time is more than a year
       return s"$yearString $weekString $dayString"
@@ -123,13 +124,13 @@ private[spark] object UIUtils extends Logging {
     val thousand = 1e3
 
     val (value, unit) = {
-      if (records >= 2*trillion) {
+      if (records >= 2 * trillion) {
         (records / trillion, " T")
-      } else if (records >= 2*billion) {
+      } else if (records >= 2 * billion) {
         (records / billion, " B")
-      } else if (records >= 2*million) {
+      } else if (records >= 2 * million) {
         (records / million, " M")
-      } else if (records >= 2*thousand) {
+      } else if (records >= 2 * thousand) {
         (records / thousand, " K")
       } else {
         (records, "")
@@ -145,7 +146,8 @@ private[spark] object UIUtils extends Logging {
   // Yarn has to go through a proxy so the base uri is provided and has to be on all links
   def uiRoot: String = {
     // SPARK-11484 - Use the proxyBase set by the AM, if not found then use env.
-    sys.props.get("spark.ui.proxyBase")
+    sys.props
+      .get("spark.ui.proxyBase")
       .orElse(sys.env.get("APPLICATION_WEB_PROXY_BASE"))
       .getOrElse("")
   }
@@ -194,13 +196,12 @@ private[spark] object UIUtils extends Logging {
   }
 
   /** Returns a spark page with correctly formatted headers */
-  def headerSparkPage(
-      title: String,
-      content: => Seq[Node],
-      activeTab: SparkUITab,
-      refreshInterval: Option[Int] = None,
-      helpText: Option[String] = None,
-      showVisualization: Boolean = false): Seq[Node] = {
+  def headerSparkPage(title: String,
+                      content: => Seq[Node],
+                      activeTab: SparkUITab,
+                      refreshInterval: Option[Int] = None,
+                      helpText: Option[String] = None,
+                      showVisualization: Boolean = false): Seq[Node] = {
 
     val appName = activeTab.appName
     val shortAppName = if (appName.length < 36) appName else appName.take(32) + "..."
@@ -249,9 +250,7 @@ private[spark] object UIUtils extends Logging {
 
   /** Returns a page with the spark css/js and a simple format. Used for scheduler UI. */
   def basicSparkPage(
-      content: => Seq[Node],
-      title: String,
-      useDataTables: Boolean = false): Seq[Node] = {
+      content: => Seq[Node], title: String, useDataTables: Boolean = false): Seq[Node] = {
     <html>
       <head>
         {commonHeaderNodes}
@@ -279,15 +278,14 @@ private[spark] object UIUtils extends Logging {
   }
 
   /** Returns an HTML table constructed by generating a row for each object in a sequence. */
-  def listingTable[T](
-      headers: Seq[String],
-      generateDataRow: T => Seq[Node],
-      data: Iterable[T],
-      fixedWidth: Boolean = false,
-      id: Option[String] = None,
-      headerClasses: Seq[String] = Seq.empty,
-      stripeRowsWithCss: Boolean = true,
-      sortable: Boolean = true): Seq[Node] = {
+  def listingTable[T](headers: Seq[String],
+                      generateDataRow: T => Seq[Node],
+                      data: Iterable[T],
+                      fixedWidth: Boolean = false,
+                      id: Option[String] = None,
+                      headerClasses: Seq[String] = Seq.empty,
+                      stripeRowsWithCss: Boolean = true,
+                      sortable: Boolean = true): Seq[Node] = {
 
     val listingTableClass = {
       val _tableClass = if (stripeRowsWithCss) TABLE_CLASS_STRIPED else TABLE_CLASS_NOT_STRIPED
@@ -333,15 +331,11 @@ private[spark] object UIUtils extends Logging {
   }
 
   def makeProgressBar(
-      started: Int,
-      completed: Int,
-      failed: Int,
-      skipped: Int,
-      total: Int): Seq[Node] = {
-    val completeWidth = "width: %s%%".format((completed.toDouble/total)*100)
+      started: Int, completed: Int, failed: Int, skipped: Int, total: Int): Seq[Node] = {
+    val completeWidth = "width: %s%%".format((completed.toDouble / total) * 100)
     // started + completed can be > total when there are speculative tasks
     val boundedStarted = math.min(started, total - completed)
-    val startWidth = "width: %s%%".format((boundedStarted.toDouble/total)*100)
+    val startWidth = "width: %s%%".format((boundedStarted.toDouble / total) * 100)
 
     <div class="progress">
       <span style="text-align:center; position:absolute; width:100%; left:0;">
@@ -437,21 +431,24 @@ private[spark] object UIUtils extends Logging {
 
       // Verify that this has only anchors and span (we are wrapping in span)
       val allowedNodeLabels = Set("a", "span")
-      val illegalNodes = xml \\ "_"  filterNot { case node: Node =>
-        allowedNodeLabels.contains(node.label)
-      }
+      val illegalNodes =
+        xml \\ "_" filterNot {
+          case node: Node =>
+            allowedNodeLabels.contains(node.label)
+        }
       if (illegalNodes.nonEmpty) {
         throw new IllegalArgumentException(
-          "Only HTML anchors allowed in job descriptions\n" +
-            illegalNodes.map { n => s"${n.label} in $n"}.mkString("\n\t"))
+            "Only HTML anchors allowed in job descriptions\n" + illegalNodes.map { n =>
+          s"${n.label} in $n"
+        }.mkString("\n\t"))
       }
 
       // Verify that all links are relative links starting with "/"
       val allLinks =
         xml \\ "a" flatMap { _.attributes } filter { _.key == "href" } map { _.value.toString }
-      if (allLinks.exists { ! _.startsWith ("/") }) {
+      if (allLinks.exists { !_.startsWith("/") }) {
         throw new IllegalArgumentException(
-          "Links in job descriptions must be root-relative:\n" + allLinks.mkString("\n\t"))
+            "Links in job descriptions must be root-relative:\n" + allLinks.mkString("\n\t"))
       }
 
       val rule =
@@ -466,8 +463,7 @@ private[spark] object UIUtils extends Logging {
               }
             }
           }
-        }
-        else {
+        } else {
           // Prepend the relative links with basePathUri
           new RewriteRule() {
             override def transform(n: Node): Seq[Node] = {

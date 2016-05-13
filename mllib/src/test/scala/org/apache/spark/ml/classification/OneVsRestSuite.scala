@@ -45,14 +45,21 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
 
     // The following coefficients and xMean/xVariance are computed from iris dataset with lambda=0.2
     // As a result, we are drawing samples from probability distribution of an actual model.
-    val coefficients = Array(
-      -0.57997, 0.912083, -0.371077, -0.819866, 2.688191,
-      -0.16624, -0.84355, -0.048509, -0.301789, 4.170682)
+    val coefficients = Array(-0.57997,
+                             0.912083,
+                             -0.371077,
+                             -0.819866,
+                             2.688191,
+                             -0.16624,
+                             -0.84355,
+                             -0.048509,
+                             -0.301789,
+                             4.170682)
 
     val xMean = Array(5.843, 3.057, 3.758, 1.199)
     val xVariance = Array(0.6856, 0.1899, 3.116, 0.581)
-    rdd = sc.parallelize(generateMultinomialLogisticInput(
-      coefficients, xMean, xVariance, true, nPoints, 42), 2)
+    rdd = sc.parallelize(
+        generateMultinomialLogisticInput(coefficients, xMean, xVariance, true, nPoints, 42), 2)
     dataset = spark.createDataFrame(rdd)
   }
 
@@ -65,8 +72,7 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
 
   test("one-vs-rest: default params") {
     val numClasses = 3
-    val ova = new OneVsRest()
-      .setClassifier(new LogisticRegression)
+    val ova = new OneVsRest().setClassifier(new LogisticRegression)
     assert(ova.getLabelCol === "label")
     assert(ova.getPredictionCol === "prediction")
     val ovaModel = ova.fit(dataset)
@@ -81,8 +87,8 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
     val predictionColSchema = transformedDataset.schema(ovaModel.getPredictionCol)
     assert(MetadataUtils.getNumClasses(predictionColSchema) === Some(3))
 
-    val ovaResults = transformedDataset.select("prediction", "label").rdd.map {
-      row => (row.getDouble(0), row.getDouble(1))
+    val ovaResults = transformedDataset.select("prediction", "label").rdd.map { row =>
+      (row.getDouble(0), row.getDouble(1))
     }
 
     val lr = new LogisticRegressionWithLBFGS().setIntercept(true).setNumClasses(numClasses)
@@ -110,18 +116,14 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
   }
 
   test("SPARK-8092: ensure label features and prediction cols are configurable") {
-    val labelIndexer = new StringIndexer()
-      .setInputCol("label")
-      .setOutputCol("indexed")
+    val labelIndexer = new StringIndexer().setInputCol("label").setOutputCol("indexed")
 
-    val indexedDataset = labelIndexer
-      .fit(dataset)
-      .transform(dataset)
-      .drop("label")
-      .withColumnRenamed("features", "f")
+    val indexedDataset =
+      labelIndexer.fit(dataset).transform(dataset).drop("label").withColumnRenamed("features", "f")
 
     val ova = new OneVsRest()
-    ova.setClassifier(new LogisticRegression())
+    ova
+      .setClassifier(new LogisticRegression())
       .setLabelCol(labelIndexer.getOutputCol)
       .setFeaturesCol("f")
       .setPredictionCol("p")
@@ -133,17 +135,14 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
   }
 
   test("SPARK-8049: OneVsRest shouldn't output temp columns") {
-    val logReg = new LogisticRegression()
-      .setMaxIter(1)
-    val ovr = new OneVsRest()
-      .setClassifier(logReg)
+    val logReg = new LogisticRegression().setMaxIter(1)
+    val ovr = new OneVsRest().setClassifier(logReg)
     val output = ovr.fit(dataset).transform(dataset)
     assert(output.schema.fieldNames.toSet === Set("label", "features", "prediction"))
   }
 
   test("OneVsRest.copy and OneVsRestModel.copy") {
-    val lr = new LogisticRegression()
-      .setMaxIter(1)
+    val lr = new LogisticRegression().setMaxIter(1)
 
     val ovr = new OneVsRest()
     withClue("copy with classifier unset should work") {
@@ -153,11 +152,12 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
     val ovr1 = ovr.copy(ParamMap(lr.maxIter -> 10))
     require(ovr.getClassifier.getOrDefault(lr.maxIter) === 1, "copy should have no side-effects")
     require(ovr1.getClassifier.getOrDefault(lr.maxIter) === 10,
-      "copy should handle extra classifier params")
+            "copy should handle extra classifier params")
 
     val ovrModel = ovr1.fit(dataset).copy(ParamMap(lr.thresholds -> Array(0.9, 0.1)))
-    ovrModel.models.foreach { case m: LogisticRegressionModel =>
-      require(m.getThreshold === 0.1, "copy should handle extra model params")
+    ovrModel.models.foreach {
+      case m: LogisticRegressionModel =>
+        require(m.getThreshold === 0.1, "copy should handle extra model params")
     }
   }
 
@@ -183,7 +183,7 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
         assert(lr.getRegParam === lr2.getRegParam)
       case other =>
         throw new AssertionError(s"Loaded OneVsRest expected classifier of type" +
-          s" LogisticRegression but found ${other.getClass.getName}")
+            s" LogisticRegression but found ${other.getClass.getName}")
     }
   }
 
@@ -203,7 +203,7 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
           assert(classifier.getRegParam === lr2.getRegParam)
         case other =>
           throw new AssertionError(s"Loaded OneVsRestModel expected classifier of type" +
-            s" LogisticRegression but found ${other.getClass.getName}")
+              s" LogisticRegression but found ${other.getClass.getName}")
       }
 
       assert(model.labelMetadata === model2.labelMetadata)
@@ -214,7 +214,7 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
           assert(lrModel1.intercept === lrModel2.intercept)
         case other =>
           throw new AssertionError(s"Loaded OneVsRestModel expected model of type" +
-            s" LogisticRegressionModel but found ${other.getClass.getName}")
+              s" LogisticRegressionModel but found ${other.getClass.getName}")
       }
     }
 
@@ -227,16 +227,16 @@ class OneVsRestSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
 
   test("should support all NumericType labels and not support other types") {
     val ovr = new OneVsRest().setClassifier(new LogisticRegression().setMaxIter(1))
-    MLTestingUtils.checkNumericTypes[OneVsRestModel, OneVsRest](
-      ovr, spark) { (expected, actual) =>
-        val expectedModels = expected.models.map(m => m.asInstanceOf[LogisticRegressionModel])
-        val actualModels = actual.models.map(m => m.asInstanceOf[LogisticRegressionModel])
-        assert(expectedModels.length === actualModels.length)
-        expectedModels.zip(actualModels).foreach { case (e, a) =>
+    MLTestingUtils.checkNumericTypes[OneVsRestModel, OneVsRest](ovr, spark) { (expected, actual) =>
+      val expectedModels = expected.models.map(m => m.asInstanceOf[LogisticRegressionModel])
+      val actualModels = actual.models.map(m => m.asInstanceOf[LogisticRegressionModel])
+      assert(expectedModels.length === actualModels.length)
+      expectedModels.zip(actualModels).foreach {
+        case (e, a) =>
           assert(e.intercept === a.intercept)
           assert(e.coefficients.toArray === a.coefficients.toArray)
-        }
       }
+    }
   }
 }
 

@@ -17,7 +17,6 @@
 
 package org.apache.spark.ml.impl
 
-
 private[ml] object Utils {
 
   lazy val EPSILON = {

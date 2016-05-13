@@ -19,23 +19,23 @@ package org.apache.spark.streaming
 
 import org.apache.spark.util.Utils
 
-case class Duration (private val millis: Long) {
+case class Duration(private val millis: Long) {
 
-  def < (that: Duration): Boolean = (this.millis < that.millis)
+  def <(that: Duration): Boolean = (this.millis < that.millis)
 
-  def <= (that: Duration): Boolean = (this.millis <= that.millis)
+  def <=(that: Duration): Boolean = (this.millis <= that.millis)
 
-  def > (that: Duration): Boolean = (this.millis > that.millis)
+  def >(that: Duration): Boolean = (this.millis > that.millis)
 
-  def >= (that: Duration): Boolean = (this.millis >= that.millis)
+  def >=(that: Duration): Boolean = (this.millis >= that.millis)
 
-  def + (that: Duration): Duration = new Duration(millis + that.millis)
+  def +(that: Duration): Duration = new Duration(millis + that.millis)
 
-  def - (that: Duration): Duration = new Duration(millis - that.millis)
+  def -(that: Duration): Duration = new Duration(millis - that.millis)
 
-  def * (times: Int): Duration = new Duration(millis * times)
+  def *(times: Int): Duration = new Duration(millis * times)
 
-  def / (that: Duration): Double = millis.toDouble / that.millis.toDouble
+  def /(that: Duration): Double = millis.toDouble / that.millis.toDouble
 
   // Java-friendlier versions of the above.
 
@@ -71,7 +71,6 @@ case class Duration (private val millis: Long) {
   def milliseconds: Long = millis
 
   def prettyPrint: String = Utils.msDurationToString(millis)
-
 }
 
 /**
@@ -117,5 +116,4 @@ object Durations {
    * @return [[org.apache.spark.streaming.Duration]] representing given number of minutes.
    */
   def minutes(minutes: Long): Duration = Minutes(minutes)
-
 }

@@ -22,9 +22,9 @@ import scala.reflect.ClassTag
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.util.Utils
 
-private[spark]
-class ZippedWithIndexRDDPartition(val prev: Partition, val startIndex: Long)
-  extends Partition with Serializable {
+private[spark] class ZippedWithIndexRDDPartition(val prev: Partition, val startIndex: Long)
+    extends Partition
+    with Serializable {
   override val index: Int = prev.index
 }
 
@@ -36,8 +36,7 @@ class ZippedWithIndexRDDPartition(val prev: Partition, val startIndex: Long)
  * @param prev parent RDD
  * @tparam T parent RDD item type
  */
-private[spark]
-class ZippedWithIndexRDD[T: ClassTag](prev: RDD[T]) extends RDD[(T, Long)](prev) {
+private[spark] class ZippedWithIndexRDD[T: ClassTag](prev: RDD[T]) extends RDD[(T, Long)](prev) {
 
   /** The start index of each partition. */
   @transient private val startIndices: Array[Long] = {
@@ -47,11 +46,13 @@ class ZippedWithIndexRDD[T: ClassTag](prev: RDD[T]) extends RDD[(T, Long)](prev)
     } else if (n == 1) {
       Array(0L)
     } else {
-      prev.context.runJob(
-        prev,
-        Utils.getIteratorSize _,
-        0 until n - 1 // do not need to count the last partition
-      ).scanLeft(0L)(_ + _)
+      prev.context
+        .runJob(
+            prev,
+            Utils.getIteratorSize _,
+            0 until n - 1 // do not need to count the last partition
+        )
+        .scanLeft(0L)(_ + _)
     }
   }
 

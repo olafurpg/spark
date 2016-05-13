@@ -116,9 +116,14 @@ private[ml] trait TreeEnsembleModel[M <: DecisionTreeModel] {
   /** Full description of model */
   def toDebugString: String = {
     val header = toString + "\n"
-    header + trees.zip(treeWeights).zipWithIndex.map { case ((tree, weight), treeIndex) =>
-      s"  Tree $treeIndex (weight $weight):\n" + tree.rootNode.subtreeToString(4)
-    }.fold("")(_ + _)
+    header + trees
+      .zip(treeWeights)
+      .zipWithIndex
+      .map {
+        case ((tree, weight), treeIndex) =>
+          s"  Tree $treeIndex (weight $weight):\n" + tree.rootNode.subtreeToString(4)
+      }
+      .fold("")(_ + _)
   }
 
   /** Total number of nodes, summed over all trees in the ensemble. */
@@ -162,25 +167,28 @@ private[ml] object TreeEnsembleModel {
       // TODO: In the future, also support normalizing by tree.rootNode.impurityStats.count?
       val treeNorm = importances.map(_._2).sum
       if (treeNorm != 0) {
-        importances.foreach { case (idx, impt) =>
-          val normImpt = impt / treeNorm
-          totalImportances.changeValue(idx, normImpt, _ + normImpt)
+        importances.foreach {
+          case (idx, impt) =>
+            val normImpt = impt / treeNorm
+            totalImportances.changeValue(idx, normImpt, _ + normImpt)
         }
       }
     }
     // Normalize importances
     normalizeMapValues(totalImportances)
     // Construct vector
-    val d = if (numFeatures != -1) {
-      numFeatures
-    } else {
-      // Find max feature index used in trees
-      val maxFeatureIndex = trees.map(_.maxSplitFeatureIndex()).max
-      maxFeatureIndex + 1
-    }
+    val d =
+      if (numFeatures != -1) {
+        numFeatures
+      } else {
+        // Find max feature index used in trees
+        val maxFeatureIndex = trees.map(_.maxSplitFeatureIndex()).max
+        maxFeatureIndex + 1
+      }
     if (d == 0) {
-      assert(totalImportances.size == 0, s"Unknown error in computing feature" +
-        s" importance: No splits found, but some non-zero importances.")
+      assert(totalImportances.size == 0,
+             s"Unknown error in computing feature" +
+             s" importance: No splits found, but some non-zero importances.")
     }
     val (indices, values) = totalImportances.iterator.toSeq.sortBy(_._1).unzip
     Vectors.sparse(d, indices.toArray, values.toArray)
@@ -203,7 +211,7 @@ private[ml] object TreeEnsembleModel {
    *                     If -1, then numFeatures is set based on the max feature index in all trees.
    * @return  Feature importance values, of length numFeatures.
    */
-  def featureImportances[M <: DecisionTreeModel : ClassTag](tree: M, numFeatures: Int): Vector = {
+  def featureImportances[M <: DecisionTreeModel: ClassTag](tree: M, numFeatures: Int): Vector = {
     featureImportances(Array(tree), numFeatures)
   }
 
@@ -214,9 +222,7 @@ private[ml] object TreeEnsembleModel {
    * @param node  Current node in recursion
    * @param importances  Aggregate feature importances, modified by this method
    */
-  def computeFeatureImportance(
-      node: Node,
-      importances: OpenHashMap[Int, Double]): Unit = {
+  def computeFeatureImportance(node: Node, importances: OpenHashMap[Int, Double]): Unit = {
     node match {
       case n: InternalNode =>
         val feature = n.split.featureIndex
@@ -239,7 +245,9 @@ private[ml] object TreeEnsembleModel {
     val total = map.map(_._2).sum
     if (total != 0) {
       val keys = map.iterator.map(_._1).toArray
-      keys.foreach { key => map.changeValue(key, 0.0, _ / total) }
+      keys.foreach { key =>
+        map.changeValue(key, 0.0, _ / total)
+      }
     }
   }
 }
@@ -257,17 +265,16 @@ private[ml] object DecisionTreeModelReadWrite {
    *                       For continuous feature, -1.
    */
   case class SplitData(
-      featureIndex: Int,
-      leftCategoriesOrThreshold: Array[Double],
-      numCategories: Int) {
+      featureIndex: Int, leftCategoriesOrThreshold: Array[Double], numCategories: Int) {
 
     def getSplit: Split = {
       if (numCategories != -1) {
         new CategoricalSplit(featureIndex, leftCategoriesOrThreshold, numCategories)
       } else {
-        assert(leftCategoriesOrThreshold.length == 1, s"DecisionTree split data expected" +
-          s" 1 threshold for ContinuousSplit, but found thresholds: " +
-          leftCategoriesOrThreshold.mkString(", "))
+        assert(leftCategoriesOrThreshold.length == 1,
+               s"DecisionTree split data expected" +
+               s" 1 threshold for ContinuousSplit, but found thresholds: " +
+               leftCategoriesOrThreshold.mkString(", "))
         new ContinuousSplit(featureIndex, leftCategoriesOrThreshold(0))
       }
     }
@@ -292,17 +299,17 @@ private[ml] object DecisionTreeModelReadWrite {
    * @param rightChild  Right child index, or arbitrary value if leaf node.
    * @param split  Split info, or arbitrary value if leaf node.
    */
-  case class NodeData(
-    id: Int,
-    prediction: Double,
-    impurity: Double,
-    impurityStats: Array[Double],
-    gain: Double,
-    leftChild: Int,
-    rightChild: Int,
-    split: SplitData)
+  case class NodeData(id: Int,
+                      prediction: Double,
+                      impurity: Double,
+                      impurityStats: Array[Double],
+                      gain: Double,
+                      leftChild: Int,
+                      rightChild: Int,
+                      split: SplitData)
 
   object NodeData {
+
     /**
      * Create [[NodeData]] instances for this node and all children.
      *
@@ -315,13 +322,26 @@ private[ml] object DecisionTreeModelReadWrite {
       case n: InternalNode =>
         val (leftNodeData, leftIdx) = build(n.leftChild, id + 1)
         val (rightNodeData, rightIdx) = build(n.rightChild, leftIdx + 1)
-        val thisNodeData = NodeData(id, n.prediction, n.impurity, n.impurityStats.stats,
-          n.gain, leftNodeData.head.id, rightNodeData.head.id, SplitData(n.split))
+        val thisNodeData = NodeData(id,
+                                    n.prediction,
+                                    n.impurity,
+                                    n.impurityStats.stats,
+                                    n.gain,
+                                    leftNodeData.head.id,
+                                    rightNodeData.head.id,
+                                    SplitData(n.split))
         (thisNodeData +: (leftNodeData ++ rightNodeData), rightIdx)
       case _: LeafNode =>
-        (Seq(NodeData(id, node.prediction, node.impurity, node.impurityStats.stats,
-          -1.0, -1, -1, SplitData(-1, Array.empty[Double], -1))),
-          id)
+        (Seq(
+             NodeData(id,
+                      node.prediction,
+                      node.impurity,
+                      node.impurityStats.stats,
+                      -1.0,
+                      -1,
+                      -1,
+                      SplitData(-1, Array.empty[Double], -1))),
+         id)
     }
   }
 
@@ -330,9 +350,7 @@ private[ml] object DecisionTreeModelReadWrite {
    * @return  Root node of reconstructed tree
    */
   def loadTreeNodes(
-      path: String,
-      metadata: DefaultParamsReader.Metadata,
-      sqlContext: SQLContext): Node = {
+      path: String, metadata: DefaultParamsReader.Metadata, sqlContext: SQLContext): Node = {
     import sqlContext.implicits._
     implicit val format = DefaultFormats
 
@@ -357,24 +375,33 @@ private[ml] object DecisionTreeModelReadWrite {
     // Load all nodes, sorted by ID.
     val nodes = data.sortBy(_.id)
     // Sanity checks; could remove
-    assert(nodes.head.id == 0, s"Decision Tree load failed.  Expected smallest node ID to be 0," +
-      s" but found ${nodes.head.id}")
-    assert(nodes.last.id == nodes.length - 1, s"Decision Tree load failed.  Expected largest" +
-      s" node ID to be ${nodes.length - 1}, but found ${nodes.last.id}")
+    assert(nodes.head.id == 0,
+           s"Decision Tree load failed.  Expected smallest node ID to be 0," +
+           s" but found ${nodes.head.id}")
+    assert(nodes.last.id == nodes.length - 1,
+           s"Decision Tree load failed.  Expected largest" +
+           s" node ID to be ${nodes.length - 1}, but found ${nodes.last.id}")
     // We fill `finalNodes` in reverse order.  Since node IDs are assigned via a pre-order
     // traversal, this guarantees that child nodes will be built before parent nodes.
     val finalNodes = new Array[Node](nodes.length)
-    nodes.reverseIterator.foreach { case n: NodeData =>
-      val impurityStats = ImpurityCalculator.getCalculator(impurityType, n.impurityStats)
-      val node = if (n.leftChild != -1) {
-        val leftChild = finalNodes(n.leftChild)
-        val rightChild = finalNodes(n.rightChild)
-        new InternalNode(n.prediction, n.impurity, n.gain, leftChild, rightChild,
-          n.split.getSplit, impurityStats)
-      } else {
-        new LeafNode(n.prediction, n.impurity, impurityStats)
-      }
-      finalNodes(n.id) = node
+    nodes.reverseIterator.foreach {
+      case n: NodeData =>
+        val impurityStats = ImpurityCalculator.getCalculator(impurityType, n.impurityStats)
+        val node =
+          if (n.leftChild != -1) {
+            val leftChild = finalNodes(n.leftChild)
+            val rightChild = finalNodes(n.rightChild)
+            new InternalNode(n.prediction,
+                             n.impurity,
+                             n.gain,
+                             leftChild,
+                             rightChild,
+                             n.split.getSplit,
+                             impurityStats)
+          } else {
+            new LeafNode(n.prediction, n.impurity, impurityStats)
+          }
+        finalNodes(n.id) = node
     }
     // Return the root node
     finalNodes.head
@@ -391,20 +418,20 @@ private[ml] object EnsembleModelReadWrite {
    * @param extraMetadata  Metadata such as numFeatures, numClasses, numTrees.
    */
   def saveImpl[M <: Params with TreeEnsembleModel[_ <: DecisionTreeModel]](
-      instance: M,
-      path: String,
-      sql: SQLContext,
-      extraMetadata: JObject): Unit = {
+      instance: M, path: String, sql: SQLContext, extraMetadata: JObject): Unit = {
     DefaultParamsWriter.saveMetadata(instance, path, sql.sparkContext, Some(extraMetadata))
     val treesMetadataWeights: Array[(Int, String, Double)] = instance.trees.zipWithIndex.map {
       case (tree, treeID) =>
         (treeID,
-          DefaultParamsWriter.getMetadataToSave(tree.asInstanceOf[Params], sql.sparkContext),
-          instance.treeWeights(treeID))
+         DefaultParamsWriter.getMetadataToSave(tree.asInstanceOf[Params], sql.sparkContext),
+         instance.treeWeights(treeID))
     }
     val treesMetadataPath = new Path(path, "treesMetadata").toString
-    sql.createDataFrame(treesMetadataWeights).toDF("treeID", "metadata", "weights")
-      .write.parquet(treesMetadataPath)
+    sql
+      .createDataFrame(treesMetadataWeights)
+      .toDF("treeID", "metadata", "weights")
+      .write
+      .parquet(treesMetadataPath)
     val dataPath = new Path(path, "data").toString
     val nodeDataRDD = sql.sparkContext.parallelize(instance.trees.zipWithIndex).flatMap {
       case (tree, treeID) => EnsembleNodeData.build(tree, treeID)
@@ -422,11 +449,10 @@ private[ml] object EnsembleModelReadWrite {
    *          where the root node is linked with all descendents
    * @see [[saveImpl()]] for how the model was saved
    */
-  def loadImpl(
-      path: String,
-      sql: SQLContext,
-      className: String,
-      treeClassName: String): (Metadata, Array[(Metadata, Node)], Array[Double]) = {
+  def loadImpl(path: String,
+               sql: SQLContext,
+               className: String,
+               treeClassName: String): (Metadata, Array[(Metadata, Node)], Array[Double]) = {
     import sql.implicits._
     implicit val format = DefaultFormats
     val metadata = DefaultParamsReader.loadMetadata(path, sql.sparkContext, className)
@@ -438,19 +464,22 @@ private[ml] object EnsembleModelReadWrite {
     }
 
     val treesMetadataPath = new Path(path, "treesMetadata").toString
-    val treesMetadataRDD: RDD[(Int, (Metadata, Double))] = sql.read.parquet(treesMetadataPath)
-      .select("treeID", "metadata", "weights").as[(Int, String, Double)].rdd.map {
-      case (treeID: Int, json: String, weights: Double) =>
-        treeID -> (DefaultParamsReader.parseMetadata(json, treeClassName), weights)
-    }
+    val treesMetadataRDD: RDD[(Int, (Metadata, Double))] = sql.read
+      .parquet(treesMetadataPath)
+      .select("treeID", "metadata", "weights")
+      .as[(Int, String, Double)]
+      .rdd
+      .map {
+        case (treeID: Int, json: String, weights: Double) =>
+          treeID -> (DefaultParamsReader.parseMetadata(json, treeClassName), weights)
+      }
 
     val treesMetadataWeights = treesMetadataRDD.sortByKey().values.collect()
     val treesMetadata = treesMetadataWeights.map(_._1)
     val treesWeights = treesMetadataWeights.map(_._2)
 
     val dataPath = new Path(path, "data").toString
-    val nodeData: Dataset[EnsembleNodeData] =
-      sql.read.parquet(dataPath).as[EnsembleNodeData]
+    val nodeData: Dataset[EnsembleNodeData] = sql.read.parquet(dataPath).as[EnsembleNodeData]
     val rootNodesRDD: RDD[(Int, Node)] =
       nodeData.rdd.map(d => (d.treeID, d.nodeData)).groupByKey().map {
         case (treeID: Int, nodeData: Iterable[NodeData]) =>
@@ -466,11 +495,10 @@ private[ml] object EnsembleModelReadWrite {
    * @param treeID  Tree index
    * @param nodeData  Data for this node
    */
-  case class EnsembleNodeData(
-      treeID: Int,
-      nodeData: NodeData)
+  case class EnsembleNodeData(treeID: Int, nodeData: NodeData)
 
   object EnsembleNodeData {
+
     /**
      * Create [[EnsembleNodeData]] instances for the given tree.
      *

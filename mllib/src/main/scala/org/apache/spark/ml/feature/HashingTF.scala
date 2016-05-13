@@ -39,7 +39,10 @@ import org.apache.spark.sql.types.{ArrayType, StructType}
  */
 @Experimental
 class HashingTF(override val uid: String)
-  extends Transformer with HasInputCol with HasOutputCol with DefaultParamsWritable {
+    extends Transformer
+    with HasInputCol
+    with HasOutputCol
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("hashingTF"))
 
@@ -54,8 +57,8 @@ class HashingTF(override val uid: String)
    * (default = 2^18^)
    * @group param
    */
-  val numFeatures = new IntParam(this, "numFeatures", "number of features (> 0)",
-    ParamValidators.gt(0))
+  val numFeatures = new IntParam(
+      this, "numFeatures", "number of features (> 0)", ParamValidators.gt(0))
 
   /**
    * Binary toggle to control term frequency counts.
@@ -64,9 +67,12 @@ class HashingTF(override val uid: String)
    * (default = false)
    * @group param
    */
-  val binary = new BooleanParam(this, "binary", "If true, all non zero counts are set to 1. " +
-    "This is useful for discrete probabilistic models that model binary events rather " +
-    "than integer counts")
+  val binary = new BooleanParam(
+      this,
+      "binary",
+      "If true, all non zero counts are set to 1. " +
+      "This is useful for discrete probabilistic models that model binary events rather " +
+      "than integer counts")
 
   setDefault(numFeatures -> (1 << 18), binary -> false)
 
@@ -86,7 +92,9 @@ class HashingTF(override val uid: String)
   override def transform(dataset: Dataset[_]): DataFrame = {
     val outputSchema = transformSchema(dataset.schema)
     val hashingTF = new feature.HashingTF($(numFeatures)).setBinary($(binary))
-    val t = udf { terms: Seq[_] => hashingTF.transform(terms) }
+    val t = udf { terms: Seq[_] =>
+      hashingTF.transform(terms)
+    }
     val metadata = outputSchema($(outputCol)).metadata
     dataset.select(col("*"), t(col($(inputCol))).as($(outputCol), metadata))
   }
@@ -94,7 +102,7 @@ class HashingTF(override val uid: String)
   override def transformSchema(schema: StructType): StructType = {
     val inputType = schema($(inputCol)).dataType
     require(inputType.isInstanceOf[ArrayType],
-      s"The input column must be ArrayType, but got $inputType.")
+            s"The input column must be ArrayType, but got $inputType.")
     val attrGroup = new AttributeGroup($(outputCol), $(numFeatures))
     SchemaUtils.appendColumn(schema, attrGroup.toStructField())
   }

@@ -105,10 +105,10 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
   // These collections should all be empty once Spark is idle (no active stages / jobs):
   private[spark] def getSizesOfActiveStateTrackingCollections: Map[String, Int] = {
     Map(
-      "activeStages" -> activeStages.size,
-      "activeJobs" -> activeJobs.size,
-      "poolToActiveStages" -> poolToActiveStages.values.map(_.size).sum,
-      "stageIdToActiveJobIds" -> stageIdToActiveJobIds.values.map(_.size).sum
+        "activeStages" -> activeStages.size,
+        "activeJobs" -> activeJobs.size,
+        "poolToActiveStages" -> poolToActiveStages.values.map(_.size).sum,
+        "stageIdToActiveJobIds" -> stageIdToActiveJobIds.values.map(_.size).sum
     )
   }
 
@@ -116,11 +116,11 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
   // stages and `spark.ui.retainedJobs` jobs:
   private[spark] def getSizesOfHardSizeLimitedCollections: Map[String, Int] = {
     Map(
-      "completedJobs" -> completedJobs.size,
-      "failedJobs" -> failedJobs.size,
-      "completedStages" -> completedStages.size,
-      "skippedStages" -> skippedStages.size,
-      "failedStages" -> failedStages.size
+        "completedJobs" -> completedJobs.size,
+        "failedJobs" -> failedJobs.size,
+        "completedStages" -> completedStages.size,
+        "skippedStages" -> skippedStages.size,
+        "failedStages" -> failedStages.size
     )
   }
 
@@ -128,12 +128,12 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
   // some bound based on the `spark.ui.retainedStages` and `spark.ui.retainedJobs` settings:
   private[spark] def getSizesOfSoftSizeLimitedCollections: Map[String, Int] = {
     Map(
-      "jobIdToData" -> jobIdToData.size,
-      "stageIdToData" -> stageIdToData.size,
-      "stageIdToStageInfo" -> stageIdToInfo.size,
-      "jobGroupToJobIds" -> jobGroupToJobIds.values.map(_.size).sum,
-      // Since jobGroupToJobIds is map of sets, check that we don't leak keys with empty values:
-      "jobGroupToJobIds keySet" -> jobGroupToJobIds.keys.size
+        "jobIdToData" -> jobIdToData.size,
+        "stageIdToData" -> stageIdToData.size,
+        "stageIdToStageInfo" -> stageIdToInfo.size,
+        "jobGroupToJobIds" -> jobGroupToJobIds.values.map(_.size).sum,
+        // Since jobGroupToJobIds is map of sets, check that we don't leak keys with empty values:
+        "jobGroupToJobIds keySet" -> jobGroupToJobIds.keys.size
     )
   }
 
@@ -173,17 +173,14 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
   }
 
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = synchronized {
-    val jobGroup = for (
-      props <- Option(jobStart.properties);
-      group <- Option(props.getProperty(SparkContext.SPARK_JOB_GROUP_ID))
-    ) yield group
-    val jobData: JobUIData =
-      new JobUIData(
-        jobId = jobStart.jobId,
-        submissionTime = Option(jobStart.time).filter(_ >= 0),
-        stageIds = jobStart.stageIds,
-        jobGroup = jobGroup,
-        status = JobExecutionStatus.RUNNING)
+    val jobGroup = for (props <- Option(jobStart.properties);
+                        group <- Option(props.getProperty(SparkContext.SPARK_JOB_GROUP_ID))) yield
+      group
+    val jobData: JobUIData = new JobUIData(jobId = jobStart.jobId,
+                                           submissionTime = Option(jobStart.time).filter(_ >= 0),
+                                           stageIds = jobStart.stageIds,
+                                           jobGroup = jobGroup,
+                                           status = JobExecutionStatus.RUNNING)
     // A null jobGroupId is used for jobs that are run without a job group
     jobGroupToJobIds.getOrElseUpdate(jobGroup.orNull, new HashSet[JobId]).add(jobStart.jobId)
     jobStart.stageInfos.foreach(x => pendingStages(x.stageId) = x)
@@ -275,11 +272,9 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
       trimStagesIfNecessary(failedStages)
     }
 
-    for (
-      activeJobsDependentOnStage <- stageIdToActiveJobIds.get(stage.stageId);
-      jobId <- activeJobsDependentOnStage;
-      jobData <- jobIdToData.get(jobId)
-    ) {
+    for (activeJobsDependentOnStage <- stageIdToActiveJobIds.get(stage.stageId);
+         jobId <- activeJobsDependentOnStage;
+         jobData <- jobIdToData.get(jobId)) {
       jobData.numActiveStages -= 1
       if (stage.failureReason.isEmpty) {
         if (!stage.submissionTime.isEmpty) {
@@ -296,26 +291,25 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
     val stage = stageSubmitted.stageInfo
     activeStages(stage.stageId) = stage
     pendingStages.remove(stage.stageId)
-    val poolName = Option(stageSubmitted.properties).map {
-      p => p.getProperty("spark.scheduler.pool", SparkUI.DEFAULT_POOL_NAME)
+    val poolName = Option(stageSubmitted.properties).map { p =>
+      p.getProperty("spark.scheduler.pool", SparkUI.DEFAULT_POOL_NAME)
     }.getOrElse(SparkUI.DEFAULT_POOL_NAME)
 
     stageIdToInfo(stage.stageId) = stage
-    val stageData = stageIdToData.getOrElseUpdate((stage.stageId, stage.attemptId), new StageUIData)
+    val stageData =
+      stageIdToData.getOrElseUpdate((stage.stageId, stage.attemptId), new StageUIData)
     stageData.schedulingPool = poolName
 
-    stageData.description = Option(stageSubmitted.properties).flatMap {
-      p => Option(p.getProperty(SparkContext.SPARK_JOB_DESCRIPTION))
+    stageData.description = Option(stageSubmitted.properties).flatMap { p =>
+      Option(p.getProperty(SparkContext.SPARK_JOB_DESCRIPTION))
     }
 
     val stages = poolToActiveStages.getOrElseUpdate(poolName, new HashMap[Int, StageInfo])
     stages(stage.stageId) = stage
 
-    for (
-      activeJobsDependentOnStage <- stageIdToActiveJobIds.get(stage.stageId);
-      jobId <- activeJobsDependentOnStage;
-      jobData <- jobIdToData.get(jobId)
-    ) {
+    for (activeJobsDependentOnStage <- stageIdToActiveJobIds.get(stage.stageId);
+         jobId <- activeJobsDependentOnStage;
+         jobData <- jobIdToData.get(jobId)) {
       jobData.numActiveStages += 1
 
       // If a stage retries again, it should be removed from completedStageIndices set
@@ -327,18 +321,17 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
     val taskInfo = taskStart.taskInfo
     if (taskInfo != null) {
       val metrics = TaskMetrics.empty
-      val stageData = stageIdToData.getOrElseUpdate((taskStart.stageId, taskStart.stageAttemptId), {
-        logWarning("Task start for unknown stage " + taskStart.stageId)
-        new StageUIData
-      })
+      val stageData =
+        stageIdToData.getOrElseUpdate((taskStart.stageId, taskStart.stageAttemptId), {
+          logWarning("Task start for unknown stage " + taskStart.stageId)
+          new StageUIData
+        })
       stageData.numActiveTasks += 1
       stageData.taskData.put(taskInfo.taskId, new TaskUIData(taskInfo, Some(metrics)))
     }
-    for (
-      activeJobsDependentOnStage <- stageIdToActiveJobIds.get(taskStart.stageId);
-      jobId <- activeJobsDependentOnStage;
-      jobData <- jobIdToData.get(jobId)
-    ) {
+    for (activeJobsDependentOnStage <- stageIdToActiveJobIds.get(taskStart.stageId);
+         jobId <- activeJobsDependentOnStage;
+         jobData <- jobIdToData.get(jobId)) {
       jobData.numActiveTasks += 1
     }
   }
@@ -375,19 +368,18 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
       execSummary.taskTime += info.duration
       stageData.numActiveTasks -= 1
 
-      val errorMessage: Option[String] =
-        taskEnd.reason match {
-          case org.apache.spark.Success =>
-            stageData.completedIndices.add(info.index)
-            stageData.numCompleteTasks += 1
-            None
-          case e: ExceptionFailure => // Handle ExceptionFailure because we might have accumUpdates
-            stageData.numFailedTasks += 1
-            Some(e.toErrorString)
-          case e: TaskFailedReason => // All other failure cases
-            stageData.numFailedTasks += 1
-            Some(e.toErrorString)
-        }
+      val errorMessage: Option[String] = taskEnd.reason match {
+        case org.apache.spark.Success =>
+          stageData.completedIndices.add(info.index)
+          stageData.numCompleteTasks += 1
+          None
+        case e: ExceptionFailure => // Handle ExceptionFailure because we might have accumUpdates
+          stageData.numFailedTasks += 1
+          Some(e.toErrorString)
+        case e: TaskFailedReason => // All other failure cases
+          stageData.numFailedTasks += 1
+          Some(e.toErrorString)
+      }
 
       val taskMetrics = Option(taskEnd.taskMetrics)
       taskMetrics.foreach { m =>
@@ -400,11 +392,9 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
       taskData.metrics = taskMetrics
       taskData.errorMessage = errorMessage
 
-      for (
-        activeJobsDependentOnStage <- stageIdToActiveJobIds.get(taskEnd.stageId);
-        jobId <- activeJobsDependentOnStage;
-        jobData <- jobIdToData.get(jobId)
-      ) {
+      for (activeJobsDependentOnStage <- stageIdToActiveJobIds.get(taskEnd.stageId);
+           jobId <- activeJobsDependentOnStage;
+           jobData <- jobIdToData.get(jobId)) {
         jobData.numActiveTasks -= 1
         taskEnd.reason match {
           case Success =>
@@ -421,58 +411,56 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
    * aggregate metrics by calculating deltas between the currently recorded metrics and the new
    * metrics.
    */
-  def updateAggregateMetrics(
-      stageData: StageUIData,
-      execId: String,
-      taskMetrics: TaskMetrics,
-      oldMetrics: Option[TaskMetrics]) {
+  def updateAggregateMetrics(stageData: StageUIData,
+                             execId: String,
+                             taskMetrics: TaskMetrics,
+                             oldMetrics: Option[TaskMetrics]) {
     val execSummary = stageData.executorSummary.getOrElseUpdate(execId, new ExecutorSummary)
 
     val shuffleWriteDelta =
       taskMetrics.shuffleWriteMetrics.bytesWritten -
-        oldMetrics.map(_.shuffleWriteMetrics.bytesWritten).getOrElse(0L)
+      oldMetrics.map(_.shuffleWriteMetrics.bytesWritten).getOrElse(0L)
     stageData.shuffleWriteBytes += shuffleWriteDelta
     execSummary.shuffleWrite += shuffleWriteDelta
 
     val shuffleWriteRecordsDelta =
       taskMetrics.shuffleWriteMetrics.recordsWritten -
-        oldMetrics.map(_.shuffleWriteMetrics.recordsWritten).getOrElse(0L)
+      oldMetrics.map(_.shuffleWriteMetrics.recordsWritten).getOrElse(0L)
     stageData.shuffleWriteRecords += shuffleWriteRecordsDelta
     execSummary.shuffleWriteRecords += shuffleWriteRecordsDelta
 
     val shuffleReadDelta =
       taskMetrics.shuffleReadMetrics.totalBytesRead -
-        oldMetrics.map(_.shuffleReadMetrics.totalBytesRead).getOrElse(0L)
+      oldMetrics.map(_.shuffleReadMetrics.totalBytesRead).getOrElse(0L)
     stageData.shuffleReadTotalBytes += shuffleReadDelta
     execSummary.shuffleRead += shuffleReadDelta
 
     val shuffleReadRecordsDelta =
       taskMetrics.shuffleReadMetrics.recordsRead -
-        oldMetrics.map(_.shuffleReadMetrics.recordsRead).getOrElse(0L)
+      oldMetrics.map(_.shuffleReadMetrics.recordsRead).getOrElse(0L)
     stageData.shuffleReadRecords += shuffleReadRecordsDelta
     execSummary.shuffleReadRecords += shuffleReadRecordsDelta
 
     val inputBytesDelta =
-      taskMetrics.inputMetrics.bytesRead -
-        oldMetrics.map(_.inputMetrics.bytesRead).getOrElse(0L)
+      taskMetrics.inputMetrics.bytesRead - oldMetrics.map(_.inputMetrics.bytesRead).getOrElse(0L)
     stageData.inputBytes += inputBytesDelta
     execSummary.inputBytes += inputBytesDelta
 
     val inputRecordsDelta =
       taskMetrics.inputMetrics.recordsRead -
-        oldMetrics.map(_.inputMetrics.recordsRead).getOrElse(0L)
+      oldMetrics.map(_.inputMetrics.recordsRead).getOrElse(0L)
     stageData.inputRecords += inputRecordsDelta
     execSummary.inputRecords += inputRecordsDelta
 
     val outputBytesDelta =
       taskMetrics.outputMetrics.bytesWritten -
-        oldMetrics.map(_.outputMetrics.bytesWritten).getOrElse(0L)
+      oldMetrics.map(_.outputMetrics.bytesWritten).getOrElse(0L)
     stageData.outputBytes += outputBytesDelta
     execSummary.outputBytes += outputBytesDelta
 
     val outputRecordsDelta =
       taskMetrics.outputMetrics.recordsWritten -
-        oldMetrics.map(_.outputMetrics.recordsWritten).getOrElse(0L)
+      oldMetrics.map(_.outputMetrics.recordsWritten).getOrElse(0L)
     stageData.outputRecords += outputRecordsDelta
     execSummary.outputRecords += outputRecordsDelta
 
@@ -486,8 +474,7 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
     stageData.memoryBytesSpilled += memorySpillDelta
     execSummary.memoryBytesSpilled += memorySpillDelta
 
-    val timeDelta =
-      taskMetrics.executorRunTime - oldMetrics.map(_.executorRunTime).getOrElse(0L)
+    val timeDelta = taskMetrics.executorRunTime - oldMetrics.map(_.executorRunTime).getOrElse(0L)
     stageData.executorRunTime += timeDelta
   }
 
@@ -512,7 +499,8 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
   override def onEnvironmentUpdate(environmentUpdate: SparkListenerEnvironmentUpdate) {
     synchronized {
       schedulingMode = environmentUpdate
-        .environmentDetails("Spark Properties").toMap
+        .environmentDetails("Spark Properties")
+        .toMap
         .get("spark.scheduler.mode")
         .map(SchedulingMode.withName)
     }
@@ -564,6 +552,6 @@ class JobProgressListener(conf: SparkConf) extends SparkListener with Logging {
       Thread.sleep(10)
     }
     throw new TimeoutException(
-      s"Can't find $numExecutors executors before $timeout milliseconds elapsed")
+        s"Can't find $numExecutors executors before $timeout milliseconds elapsed")
   }
 }

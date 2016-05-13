@@ -49,17 +49,18 @@ object JdbcUtils extends Logging {
     val driverClass: String = userSpecifiedDriverClass.getOrElse {
       DriverManager.getDriver(url).getClass.getCanonicalName
     }
-    () => {
-      userSpecifiedDriverClass.foreach(DriverRegistry.register)
-      val driver: Driver = DriverManager.getDrivers.asScala.collectFirst {
-        case d: DriverWrapper if d.wrapped.getClass.getCanonicalName == driverClass => d
-        case d if d.getClass.getCanonicalName == driverClass => d
-      }.getOrElse {
-        throw new IllegalStateException(
-          s"Did not find registered driver with class $driverClass")
+    () =>
+      {
+        userSpecifiedDriverClass.foreach(DriverRegistry.register)
+        val driver: Driver = DriverManager.getDrivers.asScala.collectFirst {
+          case d: DriverWrapper if d.wrapped.getClass.getCanonicalName == driverClass => d
+          case d if d.getClass.getCanonicalName == driverClass => d
+        }.getOrElse {
+          throw new IllegalStateException(
+              s"Did not find registered driver with class $driverClass")
+        }
+        driver.connect(url, properties)
       }
-      driver.connect(url, properties)
-    }
   }
 
   /**
@@ -121,15 +122,17 @@ object JdbcUtils extends Logging {
       case BinaryType => Option(JdbcType("BLOB", java.sql.Types.BLOB))
       case TimestampType => Option(JdbcType("TIMESTAMP", java.sql.Types.TIMESTAMP))
       case DateType => Option(JdbcType("DATE", java.sql.Types.DATE))
-      case t: DecimalType => Option(
-        JdbcType(s"DECIMAL(${t.precision},${t.scale})", java.sql.Types.DECIMAL))
+      case t: DecimalType =>
+        Option(JdbcType(s"DECIMAL(${t.precision},${t.scale})", java.sql.Types.DECIMAL))
       case _ => None
     }
   }
 
   private def getJdbcType(dt: DataType, dialect: JdbcDialect): JdbcType = {
-    dialect.getJDBCType(dt).orElse(getCommonJDBCType(dt)).getOrElse(
-      throw new IllegalArgumentException(s"Can't get JDBC type for ${dt.simpleString}"))
+    dialect
+      .getJDBCType(dt)
+      .orElse(getCommonJDBCType(dt))
+      .getOrElse(throw new IllegalArgumentException(s"Can't get JDBC type for ${dt.simpleString}"))
   }
 
   /**
@@ -146,14 +149,13 @@ object JdbcUtils extends Logging {
    * non-Serializable.  Instead, we explicitly close over all variables that
    * are used.
    */
-  def savePartition(
-      getConnection: () => Connection,
-      table: String,
-      iterator: Iterator[Row],
-      rddSchema: StructType,
-      nullTypes: Array[Int],
-      batchSize: Int,
-      dialect: JdbcDialect): Iterator[Byte] = {
+  def savePartition(getConnection: () => Connection,
+                    table: String,
+                    iterator: Iterator[Row],
+                    rddSchema: StructType,
+                    nullTypes: Array[Int],
+                    batchSize: Int,
+                    dialect: JdbcDialect): Iterator[Byte] = {
     val conn = getConnection()
     var committed = false
     val supportsTransactions = try {
@@ -195,14 +197,13 @@ object JdbcUtils extends Logging {
                 case t: DecimalType => stmt.setBigDecimal(i + 1, row.getDecimal(i))
                 case ArrayType(et, _) =>
                   // remove type length parameters from end of type name
-                  val typeName = getJdbcType(et, dialect).databaseTypeDefinition
-                    .toLowerCase.split("\\(")(0)
-                  val array = conn.createArrayOf(
-                    typeName,
-                    row.getSeq[AnyRef](i).toArray)
+                  val typeName =
+                    getJdbcType(et, dialect).databaseTypeDefinition.toLowerCase.split("\\(")(0)
+                  val array = conn.createArrayOf(typeName, row.getSeq[AnyRef](i).toArray)
                   stmt.setArray(i + 1, array)
-                case _ => throw new IllegalArgumentException(
-                  s"Can't translate non-null value for field $i")
+                case _ =>
+                  throw new IllegalArgumentException(
+                      s"Can't translate non-null value for field $i")
               }
             }
             i = i + 1
@@ -263,11 +264,7 @@ object JdbcUtils extends Logging {
   /**
    * Saves the RDD to the database in a single transaction.
    */
-  def saveTable(
-      df: DataFrame,
-      url: String,
-      table: String,
-      properties: Properties) {
+  def saveTable(df: DataFrame, url: String, table: String, properties: Properties) {
     val dialect = JdbcDialects.get(url)
     val nullTypes: Array[Int] = df.schema.fields.map { field =>
       getJdbcType(field.dataType, dialect).jdbcNullType
@@ -280,5 +277,4 @@ object JdbcUtils extends Logging {
       savePartition(getConnection, table, iterator, rddSchema, nullTypes, batchSize, dialect)
     }
   }
-
 }

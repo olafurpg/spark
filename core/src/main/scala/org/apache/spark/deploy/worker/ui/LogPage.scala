@@ -39,7 +39,8 @@ private[ui] class LogPage(parent: WorkerWebUI) extends WebUIPage("logPage") with
     val driverId = Option(request.getParameter("driverId"))
     val logType = request.getParameter("logType")
     val offset = Option(request.getParameter("offset")).map(_.toLong)
-    val byteLength = Option(request.getParameter("byteLength")).map(_.toInt).getOrElse(defaultBytes)
+    val byteLength =
+      Option(request.getParameter("byteLength")).map(_.toInt).getOrElse(defaultBytes)
 
     val logDir = (appId, executorId, driverId) match {
       case (Some(a), Some(e), None) =>
@@ -61,7 +62,8 @@ private[ui] class LogPage(parent: WorkerWebUI) extends WebUIPage("logPage") with
     val driverId = Option(request.getParameter("driverId"))
     val logType = request.getParameter("logType")
     val offset = Option(request.getParameter("offset")).map(_.toLong)
-    val byteLength = Option(request.getParameter("byteLength")).map(_.toInt).getOrElse(defaultBytes)
+    val byteLength =
+      Option(request.getParameter("byteLength")).map(_.toInt).getOrElse(defaultBytes)
 
     val (logDir, params, pageName) = (appId, executorId, driverId) match {
       case (Some(a), Some(e), None) =>
@@ -75,8 +77,7 @@ private[ui] class LogPage(parent: WorkerWebUI) extends WebUIPage("logPage") with
     val (logText, startByte, endByte, logLength) = getLog(logDir, logType, offset, byteLength)
     val linkToMaster = <p><a href={worker.activeMasterWebUiUrl}>Back to Master</a></p>
     val curLogLength = endByte - startByte
-    val range =
-      <span id="log-data">
+    val range = <span id="log-data">
         Showing {curLogLength} Bytes: {startByte.toString} - {endByte.toString} of {logLength}
       </span>
 
@@ -90,17 +91,16 @@ private[ui] class LogPage(parent: WorkerWebUI) extends WebUIPage("logPage") with
         Load New
       </button>
 
-    val alert =
-      <div class="no-new-alert alert alert-info" style="display: none;">
+    val alert = <div class="no-new-alert alert alert-info" style="display: none;">
         End of Log
       </div>
 
     val logParams = "?%s&logType=%s".format(params, logType)
-    val jsOnload = "window.onload = " +
+    val jsOnload =
+      "window.onload = " +
       s"initLogPage('$logParams', $curLogLength, $startByte, $endByte, $logLength, $byteLength);"
 
-    val content =
-      <div>
+    val content = <div>
         {linkToMaster}
         {range}
         <div class="log-content" style="height:80vh; overflow:auto; padding:5px;">
@@ -121,7 +121,7 @@ private[ui] class LogPage(parent: WorkerWebUI) extends WebUIPage("logPage") with
       logType: String,
       offsetOption: Option[Long],
       byteLength: Int
-    ): (String, Long, Long, Long) = {
+  ): (String, Long, Long, Long) = {
 
     if (!supportedLogTypes.contains(logType)) {
       return ("Error: Log type must be one of " + supportedLogTypes.mkString(", "), 0, 0, 0)

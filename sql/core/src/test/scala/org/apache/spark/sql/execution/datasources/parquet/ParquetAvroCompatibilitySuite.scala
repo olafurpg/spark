@@ -33,11 +33,9 @@ import org.apache.spark.sql.execution.datasources.parquet.test.avro._
 import org.apache.spark.sql.test.SharedSQLContext
 
 class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with SharedSQLContext {
-  private def withWriter[T <: IndexedRecord]
-      (path: String, schema: Schema)
-      (f: AvroParquetWriter[T] => Unit): Unit = {
-    logInfo(
-      s"""Writing Avro records with the following Avro schema into Parquet file:
+  private def withWriter[T <: IndexedRecord](path: String, schema: Schema)(
+      f: AvroParquetWriter[T] => Unit): Unit = {
+    logInfo(s"""Writing Avro records with the following Avro schema into Parquet file:
          |
          |${schema.toString(true)}
        """.stripMargin)
@@ -53,29 +51,29 @@ class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with Shared
       withWriter[AvroPrimitives](path, AvroPrimitives.getClassSchema) { writer =>
         (0 until 10).foreach { i =>
           writer.write(
-            AvroPrimitives.newBuilder()
-              .setBoolColumn(i % 2 == 0)
-              .setIntColumn(i)
-              .setLongColumn(i.toLong * 10)
-              .setFloatColumn(i.toFloat + 0.1f)
-              .setDoubleColumn(i.toDouble + 0.2d)
-              .setBinaryColumn(ByteBuffer.wrap(s"val_$i".getBytes(StandardCharsets.UTF_8)))
-              .setStringColumn(s"val_$i")
-              .build())
+              AvroPrimitives
+                .newBuilder()
+                .setBoolColumn(i % 2 == 0)
+                .setIntColumn(i)
+                .setLongColumn(i.toLong * 10)
+                .setFloatColumn(i.toFloat + 0.1f)
+                .setDoubleColumn(i.toDouble + 0.2d)
+                .setBinaryColumn(ByteBuffer.wrap(s"val_$i".getBytes(StandardCharsets.UTF_8)))
+                .setStringColumn(s"val_$i")
+                .build())
         }
       }
 
       logParquetSchema(path)
 
       checkAnswer(spark.read.parquet(path), (0 until 10).map { i =>
-        Row(
-          i % 2 == 0,
-          i,
-          i.toLong * 10,
-          i.toFloat + 0.1f,
-          i.toDouble + 0.2d,
-          s"val_$i".getBytes(StandardCharsets.UTF_8),
-          s"val_$i")
+        Row(i % 2 == 0,
+            i,
+            i.toLong * 10,
+            i.toFloat + 0.1f,
+            i.toDouble + 0.2d,
+            s"val_$i".getBytes(StandardCharsets.UTF_8),
+            s"val_$i")
       })
     }
   }
@@ -86,27 +84,30 @@ class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with Shared
 
       withWriter[AvroOptionalPrimitives](path, AvroOptionalPrimitives.getClassSchema) { writer =>
         (0 until 10).foreach { i =>
-          val record = if (i % 3 == 0) {
-            AvroOptionalPrimitives.newBuilder()
-              .setMaybeBoolColumn(null)
-              .setMaybeIntColumn(null)
-              .setMaybeLongColumn(null)
-              .setMaybeFloatColumn(null)
-              .setMaybeDoubleColumn(null)
-              .setMaybeBinaryColumn(null)
-              .setMaybeStringColumn(null)
-              .build()
-          } else {
-            AvroOptionalPrimitives.newBuilder()
-              .setMaybeBoolColumn(i % 2 == 0)
-              .setMaybeIntColumn(i)
-              .setMaybeLongColumn(i.toLong * 10)
-              .setMaybeFloatColumn(i.toFloat + 0.1f)
-              .setMaybeDoubleColumn(i.toDouble + 0.2d)
-              .setMaybeBinaryColumn(ByteBuffer.wrap(s"val_$i".getBytes(StandardCharsets.UTF_8)))
-              .setMaybeStringColumn(s"val_$i")
-              .build()
-          }
+          val record =
+            if (i % 3 == 0) {
+              AvroOptionalPrimitives
+                .newBuilder()
+                .setMaybeBoolColumn(null)
+                .setMaybeIntColumn(null)
+                .setMaybeLongColumn(null)
+                .setMaybeFloatColumn(null)
+                .setMaybeDoubleColumn(null)
+                .setMaybeBinaryColumn(null)
+                .setMaybeStringColumn(null)
+                .build()
+            } else {
+              AvroOptionalPrimitives
+                .newBuilder()
+                .setMaybeBoolColumn(i % 2 == 0)
+                .setMaybeIntColumn(i)
+                .setMaybeLongColumn(i.toLong * 10)
+                .setMaybeFloatColumn(i.toFloat + 0.1f)
+                .setMaybeDoubleColumn(i.toDouble + 0.2d)
+                .setMaybeBinaryColumn(ByteBuffer.wrap(s"val_$i".getBytes(StandardCharsets.UTF_8)))
+                .setMaybeStringColumn(s"val_$i")
+                .build()
+            }
 
           writer.write(record)
         }
@@ -118,14 +119,13 @@ class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with Shared
         if (i % 3 == 0) {
           Row.apply(Seq.fill(7)(null): _*)
         } else {
-          Row(
-            i % 2 == 0,
-            i,
-            i.toLong * 10,
-            i.toFloat + 0.1f,
-            i.toDouble + 0.2d,
-            s"val_$i".getBytes(StandardCharsets.UTF_8),
-            s"val_$i")
+          Row(i % 2 == 0,
+              i,
+              i.toLong * 10,
+              i.toFloat + 0.1f,
+              i.toDouble + 0.2d,
+              s"val_$i".getBytes(StandardCharsets.UTF_8),
+              s"val_$i")
         }
       })
     }
@@ -138,9 +138,9 @@ class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with Shared
       withWriter[AvroNonNullableArrays](path, AvroNonNullableArrays.getClassSchema) { writer =>
         (0 until 10).foreach { i =>
           val record = {
-            val builder =
-              AvroNonNullableArrays.newBuilder()
-                .setStringsColumn(Seq.tabulate(3)(i => s"val_$i").asJava)
+            val builder = AvroNonNullableArrays
+              .newBuilder()
+              .setStringsColumn(Seq.tabulate(3)(i => s"val_$i").asJava)
 
             if (i % 3 == 0) {
               builder.setMaybeIntsColumn(null).build()
@@ -156,9 +156,7 @@ class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with Shared
       logParquetSchema(path)
 
       checkAnswer(spark.read.parquet(path), (0 until 10).map { i =>
-        Row(
-          Seq.tabulate(3)(i => s"val_$i"),
-          if (i % 3 == 0) null else Seq.tabulate(3)(identity))
+        Row(Seq.tabulate(3)(i => s"val_$i"), if (i % 3 == 0) null else Seq.tabulate(3)(identity))
       })
     }
   }
@@ -173,10 +171,11 @@ class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with Shared
 
       withWriter[AvroArrayOfArray](path, AvroArrayOfArray.getClassSchema) { writer =>
         (0 until 10).foreach { i =>
-          writer.write(AvroArrayOfArray.newBuilder()
-            .setIntArraysColumn(
-              Seq.tabulate(3, 3)((i, j) => i * 3 + j: Integer).map(_.asJava).asJava)
-            .build())
+          writer.write(AvroArrayOfArray
+                .newBuilder()
+                .setIntArraysColumn(
+                    Seq.tabulate(3, 3)((i, j) => i * 3 + j: Integer).map(_.asJava).asJava)
+                .build())
         }
       }
 
@@ -194,12 +193,16 @@ class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with Shared
 
       withWriter[AvroMapOfArray](path, AvroMapOfArray.getClassSchema) { writer =>
         (0 until 10).foreach { i =>
-          writer.write(AvroMapOfArray.newBuilder()
-            .setStringToIntsColumn(
-              Seq.tabulate(3) { i =>
+          writer.write(
+              AvroMapOfArray
+                .newBuilder()
+                .setStringToIntsColumn(Seq
+                      .tabulate(3) { i =>
                 i.toString -> Seq.tabulate(3)(j => i + j: Integer).asJava
-              }.toMap.asJava)
-            .build())
+              }
+                      .toMap
+                      .asJava)
+                .build())
         }
       }
 
@@ -222,29 +225,35 @@ class ParquetAvroCompatibilitySuite extends ParquetCompatibilityTest with Shared
       logParquetSchema(path)
 
       checkAnswer(spark.read.parquet(path), (0 until 10).map { i =>
-        Row(
-          Seq.tabulate(3)(n => s"arr_${i + n}"),
-          Seq.tabulate(3)(n => n.toString -> (i + n: Integer)).toMap,
-          Seq.tabulate(3) { n =>
-            (i + n).toString -> Seq.tabulate(3) { m =>
-              Row(Seq.tabulate(3)(j => i + j + m), s"val_${i + m}")
-            }
-          }.toMap)
+        Row(Seq.tabulate(3)(n => s"arr_${i + n}"),
+            Seq.tabulate(3)(n => n.toString -> (i + n: Integer)).toMap,
+            Seq
+              .tabulate(3) { n =>
+                (i + n).toString -> Seq.tabulate(3) { m =>
+                  Row(Seq.tabulate(3)(j => i + j + m), s"val_${i + m}")
+                }
+              }
+              .toMap)
       })
     }
   }
 
   def makeParquetAvroCompat(i: Int): ParquetAvroCompat = {
     def makeComplexColumn(i: Int): JMap[String, JList[Nested]] = {
-      Seq.tabulate(3) { n =>
-        (i + n).toString -> Seq.tabulate(3) { m =>
-          Nested
-            .newBuilder()
-            .setNestedIntsColumn(Seq.tabulate(3)(j => i + j + m: Integer).asJava)
-            .setNestedStringColumn(s"val_${i + m}")
-            .build()
-        }.asJava
-      }.toMap.asJava
+      Seq
+        .tabulate(3) { n =>
+          (i + n).toString -> Seq
+            .tabulate(3) { m =>
+              Nested
+                .newBuilder()
+                .setNestedIntsColumn(Seq.tabulate(3)(j => i + j + m: Integer).asJava)
+                .setNestedStringColumn(s"val_${i + m}")
+                .build()
+            }
+            .asJava
+        }
+        .toMap
+        .asJava
     }
 
     ParquetAvroCompat

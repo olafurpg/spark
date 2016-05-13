@@ -80,12 +80,11 @@ import org.apache.spark.util.collection.unsafe.sort.{UnsafeExternalSorter, Unsaf
  * Entire Partition, Sliding, Growing & Shrinking. Boundary evaluation is also delegated to a pair
  * of specialized classes: [[RowBoundOrdering]] & [[RangeBoundOrdering]].
  */
-case class WindowExec(
-    windowExpression: Seq[NamedExpression],
-    partitionSpec: Seq[Expression],
-    orderSpec: Seq[SortOrder],
-    child: SparkPlan)
-  extends UnaryExecNode {
+case class WindowExec(windowExpression: Seq[NamedExpression],
+                      partitionSpec: Seq[Expression],
+                      orderSpec: Seq[SortOrder],
+                      child: SparkPlan)
+    extends UnaryExecNode {
 
   override def output: Seq[Attribute] =
     child.output ++ windowExpression.map(_.toAttribute)
@@ -93,8 +92,8 @@ case class WindowExec(
   override def requiredChildDistribution: Seq[Distribution] = {
     if (partitionSpec.isEmpty) {
       // Only show warning when the number of bytes is larger than 100 MB?
-      logWarning("No Partition Defined for Window operation! Moving all data to a single "
-        + "partition, this can cause serious performance degradation.")
+      logWarning("No Partition Defined for Window operation! Moving all data to a single " +
+          "partition, this can cause serious performance degradation.")
       AllTuples :: Nil
     } else ClusteredDistribution(partitionSpec) :: Nil
   }
@@ -117,35 +116,38 @@ case class WindowExec(
   private[this] def createBoundOrdering(frameType: FrameType, offset: Int): BoundOrdering = {
     frameType match {
       case RangeFrame =>
-        val (exprs, current, bound) = if (offset == 0) {
-          // Use the entire order expression when the offset is 0.
-          val exprs = orderSpec.map(_.child)
-          val buildProjection = () => newMutableProjection(exprs, child.output)
-          (orderSpec, buildProjection(), buildProjection())
-        } else if (orderSpec.size == 1) {
-          // Use only the first order expression when the offset is non-null.
-          val sortExpr = orderSpec.head
-          val expr = sortExpr.child
-          // Create the projection which returns the current 'value'.
-          val current = newMutableProjection(expr :: Nil, child.output)
-          // Flip the sign of the offset when processing the order is descending
-          val boundOffset = sortExpr.direction match {
-            case Descending => -offset
-            case Ascending => offset
+        val (exprs, current, bound) =
+          if (offset == 0) {
+            // Use the entire order expression when the offset is 0.
+            val exprs = orderSpec.map(_.child)
+            val buildProjection = () => newMutableProjection(exprs, child.output)
+            (orderSpec, buildProjection(), buildProjection())
+          } else if (orderSpec.size == 1) {
+            // Use only the first order expression when the offset is non-null.
+            val sortExpr = orderSpec.head
+            val expr = sortExpr.child
+            // Create the projection which returns the current 'value'.
+            val current = newMutableProjection(expr :: Nil, child.output)
+            // Flip the sign of the offset when processing the order is descending
+            val boundOffset = sortExpr.direction match {
+              case Descending => -offset
+              case Ascending => offset
+            }
+            // Create the projection which returns the current 'value' modified by adding the offset.
+            val boundExpr = Add(
+                expr, Cast(Literal.create(boundOffset, IntegerType), expr.dataType))
+            val bound = newMutableProjection(boundExpr :: Nil, child.output)
+            (sortExpr :: Nil, current, bound)
+          } else {
+            sys.error("Non-Zero range offsets are not supported for windows " +
+                "with multiple order expressions.")
           }
-          // Create the projection which returns the current 'value' modified by adding the offset.
-          val boundExpr = Add(expr, Cast(Literal.create(boundOffset, IntegerType), expr.dataType))
-          val bound = newMutableProjection(boundExpr :: Nil, child.output)
-          (sortExpr :: Nil, current, bound)
-        } else {
-          sys.error("Non-Zero range offsets are not supported for windows " +
-            "with multiple order expressions.")
-        }
         // Construct the ordering. This is used to compare the result of current value projection
         // to the result of bound value projection. This is done manually because we want to use
         // Code Generation (if it is enabled).
-        val sortExprs = exprs.zipWithIndex.map { case (e, i) =>
-          SortOrder(BoundReference(i, e.dataType, e.nullable), e.direction)
+        val sortExprs = exprs.zipWithIndex.map {
+          case (e, i) =>
+            SortOrder(BoundReference(i, e.dataType, e.nullable), e.direction)
         }
         val ordering = newOrdering(sortExprs, Nil)
         RangeBoundOrdering(ordering, current, bound)
@@ -166,7 +168,7 @@ case class WindowExec(
     def collect(tpe: String, fr: SpecifiedWindowFrame, e: Expression, fn: Expression): Unit = {
       val key = (tpe, fr.frameType, FrameBoundary(fr.frameStart), FrameBoundary(fr.frameEnd))
       val (es, fns) = framedFunctions.getOrElseUpdate(
-        key, (ArrayBuffer.empty[Expression], ArrayBuffer.empty[Expression]))
+          key, (ArrayBuffer.empty[Expression], ArrayBuffer.empty[Expression]))
       es.append(e)
       fns.append(fn)
     }
@@ -194,12 +196,13 @@ case class WindowExec(
         val functions = functionSeq.toArray
 
         // Construct an aggregate processor if we need one.
-        def processor = AggregateProcessor(
-          functions,
-          ordinal,
-          child.output,
-          (expressions, schema) =>
-            newMutableProjection(expressions, schema, subexpressionEliminationEnabled))
+        def processor =
+          AggregateProcessor(
+              functions,
+              ordinal,
+              child.output,
+              (expressions, schema) =>
+                newMutableProjection(expressions, schema, subexpressionEliminationEnabled))
 
         // Create the factory
         val factory = key match {
@@ -207,47 +210,48 @@ case class WindowExec(
           case ("OFFSET", RowFrame, Some(offset), Some(h)) if offset == h =>
             target: MutableRow =>
               new OffsetWindowFunctionFrame(
-                target,
-                ordinal,
-                functions,
-                child.output,
-                (expressions, schema) =>
-                  newMutableProjection(expressions, schema, subexpressionEliminationEnabled),
-                offset)
+                  target,
+                  ordinal,
+                  functions,
+                  child.output,
+                  (expressions, schema) =>
+                    newMutableProjection(expressions, schema, subexpressionEliminationEnabled),
+                  offset)
 
-          // Growing Frame.
-          case ("AGGREGATE", frameType, None, Some(high)) =>
-            target: MutableRow => {
-              new UnboundedPrecedingWindowFunctionFrame(
-                target,
-                processor,
-                createBoundOrdering(frameType, high))
-            }
+            // Growing Frame.
+            case ("AGGREGATE", frameType, None, Some(high)) =>
+            target: MutableRow =>
+              {
+                new UnboundedPrecedingWindowFunctionFrame(target,
+                                                          processor,
+                                                          createBoundOrdering(frameType, high))
+              }
 
-          // Shrinking Frame.
-          case ("AGGREGATE", frameType, Some(low), None) =>
-            target: MutableRow => {
-              new UnboundedFollowingWindowFunctionFrame(
-                target,
-                processor,
-                createBoundOrdering(frameType, low))
-            }
+            // Shrinking Frame.
+            case ("AGGREGATE", frameType, Some(low), None) =>
+            target: MutableRow =>
+              {
+                new UnboundedFollowingWindowFunctionFrame(target,
+                                                          processor,
+                                                          createBoundOrdering(frameType, low))
+              }
 
-          // Moving Frame.
-          case ("AGGREGATE", frameType, Some(low), Some(high)) =>
-            target: MutableRow => {
-              new SlidingWindowFunctionFrame(
-                target,
-                processor,
-                createBoundOrdering(frameType, low),
-                createBoundOrdering(frameType, high))
-            }
+            // Moving Frame.
+            case ("AGGREGATE", frameType, Some(low), Some(high)) =>
+            target: MutableRow =>
+              {
+                new SlidingWindowFunctionFrame(target,
+                                               processor,
+                                               createBoundOrdering(frameType, low),
+                                               createBoundOrdering(frameType, high))
+              }
 
-          // Entire Partition Frame.
-          case ("AGGREGATE", frameType, None, None) =>
-            target: MutableRow => {
-              new UnboundedWindowFunctionFrame(target, processor)
-            }
+            // Entire Partition Frame.
+            case ("AGGREGATE", frameType, None, None) =>
+            target: MutableRow =>
+              {
+                new UnboundedWindowFunctionFrame(target, processor)
+              }
         }
 
         // Keep track of the number of expressions. This is a side-effect in a map...
@@ -266,17 +270,15 @@ case class WindowExec(
    * @param expressions unbound ordered function expressions.
    * @return the final resulting projection.
    */
-  private[this] def createResultProjection(
-      expressions: Seq[Expression]): UnsafeProjection = {
-    val references = expressions.zipWithIndex.map{ case (e, i) =>
-      // Results of window expressions will be on the right side of child's output
-      BoundReference(child.output.size + i, e.dataType, e.nullable)
+  private[this] def createResultProjection(expressions: Seq[Expression]): UnsafeProjection = {
+    val references = expressions.zipWithIndex.map {
+      case (e, i) =>
+        // Results of window expressions will be on the right side of child's output
+        BoundReference(child.output.size + i, e.dataType, e.nullable)
     }
     val unboundToRefMap = expressions.zip(references).toMap
     val patchedWindowExpression = windowExpression.map(_.transform(unboundToRefMap))
-    UnsafeProjection.create(
-      child.output ++ patchedWindowExpression,
-      child.output)
+    UnsafeProjection.create(child.output ++ patchedWindowExpression, child.output)
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
@@ -314,7 +316,7 @@ case class WindowExec(
         var sorter: UnsafeExternalSorter = null
         var rowBuffer: RowBuffer = null
         val windowFunctionResult = new SpecificMutableRow(expressions.map(_.dataType))
-        val frames = factories.map(_(windowFunctionResult))
+        val frames = factories.map(_ (windowFunctionResult))
         val numFrames = frames.length
         private[this] def fetchNextPartition() {
           // Collect all the rows in the current partition.
@@ -336,24 +338,23 @@ case class WindowExec(
 
               if (rows.length >= 4096) {
                 // We will not sort the rows, so prefixComparator and recordComparator are null.
-                sorter = UnsafeExternalSorter.create(
-                  TaskContext.get().taskMemoryManager(),
-                  SparkEnv.get.blockManager,
-                  SparkEnv.get.serializerManager,
-                  TaskContext.get(),
-                  null,
-                  null,
-                  1024,
-                  SparkEnv.get.memoryManager.pageSizeBytes,
-                  false)
+                sorter = UnsafeExternalSorter.create(TaskContext.get().taskMemoryManager(),
+                                                     SparkEnv.get.blockManager,
+                                                     SparkEnv.get.serializerManager,
+                                                     TaskContext.get(),
+                                                     null,
+                                                     null,
+                                                     1024,
+                                                     SparkEnv.get.memoryManager.pageSizeBytes,
+                                                     false)
                 rows.foreach { r =>
                   sorter.insertRecord(r.getBaseObject, r.getBaseOffset, r.getSizeInBytes, 0)
                 }
                 rows.clear()
               }
             } else {
-              sorter.insertRecord(nextRow.getBaseObject, nextRow.getBaseOffset,
-                nextRow.getSizeInBytes, 0)
+              sorter.insertRecord(
+                  nextRow.getBaseObject, nextRow.getBaseOffset, nextRow.getSizeInBytes, 0)
             }
             fetchNextRow()
           }
@@ -414,18 +415,18 @@ case class WindowExec(
  * Function for comparing boundary values.
  */
 private[execution] abstract class BoundOrdering {
-  def compare(inputRow: InternalRow, inputIndex: Int, outputRow: InternalRow, outputIndex: Int): Int
+  def compare(
+      inputRow: InternalRow, inputIndex: Int, outputRow: InternalRow, outputIndex: Int): Int
 }
 
 /**
  * Compare the input index to the bound of the output index.
  */
 private[execution] final case class RowBoundOrdering(offset: Int) extends BoundOrdering {
-  override def compare(
-      inputRow: InternalRow,
-      inputIndex: Int,
-      outputRow: InternalRow,
-      outputIndex: Int): Int =
+  override def compare(inputRow: InternalRow,
+                       inputIndex: Int,
+                       outputRow: InternalRow,
+                       outputIndex: Int): Int =
     inputIndex - (outputIndex + offset)
 }
 
@@ -433,14 +434,12 @@ private[execution] final case class RowBoundOrdering(offset: Int) extends BoundO
  * Compare the value of the input index to the value bound of the output index.
  */
 private[execution] final case class RangeBoundOrdering(
-    ordering: Ordering[InternalRow],
-    current: Projection,
-    bound: Projection) extends BoundOrdering {
-  override def compare(
-      inputRow: InternalRow,
-      inputIndex: Int,
-      outputRow: InternalRow,
-      outputIndex: Int): Int =
+    ordering: Ordering[InternalRow], current: Projection, bound: Projection)
+    extends BoundOrdering {
+  override def compare(inputRow: InternalRow,
+                       inputIndex: Int,
+                       outputRow: InternalRow,
+                       outputIndex: Int): Int =
     ordering.compare(current(inputRow), bound(outputRow))
 }
 
@@ -497,7 +496,7 @@ private[execution] class ArrayRowBuffer(buffer: ArrayBuffer[UnsafeRow]) extends 
  * An external buffer of rows based on UnsafeExternalSorter
  */
 private[execution] class ExternalRowBuffer(sorter: UnsafeExternalSorter, numFields: Int)
-  extends RowBuffer {
+    extends RowBuffer {
 
   private[this] val iter: UnsafeSorterIterator = sorter.getIterator
 
@@ -538,6 +537,7 @@ private[execution] class ExternalRowBuffer(sorter: UnsafeExternalSorter, numFiel
  * preparation the update method can be called to fill the output rows.
  */
 private[execution] abstract class WindowFunctionFrame {
+
   /**
    * Prepare the frame for calculating the results for a partition.
    *
@@ -560,13 +560,14 @@ private[execution] abstract class WindowFunctionFrame {
  * @param newMutableProjection function used to create the projection.
  * @param offset by which rows get moved within a partition.
  */
-private[execution] final class OffsetWindowFunctionFrame(
-    target: MutableRow,
-    ordinal: Int,
-    expressions: Array[Expression],
-    inputSchema: Seq[Attribute],
-    newMutableProjection: (Seq[Expression], Seq[Attribute]) => MutableProjection,
-    offset: Int) extends WindowFunctionFrame {
+private[execution] final class OffsetWindowFunctionFrame(target: MutableRow,
+                                                         ordinal: Int,
+                                                         expressions: Array[Expression],
+                                                         inputSchema: Seq[Attribute],
+                                                         newMutableProjection: (Seq[Expression],
+                                                         Seq[Attribute]) => MutableProjection,
+                                                         offset: Int)
+    extends WindowFunctionFrame {
 
   /** Rows of the partition currently being processed. */
   private[this] var input: RowBuffer = null
@@ -585,24 +586,25 @@ private[execution] final class OffsetWindowFunctionFrame(
     // Collect the expressions and bind them.
     val inputAttrs = inputSchema.map(_.withNullability(true))
     val numInputAttributes = inputAttrs.size
-    val boundExpressions = Seq.fill(ordinal)(NoOp) ++ expressions.toSeq.map {
-      case e: OffsetWindowFunction =>
-        val input = BindReferences.bindReference(e.input, inputAttrs)
-        if (e.default == null || e.default.foldable && e.default.eval() == null) {
-          // Without default value.
-          input
-        } else {
-          // With default value.
-          val default = BindReferences.bindReference(e.default, inputAttrs).transform {
-            // Shift the input reference to its default version.
-            case BoundReference(o, dataType, nullable) =>
-              BoundReference(o + numInputAttributes, dataType, nullable)
+    val boundExpressions =
+      Seq.fill(ordinal)(NoOp) ++ expressions.toSeq.map {
+        case e: OffsetWindowFunction =>
+          val input = BindReferences.bindReference(e.input, inputAttrs)
+          if (e.default == null || e.default.foldable && e.default.eval() == null) {
+            // Without default value.
+            input
+          } else {
+            // With default value.
+            val default = BindReferences.bindReference(e.default, inputAttrs).transform {
+              // Shift the input reference to its default version.
+              case BoundReference(o, dataType, nullable) =>
+                BoundReference(o + numInputAttributes, dataType, nullable)
+            }
+            org.apache.spark.sql.catalyst.expressions.Coalesce(input :: default :: Nil)
           }
-          org.apache.spark.sql.catalyst.expressions.Coalesce(input :: default :: Nil)
-        }
-      case e =>
-        BindReferences.bindReference(e, inputAttrs)
-    }
+        case e =>
+          BindReferences.bindReference(e, inputAttrs)
+      }
 
     // Create the projection.
     newMutableProjection(boundExpressions, Nil).target(target)
@@ -640,11 +642,11 @@ private[execution] final class OffsetWindowFunctionFrame(
  * @param lbound comparator used to identify the lower bound of an output row.
  * @param ubound comparator used to identify the upper bound of an output row.
  */
-private[execution] final class SlidingWindowFunctionFrame(
-    target: MutableRow,
-    processor: AggregateProcessor,
-    lbound: BoundOrdering,
-    ubound: BoundOrdering) extends WindowFunctionFrame {
+private[execution] final class SlidingWindowFunctionFrame(target: MutableRow,
+                                                          processor: AggregateProcessor,
+                                                          lbound: BoundOrdering,
+                                                          ubound: BoundOrdering)
+    extends WindowFunctionFrame {
 
   /** Rows of the partition currently being processed. */
   private[this] var input: RowBuffer = null
@@ -721,8 +723,8 @@ private[execution] final class SlidingWindowFunctionFrame(
  * @param processor to calculate the row values with.
  */
 private[execution] final class UnboundedWindowFunctionFrame(
-    target: MutableRow,
-    processor: AggregateProcessor) extends WindowFunctionFrame {
+    target: MutableRow, processor: AggregateProcessor)
+    extends WindowFunctionFrame {
 
   /** Prepare the frame for calculating a new partition. Process all rows eagerly. */
   override def prepare(rows: RowBuffer): Unit = {
@@ -758,9 +760,8 @@ private[execution] final class UnboundedWindowFunctionFrame(
  * @param ubound comparator used to identify the upper bound of an output row.
  */
 private[execution] final class UnboundedPrecedingWindowFunctionFrame(
-    target: MutableRow,
-    processor: AggregateProcessor,
-    ubound: BoundOrdering) extends WindowFunctionFrame {
+    target: MutableRow, processor: AggregateProcessor, ubound: BoundOrdering)
+    extends WindowFunctionFrame {
 
   /** Rows of the partition currently being processed. */
   private[this] var input: RowBuffer = null
@@ -819,9 +820,8 @@ private[execution] final class UnboundedPrecedingWindowFunctionFrame(
  * @param lbound comparator used to identify the lower bound of an output row.
  */
 private[execution] final class UnboundedFollowingWindowFunctionFrame(
-    target: MutableRow,
-    processor: AggregateProcessor,
-    lbound: BoundOrdering) extends WindowFunctionFrame {
+    target: MutableRow, processor: AggregateProcessor, lbound: BoundOrdering)
+    extends WindowFunctionFrame {
 
   /** Rows of the partition currently being processed. */
   private[this] var input: RowBuffer = null
@@ -883,12 +883,11 @@ private[execution] final class UnboundedFollowingWindowFunctionFrame(
  * processor class.
  */
 private[execution] object AggregateProcessor {
-  def apply(
-      functions: Array[Expression],
-      ordinal: Int,
-      inputAttributes: Seq[Attribute],
-      newMutableProjection: (Seq[Expression], Seq[Attribute]) => MutableProjection):
-      AggregateProcessor = {
+  def apply(functions: Array[Expression],
+            ordinal: Int,
+            inputAttributes: Seq[Attribute],
+            newMutableProjection: (Seq[Expression],
+            Seq[Attribute]) => MutableProjection): AggregateProcessor = {
     val aggBufferAttributes = mutable.Buffer.empty[AttributeReference]
     val initialValues = mutable.Buffer.empty[Expression]
     val updateExpressions = mutable.Buffer.empty[Expression]
@@ -922,10 +921,9 @@ private[execution] object AggregateProcessor {
         evaluateExpressions += agg.evaluateExpression
       case agg: ImperativeAggregate =>
         val offset = aggBufferAttributes.size
-        val imperative = BindReferences.bindReference(agg
-          .withNewInputAggBufferOffset(offset)
-          .withNewMutableAggBufferOffset(offset),
-          inputAttributes)
+        val imperative = BindReferences.bindReference(
+            agg.withNewInputAggBufferOffset(offset).withNewMutableAggBufferOffset(offset),
+            inputAttributes)
         imperatives += imperative
         aggBufferAttributes ++= imperative.aggBufferAttributes
         val noOps = Seq.fill(imperative.aggBufferAttributes.size)(NoOp)
@@ -937,24 +935,18 @@ private[execution] object AggregateProcessor {
     }
 
     // Create the projections.
-    val initialProjection = newMutableProjection(
-      initialValues,
-      partitionSize.toSeq)
+    val initialProjection = newMutableProjection(initialValues, partitionSize.toSeq)
     val updateProjection = newMutableProjection(
-      updateExpressions,
-      aggBufferAttributes ++ inputAttributes)
-    val evaluateProjection = newMutableProjection(
-      evaluateExpressions,
-      aggBufferAttributes)
+        updateExpressions, aggBufferAttributes ++ inputAttributes)
+    val evaluateProjection = newMutableProjection(evaluateExpressions, aggBufferAttributes)
 
     // Create the processor
-    new AggregateProcessor(
-      aggBufferAttributes.toArray,
-      initialProjection,
-      updateProjection,
-      evaluateProjection,
-      imperatives.toArray,
-      partitionSize.isDefined)
+    new AggregateProcessor(aggBufferAttributes.toArray,
+                           initialProjection,
+                           updateProjection,
+                           evaluateProjection,
+                           imperatives.toArray,
+                           partitionSize.isDefined)
   }
 }
 

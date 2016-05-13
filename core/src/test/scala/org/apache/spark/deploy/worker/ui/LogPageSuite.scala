@@ -80,5 +80,4 @@ class LogPageSuite extends SparkFunSuite with PrivateMethodTester {
       writer.close()
     }
   }
-
 }

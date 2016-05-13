@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.spark.streaming.scheduler
 
 import scala.util.Random
@@ -44,26 +43,27 @@ import org.apache.spark.util.{Clock, Utils}
  * This features should ideally be used in conjunction with backpressure, as backpressure ensures
  * system stability, while executors are being readjusted.
  */
-private[streaming] class ExecutorAllocationManager(
-    client: ExecutorAllocationClient,
-    receiverTracker: ReceiverTracker,
-    conf: SparkConf,
-    batchDurationMs: Long,
-    clock: Clock) extends StreamingListener with Logging {
+private[streaming] class ExecutorAllocationManager(client: ExecutorAllocationClient,
+                                                   receiverTracker: ReceiverTracker,
+                                                   conf: SparkConf,
+                                                   batchDurationMs: Long,
+                                                   clock: Clock)
+    extends StreamingListener
+    with Logging {
 
   import ExecutorAllocationManager._
 
-  private val scalingIntervalSecs = conf.getTimeAsSeconds(
-    SCALING_INTERVAL_KEY,
-    s"${SCALING_INTERVAL_DEFAULT_SECS}s")
+  private val scalingIntervalSecs =
+    conf.getTimeAsSeconds(SCALING_INTERVAL_KEY, s"${SCALING_INTERVAL_DEFAULT_SECS}s")
   private val scalingUpRatio = conf.getDouble(SCALING_UP_RATIO_KEY, SCALING_UP_RATIO_DEFAULT)
   private val scalingDownRatio = conf.getDouble(SCALING_DOWN_RATIO_KEY, SCALING_DOWN_RATIO_DEFAULT)
-  private val minNumExecutors = conf.getInt(
-    MIN_EXECUTORS_KEY,
-    math.max(1, receiverTracker.numReceivers))
+  private val minNumExecutors =
+    conf.getInt(MIN_EXECUTORS_KEY, math.max(1, receiverTracker.numReceivers))
   private val maxNumExecutors = conf.getInt(MAX_EXECUTORS_KEY, Integer.MAX_VALUE)
-  private val timer = new RecurringTimer(clock, scalingIntervalSecs * 1000,
-    _ => manageAllocation(), "streaming-executor-allocation-manager")
+  private val timer = new RecurringTimer(clock,
+                                         scalingIntervalSecs * 1000,
+                                         _ => manageAllocation(),
+                                         "streaming-executor-allocation-manager")
 
   @volatile private var batchProcTimeSum = 0L
   @volatile private var batchProcTimeCount = 0
@@ -72,8 +72,9 @@ private[streaming] class ExecutorAllocationManager(
 
   def start(): Unit = {
     timer.start()
-    logInfo(s"ExecutorAllocationManager started with " +
-      s"ratios = [$scalingUpRatio, $scalingDownRatio] and interval = $scalingIntervalSecs sec")
+    logInfo(
+        s"ExecutorAllocationManager started with " +
+        s"ratios = [$scalingUpRatio, $scalingDownRatio] and interval = $scalingIntervalSecs sec")
   }
 
   def stop(): Unit = {
@@ -90,7 +91,7 @@ private[streaming] class ExecutorAllocationManager(
     if (batchProcTimeCount > 0) {
       val averageBatchProcTime = batchProcTimeSum / batchProcTimeCount
       val ratio = averageBatchProcTime.toDouble / batchDurationMs
-      logInfo(s"Average: $averageBatchProcTime, ratio = $ratio" )
+      logInfo(s"Average: $averageBatchProcTime, ratio = $ratio")
       if (ratio >= scalingUpRatio) {
         logDebug("Requesting executors")
         val numNewExecutors = math.max(math.round(ratio).toInt, 1)
@@ -142,38 +143,26 @@ private[streaming] class ExecutorAllocationManager(
     batchProcTimeSum += timeMs
     batchProcTimeCount += 1
     logDebug(
-      s"Added batch processing time $timeMs, sum = $batchProcTimeSum, count = $batchProcTimeCount")
+        s"Added batch processing time $timeMs, sum = $batchProcTimeSum, count = $batchProcTimeCount")
   }
 
   private def validateSettings(): Unit = {
-    require(
-      scalingIntervalSecs > 0,
-      s"Config $SCALING_INTERVAL_KEY must be more than 0")
+    require(scalingIntervalSecs > 0, s"Config $SCALING_INTERVAL_KEY must be more than 0")
 
-    require(
-      scalingUpRatio > 0,
-      s"Config $SCALING_UP_RATIO_KEY must be more than 0")
+    require(scalingUpRatio > 0, s"Config $SCALING_UP_RATIO_KEY must be more than 0")
 
-    require(
-      scalingDownRatio > 0,
-      s"Config $SCALING_DOWN_RATIO_KEY must be more than 0")
+    require(scalingDownRatio > 0, s"Config $SCALING_DOWN_RATIO_KEY must be more than 0")
 
-    require(
-      minNumExecutors > 0,
-      s"Config $MIN_EXECUTORS_KEY must be more than 0")
+    require(minNumExecutors > 0, s"Config $MIN_EXECUTORS_KEY must be more than 0")
 
-    require(
-      maxNumExecutors > 0,
-      s"$MAX_EXECUTORS_KEY must be more than 0")
+    require(maxNumExecutors > 0, s"$MAX_EXECUTORS_KEY must be more than 0")
 
-    require(
-      scalingUpRatio > scalingDownRatio,
-      s"Config $SCALING_UP_RATIO_KEY must be more than config $SCALING_DOWN_RATIO_KEY")
+    require(scalingUpRatio > scalingDownRatio,
+            s"Config $SCALING_UP_RATIO_KEY must be more than config $SCALING_DOWN_RATIO_KEY")
 
     if (conf.contains(MIN_EXECUTORS_KEY) && conf.contains(MAX_EXECUTORS_KEY)) {
-      require(
-        maxNumExecutors >= minNumExecutors,
-        s"Config $MAX_EXECUTORS_KEY must be more than config $MIN_EXECUTORS_KEY")
+      require(maxNumExecutors >= minNumExecutors,
+              s"Config $MAX_EXECUTORS_KEY must be more than config $MIN_EXECUTORS_KEY")
     }
   }
 
@@ -206,26 +195,25 @@ private[streaming] object ExecutorAllocationManager extends Logging {
     val streamingDynamicAllocationEnabled = conf.getBoolean(ENABLED_KEY, false)
     if (numExecutor != 0 && streamingDynamicAllocationEnabled) {
       throw new IllegalArgumentException(
-        "Dynamic Allocation for streaming cannot be enabled while spark.executor.instances is set.")
+          "Dynamic Allocation for streaming cannot be enabled while spark.executor.instances is set.")
     }
     if (Utils.isDynamicAllocationEnabled(conf) && streamingDynamicAllocationEnabled) {
-      throw new IllegalArgumentException(
-        """
+      throw new IllegalArgumentException("""
           |Dynamic Allocation cannot be enabled for both streaming and core at the same time.
           |Please disable core Dynamic Allocation by setting spark.dynamicAllocation.enabled to
           |false to use Dynamic Allocation in streaming.
         """.stripMargin)
     }
     val testing = conf.getBoolean("spark.streaming.dynamicAllocation.testing", false)
-    numExecutor == 0 && streamingDynamicAllocationEnabled && (!Utils.isLocalMaster(conf) || testing)
+    numExecutor == 0 && streamingDynamicAllocationEnabled &&
+    (!Utils.isLocalMaster(conf) || testing)
   }
 
-  def createIfEnabled(
-      client: ExecutorAllocationClient,
-      receiverTracker: ReceiverTracker,
-      conf: SparkConf,
-      batchDurationMs: Long,
-      clock: Clock): Option[ExecutorAllocationManager] = {
+  def createIfEnabled(client: ExecutorAllocationClient,
+                      receiverTracker: ReceiverTracker,
+                      conf: SparkConf,
+                      batchDurationMs: Long,
+                      clock: Clock): Option[ExecutorAllocationManager] = {
     if (isDynamicAllocationEnabled(conf)) {
       Some(new ExecutorAllocationManager(client, receiverTracker, conf, batchDurationMs, clock))
     } else None

@@ -41,19 +41,20 @@ import org.apache.spark.mllib.tree.configuration.FeatureType._
  */
 @Since("1.0.0")
 @DeveloperApi
-class Node @Since("1.2.0") (
-    @Since("1.0.0") val id: Int,
-    @Since("1.0.0") var predict: Predict,
-    @Since("1.2.0") var impurity: Double,
-    @Since("1.0.0") var isLeaf: Boolean,
-    @Since("1.0.0") var split: Option[Split],
-    @Since("1.0.0") var leftNode: Option[Node],
-    @Since("1.0.0") var rightNode: Option[Node],
-    @Since("1.0.0") var stats: Option[InformationGainStats]) extends Serializable with Logging {
+class Node @Since("1.2.0")(@Since("1.0.0") val id: Int,
+                           @Since("1.0.0") var predict: Predict,
+                           @Since("1.2.0") var impurity: Double,
+                           @Since("1.0.0") var isLeaf: Boolean,
+                           @Since("1.0.0") var split: Option[Split],
+                           @Since("1.0.0") var leftNode: Option[Node],
+                           @Since("1.0.0") var rightNode: Option[Node],
+                           @Since("1.0.0") var stats: Option[InformationGainStats])
+    extends Serializable
+    with Logging {
 
   override def toString: String = {
     s"id = $id, isLeaf = $isLeaf, predict = $predict, impurity = $impurity, " +
-      s"split = $split, stats = $stats"
+    s"split = $split, stats = $stats"
   }
 
   /**
@@ -86,16 +87,18 @@ class Node @Since("1.2.0") (
    * Returns a deep copy of the subtree rooted at this node.
    */
   private[tree] def deepCopy(): Node = {
-    val leftNodeCopy = if (leftNode.isEmpty) {
-      None
-    } else {
-      Some(leftNode.get.deepCopy())
-    }
-    val rightNodeCopy = if (rightNode.isEmpty) {
-      None
-    } else {
-      Some(rightNode.get.deepCopy())
-    }
+    val leftNodeCopy =
+      if (leftNode.isEmpty) {
+        None
+      } else {
+        Some(leftNode.get.deepCopy())
+      }
+    val rightNodeCopy =
+      if (rightNode.isEmpty) {
+        None
+      } else {
+        Some(rightNode.get.deepCopy())
+      }
     new Node(id, predict, impurity, isLeaf, split, leftNodeCopy, rightNodeCopy, stats)
   }
 
@@ -103,21 +106,23 @@ class Node @Since("1.2.0") (
    * Get the number of nodes in tree below this node, including leaf nodes.
    * E.g., if this is a leaf, returns 0.  If both children are leaves, returns 2.
    */
-  private[tree] def numDescendants: Int = if (isLeaf) {
-    0
-  } else {
-    2 + leftNode.get.numDescendants + rightNode.get.numDescendants
-  }
+  private[tree] def numDescendants: Int =
+    if (isLeaf) {
+      0
+    } else {
+      2 + leftNode.get.numDescendants + rightNode.get.numDescendants
+    }
 
   /**
    * Get depth of tree from this node.
    * E.g.: Depth 0 means this is a leaf node.
    */
-  private[tree] def subtreeDepth: Int = if (isLeaf) {
-    0
-  } else {
-    1 + math.max(leftNode.get.subtreeDepth, rightNode.get.subtreeDepth)
-  }
+  private[tree] def subtreeDepth: Int =
+    if (isLeaf) {
+      0
+    } else {
+      1 + math.max(leftNode.get.subtreeDepth, rightNode.get.subtreeDepth)
+    }
 
   /**
    * Recursive print function.
@@ -127,16 +132,18 @@ class Node @Since("1.2.0") (
 
     def splitToString(split: Split, left: Boolean): String = {
       split.featureType match {
-        case Continuous => if (left) {
-          s"(feature ${split.feature} <= ${split.threshold})"
-        } else {
-          s"(feature ${split.feature} > ${split.threshold})"
-        }
-        case Categorical => if (left) {
-          s"(feature ${split.feature} in ${split.categories.mkString("{", ",", "}")})"
-        } else {
-          s"(feature ${split.feature} not in ${split.categories.mkString("{", ",", "}")})"
-        }
+        case Continuous =>
+          if (left) {
+            s"(feature ${split.feature} <= ${split.threshold})"
+          } else {
+            s"(feature ${split.feature} > ${split.threshold})"
+          }
+        case Categorical =>
+          if (left) {
+            s"(feature ${split.feature} in ${split.categories.mkString("{", ",", "}")})"
+          } else {
+            s"(feature ${split.feature} not in ${split.categories.mkString("{", ",", "}")})"
+          }
       }
     }
     val prefix: String = " " * indentFactor
@@ -144,16 +151,16 @@ class Node @Since("1.2.0") (
       prefix + s"Predict: ${predict.predict}\n"
     } else {
       prefix + s"If ${splitToString(split.get, left = true)}\n" +
-        leftNode.get.subtreeToString(indentFactor + 1) +
-        prefix + s"Else ${splitToString(split.get, left = false)}\n" +
-        rightNode.get.subtreeToString(indentFactor + 1)
+      leftNode.get.subtreeToString(indentFactor + 1) + prefix +
+      s"Else ${splitToString(split.get, left = false)}\n" +
+      rightNode.get.subtreeToString(indentFactor + 1)
     }
   }
 
   /** Returns an iterator that traverses (DFS, left to right) the subtree of this node. */
   private[tree] def subtreeIterator: Iterator[Node] = {
     Iterator.single(this) ++ leftNode.map(_.subtreeIterator).getOrElse(Iterator.empty) ++
-      rightNode.map(_.subtreeIterator).getOrElse(Iterator.empty)
+    rightNode.map(_.subtreeIterator).getOrElse(Iterator.empty)
   }
 }
 
@@ -162,8 +169,8 @@ private[spark] object Node {
   /**
    * Return a node with the given node id (but nothing else set).
    */
-  def emptyNode(nodeIndex: Int): Node = new Node(nodeIndex, new Predict(Double.MinValue), -1.0,
-    false, None, None, None, None)
+  def emptyNode(nodeIndex: Int): Node =
+    new Node(nodeIndex, new Predict(Double.MinValue), -1.0, false, None, None, None, None)
 
   /**
    * Construct a node with nodeIndex, predict, impurity and isLeaf parameters.
@@ -176,11 +183,7 @@ private[spark] object Node {
    * @param isLeaf whether the node is a leaf
    * @return new node instance
    */
-  def apply(
-      nodeIndex: Int,
-      predict: Predict,
-      impurity: Double,
-      isLeaf: Boolean): Node = {
+  def apply(nodeIndex: Int, predict: Predict, impurity: Double, isLeaf: Boolean): Node = {
     new Node(nodeIndex, predict, impurity, isLeaf, None, None, None, None)
   }
 
@@ -202,11 +205,12 @@ private[spark] object Node {
   /**
    * Return the level of a tree which the given node is in.
    */
-  def indexToLevel(nodeIndex: Int): Int = if (nodeIndex == 0) {
-    throw new IllegalArgumentException(s"0 is not a valid node index.")
-  } else {
-    java.lang.Integer.numberOfTrailingZeros(java.lang.Integer.highestOneBit(nodeIndex))
-  }
+  def indexToLevel(nodeIndex: Int): Int =
+    if (nodeIndex == 0) {
+      throw new IllegalArgumentException(s"0 is not a valid node index.")
+    } else {
+      java.lang.Integer.numberOfTrailingZeros(java.lang.Integer.highestOneBit(nodeIndex))
+    }
 
   /**
    * Returns true if this is a left child.
@@ -243,5 +247,4 @@ private[spark] object Node {
     }
     tmpNode
   }
-
 }

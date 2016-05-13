@@ -73,9 +73,8 @@ private[streaming] class ReceiverSchedulingPolicy {
    *
    * @return a map for receivers and their scheduled locations
    */
-  def scheduleReceivers(
-      receivers: Seq[Receiver[_]],
-      executors: Seq[ExecutorCacheTaskLocation]): Map[Int, Seq[TaskLocation]] = {
+  def scheduleReceivers(receivers: Seq[Receiver[_]],
+                        executors: Seq[ExecutorCacheTaskLocation]): Map[Int, Seq[TaskLocation]] = {
     if (receivers.isEmpty) {
       return Map.empty
     }
@@ -166,11 +165,10 @@ private[streaming] class ReceiverSchedulingPolicy {
    *
    * This method is called when a receiver is registering with ReceiverTracker or is restarting.
    */
-  def rescheduleReceiver(
-      receiverId: Int,
-      preferredLocation: Option[String],
-      receiverTrackingInfoMap: Map[Int, ReceiverTrackingInfo],
-      executors: Seq[ExecutorCacheTaskLocation]): Seq[TaskLocation] = {
+  def rescheduleReceiver(receiverId: Int,
+                         preferredLocation: Option[String],
+                         receiverTrackingInfoMap: Map[Int, ReceiverTrackingInfo],
+                         executors: Seq[ExecutorCacheTaskLocation]): Seq[TaskLocation] = {
     if (executors.isEmpty) {
       return Seq.empty
     }
@@ -182,8 +180,10 @@ private[streaming] class ReceiverSchedulingPolicy {
     scheduledLocations ++= preferredLocation.map(TaskLocation(_))
 
     val executorWeights: Map[ExecutorCacheTaskLocation, Double] = {
-      receiverTrackingInfoMap.values.flatMap(convertReceiverTrackingInfoToExecutorWeights)
-        .groupBy(_._1).mapValues(_.map(_._2).sum) // Sum weights for each executor
+      receiverTrackingInfoMap.values
+        .flatMap(convertReceiverTrackingInfoToExecutorWeights)
+        .groupBy(_._1)
+        .mapValues(_.map(_._2).sum) // Sum weights for each executor
     }
 
     val idleExecutors = executors.toSet -- executorWeights.keys

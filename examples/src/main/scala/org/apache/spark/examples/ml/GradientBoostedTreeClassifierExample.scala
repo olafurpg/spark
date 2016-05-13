@@ -28,10 +28,7 @@ import org.apache.spark.sql.SparkSession
 
 object GradientBoostedTreeClassifierExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("GradientBoostedTreeClassifierExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("GradientBoostedTreeClassifierExample").getOrCreate()
 
     // $example on$
     // Load and parse the data file, converting it to a DataFrame.
@@ -39,10 +36,8 @@ object GradientBoostedTreeClassifierExample {
 
     // Index labels, adding metadata to the label column.
     // Fit on whole dataset to include all labels in index.
-    val labelIndexer = new StringIndexer()
-      .setInputCol("label")
-      .setOutputCol("indexedLabel")
-      .fit(data)
+    val labelIndexer =
+      new StringIndexer().setInputCol("label").setOutputCol("indexedLabel").fit(data)
     // Automatically identify categorical features, and index them.
     // Set maxCategories so features with > 4 distinct values are treated as continuous.
     val featureIndexer = new VectorIndexer()
@@ -67,8 +62,8 @@ object GradientBoostedTreeClassifierExample {
       .setLabels(labelIndexer.labels)
 
     // Chain indexers and GBT in a Pipeline.
-    val pipeline = new Pipeline()
-      .setStages(Array(labelIndexer, featureIndexer, gbt, labelConverter))
+    val pipeline =
+      new Pipeline().setStages(Array(labelIndexer, featureIndexer, gbt, labelConverter))
 
     // Train model. This also runs the indexers.
     val model = pipeline.fit(trainingData)

@@ -41,18 +41,14 @@ private[hive] object SparkSQLEnv extends Logging {
       val maybeKryoReferenceTracking = sparkConf.getOption("spark.kryo.referenceTracking")
       // If user doesn't specify the appName, we want to get [SparkSQL::localHostName] instead of
       // the default appName [SparkSQLCLIDriver] in cli or beeline.
-      val maybeAppName = sparkConf
-        .getOption("spark.app.name")
-        .filterNot(_ == classOf[SparkSQLCLIDriver].getName)
+      val maybeAppName =
+        sparkConf.getOption("spark.app.name").filterNot(_ == classOf[SparkSQLCLIDriver].getName)
 
       sparkConf
         .setAppName(maybeAppName.getOrElse(s"SparkSQL::${Utils.localHostName()}"))
-        .set(
-          "spark.serializer",
-          maybeSerializer.getOrElse("org.apache.spark.serializer.KryoSerializer"))
-        .set(
-          "spark.kryo.referenceTracking",
-          maybeKryoReferenceTracking.getOrElse("false"))
+        .set("spark.serializer",
+             maybeSerializer.getOrElse("org.apache.spark.serializer.KryoSerializer"))
+        .set("spark.kryo.referenceTracking", maybeKryoReferenceTracking.getOrElse("false"))
 
       val sparkSession = SparkSession.builder.config(sparkConf).enableHiveSupport().getOrCreate()
       sparkContext = sparkSession.sparkContext

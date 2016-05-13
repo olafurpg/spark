@@ -48,7 +48,7 @@ private[spark] class XORShiftRandom(init: Long) extends JavaRandom(init) {
     nextSeed ^= (nextSeed >>> 35)
     nextSeed ^= (nextSeed << 4)
     seed = nextSeed
-    (nextSeed & ((1L << bits) -1)).asInstanceOf[Int]
+    (nextSeed & ((1L << bits) - 1)).asInstanceOf[Int]
   }
 
   override def setSeed(s: Long) {
@@ -102,7 +102,8 @@ private[spark] object XORShiftRandom {
 
     /* Return results as a map instead of just printing to screen
     in case the user wants to do something with them */
-    Map("javaTime" -> timeIt(numIters) { javaRand.nextInt() },
-        "xorTime" -> timeIt(numIters) { xorRand.nextInt() })
+    Map("javaTime" -> timeIt(numIters) { javaRand.nextInt() }, "xorTime" -> timeIt(numIters) {
+      xorRand.nextInt()
+    })
   }
 }

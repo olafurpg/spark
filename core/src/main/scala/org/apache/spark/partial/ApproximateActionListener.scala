@@ -30,18 +30,18 @@ import org.apache.spark.scheduler.JobListener
  * a result of type U for each partition, and that the action returns a partial or complete result
  * of type R. Note that the type R must *include* any error bars on it (e.g. see BoundedInt).
  */
-private[spark] class ApproximateActionListener[T, U, R](
-    rdd: RDD[T],
-    func: (TaskContext, Iterator[T]) => U,
-    evaluator: ApproximateEvaluator[U, R],
-    timeout: Long)
-  extends JobListener {
+private[spark] class ApproximateActionListener[T, U, R](rdd: RDD[T],
+                                                        func: (TaskContext, Iterator[T]) => U,
+                                                        evaluator: ApproximateEvaluator[U, R],
+                                                        timeout: Long)
+    extends JobListener {
 
   val startTime = System.currentTimeMillis()
   val totalTasks = rdd.partitions.length
   var finishedTasks = 0
-  var failure: Option[Exception] = None             // Set if the job has failed (permanently)
-  var resultObject: Option[PartialResult[R]] = None // Set if we've already returned a PartialResult
+  var failure: Option[Exception] = None // Set if the job has failed (permanently)
+  var resultObject: Option[PartialResult[R]] =
+    None // Set if we've already returned a PartialResult
 
   override def taskSucceeded(index: Int, result: Any) {
     synchronized {

@@ -26,7 +26,6 @@ import org.apache.spark.sql.catalyst.expressions.{MutableRow, SpecificMutableRow
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.types._
 
-
 private[columnar] case object PassThrough extends CompressionScheme {
   override val typeId = 0
 
@@ -54,7 +53,7 @@ private[columnar] case object PassThrough extends CompressionScheme {
   }
 
   class Decoder[T <: AtomicType](buffer: ByteBuffer, columnType: NativeColumnType[T])
-    extends compression.Decoder[T] {
+      extends compression.Decoder[T] {
 
     override def next(row: MutableRow, ordinal: Int): Unit = {
       columnType.extract(buffer, row, ordinal)
@@ -150,7 +149,7 @@ private[columnar] case object RunLengthEncoding extends CompressionScheme {
   }
 
   class Decoder[T <: AtomicType](buffer: ByteBuffer, columnType: NativeColumnType[T])
-    extends compression.Decoder[T] {
+      extends compression.Decoder[T] {
 
     private var run = 0
     private var valueCount = 0
@@ -178,8 +177,8 @@ private[columnar] case object DictionaryEncoding extends CompressionScheme {
   // 32K unique values allowed
   val MAX_DICT_SIZE = Short.MaxValue
 
-  override def decoder[T <: AtomicType](buffer: ByteBuffer, columnType: NativeColumnType[T])
-    : Decoder[T] = {
+  override def decoder[T <: AtomicType](
+      buffer: ByteBuffer, columnType: NativeColumnType[T]): Decoder[T] = {
     new this.Decoder(buffer, columnType)
   }
 
@@ -240,11 +239,10 @@ private[columnar] case object DictionaryEncoding extends CompressionScheme {
     override def compress(from: ByteBuffer, to: ByteBuffer): ByteBuffer = {
       if (overflow) {
         throw new IllegalStateException(
-          "Dictionary encoding should not be used because of dictionary overflow.")
+            "Dictionary encoding should not be used because of dictionary overflow.")
       }
 
-      to.putInt(DictionaryEncoding.typeId)
-        .putInt(dictionary.size)
+      to.putInt(DictionaryEncoding.typeId).putInt(dictionary.size)
 
       var i = 0
       while (i < values.length) {
@@ -266,7 +264,7 @@ private[columnar] case object DictionaryEncoding extends CompressionScheme {
   }
 
   class Decoder[T <: AtomicType](buffer: ByteBuffer, columnType: NativeColumnType[T])
-    extends compression.Decoder[T] {
+      extends compression.Decoder[T] {
 
     private val dictionary: Array[Any] = {
       val elementNum = ByteBufferHelper.getInt(buffer)
@@ -286,8 +284,8 @@ private[columnar] case object BooleanBitSet extends CompressionScheme {
 
   val BITS_PER_LONG = 64
 
-  override def decoder[T <: AtomicType](buffer: ByteBuffer, columnType: NativeColumnType[T])
-    : compression.Decoder[T] = {
+  override def decoder[T <: AtomicType](
+      buffer: ByteBuffer, columnType: NativeColumnType[T]): compression.Decoder[T] = {
     new this.Decoder(buffer).asInstanceOf[compression.Decoder[T]]
   }
 
@@ -374,8 +372,8 @@ private[columnar] case object BooleanBitSet extends CompressionScheme {
 private[columnar] case object IntDelta extends CompressionScheme {
   override def typeId: Int = 4
 
-  override def decoder[T <: AtomicType](buffer: ByteBuffer, columnType: NativeColumnType[T])
-    : compression.Decoder[T] = {
+  override def decoder[T <: AtomicType](
+      buffer: ByteBuffer, columnType: NativeColumnType[T]): compression.Decoder[T] = {
     new Decoder(buffer, INT).asInstanceOf[compression.Decoder[T]]
   }
 
@@ -437,7 +435,7 @@ private[columnar] case object IntDelta extends CompressionScheme {
   }
 
   class Decoder(buffer: ByteBuffer, columnType: NativeColumnType[IntegerType.type])
-    extends compression.Decoder[IntegerType.type] {
+      extends compression.Decoder[IntegerType.type] {
 
     private var prev: Int = _
 
@@ -454,8 +452,8 @@ private[columnar] case object IntDelta extends CompressionScheme {
 private[columnar] case object LongDelta extends CompressionScheme {
   override def typeId: Int = 5
 
-  override def decoder[T <: AtomicType](buffer: ByteBuffer, columnType: NativeColumnType[T])
-    : compression.Decoder[T] = {
+  override def decoder[T <: AtomicType](
+      buffer: ByteBuffer, columnType: NativeColumnType[T]): compression.Decoder[T] = {
     new Decoder(buffer, LONG).asInstanceOf[compression.Decoder[T]]
   }
 
@@ -517,7 +515,7 @@ private[columnar] case object LongDelta extends CompressionScheme {
   }
 
   class Decoder(buffer: ByteBuffer, columnType: NativeColumnType[LongType.type])
-    extends compression.Decoder[LongType.type] {
+      extends compression.Decoder[LongType.type] {
 
     private var prev: Long = _
 

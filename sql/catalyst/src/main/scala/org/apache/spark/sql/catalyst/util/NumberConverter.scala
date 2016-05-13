@@ -111,7 +111,7 @@ object NumberConverter {
    */
   private def char2byte(radix: Int, fromPos: Int): Unit = {
     var i = fromPos
-    while ( i < value.length) {
+    while (i < value.length) {
       value(i) = Character.digit(value(i), radix).asInstanceOf[Byte]
       i += 1
     }
@@ -122,10 +122,9 @@ object NumberConverter {
    * unsigned, otherwise it is signed.
    * NB: This logic is borrowed from org.apache.hadoop.hive.ql.ud.UDFConv
    */
-  def convert(n: Array[Byte], fromBase: Int, toBase: Int ): UTF8String = {
-    if (fromBase < Character.MIN_RADIX || fromBase > Character.MAX_RADIX
-      || Math.abs(toBase) < Character.MIN_RADIX
-      || Math.abs(toBase) > Character.MAX_RADIX) {
+  def convert(n: Array[Byte], fromBase: Int, toBase: Int): UTF8String = {
+    if (fromBase < Character.MIN_RADIX || fromBase > Character.MAX_RADIX ||
+        Math.abs(toBase) < Character.MIN_RADIX || Math.abs(toBase) > Character.MAX_RADIX) {
       return null
     }
 
@@ -160,7 +159,7 @@ object NumberConverter {
 
     // Find the first non-zero digit or the last digits if all are zero.
     val firstNonZeroPos = {
-      val firstNonZero = value.indexWhere( _ != 0)
+      val firstNonZero = value.indexWhere(_ != 0)
       if (firstNonZero != -1) firstNonZero else value.length - 1
     }
 

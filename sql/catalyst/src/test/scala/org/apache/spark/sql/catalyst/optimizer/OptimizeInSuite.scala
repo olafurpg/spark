@@ -31,22 +31,20 @@ class OptimizeInSuite extends PlanTest {
 
   object Optimize extends RuleExecutor[LogicalPlan] {
     val batches =
-      Batch("AnalysisNodes", Once,
-        EliminateSubqueryAliases) ::
-      Batch("ConstantFolding", FixedPoint(10),
-        NullPropagation,
-        ConstantFolding,
-        BooleanSimplification,
-        OptimizeIn(SimpleCatalystConf(caseSensitiveAnalysis = true))) :: Nil
+      Batch("AnalysisNodes", Once, EliminateSubqueryAliases) ::
+      Batch("ConstantFolding",
+            FixedPoint(10),
+            NullPropagation,
+            ConstantFolding,
+            BooleanSimplification,
+            OptimizeIn(SimpleCatalystConf(caseSensitiveAnalysis = true))) :: Nil
   }
 
   val testRelation = LocalRelation('a.int, 'b.int, 'c.int)
 
   test("OptimizedIn test: In clause not optimized to InSet when less than 10 items") {
     val originalQuery =
-      testRelation
-        .where(In(UnresolvedAttribute("a"), Seq(Literal(1), Literal(2))))
-        .analyze
+      testRelation.where(In(UnresolvedAttribute("a"), Seq(Literal(1), Literal(2)))).analyze
 
     val optimized = Optimize.execute(originalQuery.analyze)
     comparePlans(optimized, originalQuery)
@@ -54,97 +52,78 @@ class OptimizeInSuite extends PlanTest {
 
   test("OptimizedIn test: In clause optimized to InSet when more than 10 items") {
     val originalQuery =
-      testRelation
-        .where(In(UnresolvedAttribute("a"), (1 to 11).map(Literal(_))))
-        .analyze
+      testRelation.where(In(UnresolvedAttribute("a"), (1 to 11).map(Literal(_)))).analyze
 
     val optimized = Optimize.execute(originalQuery.analyze)
     val correctAnswer =
-      testRelation
-        .where(InSet(UnresolvedAttribute("a"), (1 to 11).toSet))
-        .analyze
+      testRelation.where(InSet(UnresolvedAttribute("a"), (1 to 11).toSet)).analyze
 
     comparePlans(optimized, correctAnswer)
   }
 
   test("OptimizedIn test: In clause not optimized in case filter has attributes") {
-    val originalQuery =
-      testRelation
-        .where(In(UnresolvedAttribute("a"), Seq(Literal(1), Literal(2), UnresolvedAttribute("b"))))
-        .analyze
+    val originalQuery = testRelation
+      .where(In(UnresolvedAttribute("a"), Seq(Literal(1), Literal(2), UnresolvedAttribute("b"))))
+      .analyze
 
     val optimized = Optimize.execute(originalQuery.analyze)
-    val correctAnswer =
-      testRelation
-        .where(In(UnresolvedAttribute("a"), Seq(Literal(1), Literal(2), UnresolvedAttribute("b"))))
-        .analyze
+    val correctAnswer = testRelation
+      .where(In(UnresolvedAttribute("a"), Seq(Literal(1), Literal(2), UnresolvedAttribute("b"))))
+      .analyze
 
     comparePlans(optimized, correctAnswer)
   }
 
   test("OptimizedIn test: NULL IN (expr1, ..., exprN) gets transformed to Filter(null)") {
     val originalQuery =
-      testRelation
-        .where(In(Literal.create(null, NullType), Seq(Literal(1), Literal(2))))
-        .analyze
+      testRelation.where(In(Literal.create(null, NullType), Seq(Literal(1), Literal(2)))).analyze
 
     val optimized = Optimize.execute(originalQuery.analyze)
-    val correctAnswer =
-      testRelation
-        .where(Literal.create(null, BooleanType))
-        .analyze
+    val correctAnswer = testRelation.where(Literal.create(null, BooleanType)).analyze
+
+    comparePlans(optimized, correctAnswer)
+  }
+
+  test("OptimizedIn test: Inset optimization disabled as " + "list expression contains attribute)") {
+    val originalQuery = testRelation
+      .where(In(Literal.create(null, StringType), Seq(Literal(1), UnresolvedAttribute("b"))))
+      .analyze
+
+    val optimized = Optimize.execute(originalQuery.analyze)
+    val correctAnswer = testRelation.where(Literal.create(null, BooleanType)).analyze
 
     comparePlans(optimized, correctAnswer)
   }
 
   test("OptimizedIn test: Inset optimization disabled as " +
-    "list expression contains attribute)") {
-    val originalQuery =
-      testRelation
-        .where(In(Literal.create(null, StringType), Seq(Literal(1), UnresolvedAttribute("b"))))
-        .analyze
+      "list expression contains attribute - select)") {
+    val originalQuery = testRelation
+      .select(
+          In(Literal.create(null, StringType), Seq(Literal(1), UnresolvedAttribute("b"))).as("a"))
+      .analyze
 
     val optimized = Optimize.execute(originalQuery.analyze)
-    val correctAnswer =
-      testRelation
-        .where(Literal.create(null, BooleanType))
-        .analyze
-
-    comparePlans(optimized, correctAnswer)
-  }
-
-  test("OptimizedIn test: Inset optimization disabled as " +
-    "list expression contains attribute - select)") {
-    val originalQuery =
-      testRelation
-        .select(In(Literal.create(null, StringType),
-        Seq(Literal(1), UnresolvedAttribute("b"))).as("a")).analyze
-
-    val optimized = Optimize.execute(originalQuery.analyze)
-    val correctAnswer =
-      testRelation
-        .select(Literal.create(null, BooleanType).as("a"))
-        .analyze
+    val correctAnswer = testRelation.select(Literal.create(null, BooleanType).as("a")).analyze
 
     comparePlans(optimized, correctAnswer)
   }
 
   test("OptimizedIn test: Setting the threshold for turning Set into InSet.") {
-    val plan =
-      testRelation
-        .where(In(UnresolvedAttribute("a"), Seq(Literal(1), Literal(2), Literal(3))))
-        .analyze
+    val plan = testRelation
+      .where(In(UnresolvedAttribute("a"), Seq(Literal(1), Literal(2), Literal(3))))
+      .analyze
 
     val notOptimizedPlan = OptimizeIn(SimpleCatalystConf(caseSensitiveAnalysis = true))(plan)
     comparePlans(notOptimizedPlan, plan)
 
     // Reduce the threshold to turning into InSet.
-    val optimizedPlan = OptimizeIn(SimpleCatalystConf(caseSensitiveAnalysis = true,
-        optimizerInSetConversionThreshold = 2))(plan)
+    val optimizedPlan = OptimizeIn(
+        SimpleCatalystConf(caseSensitiveAnalysis = true, optimizerInSetConversionThreshold = 2))(
+        plan)
     optimizedPlan match {
       case Filter(cond, _)
-        if cond.isInstanceOf[InSet] && cond.asInstanceOf[InSet].getHSet().size == 3 =>
-          // pass
+          if cond.isInstanceOf[InSet] && cond.asInstanceOf[InSet].getHSet().size == 3 =>
+      // pass
       case _ => fail("Unexpected result for OptimizedIn")
     }
   }

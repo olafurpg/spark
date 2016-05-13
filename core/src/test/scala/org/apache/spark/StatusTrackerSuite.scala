@@ -65,25 +65,25 @@ class StatusTrackerSuite extends SparkFunSuite with Matchers with LocalSparkCont
       defaultJobGroupFuture.jobIds.head
     }
     eventually(timeout(10 seconds)) {
-      sc.statusTracker.getJobIdsForGroup(null).toSet should be (Set(defaultJobGroupJobId))
+      sc.statusTracker.getJobIdsForGroup(null).toSet should be(Set(defaultJobGroupJobId))
     }
     // Test jobs submitted in job groups:
     sc.setJobGroup("my-job-group", "description")
-    sc.statusTracker.getJobIdsForGroup("my-job-group") should be (Seq.empty)
+    sc.statusTracker.getJobIdsForGroup("my-job-group") should be(Seq.empty)
     val firstJobFuture = sc.parallelize(1 to 1000).countAsync()
     val firstJobId = eventually(timeout(10 seconds)) {
       firstJobFuture.jobIds.head
     }
     eventually(timeout(10 seconds)) {
-      sc.statusTracker.getJobIdsForGroup("my-job-group") should be (Seq(firstJobId))
+      sc.statusTracker.getJobIdsForGroup("my-job-group") should be(Seq(firstJobId))
     }
     val secondJobFuture = sc.parallelize(1 to 1000).countAsync()
     val secondJobId = eventually(timeout(10 seconds)) {
       secondJobFuture.jobIds.head
     }
     eventually(timeout(10 seconds)) {
-      sc.statusTracker.getJobIdsForGroup("my-job-group").toSet should be (
-        Set(firstJobId, secondJobId))
+      sc.statusTracker.getJobIdsForGroup("my-job-group").toSet should be(
+          Set(firstJobId, secondJobId))
     }
   }
 
@@ -96,7 +96,7 @@ class StatusTrackerSuite extends SparkFunSuite with Matchers with LocalSparkCont
       firstJobFuture.jobIds.head
     }
     eventually(timeout(10 seconds)) {
-      sc.statusTracker.getJobIdsForGroup("my-job-group2") should be (Seq(firstJobId))
+      sc.statusTracker.getJobIdsForGroup("my-job-group2") should be(Seq(firstJobId))
     }
   }
 

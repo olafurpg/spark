@@ -50,10 +50,10 @@ import org.apache.spark.util.Clock
  * @param retainedApplications number of retained applications
  * @param clock time source
  */
-private[history] class ApplicationCache(
-    val operations: ApplicationCacheOperations,
-    val retainedApplications: Int,
-    val clock: Clock) extends Logging {
+private[history] class ApplicationCache(val operations: ApplicationCacheOperations,
+                                        val retainedApplications: Int,
+                                        val clock: Clock)
+    extends Logging {
 
   /**
    * Services the load request from the cache.
@@ -64,7 +64,6 @@ private[history] class ApplicationCache(
     override def load(key: CacheKey): CacheEntry = {
       loadApplicationEntry(key.appId, key.attemptId)
     }
-
   }
 
   /**
@@ -90,10 +89,11 @@ private[history] class ApplicationCache(
    * Tagged as `protected` so as to allow subclasses in tests to access it directly
    */
   protected val appCache: LoadingCache[CacheKey, CacheEntry] = {
-    CacheBuilder.newBuilder()
-        .maximumSize(retainedApplications)
-        .removalListener(removalListener)
-        .build(appLoader)
+    CacheBuilder
+      .newBuilder()
+      .maximumSize(retainedApplications)
+      .removalListener(removalListener)
+      .build(appLoader)
   }
 
   /**
@@ -145,11 +145,12 @@ private[history] class ApplicationCache(
       val ui = get(appAndAttempt)
       Some(ui)
     } catch {
-      case NonFatal(e) => e.getCause() match {
-        case nsee: NoSuchElementException =>
-          None
-        case cause: Exception => throw cause
-      }
+      case NonFatal(e) =>
+        e.getCause() match {
+          case nsee: NoSuchElementException =>
+            None
+          case cause: Exception => throw cause
+        }
     }
   }
 
@@ -297,8 +298,10 @@ private[history] class ApplicationCache(
           metrics.lookupFailureCount.inc()
           // guava's cache logs via java.util log, so is of limited use. Hence: our own message
           logInfo(s"Failed to load application attempt $appId/$attemptId")
-          throw new NoSuchElementException(s"no application with application Id '$appId'" +
-              attemptId.map { id => s" attemptId '$id'" }.getOrElse(" and no attempt Id"))
+          throw new NoSuchElementException(
+              s"no application with application Id '$appId'" + attemptId.map { id =>
+            s" attemptId '$id'"
+          }.getOrElse(" and no attempt Id"))
       }
     }
   }
@@ -326,7 +329,9 @@ private[history] class ApplicationCache(
    * @return a unified string
    */
   def mergeAppAndAttemptToKey(appId: String, attemptId: Option[String]): String = {
-    appId + attemptId.map { id => s"/$id" }.getOrElse("")
+    appId + attemptId.map { id =>
+      s"/$id"
+    }.getOrElse("")
   }
 
   /**
@@ -334,13 +339,13 @@ private[history] class ApplicationCache(
    * @return a string value, primarily for testing and diagnostics
    */
   override def toString: String = {
-    val sb = new StringBuilder(s"ApplicationCache(" +
-          s" retainedApplications= $retainedApplications)")
+    val sb = new StringBuilder(
+        s"ApplicationCache(" + s" retainedApplications= $retainedApplications)")
     sb.append(s"; time= ${clock.getTimeMillis()}")
     sb.append(s"; entry count= ${appCache.size()}\n")
     sb.append("----\n")
     appCache.asMap().asScala.foreach {
-      case(key, entry) => sb.append(s"  $key -> $entry\n")
+      case (key, entry) => sb.append(s"  $key -> $entry\n")
     }
     sb.append("----\n")
     sb.append(metrics)
@@ -359,11 +364,10 @@ private[history] class ApplicationCache(
  *                    therefore that the cached value needs to be refreshed.
  * @param probeTime Times in milliseconds when the probe was last executed.
  */
-private[history] final class CacheEntry(
-    val ui: SparkUI,
-    val completed: Boolean,
-    val updateProbe: () => Boolean,
-    var probeTime: Long) {
+private[history] final class CacheEntry(val ui: SparkUI,
+                                        val completed: Boolean,
+                                        val updateProbe: () => Boolean,
+                                        var probeTime: Long) {
 
   /** string value is for test assertions */
   override def toString: String = {
@@ -380,7 +384,9 @@ private[history] final class CacheEntry(
 private[history] final case class CacheKey(appId: String, attemptId: Option[String]) {
 
   override def toString: String = {
-    appId + attemptId.map { id => s"/$id" }.getOrElse("")
+    appId + attemptId.map { id =>
+      s"/$id"
+    }.getOrElse("")
   }
 }
 
@@ -401,18 +407,16 @@ private[history] class CacheMetrics(prefix: String) extends Source {
   val updateTriggeredCount = new Counter()
 
   /** all the counters: for registration and string conversion. */
-  private val counters = Seq(
-    ("lookup.count", lookupCount),
-    ("lookup.failure.count", lookupFailureCount),
-    ("eviction.count", evictionCount),
-    ("load.count", loadCount),
-    ("update.probe.count", updateProbeCount),
-    ("update.triggered.count", updateTriggeredCount))
+  private val counters = Seq(("lookup.count", lookupCount),
+                             ("lookup.failure.count", lookupFailureCount),
+                             ("eviction.count", evictionCount),
+                             ("load.count", loadCount),
+                             ("update.probe.count", updateProbeCount),
+                             ("update.triggered.count", updateTriggeredCount))
 
   /** all metrics, including timers */
-  private val allMetrics = counters ++ Seq(
-    ("load.timer", loadTimer),
-    ("update.probe.timer", updateProbeTimer))
+  private val allMetrics =
+    counters ++ Seq(("load.timer", loadTimer), ("update.probe.timer", updateProbeTimer))
 
   /**
    * Name of metric source
@@ -426,15 +430,17 @@ private[history] class CacheMetrics(prefix: String) extends Source {
    * This includes registering metrics with [[metricRegistry]]
    */
   private def init(): Unit = {
-    allMetrics.foreach { case (name, metric) =>
-      metricRegistry.register(MetricRegistry.name(prefix, name), metric)
+    allMetrics.foreach {
+      case (name, metric) =>
+        metricRegistry.register(MetricRegistry.name(prefix, name), metric)
     }
   }
 
   override def toString: String = {
     val sb = new StringBuilder()
-    counters.foreach { case (name, counter) =>
-      sb.append(name).append(" = ").append(counter.getCount).append('\n')
+    counters.foreach {
+      case (name, counter) =>
+        sb.append(name).append(" = ").append(counter.getCount).append('\n')
     }
     sb.toString()
   }
@@ -462,10 +468,7 @@ private[history] trait ApplicationCacheOperations {
    * @param completed flag to indicate that the UI has completed
    */
   def attachSparkUI(
-      appId: String,
-      attemptId: Option[String],
-      ui: SparkUI,
-      completed: Boolean): Unit
+      appId: String, attemptId: Option[String], ui: SparkUI, completed: Boolean): Unit
 
   /**
    * Detach a Spark UI.
@@ -473,7 +476,6 @@ private[history] trait ApplicationCacheOperations {
    * @param ui Spark UI
    */
   def detachSparkUI(appId: String, attemptId: Option[String], ui: SparkUI): Unit
-
 }
 
 /**
@@ -526,9 +528,7 @@ private[history] class ApplicationCacheCheckFilter() extends Filter with Logging
    * @param chain the rest of the request chain
    */
   override def doFilter(
-      request: ServletRequest,
-      response: ServletResponse,
-      chain: FilterChain): Unit = {
+      request: ServletRequest, response: ServletResponse, chain: FilterChain): Unit = {
 
     // nobody has ever implemented any other kind of servlet, yet
     // this check is universal, just in case someone does exactly
@@ -543,8 +543,8 @@ private[history] class ApplicationCacheCheckFilter() extends Filter with Logging
 
     // if the request is for an attempt, check to see if it is in need of delete/refresh
     // and have the cache update the UI if so
-    if (operation=="HEAD" || operation=="GET"
-        && checkForUpdates(requestURI, appId, attemptId)) {
+    if (operation == "HEAD" || operation == "GET" &&
+        checkForUpdates(requestURI, appId, attemptId)) {
       // send a redirect back to the same location. This will be routed
       // to the *new* UI
       logInfo(s"Application Attempt $appId/$attemptId updated; refreshing")
@@ -556,8 +556,7 @@ private[history] class ApplicationCacheCheckFilter() extends Filter with Logging
     }
   }
 
-  override def destroy(): Unit = {
-  }
+  override def destroy(): Unit = {}
 
   override def toString: String = s"ApplicationCacheCheckFilter for $appId/$attemptId"
 }
@@ -602,7 +601,7 @@ private[history] object ApplicationCacheCheckFilterRelay extends Logging {
    * @param cache new cache
    */
   def setApplicationCache(cache: ApplicationCache): Unit = {
-    applicationCache.foreach( c => logWarning(s"Overwriting application cache $c"))
+    applicationCache.foreach(c => logWarning(s"Overwriting application cache $c"))
     applicationCache = Some(cache)
   }
 
@@ -640,23 +639,19 @@ private[history] object ApplicationCacheCheckFilterRelay extends Logging {
     }
   }
 
-
   /**
    * Register a filter for the web UI which checks for updates to the given app/attempt
    * @param ui Spark UI to attach filters to
    * @param appId application ID
    * @param attemptId attempt ID
    */
-  def registerFilter(
-      ui: SparkUI,
-      appId: String,
-      attemptId: Option[String] ): Unit = {
+  def registerFilter(ui: SparkUI, appId: String, attemptId: Option[String]): Unit = {
     require(ui != null)
     val enumDispatcher = java.util.EnumSet.of(DispatcherType.ASYNC, DispatcherType.REQUEST)
     val holder = new FilterHolder()
     holder.setClassName(FILTER_NAME)
     holder.setInitParameter(APP_ID, appId)
-    attemptId.foreach( id => holder.setInitParameter(ATTEMPT_ID, id))
+    attemptId.foreach(id => holder.setInitParameter(ATTEMPT_ID, id))
     require(ui.getHandlers != null, "null handlers")
     ui.getHandlers.foreach { handler =>
       handler.addFilter(holder, "/*", enumDispatcher)

@@ -48,8 +48,7 @@ object StreamingTestExample {
     if (args.length != 3) {
       // scalastyle:off println
       System.err.println(
-        "Usage: StreamingTestExample " +
-          "<dataDir> <batchDuration> <numBatchesTimeout>")
+          "Usage: StreamingTestExample " + "<dataDir> <batchDuration> <numBatchesTimeout>")
       // scalastyle:on println
       System.exit(1)
     }
@@ -65,14 +64,15 @@ object StreamingTestExample {
     }
 
     // $example on$
-    val data = ssc.textFileStream(dataDir).map(line => line.split(",") match {
-      case Array(label, value) => BinarySample(label.toBoolean, value.toDouble)
-    })
+    val data = ssc
+      .textFileStream(dataDir)
+      .map(line =>
+            line.split(",") match {
+          case Array(label, value) => BinarySample(label.toBoolean, value.toDouble)
+      })
 
-    val streamingTest = new StreamingTest()
-      .setPeacePeriod(0)
-      .setWindowSize(0)
-      .setTestMethod("welch")
+    val streamingTest =
+      new StreamingTest().setPeacePeriod(0).setWindowSize(0).setTestMethod("welch")
 
     val out = streamingTest.registerStream(data)
     out.print()

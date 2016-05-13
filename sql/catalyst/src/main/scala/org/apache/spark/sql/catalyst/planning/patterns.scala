@@ -56,8 +56,8 @@ object PhysicalOperation extends PredicateHelper {
    *   SELECT key AS c2 FROM t1 WHERE key > 10
    * }}}
    */
-  private def collectProjectsAndFilters(plan: LogicalPlan):
-      (Option[Seq[NamedExpression]], Seq[Expression], LogicalPlan, Map[Attribute, Expression]) =
+  private def collectProjectsAndFilters(plan: LogicalPlan)
+    : (Option[Seq[NamedExpression]], Seq[Expression], LogicalPlan, Map[Attribute, Expression]) =
     plan match {
       case Project(fields, child) if fields.forall(_.deterministic) =>
         val (_, filters, other, aliases) = collectProjectsAndFilters(child)
@@ -76,20 +76,24 @@ object PhysicalOperation extends PredicateHelper {
         (None, Nil, other, Map.empty)
     }
 
-  private def collectAliases(fields: Seq[Expression]): Map[Attribute, Expression] = fields.collect {
-    case a @ Alias(child, _) => a.toAttribute -> child
-  }.toMap
+  private def collectAliases(fields: Seq[Expression]): Map[Attribute, Expression] =
+    fields.collect {
+      case a @ Alias(child, _) => a.toAttribute -> child
+    }.toMap
 
   private def substitute(aliases: Map[Attribute, Expression])(expr: Expression): Expression = {
     expr.transform {
       case a @ Alias(ref: AttributeReference, name) =>
-        aliases.get(ref)
+        aliases
+          .get(ref)
           .map(Alias(_, name)(a.exprId, a.qualifier, isGenerated = a.isGenerated))
           .getOrElse(a)
 
       case a: AttributeReference =>
-        aliases.get(a)
-          .map(Alias(_, a.name)(a.exprId, a.qualifier, isGenerated = a.isGenerated)).getOrElse(a)
+        aliases
+          .get(a)
+          .map(Alias(_, a.name)(a.exprId, a.qualifier, isGenerated = a.isGenerated))
+          .getOrElse(a)
     }
   }
 }
@@ -101,9 +105,10 @@ object PhysicalOperation extends PredicateHelper {
  * value).
  */
 object ExtractEquiJoinKeys extends Logging with PredicateHelper {
+
   /** (joinType, leftKeys, rightKeys, condition, leftChild, rightChild) */
-  type ReturnType =
-    (JoinType, Seq[Expression], Seq[Expression], Option[Expression], LogicalPlan, LogicalPlan)
+  type ReturnType = (JoinType, Seq[Expression], Seq[Expression], Option[Expression], LogicalPlan,
+  LogicalPlan)
 
   def unapply(plan: LogicalPlan): Option[ReturnType] = plan match {
     case join @ Join(left, right, joinType, condition) =>
@@ -118,16 +123,16 @@ object ExtractEquiJoinKeys extends Logging with PredicateHelper {
         // be joined together
         case EqualNullSafe(l, r) if canEvaluate(l, left) && canEvaluate(r, right) =>
           Some((Coalesce(Seq(l, Literal.default(l.dataType))),
-            Coalesce(Seq(r, Literal.default(r.dataType)))))
+                Coalesce(Seq(r, Literal.default(r.dataType)))))
         case EqualNullSafe(l, r) if canEvaluate(l, right) && canEvaluate(r, left) =>
           Some((Coalesce(Seq(r, Literal.default(r.dataType))),
-            Coalesce(Seq(l, Literal.default(l.dataType)))))
+                Coalesce(Seq(l, Literal.default(l.dataType)))))
         case other => None
       }
       val otherPredicates = predicates.filterNot {
         case EqualTo(l, r) =>
-          canEvaluate(l, left) && canEvaluate(r, right) ||
-            canEvaluate(l, right) && canEvaluate(r, left)
+          canEvaluate(l, left) && canEvaluate(r, right) || canEvaluate(l, right) &&
+          canEvaluate(r, left)
         case other => false
       }
 
@@ -181,7 +186,6 @@ object ExtractFiltersAndInnerJoins extends PredicateHelper {
   }
 }
 
-
 /**
  * A pattern that collects all adjacent unions and returns their children as a Seq.
  */
@@ -194,8 +198,7 @@ object Unions {
   // Doing a depth-first tree traversal to combine all the union children.
   @tailrec
   private def collectUnionChildren(
-      plans: mutable.Stack[LogicalPlan],
-      children: Seq[LogicalPlan]): Seq[LogicalPlan] = {
+      plans: mutable.Stack[LogicalPlan], children: Seq[LogicalPlan]): Seq[LogicalPlan] = {
     if (plans.isEmpty) children
     else {
       plans.pop match {
@@ -233,8 +236,8 @@ object IntegerIndex {
  */
 object PhysicalAggregation {
   // groupingExpressions, aggregateExpressions, resultExpressions, child
-  type ReturnType =
-    (Seq[NamedExpression], Seq[AggregateExpression], Seq[NamedExpression], LogicalPlan)
+  type ReturnType = (Seq[NamedExpression], Seq[AggregateExpression], Seq[NamedExpression],
+  LogicalPlan)
 
   def unapply(a: Any): Option[ReturnType] = a match {
     case logical.Aggregate(groupingExpressions, resultExpressions, child) =>
@@ -283,11 +286,11 @@ object PhysicalAggregation {
         }.asInstanceOf[NamedExpression]
       }
 
-      Some((
-        namedGroupingExpressions.map(_._2),
-        aggregateExpressions,
-        rewrittenResultExpressions,
-        child))
+      Some(
+          (namedGroupingExpressions.map(_._2),
+           aggregateExpressions,
+           rewrittenResultExpressions,
+           child))
 
     case _ => None
   }

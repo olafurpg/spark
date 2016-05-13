@@ -28,9 +28,9 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.streaming.Time
 import org.apache.spark.util.Utils
 
-private[streaming]
-class DStreamCheckpointData[T: ClassTag](dstream: DStream[T])
-  extends Serializable with Logging {
+private[streaming] class DStreamCheckpointData[T: ClassTag](dstream: DStream[T])
+    extends Serializable
+    with Logging {
   protected val data = new HashMap[Time, AnyRef]()
 
   // Mapping of the batch time to the checkpointed RDD file of that time
@@ -50,8 +50,9 @@ class DStreamCheckpointData[T: ClassTag](dstream: DStream[T])
   def update(time: Time) {
 
     // Get the checkpointed RDDs from the generated RDDs
-    val checkpointFiles = dstream.generatedRDDs.filter(_._2.getCheckpointFile.isDefined)
-                                       .map(x => (x._1, x._2.getCheckpointFile.get))
+    val checkpointFiles = dstream.generatedRDDs
+      .filter(_._2.getCheckpointFile.isDefined)
+      .map(x => (x._1, x._2.getCheckpointFile.get))
     logDebug("Current checkpoint files:\n" + checkpointFiles.toSeq.mkString("\n"))
 
     // Add the checkpoint files to the data to be serialized
@@ -109,7 +110,7 @@ class DStreamCheckpointData[T: ClassTag](dstream: DStream[T])
   def restore() {
     // Create RDDs from the checkpoint data
     currentCheckpointFiles.foreach {
-      case(time, file) =>
+      case (time, file) =>
         logInfo("Restoring checkpointed RDD for time " + time + " from file '" + file + "'")
         dstream.generatedRDDs += ((time, dstream.context.sparkContext.checkpointFile[T](file)))
     }
@@ -117,7 +118,7 @@ class DStreamCheckpointData[T: ClassTag](dstream: DStream[T])
 
   override def toString: String = {
     "[\n" + currentCheckpointFiles.size + " checkpoint files \n" +
-      currentCheckpointFiles.mkString("\n") + "\n]"
+    currentCheckpointFiles.mkString("\n") + "\n]"
   }
 
   @throws(classOf[IOException])
@@ -128,7 +129,8 @@ class DStreamCheckpointData[T: ClassTag](dstream: DStream[T])
         if (dstream.context.graph.checkpointInProgress) {
           oos.defaultWriteObject()
         } else {
-          val msg = "Object of " + this.getClass.getName + " is being serialized " +
+          val msg =
+            "Object of " + this.getClass.getName + " is being serialized " +
             " possibly as a part of closure of an RDD operation. This is because " +
             " the DStream object is being referred to from within the closure. " +
             " Please rewrite the RDD operation inside this DStream to avoid this. " +
@@ -139,7 +141,7 @@ class DStreamCheckpointData[T: ClassTag](dstream: DStream[T])
       }
     } else {
       throw new java.io.NotSerializableException(
-        "Graph is unexpectedly null when DStream is being serialized.")
+          "Graph is unexpectedly null when DStream is being serialized.")
     }
   }
 

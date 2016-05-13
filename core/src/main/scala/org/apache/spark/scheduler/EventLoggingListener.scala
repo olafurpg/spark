@@ -46,19 +46,22 @@ import org.apache.spark.util.{JsonProtocol, Utils}
  *   spark.eventLog.dir - Path to the directory in which events are logged.
  *   spark.eventLog.buffer.kb - Buffer size to use when writing to output streams
  */
-private[spark] class EventLoggingListener(
-    appId: String,
-    appAttemptId : Option[String],
-    logBaseDir: URI,
-    sparkConf: SparkConf,
-    hadoopConf: Configuration)
-  extends SparkListener with Logging {
+private[spark] class EventLoggingListener(appId: String,
+                                          appAttemptId: Option[String],
+                                          logBaseDir: URI,
+                                          sparkConf: SparkConf,
+                                          hadoopConf: Configuration)
+    extends SparkListener
+    with Logging {
 
   import EventLoggingListener._
 
-  def this(appId: String, appAttemptId : Option[String], logBaseDir: URI, sparkConf: SparkConf) =
-    this(appId, appAttemptId, logBaseDir, sparkConf,
-      SparkHadoopUtil.get.newConfiguration(sparkConf))
+  def this(appId: String, appAttemptId: Option[String], logBaseDir: URI, sparkConf: SparkConf) =
+    this(appId,
+         appAttemptId,
+         logBaseDir,
+         sparkConf,
+         SparkHadoopUtil.get.newConfiguration(sparkConf))
 
   private val shouldCompress = sparkConf.getBoolean("spark.eventLog.compress", false)
   private val shouldOverwrite = sparkConf.getBoolean("spark.eventLog.overwrite", false)
@@ -84,7 +87,8 @@ private[spark] class EventLoggingListener(
   private[scheduler] val loggedEvents = new ArrayBuffer[JValue]
 
   // Visible for tests only.
-  private[scheduler] val logPath = getLogPath(logBaseDir, appId, appAttemptId, compressionCodecName)
+  private[scheduler] val logPath = getLogPath(
+      logBaseDir, appId, appAttemptId, compressionCodecName)
 
   /**
    * Creates the log file in the configured log directory.
@@ -198,7 +202,7 @@ private[spark] class EventLoggingListener(
   override def onBlockUpdated(event: SparkListenerBlockUpdated): Unit = {}
 
   // No-op because logging every update would be overkill
-  override def onExecutorMetricsUpdate(event: SparkListenerExecutorMetricsUpdate): Unit = { }
+  override def onExecutorMetricsUpdate(event: SparkListenerExecutorMetricsUpdate): Unit = {}
 
   override def onOtherEvent(event: SparkListenerEvent): Unit = {
     if (event.logEvent) {
@@ -233,7 +237,6 @@ private[spark] class EventLoggingListener(
       case e: Exception => logDebug(s"failed to set time of $target", e)
     }
   }
-
 }
 
 private[spark] object EventLoggingListener extends Logging {
@@ -277,11 +280,10 @@ private[spark] object EventLoggingListener extends Logging {
    *                             of the log, or None if compression is not enabled.
    * @return A path which consists of file-system-safe characters.
    */
-  def getLogPath(
-      logBaseDir: URI,
-      appId: String,
-      appAttemptId: Option[String],
-      compressionCodecName: Option[String] = None): String = {
+  def getLogPath(logBaseDir: URI,
+                 appId: String,
+                 appAttemptId: Option[String],
+                 compressionCodecName: Option[String] = None): String = {
     val base = logBaseDir.toString.stripSuffix("/") + "/" + sanitize(appId)
     val codec = compressionCodecName.map("." + _).getOrElse("")
     if (appAttemptId.isDefined) {
@@ -325,5 +327,4 @@ private[spark] object EventLoggingListener extends Logging {
         throw e
     }
   }
-
 }

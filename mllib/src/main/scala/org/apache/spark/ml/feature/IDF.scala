@@ -41,7 +41,7 @@ private[feature] trait IDFBase extends Params with HasInputCol with HasOutputCol
    * @group param
    */
   final val minDocFreq = new IntParam(
-    this, "minDocFreq", "minimum of documents in which a term should appear for filtering")
+      this, "minDocFreq", "minimum of documents in which a term should appear for filtering")
 
   setDefault(minDocFreq -> 0)
 
@@ -62,8 +62,10 @@ private[feature] trait IDFBase extends Params with HasInputCol with HasOutputCol
  * Compute the Inverse Document Frequency (IDF) given a collection of documents.
  */
 @Experimental
-final class IDF(override val uid: String) extends Estimator[IDFModel] with IDFBase
-  with DefaultParamsWritable {
+final class IDF(override val uid: String)
+    extends Estimator[IDFModel]
+    with IDFBase
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("idf"))
 
@@ -103,10 +105,10 @@ object IDF extends DefaultParamsReadable[IDF] {
  * Model fitted by [[IDF]].
  */
 @Experimental
-class IDFModel private[ml] (
-    override val uid: String,
-    idfModel: feature.IDFModel)
-  extends Model[IDFModel] with IDFBase with MLWritable {
+class IDFModel private[ml](override val uid: String, idfModel: feature.IDFModel)
+    extends Model[IDFModel]
+    with IDFBase
+    with MLWritable {
 
   import IDFModel._
 
@@ -119,7 +121,9 @@ class IDFModel private[ml] (
   @Since("2.0.0")
   override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
-    val idf = udf { vec: Vector => idfModel.transform(vec) }
+    val idf = udf { vec: Vector =>
+      idfModel.transform(vec)
+    }
     dataset.withColumn($(outputCol), idf(col($(inputCol))))
   }
 
@@ -162,9 +166,7 @@ object IDFModel extends MLReadable[IDFModel] {
     override def load(path: String): IDFModel = {
       val metadata = DefaultParamsReader.loadMetadata(path, sc, className)
       val dataPath = new Path(path, "data").toString
-      val data = sqlContext.read.parquet(dataPath)
-        .select("idf")
-        .head()
+      val data = sqlContext.read.parquet(dataPath).select("idf").head()
       val idf = data.getAs[Vector](0)
       val model = new IDFModel(metadata.uid, new feature.IDFModel(idf))
       DefaultParamsReader.getAndSetParams(model, metadata)

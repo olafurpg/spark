@@ -44,26 +44,29 @@ import org.apache.spark.storage.StorageLevel
  *                   so numClasses will be set to 2.
  */
 @Since("0.8.0")
-class LogisticRegressionModel @Since("1.3.0") (
-    @Since("1.0.0") override val weights: Vector,
-    @Since("1.0.0") override val intercept: Double,
-    @Since("1.3.0") val numFeatures: Int,
-    @Since("1.3.0") val numClasses: Int)
-  extends GeneralizedLinearModel(weights, intercept) with ClassificationModel with Serializable
-  with Saveable with PMMLExportable {
+class LogisticRegressionModel @Since("1.3.0")(@Since("1.0.0") override val weights: Vector,
+                                              @Since("1.0.0") override val intercept: Double,
+                                              @Since("1.3.0") val numFeatures: Int,
+                                              @Since("1.3.0") val numClasses: Int)
+    extends GeneralizedLinearModel(weights, intercept)
+    with ClassificationModel
+    with Serializable
+    with Saveable
+    with PMMLExportable {
 
   if (numClasses == 2) {
     require(weights.size == numFeatures,
-      s"LogisticRegressionModel with numClasses = 2 was given non-matching values:" +
-      s" numFeatures = $numFeatures, but weights.size = ${weights.size}")
+            s"LogisticRegressionModel with numClasses = 2 was given non-matching values:" +
+            s" numFeatures = $numFeatures, but weights.size = ${weights.size}")
   } else {
     val weightsSizeWithoutIntercept = (numClasses - 1) * numFeatures
     val weightsSizeWithIntercept = (numClasses - 1) * (numFeatures + 1)
-    require(weights.size == weightsSizeWithoutIntercept || weights.size == weightsSizeWithIntercept,
-      s"LogisticRegressionModel.load with numClasses = $numClasses and numFeatures = $numFeatures" +
-      s" expected weights of length $weightsSizeWithoutIntercept (without intercept)" +
-      s" or $weightsSizeWithIntercept (with intercept)," +
-      s" but was given weights of length ${weights.size}")
+    require(
+        weights.size == weightsSizeWithoutIntercept || weights.size == weightsSizeWithIntercept,
+        s"LogisticRegressionModel.load with numClasses = $numClasses and numFeatures = $numFeatures" +
+        s" expected weights of length $weightsSizeWithoutIntercept (without intercept)" +
+        s" or $weightsSizeWithIntercept (with intercept)," +
+        s" but was given weights of length ${weights.size}")
   }
 
   private val dataWithBiasSize: Int = weights.size / (numClasses - 1)
@@ -72,7 +75,7 @@ class LogisticRegressionModel @Since("1.3.0") (
     case dv: DenseVector => dv.values
     case _ =>
       throw new IllegalArgumentException(
-        s"weights only supports dense vector but got type ${weights.getClass}.")
+          s"weights only supports dense vector but got type ${weights.getClass}.")
   }
 
   /**
@@ -113,9 +116,7 @@ class LogisticRegressionModel @Since("1.3.0") (
   }
 
   override protected def predictPoint(
-      dataMatrix: Vector,
-      weightMatrix: Vector,
-      intercept: Double) = {
+      dataMatrix: Vector, weightMatrix: Vector, intercept: Double) = {
     require(dataMatrix.size == numFeatures)
 
     // If dataMatrix and weightMatrix have the same dimension, it's binary logistic regression.
@@ -127,6 +128,7 @@ class LogisticRegressionModel @Since("1.3.0") (
         case None => score
       }
     } else {
+
       /**
        * Compute and find the one with maximum margins. If the maxMargin is negative, then the
        * prediction result will be the first class.
@@ -158,8 +160,8 @@ class LogisticRegressionModel @Since("1.3.0") (
 
   @Since("1.3.0")
   override def save(sc: SparkContext, path: String): Unit = {
-    GLMClassificationModel.SaveLoadV1_0.save(sc, path, this.getClass.getName,
-      numFeatures, numClasses, weights, intercept, threshold)
+    GLMClassificationModel.SaveLoadV1_0.save(
+        sc, path, this.getClass.getName, numFeatures, numClasses, weights, intercept, threshold)
   }
 
   override protected def formatVersion: String = "1.0"
@@ -182,17 +184,17 @@ object LogisticRegressionModel extends Loader[LogisticRegressionModel] {
         val (numFeatures, numClasses) = ClassificationModel.getNumFeaturesClasses(metadata)
         val data = GLMClassificationModel.SaveLoadV1_0.loadData(sc, path, classNameV1_0)
         // numFeatures, numClasses, weights are checked in model initialization
-        val model =
-          new LogisticRegressionModel(data.weights, data.intercept, numFeatures, numClasses)
+        val model = new LogisticRegressionModel(
+            data.weights, data.intercept, numFeatures, numClasses)
         data.threshold match {
           case Some(t) => model.setThreshold(t)
           case None => model.clearThreshold()
         }
         model
-      case _ => throw new Exception(
-        s"LogisticRegressionModel.load did not recognize model with (className, format version):" +
-        s"($loadedClassName, $version).  Supported:\n" +
-        s"  ($classNameV1_0, 1.0)")
+      case _ =>
+        throw new Exception(
+            s"LogisticRegressionModel.load did not recognize model with (className, format version):" +
+            s"($loadedClassName, $version).  Supported:\n" + s"  ($classNameV1_0, 1.0)")
     }
   }
 }
@@ -207,12 +209,12 @@ object LogisticRegressionModel extends Loader[LogisticRegressionModel] {
  */
 @Since("0.8.0")
 @deprecated("Use ml.classification.LogisticRegression or LogisticRegressionWithLBFGS", "2.0.0")
-class LogisticRegressionWithSGD private[mllib] (
-    private var stepSize: Double,
-    private var numIterations: Int,
-    private var regParam: Double,
-    private var miniBatchFraction: Double)
-  extends GeneralizedLinearAlgorithm[LogisticRegressionModel] with Serializable {
+class LogisticRegressionWithSGD private[mllib](private var stepSize: Double,
+                                               private var numIterations: Int,
+                                               private var regParam: Double,
+                                               private var miniBatchFraction: Double)
+    extends GeneralizedLinearAlgorithm[LogisticRegressionModel]
+    with Serializable {
 
   private val gradient = new LogisticGradient()
   private val updater = new SquaredL2Updater()
@@ -261,12 +263,11 @@ object LogisticRegressionWithSGD {
    *        the number of features in the data.
    */
   @Since("1.0.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double,
-      miniBatchFraction: Double,
-      initialWeights: Vector): LogisticRegressionModel = {
+  def train(input: RDD[LabeledPoint],
+            numIterations: Int,
+            stepSize: Double,
+            miniBatchFraction: Double,
+            initialWeights: Vector): LogisticRegressionModel = {
     new LogisticRegressionWithSGD(stepSize, numIterations, 0.0, miniBatchFraction)
       .run(input, initialWeights)
   }
@@ -284,13 +285,11 @@ object LogisticRegressionWithSGD {
    * @param miniBatchFraction Fraction of data to be used per iteration.
    */
   @Since("1.0.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double,
-      miniBatchFraction: Double): LogisticRegressionModel = {
-    new LogisticRegressionWithSGD(stepSize, numIterations, 0.0, miniBatchFraction)
-      .run(input)
+  def train(input: RDD[LabeledPoint],
+            numIterations: Int,
+            stepSize: Double,
+            miniBatchFraction: Double): LogisticRegressionModel = {
+    new LogisticRegressionWithSGD(stepSize, numIterations, 0.0, miniBatchFraction).run(input)
   }
 
   /**
@@ -307,9 +306,7 @@ object LogisticRegressionWithSGD {
    */
   @Since("1.0.0")
   def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double): LogisticRegressionModel = {
+      input: RDD[LabeledPoint], numIterations: Int, stepSize: Double): LogisticRegressionModel = {
     train(input, numIterations, stepSize, 1.0)
   }
 
@@ -324,9 +321,7 @@ object LogisticRegressionWithSGD {
    * @return a LogisticRegressionModel which has the weights and offset from training.
    */
   @Since("1.0.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int): LogisticRegressionModel = {
+  def train(input: RDD[LabeledPoint], numIterations: Int): LogisticRegressionModel = {
     train(input, numIterations, 1.0, 1.0)
   }
 }
@@ -346,7 +341,8 @@ object LogisticRegressionWithSGD {
  */
 @Since("1.1.0")
 class LogisticRegressionWithLBFGS
-  extends GeneralizedLinearAlgorithm[LogisticRegressionModel] with Serializable {
+    extends GeneralizedLinearAlgorithm[LogisticRegressionModel]
+    with Serializable {
 
   this.setFeatureScaling(true)
 
@@ -418,8 +414,9 @@ class LogisticRegressionWithLBFGS
     run(input, initialWeights, userSuppliedWeights = true)
   }
 
-  private def run(input: RDD[LabeledPoint], initialWeights: Vector, userSuppliedWeights: Boolean):
-      LogisticRegressionModel = {
+  private def run(input: RDD[LabeledPoint],
+                  initialWeights: Vector,
+                  userSuppliedWeights: Boolean): LogisticRegressionModel = {
     // ml's Logistic regression only supports binary classification currently.
     if (numOfLinearPredictor == 1) {
       def runWithMlLogisitcRegression(elasticNetParam: Double) = {
@@ -431,7 +428,7 @@ class LogisticRegressionWithLBFGS
         if (userSuppliedWeights) {
           val uid = Identifiable.randomUID("logreg-static")
           lr.setInitialModel(new org.apache.spark.ml.classification.LogisticRegressionModel(
-            uid, initialWeights, 1.0))
+                  uid, initialWeights, 1.0))
         }
         lr.setFitIntercept(addIntercept)
         lr.setMaxIter(optimizer.getNumIterations())

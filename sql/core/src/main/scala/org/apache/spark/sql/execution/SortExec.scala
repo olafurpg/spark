@@ -36,12 +36,12 @@ import org.apache.spark.util.collection.unsafe.sort.RadixSort;
  * @param testSpillFrequency Method for configuring periodic spilling in unit tests. If set, will
  *                           spill every `frequency` records.
  */
-case class SortExec(
-    sortOrder: Seq[SortOrder],
-    global: Boolean,
-    child: SparkPlan,
-    testSpillFrequency: Int = 0)
-  extends UnaryExecNode with CodegenSupport {
+case class SortExec(sortOrder: Seq[SortOrder],
+                    global: Boolean,
+                    child: SparkPlan,
+                    testSpillFrequency: Int = 0)
+    extends UnaryExecNode
+    with CodegenSupport {
 
   override def output: Seq[Attribute] = child.output
 
@@ -53,9 +53,9 @@ case class SortExec(
   private val enableRadixSort = sqlContext.conf.enableRadixSort
 
   override private[sql] lazy val metrics = Map(
-    "sortTime" -> SQLMetrics.createTimingMetric(sparkContext, "sort time"),
-    "peakMemory" -> SQLMetrics.createSizeMetric(sparkContext, "peak memory"),
-    "spillSize" -> SQLMetrics.createSizeMetric(sparkContext, "spill size"))
+      "sortTime" -> SQLMetrics.createTimingMetric(sparkContext, "sort time"),
+      "peakMemory" -> SQLMetrics.createSizeMetric(sparkContext, "peak memory"),
+      "spillSize" -> SQLMetrics.createSizeMetric(sparkContext, "spill size"))
 
   def createSorter(): UnsafeExternalRowSorter = {
     val ordering = newOrdering(sortOrder, output)
@@ -64,7 +64,8 @@ case class SortExec(
     val boundSortExpression = BindReferences.bindReference(sortOrder.head, output)
     val prefixComparator = SortPrefixUtils.getPrefixComparator(boundSortExpression)
 
-    val canUseRadixSort = enableRadixSort && sortOrder.length == 1 &&
+    val canUseRadixSort =
+      enableRadixSort && sortOrder.length == 1 &&
       SortPrefixUtils.canSortFullyWithPrefix(boundSortExpression)
 
     // The generator for prefix
@@ -77,7 +78,7 @@ case class SortExec(
 
     val pageSize = SparkEnv.get.memoryManager.pageSizeBytes
     val sorter = new UnsafeExternalRowSorter(
-      schema, ordering, prefixComparator, prefixComputer, pageSize, canUseRadixSort)
+        schema, ordering, prefixComparator, prefixComputer, pageSize, canUseRadixSort)
 
     if (testSpillFrequency > 0) {
       sorter.setTestSpillFrequency(testSpillFrequency)
@@ -124,17 +125,18 @@ case class SortExec(
     // the iterator to return sorted rows.
     val thisPlan = ctx.addReferenceObj("plan", this)
     sorterVariable = ctx.freshName("sorter")
-    ctx.addMutableState(classOf[UnsafeExternalRowSorter].getName, sorterVariable,
-      s"$sorterVariable = $thisPlan.createSorter();")
+    ctx.addMutableState(classOf[UnsafeExternalRowSorter].getName,
+                        sorterVariable,
+                        s"$sorterVariable = $thisPlan.createSorter();")
     val metrics = ctx.freshName("metrics")
-    ctx.addMutableState(classOf[TaskMetrics].getName, metrics,
-      s"$metrics = org.apache.spark.TaskContext.get().taskMetrics();")
+    ctx.addMutableState(classOf[TaskMetrics].getName,
+                        metrics,
+                        s"$metrics = org.apache.spark.TaskContext.get().taskMetrics();")
     val sortedIterator = ctx.freshName("sortedIter")
     ctx.addMutableState("scala.collection.Iterator<UnsafeRow>", sortedIterator, "")
 
     val addToSorter = ctx.freshName("addToSorter")
-    ctx.addNewFunction(addToSorter,
-      s"""
+    ctx.addNewFunction(addToSorter, s"""
         | private void $addToSorter() throws java.io.IOException {
         |   ${child.asInstanceOf[CodegenSupport].produce(ctx, this)}
         | }

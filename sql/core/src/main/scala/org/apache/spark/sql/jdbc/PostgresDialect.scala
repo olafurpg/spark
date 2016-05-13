@@ -22,7 +22,6 @@ import java.sql.{Connection, Types}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.types._
 
-
 private object PostgresDialect extends JdbcDialect {
 
   override def canHandle(url: String): Boolean = url.startsWith("jdbc:postgresql")
@@ -40,25 +39,23 @@ private object PostgresDialect extends JdbcDialect {
     } else None
   }
 
-  private def toCatalystType(
-      typeName: String,
-      precision: Int,
-      scale: Int): Option[DataType] = typeName match {
-    case "bool" => Some(BooleanType)
-    case "bit" => Some(BinaryType)
-    case "int2" => Some(ShortType)
-    case "int4" => Some(IntegerType)
-    case "int8" | "oid" => Some(LongType)
-    case "float4" => Some(FloatType)
-    case "money" | "float8" => Some(DoubleType)
-    case "text" | "varchar" | "char" | "cidr" | "inet" | "json" | "jsonb" | "uuid" =>
-      Some(StringType)
-    case "bytea" => Some(BinaryType)
-    case "timestamp" | "timestamptz" | "time" | "timetz" => Some(TimestampType)
-    case "date" => Some(DateType)
-    case "numeric" | "decimal" => Some(DecimalType.bounded(precision, scale))
-    case _ => None
-  }
+  private def toCatalystType(typeName: String, precision: Int, scale: Int): Option[DataType] =
+    typeName match {
+      case "bool" => Some(BooleanType)
+      case "bit" => Some(BinaryType)
+      case "int2" => Some(ShortType)
+      case "int4" => Some(IntegerType)
+      case "int8" | "oid" => Some(LongType)
+      case "float4" => Some(FloatType)
+      case "money" | "float8" => Some(DoubleType)
+      case "text" | "varchar" | "char" | "cidr" | "inet" | "json" | "jsonb" | "uuid" =>
+        Some(StringType)
+      case "bytea" => Some(BinaryType)
+      case "timestamp" | "timestamptz" | "time" | "timetz" => Some(TimestampType)
+      case "date" => Some(DateType)
+      case "numeric" | "decimal" => Some(DecimalType.bounded(precision, scale))
+      case _ => None
+    }
 
   override def getJDBCType(dt: DataType): Option[JdbcType] = dt match {
     case StringType => Some(JdbcType("TEXT", Types.CHAR))
@@ -66,10 +63,11 @@ private object PostgresDialect extends JdbcDialect {
     case BooleanType => Some(JdbcType("BOOLEAN", Types.BOOLEAN))
     case FloatType => Some(JdbcType("FLOAT4", Types.FLOAT))
     case DoubleType => Some(JdbcType("FLOAT8", Types.DOUBLE))
-    case t: DecimalType => Some(
-      JdbcType(s"NUMERIC(${t.precision},${t.scale})", java.sql.Types.NUMERIC))
+    case t: DecimalType =>
+      Some(JdbcType(s"NUMERIC(${t.precision},${t.scale})", java.sql.Types.NUMERIC))
     case ArrayType(et, _) if et.isInstanceOf[AtomicType] =>
-      getJDBCType(et).map(_.databaseTypeDefinition)
+      getJDBCType(et)
+        .map(_.databaseTypeDefinition)
         .orElse(JdbcUtils.getCommonJDBCType(et).map(_.databaseTypeDefinition))
         .map(typeName => JdbcType(s"$typeName[]", java.sql.Types.ARRAY))
     case ByteType => throw new IllegalArgumentException(s"Unsupported type in postgresql: $dt");
@@ -92,6 +90,5 @@ private object PostgresDialect extends JdbcDialect {
     if (properties.getOrElse("fetchsize", "0").toInt > 0) {
       connection.setAutoCommit(false)
     }
-
   }
 }

@@ -36,9 +36,7 @@ import org.apache.spark.util.ThreadUtils
 private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
 
   private class EndpointData(
-      val name: String,
-      val endpoint: RpcEndpoint,
-      val ref: NettyRpcEndpointRef) {
+      val name: String, val endpoint: RpcEndpoint, val ref: NettyRpcEndpointRef) {
     val inbox = new Inbox(ref, endpoint)
   }
 
@@ -67,7 +65,7 @@ private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
       }
       val data = endpoints.get(name)
       endpointRefs.put(data.endpoint, data.ref)
-      receivers.offer(data)  // for the OnStart message
+      receivers.offer(data) // for the OnStart message
     }
     endpointRef
   }
@@ -81,7 +79,7 @@ private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
     val data = endpoints.remove(name)
     if (data != null) {
       data.inbox.stop()
-      receivers.offer(data)  // for the OnStop message
+      receivers.offer(data) // for the OnStop message
     }
     // Don't clean `endpointRefs` here because it's possible that some messages are being processed
     // now and they can use `getRpcEndpointRef`. So `endpointRefs` will be cleaned in Inbox via
@@ -113,24 +111,23 @@ private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
 
   /** Posts a message sent by a remote endpoint. */
   def postRemoteMessage(message: RequestMessage, callback: RpcResponseCallback): Unit = {
-    val rpcCallContext =
-      new RemoteNettyRpcCallContext(nettyEnv, callback, message.senderAddress)
+    val rpcCallContext = new RemoteNettyRpcCallContext(nettyEnv, callback, message.senderAddress)
     val rpcMessage = RpcMessage(message.senderAddress, message.content, rpcCallContext)
     postMessage(message.receiver.name, rpcMessage, (e) => callback.onFailure(e))
   }
 
   /** Posts a message sent by a local endpoint. */
   def postLocalMessage(message: RequestMessage, p: Promise[Any]): Unit = {
-    val rpcCallContext =
-      new LocalNettyRpcCallContext(message.senderAddress, p)
+    val rpcCallContext = new LocalNettyRpcCallContext(message.senderAddress, p)
     val rpcMessage = RpcMessage(message.senderAddress, message.content, rpcCallContext)
     postMessage(message.receiver.name, rpcMessage, (e) => p.tryFailure(e))
   }
 
   /** Posts a one-way message. */
   def postOneWayMessage(message: RequestMessage): Unit = {
-    postMessage(message.receiver.name, OneWayMessage(message.senderAddress, message.content),
-      (e) => throw e)
+    postMessage(message.receiver.name,
+                OneWayMessage(message.senderAddress, message.content),
+                (e) => throw e)
   }
 
   /**
@@ -140,10 +137,9 @@ private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
    * @param message the message to post
    * @param callbackIfStopped callback function if the endpoint is stopped.
    */
-  private def postMessage(
-      endpointName: String,
-      message: InboxMessage,
-      callbackIfStopped: (Exception) => Unit): Unit = {
+  private def postMessage(endpointName: String,
+                          message: InboxMessage,
+                          callbackIfStopped: (Exception) => Unit): Unit = {
     val shouldCallOnStop = synchronized {
       val data = endpoints.get(endpointName)
       if (stopped || data == null) {
@@ -156,7 +152,8 @@ private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
     }
     if (shouldCallOnStop) {
       // We don't need to call `onStop` in the `synchronized` block
-      val error = if (stopped) {
+      val error =
+        if (stopped) {
           new RpcEnvStoppedException()
         } else {
           new SparkException(s"Could not find $endpointName or it has been stopped.")
@@ -193,7 +190,7 @@ private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
   /** Thread pool used for dispatching messages. */
   private val threadpool: ThreadPoolExecutor = {
     val numThreads = nettyEnv.conf.getInt("spark.rpc.netty.dispatcher.numThreads",
-      math.max(2, Runtime.getRuntime.availableProcessors()))
+                                          math.max(2, Runtime.getRuntime.availableProcessors()))
     val pool = ThreadUtils.newDaemonFixedThreadPool(numThreads, "dispatcher-event-loop")
     for (i <- 0 until numThreads) {
       pool.execute(new MessageLoop)

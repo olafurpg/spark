@@ -42,7 +42,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     super.beforeEach()
     yarnConfig.set(YarnConfiguration.NM_AUX_SERVICES, "spark_shuffle")
     yarnConfig.set(YarnConfiguration.NM_AUX_SERVICE_FMT.format("spark_shuffle"),
-      classOf[YarnShuffleService].getCanonicalName)
+                   classOf[YarnShuffleService].getCanonicalName)
     yarnConfig.setInt("spark.shuffle.service.port", 0)
     val localDir = Utils.createTempDir()
     yarnConfig.set("yarn.nodemanager.local-dirs", localDir.getAbsolutePath)
@@ -90,14 +90,14 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
 
     val blockHandler = s1.blockHandler
     val blockResolver = ShuffleTestAccessor.getBlockResolver(blockHandler)
-    ShuffleTestAccessor.registeredExecutorFile(blockResolver) should be (execStateFile)
+    ShuffleTestAccessor.registeredExecutorFile(blockResolver) should be(execStateFile)
 
     blockResolver.registerExecutor(app1Id.toString, "exec-1", shuffleInfo1)
     blockResolver.registerExecutor(app2Id.toString, "exec-2", shuffleInfo2)
     ShuffleTestAccessor.getExecutorInfo(app1Id, "exec-1", blockResolver) should
-      be (Some(shuffleInfo1))
+    be(Some(shuffleInfo1))
     ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", blockResolver) should
-      be (Some(shuffleInfo2))
+    be(Some(shuffleInfo2))
 
     if (!execStateFile.exists()) {
       @tailrec def findExistingParent(file: File): File = {
@@ -114,7 +114,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     s1.stop()
     s2 = new YarnShuffleService
     s2.init(yarnConfig)
-    s2.registeredExecutorFile should be (execStateFile)
+    s2.registeredExecutorFile should be(execStateFile)
 
     val handler2 = s2.blockHandler
     val resolver2 = ShuffleTestAccessor.getBlockResolver(handler2)
@@ -123,22 +123,22 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     // during the restart
     s2.initializeApplication(app1Data)
     s2.stopApplication(new ApplicationTerminationContext(app2Id))
-    ShuffleTestAccessor.getExecutorInfo(app1Id, "exec-1", resolver2) should be (Some(shuffleInfo1))
-    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver2) should be (None)
+    ShuffleTestAccessor.getExecutorInfo(app1Id, "exec-1", resolver2) should be(Some(shuffleInfo1))
+    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver2) should be(None)
 
     // Act like the NM restarts one more time
     s2.stop()
     s3 = new YarnShuffleService
     s3.init(yarnConfig)
-    s3.registeredExecutorFile should be (execStateFile)
+    s3.registeredExecutorFile should be(execStateFile)
 
     val handler3 = s3.blockHandler
     val resolver3 = ShuffleTestAccessor.getBlockResolver(handler3)
 
     // app1 is still running
     s3.initializeApplication(app1Data)
-    ShuffleTestAccessor.getExecutorInfo(app1Id, "exec-1", resolver3) should be (Some(shuffleInfo1))
-    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver3) should be (None)
+    ShuffleTestAccessor.getExecutorInfo(app1Id, "exec-1", resolver3) should be(Some(shuffleInfo1))
+    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver3) should be(None)
     s3.stop()
   }
 
@@ -161,7 +161,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
 
     val blockHandler = s1.blockHandler
     val blockResolver = ShuffleTestAccessor.getBlockResolver(blockHandler)
-    ShuffleTestAccessor.registeredExecutorFile(blockResolver) should be (execStateFile)
+    ShuffleTestAccessor.registeredExecutorFile(blockResolver) should be(execStateFile)
 
     blockResolver.registerExecutor(app1Id.toString, "exec-1", shuffleInfo1)
     blockResolver.registerExecutor(app2Id.toString, "exec-2", shuffleInfo2)
@@ -188,7 +188,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
 
     val blockHandler = s1.blockHandler
     val blockResolver = ShuffleTestAccessor.getBlockResolver(blockHandler)
-    ShuffleTestAccessor.registeredExecutorFile(blockResolver) should be (execStateFile)
+    ShuffleTestAccessor.registeredExecutorFile(blockResolver) should be(execStateFile)
 
     blockResolver.registerExecutor(app1Id.toString, "exec-1", shuffleInfo1)
 
@@ -196,7 +196,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     // make a corrupt registeredExecutor File
     s1.stop()
 
-    execStateFile.listFiles().foreach{_.delete()}
+    execStateFile.listFiles().foreach { _.delete() }
 
     val out = new DataOutputStream(new FileOutputStream(execStateFile + "/CURRENT"))
     out.writeInt(42)
@@ -204,7 +204,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
 
     s2 = new YarnShuffleService
     s2.init(yarnConfig)
-    s2.registeredExecutorFile should be (execStateFile)
+    s2.registeredExecutorFile should be(execStateFile)
 
     val handler2 = s2.blockHandler
     val resolver2 = ShuffleTestAccessor.getBlockResolver(handler2)
@@ -218,18 +218,18 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     s2.initializeApplication(app2Data)
     val shuffleInfo2 = new ExecutorShuffleInfo(Array("/bippy"), 5, SORT_MANAGER)
     resolver2.registerExecutor(app2Id.toString, "exec-2", shuffleInfo2)
-    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver2) should be (Some(shuffleInfo2))
+    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver2) should be(Some(shuffleInfo2))
     s2.stop()
 
     // another stop & restart should be fine though (eg., we recover from previous corruption)
     s3 = new YarnShuffleService
     s3.init(yarnConfig)
-    s3.registeredExecutorFile should be (execStateFile)
+    s3.registeredExecutorFile should be(execStateFile)
     val handler3 = s3.blockHandler
     val resolver3 = ShuffleTestAccessor.getBlockResolver(handler3)
 
     s3.initializeApplication(app2Data)
-    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver3) should be (Some(shuffleInfo2))
+    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver3) should be(Some(shuffleInfo2))
     s3.stop()
   }
 
@@ -241,7 +241,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     s1.setRecoveryPath(recoveryPath)
 
     s1.init(yarnConfig)
-    s1._recoveryPath should be (recoveryPath)
+    s1._recoveryPath should be(recoveryPath)
     s1.stop()
 
     // Test recovery path is set inside the shuffle service, this will be happened when NM
@@ -249,7 +249,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     s2 = new YarnShuffleService
     s2.init(yarnConfig)
     s2._recoveryPath should be
-      (new Path(yarnConfig.getTrimmedStrings("yarn.nodemanager.local-dirs")(0)))
+    (new Path(yarnConfig.getTrimmedStrings("yarn.nodemanager.local-dirs")(0)))
     s2.stop()
   }
 
@@ -277,14 +277,14 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
 
     val blockHandler = s1.blockHandler
     val blockResolver = ShuffleTestAccessor.getBlockResolver(blockHandler)
-    ShuffleTestAccessor.registeredExecutorFile(blockResolver) should be (execStateFile)
+    ShuffleTestAccessor.registeredExecutorFile(blockResolver) should be(execStateFile)
 
     blockResolver.registerExecutor(app1Id.toString, "exec-1", shuffleInfo1)
     blockResolver.registerExecutor(app2Id.toString, "exec-2", shuffleInfo2)
     ShuffleTestAccessor.getExecutorInfo(app1Id, "exec-1", blockResolver) should
-      be (Some(shuffleInfo1))
+    be(Some(shuffleInfo1))
     ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", blockResolver) should
-      be (Some(shuffleInfo2))
+    be(Some(shuffleInfo2))
 
     assert(execStateFile.exists(), s"$execStateFile did not exist")
 
@@ -298,7 +298,7 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     s2.init(yarnConfig)
 
     val execStateFile2 = s2.registeredExecutorFile
-    recoveryPath.toString should be (new Path(execStateFile2.getParentFile.toURI).toString)
+    recoveryPath.toString should be(new Path(execStateFile2.getParentFile.toURI).toString)
     eventually(timeout(10 seconds), interval(5 millis)) {
       assert(!execStateFile.exists())
     }
@@ -311,9 +311,9 @@ class YarnShuffleServiceSuite extends SparkFunSuite with Matchers with BeforeAnd
     // Since recovery file is got from old path, so the previous state should be stored.
     s2.initializeApplication(app1Data)
     s2.stopApplication(new ApplicationTerminationContext(app2Id))
-    ShuffleTestAccessor.getExecutorInfo(app1Id, "exec-1", resolver2) should be (Some(shuffleInfo1))
-    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver2) should be (None)
+    ShuffleTestAccessor.getExecutorInfo(app1Id, "exec-1", resolver2) should be(Some(shuffleInfo1))
+    ShuffleTestAccessor.getExecutorInfo(app2Id, "exec-2", resolver2) should be(None)
 
     s2.stop()
   }
- }
+}

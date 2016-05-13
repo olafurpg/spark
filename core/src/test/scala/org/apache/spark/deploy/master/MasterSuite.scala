@@ -36,8 +36,12 @@ import org.apache.spark.deploy._
 import org.apache.spark.deploy.DeployMessages._
 import org.apache.spark.rpc.{RpcEndpoint, RpcEnv}
 
-class MasterSuite extends SparkFunSuite
-  with Matchers with Eventually with PrivateMethodTester with BeforeAndAfter {
+class MasterSuite
+    extends SparkFunSuite
+    with Matchers
+    with Eventually
+    with PrivateMethodTester
+    with BeforeAndAfter {
 
   private var _master: Master = _
 
@@ -52,63 +56,61 @@ class MasterSuite extends SparkFunSuite
   test("can use a custom recovery mode factory") {
     val conf = new SparkConf(loadDefaults = false)
     conf.set("spark.deploy.recoveryMode", "CUSTOM")
-    conf.set("spark.deploy.recoveryMode.factory",
-      classOf[CustomRecoveryModeFactory].getCanonicalName)
+    conf.set(
+        "spark.deploy.recoveryMode.factory", classOf[CustomRecoveryModeFactory].getCanonicalName)
     conf.set("spark.master.rest.enabled", "false")
 
     val instantiationAttempts = CustomRecoveryModeFactory.instantiationAttempts
 
     val commandToPersist = new Command(
-      mainClass = "",
-      arguments = Nil,
-      environment = Map.empty,
-      classPathEntries = Nil,
-      libraryPathEntries = Nil,
-      javaOpts = Nil
+        mainClass = "",
+        arguments = Nil,
+        environment = Map.empty,
+        classPathEntries = Nil,
+        libraryPathEntries = Nil,
+        javaOpts = Nil
     )
 
     val appToPersist = new ApplicationInfo(
-      startTime = 0,
-      id = "test_app",
-      desc = new ApplicationDescription(
-        name = "",
-        maxCores = None,
-        memoryPerExecutorMB = 0,
-        command = commandToPersist,
-        appUiUrl = "",
-        eventLogDir = None,
-        eventLogCodec = None,
-        coresPerExecutor = None),
-      submitDate = new Date(),
-      driver = null,
-      defaultCores = 0
+        startTime = 0,
+        id = "test_app",
+        desc = new ApplicationDescription(name = "",
+                                          maxCores = None,
+                                          memoryPerExecutorMB = 0,
+                                          command = commandToPersist,
+                                          appUiUrl = "",
+                                          eventLogDir = None,
+                                          eventLogCodec = None,
+                                          coresPerExecutor = None),
+        submitDate = new Date(),
+        driver = null,
+        defaultCores = 0
     )
 
     val driverToPersist = new DriverInfo(
-      startTime = 0,
-      id = "test_driver",
-      desc = new DriverDescription(
-        jarUrl = "",
-        mem = 0,
-        cores = 0,
-        supervise = false,
-        command = commandToPersist
-      ),
-      submitDate = new Date()
+        startTime = 0,
+        id = "test_driver",
+        desc = new DriverDescription(
+              jarUrl = "",
+              mem = 0,
+              cores = 0,
+              supervise = false,
+              command = commandToPersist
+          ),
+        submitDate = new Date()
     )
 
     val workerToPersist = new WorkerInfo(
-      id = "test_worker",
-      host = "127.0.0.1",
-      port = 10000,
-      cores = 0,
-      memory = 0,
-      endpoint = null,
-      webUiAddress = "http://localhost:80"
+        id = "test_worker",
+        host = "127.0.0.1",
+        port = 10000,
+        cores = 0,
+        memory = 0,
+        endpoint = null,
+        webUiAddress = "http://localhost:80"
     )
 
-    val (rpcEnv, _, _) =
-      Master.startRpcEnvAndEndpoint("127.0.0.1", 0, 0, conf)
+    val (rpcEnv, _, _) = Master.startRpcEnvAndEndpoint("127.0.0.1", 0, 0, conf)
 
     try {
       rpcEnv.setupEndpointRef(rpcEnv.address, Master.ENDPOINT_NAME)
@@ -125,7 +127,6 @@ class MasterSuite extends SparkFunSuite
       apps.map(_.id) should contain(appToPersist.id)
       drivers.map(_.id) should contain(driverToPersist.id)
       workers.map(_.id) should contain(workerToPersist.id)
-
     } finally {
       rpcEnv.shutdown()
       rpcEnv.awaitTermination()
@@ -141,15 +142,17 @@ class MasterSuite extends SparkFunSuite
     localCluster.start()
     try {
       eventually(timeout(5 seconds), interval(100 milliseconds)) {
-        val json = Source.fromURL(s"http://localhost:${localCluster.masterWebUIPort}/json")
-          .getLines().mkString("\n")
+        val json = Source
+          .fromURL(s"http://localhost:${localCluster.masterWebUIPort}/json")
+          .getLines()
+          .mkString("\n")
         val JArray(workers) = (parse(json) \ "workers")
-        workers.size should be (2)
+        workers.size should be(2)
         workers.foreach { workerSummaryJson =>
           val JString(workerWebUi) = workerSummaryJson \ "webuiaddress"
-          val workerResponse = parse(Source.fromURL(s"${workerWebUi}/json")
-            .getLines().mkString("\n"))
-          (workerResponse \ "cores").extract[Int] should be (2)
+          val workerResponse =
+            parse(Source.fromURL(s"${workerWebUi}/json").getLines().mkString("\n"))
+          (workerResponse \ "cores").extract[Int] should be(2)
         }
       }
     } finally {
@@ -378,12 +381,11 @@ class MasterSuite extends SparkFunSuite
     _master
   }
 
-  private def makeAppInfo(
-      memoryPerExecutorMb: Int,
-      coresPerExecutor: Option[Int] = None,
-      maxCores: Option[Int] = None): ApplicationInfo = {
+  private def makeAppInfo(memoryPerExecutorMb: Int,
+                          coresPerExecutor: Option[Int] = None,
+                          maxCores: Option[Int] = None): ApplicationInfo = {
     val desc = new ApplicationDescription(
-      "test", maxCores, memoryPerExecutorMb, null, "", None, None, coresPerExecutor)
+        "test", maxCores, memoryPerExecutorMb, null, "", None, None, coresPerExecutor)
     val appId = System.currentTimeMillis.toString
     new ApplicationInfo(0, appId, desc, new Date, null, Int.MaxValue)
   }
@@ -393,11 +395,10 @@ class MasterSuite extends SparkFunSuite
     new WorkerInfo(workerId, "host", 100, cores, memoryMb, null, "http://localhost:80")
   }
 
-  private def scheduleExecutorsOnWorkers(
-      master: Master,
-      appInfo: ApplicationInfo,
-      workerInfos: Array[WorkerInfo],
-      spreadOut: Boolean): Array[Int] = {
+  private def scheduleExecutorsOnWorkers(master: Master,
+                                         appInfo: ApplicationInfo,
+                                         workerInfos: Array[WorkerInfo],
+                                         spreadOut: Boolean): Array[Int] = {
     master.invokePrivate(_scheduleExecutorsOnWorkers(appInfo, workerInfos, spreadOut))
   }
 
@@ -421,7 +422,7 @@ class MasterSuite extends SparkFunSuite
     })
 
     master.self.ask(
-      RegisterWorker("1", "localhost", 9999, fakeWorker, 10, 1024, "http://localhost:8080"))
+        RegisterWorker("1", "localhost", 9999, fakeWorker, 10, 1024, "http://localhost:8080"))
     val executors = (0 until 3).map { i =>
       new ExecutorDescription(appId = i.toString, execId = i, 2, ExecutorState.RUNNING)
     }

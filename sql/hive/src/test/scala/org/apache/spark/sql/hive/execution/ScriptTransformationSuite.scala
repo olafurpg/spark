@@ -32,63 +32,63 @@ class ScriptTransformationSuite extends SparkPlanTest with TestHiveSingleton {
   import hiveContext.implicits._
 
   private val noSerdeIOSchema = HiveScriptIOSchema(
-    inputRowFormat = Seq.empty,
-    outputRowFormat = Seq.empty,
-    inputSerdeClass = None,
-    outputSerdeClass = None,
-    inputSerdeProps = Seq.empty,
-    outputSerdeProps = Seq.empty,
-    recordReaderClass = None,
-    recordWriterClass = None,
-    schemaLess = false
+      inputRowFormat = Seq.empty,
+      outputRowFormat = Seq.empty,
+      inputSerdeClass = None,
+      outputSerdeClass = None,
+      inputSerdeProps = Seq.empty,
+      outputSerdeProps = Seq.empty,
+      recordReaderClass = None,
+      recordWriterClass = None,
+      schemaLess = false
   )
 
   private val serdeIOSchema = noSerdeIOSchema.copy(
-    inputSerdeClass = Some(classOf[LazySimpleSerDe].getCanonicalName),
-    outputSerdeClass = Some(classOf[LazySimpleSerDe].getCanonicalName)
+      inputSerdeClass = Some(classOf[LazySimpleSerDe].getCanonicalName),
+      outputSerdeClass = Some(classOf[LazySimpleSerDe].getCanonicalName)
   )
 
   test("cat without SerDe") {
     val rowsDf = Seq("a", "b", "c").map(Tuple1.apply).toDF("a")
-    checkAnswer(
-      rowsDf,
-      (child: SparkPlan) => new ScriptTransformation(
-        input = Seq(rowsDf.col("a").expr),
-        script = "cat",
-        output = Seq(AttributeReference("a", StringType)()),
-        child = child,
-        ioschema = noSerdeIOSchema
-      ),
-      rowsDf.collect())
+    checkAnswer(rowsDf,
+                (child: SparkPlan) =>
+                  new ScriptTransformation(
+                      input = Seq(rowsDf.col("a").expr),
+                      script = "cat",
+                      output = Seq(AttributeReference("a", StringType)()),
+                      child = child,
+                      ioschema = noSerdeIOSchema
+                ),
+                rowsDf.collect())
   }
 
   test("cat with LazySimpleSerDe") {
     val rowsDf = Seq("a", "b", "c").map(Tuple1.apply).toDF("a")
-    checkAnswer(
-      rowsDf,
-      (child: SparkPlan) => new ScriptTransformation(
-        input = Seq(rowsDf.col("a").expr),
-        script = "cat",
-        output = Seq(AttributeReference("a", StringType)()),
-        child = child,
-        ioschema = serdeIOSchema
-      ),
-      rowsDf.collect())
+    checkAnswer(rowsDf,
+                (child: SparkPlan) =>
+                  new ScriptTransformation(
+                      input = Seq(rowsDf.col("a").expr),
+                      script = "cat",
+                      output = Seq(AttributeReference("a", StringType)()),
+                      child = child,
+                      ioschema = serdeIOSchema
+                ),
+                rowsDf.collect())
   }
 
   test("script transformation should not swallow errors from upstream operators (no serde)") {
     val rowsDf = Seq("a", "b", "c").map(Tuple1.apply).toDF("a")
     val e = intercept[TestFailedException] {
-      checkAnswer(
-        rowsDf,
-        (child: SparkPlan) => new ScriptTransformation(
-          input = Seq(rowsDf.col("a").expr),
-          script = "cat",
-          output = Seq(AttributeReference("a", StringType)()),
-          child = ExceptionInjectingOperator(child),
-          ioschema = noSerdeIOSchema
-        ),
-        rowsDf.collect())
+      checkAnswer(rowsDf,
+                  (child: SparkPlan) =>
+                    new ScriptTransformation(
+                        input = Seq(rowsDf.col("a").expr),
+                        script = "cat",
+                        output = Seq(AttributeReference("a", StringType)()),
+                        child = ExceptionInjectingOperator(child),
+                        ioschema = noSerdeIOSchema
+                  ),
+                  rowsDf.collect())
     }
     assert(e.getMessage().contains("intentional exception"))
   }
@@ -96,16 +96,16 @@ class ScriptTransformationSuite extends SparkPlanTest with TestHiveSingleton {
   test("script transformation should not swallow errors from upstream operators (with serde)") {
     val rowsDf = Seq("a", "b", "c").map(Tuple1.apply).toDF("a")
     val e = intercept[TestFailedException] {
-      checkAnswer(
-        rowsDf,
-        (child: SparkPlan) => new ScriptTransformation(
-          input = Seq(rowsDf.col("a").expr),
-          script = "cat",
-          output = Seq(AttributeReference("a", StringType)()),
-          child = ExceptionInjectingOperator(child),
-          ioschema = serdeIOSchema
-        ),
-        rowsDf.collect())
+      checkAnswer(rowsDf,
+                  (child: SparkPlan) =>
+                    new ScriptTransformation(
+                        input = Seq(rowsDf.col("a").expr),
+                        script = "cat",
+                        output = Seq(AttributeReference("a", StringType)()),
+                        child = ExceptionInjectingOperator(child),
+                        ioschema = serdeIOSchema
+                  ),
+                  rowsDf.collect())
     }
     assert(e.getMessage().contains("intentional exception"))
   }

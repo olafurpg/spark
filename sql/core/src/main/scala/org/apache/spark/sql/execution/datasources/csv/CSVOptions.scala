@@ -24,7 +24,8 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.execution.datasources.{CompressionCodecs, ParseModes}
 
 private[sql] class CSVOptions(@transient private val parameters: Map[String, String])
-  extends Logging with Serializable {
+    extends Logging
+    with Serializable {
 
   private def getChar(paramName: String, default: Char): Char = {
     val paramValue = parameters.get(paramName)
@@ -42,12 +43,13 @@ private[sql] class CSVOptions(@transient private val parameters: Map[String, Str
     paramValue match {
       case None => default
       case Some(null) => default
-      case Some(value) => try {
-        value.toInt
-      } catch {
-        case e: NumberFormatException =>
-          throw new RuntimeException(s"$paramName should be an integer. Found $value")
-      }
+      case Some(value) =>
+        try {
+          value.toInt
+        } catch {
+          case e: NumberFormatException =>
+            throw new RuntimeException(s"$paramName should be an integer. Found $value")
+        }
     }
   }
 
@@ -64,11 +66,11 @@ private[sql] class CSVOptions(@transient private val parameters: Map[String, Str
     }
   }
 
-  val delimiter = CSVTypeCast.toChar(
-    parameters.getOrElse("sep", parameters.getOrElse("delimiter", ",")))
+  val delimiter =
+    CSVTypeCast.toChar(parameters.getOrElse("sep", parameters.getOrElse("delimiter", ",")))
   private val parseMode = parameters.getOrElse("mode", "PERMISSIVE")
-  val charset = parameters.getOrElse("encoding",
-    parameters.getOrElse("charset", StandardCharsets.UTF_8.name()))
+  val charset = parameters.getOrElse(
+      "encoding", parameters.getOrElse("charset", StandardCharsets.UTF_8.name()))
 
   val quote = getChar("quote", '\"')
   val escape = getChar("escape", '\\')
@@ -94,7 +96,6 @@ private[sql] class CSVOptions(@transient private val parameters: Map[String, Str
 
   val positiveInf = parameters.getOrElse("positiveInf", "Inf")
   val negativeInf = parameters.getOrElse("negativeInf", "-Inf")
-
 
   val compressionCodec: Option[String] = {
     val name = parameters.get("compression").orElse(parameters.get("codec"))

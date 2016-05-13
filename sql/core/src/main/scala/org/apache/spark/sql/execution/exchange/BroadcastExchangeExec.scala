@@ -33,15 +33,13 @@ import org.apache.spark.util.ThreadUtils
  * A [[BroadcastExchangeExec]] collects, transforms and finally broadcasts the result of
  * a transformed SparkPlan.
  */
-case class BroadcastExchangeExec(
-    mode: BroadcastMode,
-    child: SparkPlan) extends Exchange {
+case class BroadcastExchangeExec(mode: BroadcastMode, child: SparkPlan) extends Exchange {
 
   override private[sql] lazy val metrics = Map(
-    "dataSize" -> SQLMetrics.createMetric(sparkContext, "data size (bytes)"),
-    "collectTime" -> SQLMetrics.createMetric(sparkContext, "time to collect (ms)"),
-    "buildTime" -> SQLMetrics.createMetric(sparkContext, "time to build (ms)"),
-    "broadcastTime" -> SQLMetrics.createMetric(sparkContext, "time to broadcast (ms)"))
+      "dataSize" -> SQLMetrics.createMetric(sparkContext, "data size (bytes)"),
+      "collectTime" -> SQLMetrics.createMetric(sparkContext, "time to collect (ms)"),
+      "buildTime" -> SQLMetrics.createMetric(sparkContext, "time to build (ms)"),
+      "broadcastTime" -> SQLMetrics.createMetric(sparkContext, "time to broadcast (ms)"))
 
   override def outputPartitioning: Partitioning = BroadcastPartitioning(mode)
 
@@ -95,7 +93,7 @@ case class BroadcastExchangeExec(
 
   override protected def doExecute(): RDD[InternalRow] = {
     throw new UnsupportedOperationException(
-      "BroadcastExchange does not support the execute() code path.")
+        "BroadcastExchange does not support the execute() code path.")
   }
 
   override protected[sql] def doExecuteBroadcast[T](): broadcast.Broadcast[T] = {
@@ -105,5 +103,5 @@ case class BroadcastExchangeExec(
 
 object BroadcastExchangeExec {
   private[execution] val executionContext = ExecutionContext.fromExecutorService(
-    ThreadUtils.newDaemonCachedThreadPool("broadcast-exchange", 128))
+      ThreadUtils.newDaemonCachedThreadPool("broadcast-exchange", 128))
 }

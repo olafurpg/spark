@@ -27,46 +27,32 @@ import org.apache.spark.sql.test.SharedSQLContext
 class SQLCompatibilityFunctionSuite extends QueryTest with SharedSQLContext {
 
   test("ifnull") {
-    checkAnswer(
-      sql("SELECT ifnull(null, 'x'), ifnull('y', 'x'), ifnull(null, null)"),
-      Row("x", "y", null))
+    checkAnswer(sql("SELECT ifnull(null, 'x'), ifnull('y', 'x'), ifnull(null, null)"),
+                Row("x", "y", null))
 
     // Type coercion
-    checkAnswer(
-      sql("SELECT ifnull(1, 2.1d), ifnull(null, 2.1d)"),
-      Row(1.0, 2.1))
+    checkAnswer(sql("SELECT ifnull(1, 2.1d), ifnull(null, 2.1d)"), Row(1.0, 2.1))
   }
 
   test("nullif") {
-    checkAnswer(
-      sql("SELECT nullif('x', 'x'), nullif('x', 'y')"),
-      Row(null, "x"))
+    checkAnswer(sql("SELECT nullif('x', 'x'), nullif('x', 'y')"), Row(null, "x"))
 
     // Type coercion
-    checkAnswer(
-      sql("SELECT nullif(1, 2.1d), nullif(1, 1.0d)"),
-      Row(1.0, null))
+    checkAnswer(sql("SELECT nullif(1, 2.1d), nullif(1, 1.0d)"), Row(1.0, null))
   }
 
   test("nvl") {
-    checkAnswer(
-      sql("SELECT nvl(null, 'x'), nvl('y', 'x'), nvl(null, null)"),
-      Row("x", "y", null))
+    checkAnswer(sql("SELECT nvl(null, 'x'), nvl('y', 'x'), nvl(null, null)"), Row("x", "y", null))
 
     // Type coercion
-    checkAnswer(
-      sql("SELECT nvl(1, 2.1d), nvl(null, 2.1d)"),
-      Row(1.0, 2.1))
+    checkAnswer(sql("SELECT nvl(1, 2.1d), nvl(null, 2.1d)"), Row(1.0, 2.1))
   }
 
   test("nvl2") {
-    checkAnswer(
-      sql("SELECT nvl2(null, 'x', 'y'), nvl2('n', 'x', 'y'), nvl2(null, null, null)"),
-      Row("y", "x", null))
+    checkAnswer(sql("SELECT nvl2(null, 'x', 'y'), nvl2('n', 'x', 'y'), nvl2(null, null, null)"),
+                Row("y", "x", null))
 
     // Type coercion
-    checkAnswer(
-      sql("SELECT nvl2(null, 1, 2.1d), nvl2('n', 1, 2.1d)"),
-      Row(2.1, 1.0))
+    checkAnswer(sql("SELECT nvl2(null, 1, 2.1d), nvl2('n', 1, 2.1d)"), Row(2.1, 1.0))
   }
 }

@@ -49,8 +49,8 @@ class BitSet(numBits: Int) extends Serializable {
   def setUntil(bitIndex: Int) {
     val wordIndex = bitIndex >> 6 // divide by 64
     var i = 0
-    while(i < wordIndex) { words(i) = -1; i += 1 }
-    if(wordIndex < words.length) {
+    while (i < wordIndex) { words(i) = -1; i += 1 }
+    if (wordIndex < words.length) {
       // Set the remaining bits (note that the mask could still be zero)
       val mask = ~(-1L << (bitIndex & 0x3f))
       words(wordIndex) |= mask
@@ -67,7 +67,7 @@ class BitSet(numBits: Int) extends Serializable {
     assert(newBS.numWords >= numWords)
     assert(newBS.numWords >= other.numWords)
     var ind = 0
-    while( ind < smaller ) {
+    while (ind < smaller) {
       newBS.words(ind) = words(ind) & other.words(ind)
       ind += 1
     }
@@ -84,15 +84,15 @@ class BitSet(numBits: Int) extends Serializable {
     assert(newBS.numWords >= other.numWords)
     val smaller = math.min(numWords, other.numWords)
     var ind = 0
-    while( ind < smaller ) {
+    while (ind < smaller) {
       newBS.words(ind) = words(ind) | other.words(ind)
       ind += 1
     }
-    while( ind < numWords ) {
+    while (ind < numWords) {
       newBS.words(ind) = words(ind)
       ind += 1
     }
-    while( ind < other.numWords ) {
+    while (ind < other.numWords) {
       newBS.words(ind) = other.words(ind)
       ind += 1
     }
@@ -112,10 +112,10 @@ class BitSet(numBits: Int) extends Serializable {
       ind += 1
     }
     if (ind < numWords) {
-      Array.copy( words, ind, newBS.words, ind, numWords - ind )
+      Array.copy(words, ind, newBS.words, ind, numWords - ind)
     }
     if (ind < other.numWords) {
-      Array.copy( other.words, ind, newBS.words, ind, other.numWords - ind )
+      Array.copy(other.words, ind, newBS.words, ind, other.numWords - ind)
     }
     newBS
   }
@@ -133,7 +133,7 @@ class BitSet(numBits: Int) extends Serializable {
       ind += 1
     }
     if (ind < numWords) {
-      Array.copy( words, ind, newBS.words, ind, numWords - ind )
+      Array.copy(words, ind, newBS.words, ind, numWords - ind)
     }
     newBS
   }
@@ -143,13 +143,13 @@ class BitSet(numBits: Int) extends Serializable {
    * @param index the bit index
    */
   def set(index: Int) {
-    val bitmask = 1L << (index & 0x3f)  // mod 64 and shift
-    words(index >> 6) |= bitmask        // div by 64 and mask
+    val bitmask = 1L << (index & 0x3f) // mod 64 and shift
+    words(index >> 6) |= bitmask // div by 64 and mask
   }
 
   def unset(index: Int) {
-    val bitmask = 1L << (index & 0x3f)  // mod 64 and shift
-    words(index >> 6) &= ~bitmask        // div by 64 and mask
+    val bitmask = 1L << (index & 0x3f) // mod 64 and shift
+    words(index >> 6) &= ~bitmask // div by 64 and mask
   }
 
   /**
@@ -160,8 +160,8 @@ class BitSet(numBits: Int) extends Serializable {
    * @return the value of the bit with the specified index
    */
   def get(index: Int): Boolean = {
-    val bitmask = 1L << (index & 0x3f)   // mod 64 and shift
-    (words(index >> 6) & bitmask) != 0  // div by 64 and mask
+    val bitmask = 1L << (index & 0x3f) // mod 64 and shift
+    (words(index >> 6) & bitmask) != 0 // div by 64 and mask
   }
 
   /**
@@ -176,7 +176,6 @@ class BitSet(numBits: Int) extends Serializable {
       tmp
     }
   }
-
 
   /** Return the number of bits set to true in this BitSet. */
   def cardinality(): Int = {

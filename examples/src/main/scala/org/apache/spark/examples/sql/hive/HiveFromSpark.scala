@@ -41,10 +41,7 @@ object HiveFromSpark {
     // using HiveQL. Users who do not have an existing Hive deployment can still create a
     // HiveContext. When not configured by the hive-site.xml, the context automatically
     // creates metastore_db and warehouse in the current directory.
-    val spark = SparkSession.builder
-      .config(sparkConf)
-      .enableHiveSupport()
-      .getOrCreate()
+    val spark = SparkSession.builder.config(sparkConf).enableHiveSupport().getOrCreate()
     val sc = spark.sparkContext
 
     import spark.implicits._

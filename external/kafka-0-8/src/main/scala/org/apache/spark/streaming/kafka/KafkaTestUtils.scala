@@ -88,7 +88,7 @@ private[kafka] class KafkaTestUtils extends Logging {
   def zookeeperClient: ZkClient = {
     assert(zkReady, "Zookeeper not setup yet or already torn down, cannot get zookeeper client")
     Option(zkClient).getOrElse(
-      throw new IllegalStateException("Zookeeper client is not yet initialized"))
+        throw new IllegalStateException("Zookeeper client is not yet initialized"))
   }
 
   // Set up the Embedded Zookeeper server and get the proper Zookeeper port
@@ -97,8 +97,8 @@ private[kafka] class KafkaTestUtils extends Logging {
     zookeeper = new EmbeddedZookeeper(s"$zkHost:$zkPort")
     // Get the actual zookeeper binding port
     zkPort = zookeeper.actualPort
-    zkClient = new ZkClient(s"$zkHost:$zkPort", zkSessionTimeout, zkConnectionTimeout,
-      ZKStringSerializer)
+    zkClient = new ZkClient(
+        s"$zkHost:$zkPort", zkSessionTimeout, zkConnectionTimeout, ZKStringSerializer)
     zkReady = true
   }
 
@@ -139,7 +139,9 @@ private[kafka] class KafkaTestUtils extends Logging {
       server = null
     }
 
-    brokerConf.logDirs.foreach { f => Utils.deleteRecursively(new File(f)) }
+    brokerConf.logDirs.foreach { f =>
+      Utils.deleteRecursively(new File(f))
+    }
 
     if (zkClient != null) {
       zkClient.close()
@@ -156,7 +158,9 @@ private[kafka] class KafkaTestUtils extends Logging {
   def createTopic(topic: String, partitions: Int): Unit = {
     AdminUtils.createTopic(zkClient, topic, partitions, 1)
     // wait until metadata is propagated
-    (0 until partitions).foreach { p => waitUntilMetadataIsPropagated(topic, p) }
+    (0 until partitions).foreach { p =>
+      waitUntilMetadataIsPropagated(topic, p)
+    }
   }
 
   /** Single-argument version for backwards compatibility */
@@ -176,7 +180,7 @@ private[kafka] class KafkaTestUtils extends Logging {
   /** Send the array of messages to the Kafka broker */
   def sendMessages(topic: String, messages: Array[String]): Unit = {
     producer = new Producer[String, String](new ProducerConfig(producerConfiguration))
-    producer.send(messages.map { new KeyedMessage[String, String](topic, _ ) }: _*)
+    producer.send(messages.map { new KeyedMessage[String, String](topic, _) }: _*)
     producer.close()
     producer = null
   }
@@ -239,8 +243,8 @@ private[kafka] class KafkaTestUtils extends Logging {
         val leaderAndInSyncReplicas = partitionState.leaderIsrAndControllerEpoch.leaderAndIsr
 
         ZkUtils.getLeaderForPartition(zkClient, topic, partition).isDefined &&
-          Request.isValidBrokerId(leaderAndInSyncReplicas.leader) &&
-          leaderAndInSyncReplicas.isr.size >= 1
+        Request.isValidBrokerId(leaderAndInSyncReplicas.leader) &&
+        leaderAndInSyncReplicas.isr.size >= 1
 
       case _ =>
         false
@@ -272,4 +276,3 @@ private[kafka] class KafkaTestUtils extends Logging {
     }
   }
 }
-

@@ -48,7 +48,7 @@ object StreamingLinearRegression {
 
     if (args.length != 4) {
       System.err.println(
-        "Usage: StreamingLinearRegression <trainingDir> <testDir> <batchDuration> <numFeatures>")
+          "Usage: StreamingLinearRegression <trainingDir> <testDir> <batchDuration> <numFeatures>")
       System.exit(1)
     }
 
@@ -58,16 +58,14 @@ object StreamingLinearRegression {
     val trainingData = ssc.textFileStream(args(0)).map(LabeledPoint.parse)
     val testData = ssc.textFileStream(args(1)).map(LabeledPoint.parse)
 
-    val model = new StreamingLinearRegressionWithSGD()
-      .setInitialWeights(Vectors.zeros(args(3).toInt))
+    val model =
+      new StreamingLinearRegressionWithSGD().setInitialWeights(Vectors.zeros(args(3).toInt))
 
     model.trainOn(trainingData)
     model.predictOnValues(testData.map(lp => (lp.label, lp.features))).print()
 
     ssc.start()
     ssc.awaitTermination()
-
   }
-
 }
 // scalastyle:on println

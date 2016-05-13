@@ -23,12 +23,9 @@ import org.apache.spark.rpc._
 class NettyRpcEnvSuite extends RpcEnvSuite {
 
   override def createRpcEnv(
-      conf: SparkConf,
-      name: String,
-      port: Int,
-      clientMode: Boolean = false): RpcEnv = {
-    val config = RpcEnvConfig(conf, "test", "localhost", port, new SecurityManager(conf),
-      clientMode)
+      conf: SparkConf, name: String, port: Int, clientMode: Boolean = false): RpcEnv = {
+    val config = RpcEnvConfig(
+        conf, "test", "localhost", port, new SecurityManager(conf), clientMode)
     new NettyRpcEnvFactory().create(config)
   }
 
@@ -40,5 +37,4 @@ class NettyRpcEnvSuite extends RpcEnvSuite {
     assert(e.getCause.isInstanceOf[RpcEndpointNotFoundException])
     assert(e.getCause.getMessage.contains(uri))
   }
-
 }

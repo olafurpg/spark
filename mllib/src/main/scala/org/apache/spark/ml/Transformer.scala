@@ -43,13 +43,10 @@ abstract class Transformer extends PipelineStage {
    */
   @Since("2.0.0")
   @varargs
-  def transform(
-      dataset: Dataset[_],
-      firstParamPair: ParamPair[_],
-      otherParamPairs: ParamPair[_]*): DataFrame = {
-    val map = new ParamMap()
-      .put(firstParamPair)
-      .put(otherParamPairs: _*)
+  def transform(dataset: Dataset[_],
+                firstParamPair: ParamPair[_],
+                otherParamPairs: ParamPair[_]*): DataFrame = {
+    val map = new ParamMap().put(firstParamPair).put(otherParamPairs: _*)
     transform(dataset, map)
   }
 
@@ -80,7 +77,10 @@ abstract class Transformer extends PipelineStage {
  */
 @DeveloperApi
 abstract class UnaryTransformer[IN, OUT, T <: UnaryTransformer[IN, OUT, T]]
-  extends Transformer with HasInputCol with HasOutputCol with Logging {
+    extends Transformer
+    with HasInputCol
+    with HasOutputCol
+    with Logging {
 
   /** @group setParam */
   def setInputCol(value: String): T = set(inputCol, value).asInstanceOf[T]
@@ -111,7 +111,8 @@ abstract class UnaryTransformer[IN, OUT, T <: UnaryTransformer[IN, OUT, T]]
     if (schema.fieldNames.contains($(outputCol))) {
       throw new IllegalArgumentException(s"Output column ${$(outputCol)} already exists.")
     }
-    val outputFields = schema.fields :+
+    val outputFields =
+      schema.fields :+
       StructField($(outputCol), outputDataType, nullable = false)
     StructType(outputFields)
   }

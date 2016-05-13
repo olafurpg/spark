@@ -27,6 +27,7 @@ import org.apache.spark.sql.types._
  * Represents a parsed R formula.
  */
 private[ml] case class ParsedRFormula(label: ColumnRef, terms: Seq[Term]) {
+
   /**
    * Resolves formula terms into column names. A schema is necessary for inferring the meaning
    * of the special '.' term. Duplicate terms will be removed during resolution.
@@ -111,10 +112,13 @@ private[ml] case class ParsedRFormula(label: ColumnRef, terms: Seq[Term]) {
 
   // the dot operator excludes complex column types
   private def expandDot(schema: StructType): Seq[String] = {
-    schema.fields.filter(_.dataType match {
-      case _: NumericType | StringType | BooleanType | _: VectorUDT => true
-      case _ => false
-    }).map(_.name).filter(_ != label.value)
+    schema.fields
+      .filter(_.dataType match {
+        case _: NumericType | StringType | BooleanType | _: VectorUDT => true
+        case _ => false
+      })
+      .map(_.name)
+      .filter(_ != label.value)
   }
 }
 
@@ -126,7 +130,7 @@ private[ml] case class ParsedRFormula(label: ColumnRef, terms: Seq[Term]) {
  * @param hasIntercept whether the formula specifies fitting with an intercept.
  */
 private[ml] case class ResolvedRFormula(
-  label: String, terms: Seq[Seq[String]], hasIntercept: Boolean)
+    label: String, terms: Seq[Seq[String]], hasIntercept: Boolean)
 
 /**
  * R formula terms. See the R formula docs here for more information:
@@ -156,8 +160,7 @@ private[ml] case class Deletion(term: Term) extends Term
  * Limited implementation of R formula parsing. Currently supports: '~', '+', '-', '.', ':'.
  */
 private[ml] object RFormulaParser extends RegexParsers {
-  private val intercept: Parser[Intercept] =
-    "([01])".r ^^ { case a => Intercept(a == "1") }
+  private val intercept: Parser[Intercept] = "([01])".r ^^ { case a => Intercept(a == "1") }
 
   private val columnRef: Parser[ColumnRef] =
     "([a-zA-Z]|\\.[a-zA-Z_])[a-zA-Z0-9._]*".r ^^ { case a => ColumnRef(a) }
@@ -170,22 +173,25 @@ private[ml] object RFormulaParser extends RegexParsers {
 
   private val interaction: Parser[List[InteractableTerm]] = rep1sep(columnRef | dot, ":")
 
-  private val term: Parser[Term] = intercept |
+  private val term: Parser[Term] =
+    intercept |
     interaction ^^ { case terms => ColumnInteraction(terms) } | dot | columnRef
 
-  private val terms: Parser[List[Term]] = (term ~ rep("+" ~ term | "-" ~ term)) ^^ {
-    case op ~ list => list.foldLeft(List(op)) {
-      case (left, "+" ~ right) => left ++ Seq(right)
-      case (left, "-" ~ right) => left ++ Seq(Deletion(right))
+  private val terms: Parser[List[Term]] =
+    (term ~ rep("+" ~ term | "-" ~ term)) ^^ {
+      case op ~ list =>
+        list.foldLeft(List(op)) {
+          case (left, "+" ~ right) => left ++ Seq(right)
+          case (left, "-" ~ right) => left ++ Seq(Deletion(right))
+        }
     }
-  }
 
   private val formula: Parser[ParsedRFormula] =
     (label ~ "~" ~ terms) ^^ { case r ~ "~" ~ t => ParsedRFormula(r, t) }
 
   def parse(value: String): ParsedRFormula = parseAll(formula, value) match {
     case Success(result, _) => result
-    case failure: NoSuccess => throw new IllegalArgumentException(
-      "Could not parse formula: " + value)
+    case failure: NoSuccess =>
+      throw new IllegalArgumentException("Could not parse formula: " + value)
   }
 }

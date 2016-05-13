@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.test.SharedSQLContext
 import org.apache.spark.sql.types._
 
-
 class TakeOrderedAndProjectSuite extends SparkPlanTest with SharedSQLContext {
 
   private var rand: Random = _
@@ -57,30 +56,26 @@ class TakeOrderedAndProjectSuite extends SparkPlanTest with SharedSQLContext {
   test("TakeOrderedAndProject.doExecute without project") {
     withClue(s"seed = $seed") {
       checkThatPlansAgree(
-        generateRandomInputData(),
-        input =>
-          noOpFilter(TakeOrderedAndProjectExec(limit, sortOrder, None, input)),
-        input =>
-          GlobalLimitExec(limit,
-            LocalLimitExec(limit,
-              SortExec(sortOrder, true, input))),
-        sortAnswers = false)
+          generateRandomInputData(),
+          input => noOpFilter(TakeOrderedAndProjectExec(limit, sortOrder, None, input)),
+          input => GlobalLimitExec(limit, LocalLimitExec(limit, SortExec(sortOrder, true, input))),
+          sortAnswers = false)
     }
   }
 
   test("TakeOrderedAndProject.doExecute with project") {
     withClue(s"seed = $seed") {
       checkThatPlansAgree(
-        generateRandomInputData(),
-        input =>
-          noOpFilter(
-            TakeOrderedAndProjectExec(limit, sortOrder, Some(Seq(input.output.last)), input)),
-        input =>
-          GlobalLimitExec(limit,
-            LocalLimitExec(limit,
-              ProjectExec(Seq(input.output.last),
-                SortExec(sortOrder, true, input)))),
-        sortAnswers = false)
+          generateRandomInputData(),
+          input =>
+            noOpFilter(
+                TakeOrderedAndProjectExec(limit, sortOrder, Some(Seq(input.output.last)), input)),
+          input =>
+            GlobalLimitExec(limit,
+                            LocalLimitExec(limit,
+                                           ProjectExec(Seq(input.output.last),
+                                                       SortExec(sortOrder, true, input)))),
+          sortAnswers = false)
     }
   }
 }

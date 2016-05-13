@@ -49,14 +49,13 @@ private[spark] object CompressionCodec {
   private val configKey = "spark.io.compression.codec"
 
   private[spark] def supportsConcatenationOfSerializedStreams(codec: CompressionCodec): Boolean = {
-    (codec.isInstanceOf[SnappyCompressionCodec] || codec.isInstanceOf[LZFCompressionCodec]
-      || codec.isInstanceOf[LZ4CompressionCodec])
+    (codec.isInstanceOf[SnappyCompressionCodec] || codec.isInstanceOf[LZFCompressionCodec] ||
+        codec.isInstanceOf[LZ4CompressionCodec])
   }
 
-  private val shortCompressionCodecNames = Map(
-    "lz4" -> classOf[LZ4CompressionCodec].getName,
-    "lzf" -> classOf[LZFCompressionCodec].getName,
-    "snappy" -> classOf[SnappyCompressionCodec].getName)
+  private val shortCompressionCodecNames = Map("lz4" -> classOf[LZ4CompressionCodec].getName,
+                                               "lzf" -> classOf[LZFCompressionCodec].getName,
+                                               "snappy" -> classOf[SnappyCompressionCodec].getName)
 
   def getCodecName(conf: SparkConf): String = {
     conf.get(configKey, DEFAULT_COMPRESSION_CODEC)
@@ -76,7 +75,7 @@ private[spark] object CompressionCodec {
       case e: IllegalArgumentException => None
     }
     codec.getOrElse(throw new IllegalArgumentException(s"Codec [$codecName] is not available. " +
-      s"Consider setting $configKey=$FALLBACK_COMPRESSION_CODEC"))
+            s"Consider setting $configKey=$FALLBACK_COMPRESSION_CODEC"))
   }
 
   /**
@@ -87,9 +86,9 @@ private[spark] object CompressionCodec {
     if (shortCompressionCodecNames.contains(codecName)) {
       codecName
     } else {
-      shortCompressionCodecNames
-        .collectFirst { case (k, v) if v == codecName => k }
-        .getOrElse { throw new IllegalArgumentException(s"No short name for codec $codecName.") }
+      shortCompressionCodecNames.collectFirst { case (k, v) if v == codecName => k }.getOrElse {
+        throw new IllegalArgumentException(s"No short name for codec $codecName.")
+      }
     }
   }
 
@@ -118,7 +117,6 @@ class LZ4CompressionCodec(conf: SparkConf) extends CompressionCodec {
   override def compressedInputStream(s: InputStream): InputStream = new LZ4BlockInputStream(s)
 }
 
-
 /**
  * :: DeveloperApi ::
  * LZF implementation of [[org.apache.spark.io.CompressionCodec]].
@@ -136,7 +134,6 @@ class LZFCompressionCodec(conf: SparkConf) extends CompressionCodec {
 
   override def compressedInputStream(s: InputStream): InputStream = new LZFInputStream(s)
 }
-
 
 /**
  * :: DeveloperApi ::

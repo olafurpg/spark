@@ -54,8 +54,9 @@ class WholeTextFileRecordReaderSuite extends SparkFunSuite with BeforeAndAfterAl
 
     // Set the block size of local file system to test whether files are split right or not.
     sc.hadoopConfiguration.setLong("fs.local.block.size", 32)
-    sc.hadoopConfiguration.set("io.compression.codecs",
-      "org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec")
+    sc.hadoopConfiguration.set(
+        "io.compression.codecs",
+        "org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec")
     factory = new CompressionCodecFactory(sc.hadoopConfiguration)
   }
 
@@ -67,16 +68,19 @@ class WholeTextFileRecordReaderSuite extends SparkFunSuite with BeforeAndAfterAl
     }
   }
 
-  private def createNativeFile(inputDir: File, fileName: String, contents: Array[Byte],
+  private def createNativeFile(inputDir: File,
+                               fileName: String,
+                               contents: Array[Byte],
                                compress: Boolean) = {
-    val out = if (compress) {
-      val codec = new GzipCodec
-      val path = s"${inputDir.toString}/$fileName${codec.getDefaultExtension}"
-      codec.createOutputStream(new DataOutputStream(new FileOutputStream(path)))
-    } else {
-      val path = s"${inputDir.toString}/$fileName"
-      new DataOutputStream(new FileOutputStream(path))
-    }
+    val out =
+      if (compress) {
+        val codec = new GzipCodec
+        val path = s"${inputDir.toString}/$fileName${codec.getDefaultExtension}"
+        codec.createOutputStream(new DataOutputStream(new FileOutputStream(path)))
+      } else {
+        val path = s"${inputDir.toString}/$fileName"
+        new DataOutputStream(new FileOutputStream(path))
+      }
     out.write(contents, 0, contents.length)
     out.close()
   }
@@ -92,21 +96,22 @@ class WholeTextFileRecordReaderSuite extends SparkFunSuite with BeforeAndAfterAl
     val dir = Utils.createTempDir()
     logInfo(s"Local disk address is ${dir.toString}.")
 
-    WholeTextFileRecordReaderSuite.files.foreach { case (filename, contents) =>
-      createNativeFile(dir, filename, contents, false)
+    WholeTextFileRecordReaderSuite.files.foreach {
+      case (filename, contents) =>
+        createNativeFile(dir, filename, contents, false)
     }
 
     val res = sc.wholeTextFiles(dir.toString, 3).collect()
 
     assert(res.size === WholeTextFileRecordReaderSuite.fileNames.size,
-      "Number of files read out does not fit with the actual value.")
+           "Number of files read out does not fit with the actual value.")
 
     for ((filename, contents) <- res) {
       val shortName = filename.split('/').last
       assert(WholeTextFileRecordReaderSuite.fileNames.contains(shortName),
-        s"Missing file name $filename.")
+             s"Missing file name $filename.")
       assert(contents === new Text(WholeTextFileRecordReaderSuite.files(shortName)).toString,
-        s"file $filename contents can not match.")
+             s"file $filename contents can not match.")
     }
 
     Utils.deleteRecursively(dir)
@@ -116,22 +121,23 @@ class WholeTextFileRecordReaderSuite extends SparkFunSuite with BeforeAndAfterAl
     val dir = Utils.createTempDir()
     logInfo(s"Local disk address is ${dir.toString}.")
 
-    WholeTextFileRecordReaderSuite.files.foreach { case (filename, contents) =>
-      createNativeFile(dir, filename, contents, true)
+    WholeTextFileRecordReaderSuite.files.foreach {
+      case (filename, contents) =>
+        createNativeFile(dir, filename, contents, true)
     }
 
     val res = sc.wholeTextFiles(dir.toString, 3).collect()
 
     assert(res.size === WholeTextFileRecordReaderSuite.fileNames.size,
-      "Number of files read out does not fit with the actual value.")
+           "Number of files read out does not fit with the actual value.")
 
     for ((filename, contents) <- res) {
       val shortName = filename.split('/').last.split('.')(0)
 
       assert(WholeTextFileRecordReaderSuite.fileNames.contains(shortName),
-        s"Missing file name $filename.")
+             s"Missing file name $filename.")
       assert(contents === new Text(WholeTextFileRecordReaderSuite.files(shortName)).toString,
-        s"file $filename contents can not match.")
+             s"file $filename contents can not match.")
     }
 
     Utils.deleteRecursively(dir)
@@ -147,7 +153,11 @@ object WholeTextFileRecordReaderSuite {
   private val fileNames = Array("part-00000", "part-00001", "part-00002")
   private val fileLengths = Array(10, 100, 1000)
 
-  private val files = fileLengths.zip(fileNames).map { case (upperBound, filename) =>
-    filename -> Stream.continually(testWords.toList.toStream).flatten.take(upperBound).toArray
-  }.toMap
+  private val files = fileLengths
+    .zip(fileNames)
+    .map {
+      case (upperBound, filename) =>
+        filename -> Stream.continually(testWords.toList.toStream).flatten.take(upperBound).toArray
+    }
+    .toMap
 }

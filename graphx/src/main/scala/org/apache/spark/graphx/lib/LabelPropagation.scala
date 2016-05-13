@@ -23,6 +23,7 @@ import org.apache.spark.graphx._
 
 /** Label Propagation algorithm. */
 object LabelPropagation {
+
   /**
    * Run static Label Propagation for detecting communities in networks.
    *
@@ -49,8 +50,8 @@ object LabelPropagation {
     def sendMessage(e: EdgeTriplet[VertexId, ED]): Iterator[(VertexId, Map[VertexId, Long])] = {
       Iterator((e.srcId, Map(e.dstAttr -> 1L)), (e.dstId, Map(e.srcAttr -> 1L)))
     }
-    def mergeMessage(count1: Map[VertexId, Long], count2: Map[VertexId, Long])
-      : Map[VertexId, Long] = {
+    def mergeMessage(
+        count1: Map[VertexId, Long], count2: Map[VertexId, Long]): Map[VertexId, Long] = {
       (count1.keySet ++ count2.keySet).map { i =>
         val count1Val = count1.getOrElse(i, 0L)
         val count2Val = count2.getOrElse(i, 0L)
@@ -62,8 +63,6 @@ object LabelPropagation {
     }
     val initialMessage = Map[VertexId, Long]()
     Pregel(lpaGraph, initialMessage, maxIterations = maxSteps)(
-      vprog = vertexProgram,
-      sendMsg = sendMessage,
-      mergeMsg = mergeMessage)
+        vprog = vertexProgram, sendMsg = sendMessage, mergeMsg = mergeMessage)
   }
 }

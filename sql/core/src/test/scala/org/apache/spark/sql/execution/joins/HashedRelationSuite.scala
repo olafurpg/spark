@@ -33,19 +33,17 @@ import org.apache.spark.util.collection.CompactBuffer
 class HashedRelationSuite extends SparkFunSuite with SharedSQLContext {
 
   val mm = new TaskMemoryManager(
-    new StaticMemoryManager(
-      new SparkConf().set("spark.memory.offHeap.enabled", "false"),
-      Long.MaxValue,
-      Long.MaxValue,
-      1),
-    0)
+      new StaticMemoryManager(new SparkConf().set("spark.memory.offHeap.enabled", "false"),
+                              Long.MaxValue,
+                              Long.MaxValue,
+                              1),
+      0)
 
   test("UnsafeHashedRelation") {
     val schema = StructType(StructField("a", IntegerType, true) :: Nil)
     val data = Array(InternalRow(0), InternalRow(1), InternalRow(2), InternalRow(2))
     val toUnsafe = UnsafeProjection.create(schema)
     val unsafeData = data.map(toUnsafe(_).copy())
-
 
     val buildKey = Seq(BoundReference(0, IntegerType, false))
     val hashed = UnsafeHashedRelation(unsafeData.iterator, buildKey, 1, mm)
@@ -82,12 +80,11 @@ class HashedRelationSuite extends SparkFunSuite with SharedSQLContext {
 
   test("test serialization empty hash map") {
     val taskMemoryManager = new TaskMemoryManager(
-      new StaticMemoryManager(
-        new SparkConf().set("spark.memory.offHeap.enabled", "false"),
-        Long.MaxValue,
-        Long.MaxValue,
-        1),
-      0)
+        new StaticMemoryManager(new SparkConf().set("spark.memory.offHeap.enabled", "false"),
+                                Long.MaxValue,
+                                Long.MaxValue,
+                                1),
+        0)
     val binaryMap = new BytesToBytesMap(taskMemoryManager, 1, 1)
     val os = new ByteArrayOutputStream()
     val out = new ObjectOutputStream(os)
@@ -112,7 +109,7 @@ class HashedRelationSuite extends SparkFunSuite with SharedSQLContext {
 
   test("LongToUnsafeRowMap") {
     val unsafeProj = UnsafeProjection.create(
-      Seq(BoundReference(0, LongType, false), BoundReference(1, IntegerType, true)))
+        Seq(BoundReference(0, LongType, false), BoundReference(1, IntegerType, true)))
     val rows = (0 until 100).map(i => unsafeProj(InternalRow(Int.int2long(i), i + 1)).copy())
     val key = Seq(BoundReference(0, LongType, false))
     val longRelation = LongHashedRelation(rows.iterator, key, 10, mm)
@@ -153,13 +150,13 @@ class HashedRelationSuite extends SparkFunSuite with SharedSQLContext {
   }
 
   test("Spark-14521") {
-    val ser = new KryoSerializer(
-      (new SparkConf).set("spark.kryo.referenceTracking", "false")).newInstance()
+    val ser = new KryoSerializer((new SparkConf).set("spark.kryo.referenceTracking", "false"))
+      .newInstance()
     val key = Seq(BoundReference(0, LongType, false))
 
     // Testing Kryo serialization of HashedRelation
     val unsafeProj = UnsafeProjection.create(
-      Seq(BoundReference(0, LongType, false), BoundReference(1, IntegerType, true)))
+        Seq(BoundReference(0, LongType, false), BoundReference(1, IntegerType, true)))
     val rows = (0 until 100).map(i => unsafeProj(InternalRow(Int.int2long(i), i + 1)).copy())
     val longRelation = LongHashedRelation(rows.iterator ++ rows.iterator, key, 100, mm)
     val longRelation2 = ser.deserialize[LongHashedRelation](ser.serialize(longRelation))
@@ -189,8 +186,7 @@ class HashedRelationSuite extends SparkFunSuite with SharedSQLContext {
   // This test require 4G heap to run, should run it manually
   ignore("build HashedRelation that is larger than 1G") {
     val unsafeProj = UnsafeProjection.create(
-      Seq(BoundReference(0, IntegerType, false),
-        BoundReference(1, StringType, true)))
+        Seq(BoundReference(0, IntegerType, false), BoundReference(1, StringType, true)))
     val unsafeRow = unsafeProj(InternalRow(0, UTF8String.fromString(" " * 100)))
     val key = Seq(BoundReference(0, IntegerType, false))
     val rows = (0 until (1 << 24)).iterator.map { i =>

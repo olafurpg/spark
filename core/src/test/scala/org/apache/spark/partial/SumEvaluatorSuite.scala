@@ -42,7 +42,7 @@ class SumEvaluatorSuite extends SparkFunSuite with SharedSparkContext {
 
     // actual test
     assert(res ==
-      new BoundedDouble(targetMean, 0.950, Double.NegativeInfinity, Double.PositiveInfinity))
+        new BoundedDouble(targetMean, 0.950, Double.NegativeInfinity, Double.PositiveInfinity))
   }
 
   test("correct handling of count 0") {
@@ -99,9 +99,7 @@ class SumEvaluatorSuite extends SparkFunSuite with SharedSparkContext {
     val targetHigh = 273.617 - 2.7323572624027292E-5
     val target = new BoundedDouble(targetMean, 0.95, targetLow, targetHigh)
 
-
     // check that values are within expected tolerance of expectation
     assert(res == target)
   }
-
 }

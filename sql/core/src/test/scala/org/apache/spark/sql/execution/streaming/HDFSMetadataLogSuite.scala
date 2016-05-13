@@ -58,7 +58,8 @@ class HDFSMetadataLogSuite extends SparkFunSuite with SharedSQLContext {
 
   test("HDFSMetadataLog: basic") {
     withTempDir { temp =>
-      val dir = new File(temp, "dir") // use non-existent directory to test whether log make the dir
+      val dir =
+        new File(temp, "dir") // use non-existent directory to test whether log make the dir
       val metadataLog = new HDFSMetadataLog[String](spark, dir.getAbsolutePath)
       assert(metadataLog.add(0, "batch0"))
       assert(metadataLog.getLatest() === Some(0 -> "batch0"))
@@ -82,9 +83,7 @@ class HDFSMetadataLogSuite extends SparkFunSuite with SharedSQLContext {
   }
 
   testQuietly("HDFSMetadataLog: fallback from FileContext to FileSystem") {
-    spark.conf.set(
-      s"fs.$scheme.impl",
-      classOf[FakeFileSystem].getName)
+    spark.conf.set(s"fs.$scheme.impl", classOf[FakeFileSystem].getName)
     withTempDir { temp =>
       val metadataLog = new HDFSMetadataLog[String](spark, s"$scheme://$temp")
       assert(metadataLog.add(0, "batch0"))
@@ -92,12 +91,10 @@ class HDFSMetadataLogSuite extends SparkFunSuite with SharedSQLContext {
       assert(metadataLog.get(0) === Some("batch0"))
       assert(metadataLog.get(None, Some(0)) === Array(0 -> "batch0"))
 
-
       val metadataLog2 = new HDFSMetadataLog[String](spark, s"$scheme://$temp")
       assert(metadataLog2.get(0) === Some("batch0"))
       assert(metadataLog2.getLatest() === Some(0 -> "batch0"))
       assert(metadataLog2.get(None, Some(0)) === Array(0 -> "batch0"))
-
     }
   }
 
@@ -126,8 +123,7 @@ class HDFSMetadataLogSuite extends SparkFunSuite with SharedSQLContext {
       for (id <- 0 until 10) {
         new Thread() {
           override def run(): Unit = waiter {
-            val metadataLog =
-              new HDFSMetadataLog[String](spark, temp.getAbsolutePath)
+            val metadataLog = new HDFSMetadataLog[String](spark, temp.getAbsolutePath)
             try {
               var nextBatchId = metadataLog.getLatest().map(_._1).getOrElse(-1L)
               nextBatchId += 1
@@ -149,10 +145,9 @@ class HDFSMetadataLogSuite extends SparkFunSuite with SharedSQLContext {
       val metadataLog = new HDFSMetadataLog[String](spark, temp.getAbsolutePath)
       assert(metadataLog.getLatest() === Some(maxBatchId -> maxBatchId.toString))
       assert(
-        metadataLog.get(None, Some(maxBatchId)) === (0 to maxBatchId).map(i => (i, i.toString)))
+          metadataLog.get(None, Some(maxBatchId)) === (0 to maxBatchId).map(i => (i, i.toString)))
     }
   }
-
 
   def testManager(basePath: Path, fm: FileManager): Unit = {
     // Mkdirs
@@ -188,7 +183,7 @@ class HDFSMetadataLogSuite extends SparkFunSuite with SharedSQLContext {
     intercept[IOException] {
       fm.open(path)
     }
-    fm.delete(path)  // should not throw exception
+    fm.delete(path) // should not throw exception
 
     // Rename
     val path1 = new Path(s"$dir/file1")

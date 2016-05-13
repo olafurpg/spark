@@ -65,7 +65,10 @@ object JavaTypeInference {
         (c.getAnnotation(classOf[SQLUserDefinedType]).udt().newInstance(), true)
 
       case c: Class[_] if UDTRegistration.exists(c.getName) =>
-        val udt = UDTRegistration.getUDTFor(c.getName).get.newInstance()
+        val udt = UDTRegistration
+          .getUDTFor(c.getName)
+          .get
+          .newInstance()
           .asInstanceOf[UserDefinedType[_ >: Null]]
         (udt, true)
 
@@ -122,8 +125,8 @@ object JavaTypeInference {
 
   private def getJavaBeanProperties(beanClass: Class[_]): Array[PropertyDescriptor] = {
     val beanInfo = Introspector.getBeanInfo(beanClass)
-    beanInfo.getPropertyDescriptors
-      .filter(p => p.getReadMethod != null && p.getWriteMethod != null)
+    beanInfo.getPropertyDescriptors.filter(
+        p => p.getReadMethod != null && p.getWriteMethod != null)
   }
 
   private def elementType(typeToken: TypeToken[_]): TypeToken[_] = {
@@ -171,10 +174,12 @@ object JavaTypeInference {
   }
 
   private def deserializerFor(typeToken: TypeToken[_], path: Option[Expression]): Expression = {
+
     /** Returns the current path with a sub-field extracted. */
-    def addToPath(part: String): Expression = path
-      .map(p => UnresolvedExtractValue(p, expressions.Literal(part)))
-      .getOrElse(UnresolvedAttribute(part))
+    def addToPath(part: String): Expression =
+      path
+        .map(p => UnresolvedExtractValue(p, expressions.Literal(part)))
+        .getOrElse(UnresolvedAttribute(part))
 
     /** Returns the current path or `BoundReference`. */
     def getPath: Expression = path.getOrElse(BoundReference(0, inferDataType(typeToken)._1, true))
@@ -198,20 +203,18 @@ object JavaTypeInference {
         NewInstance(c, getPath :: Nil, ObjectType(c))
 
       case c if c == classOf[java.sql.Date] =>
-        StaticInvoke(
-          DateTimeUtils.getClass,
-          ObjectType(c),
-          "toJavaDate",
-          getPath :: Nil,
-          propagateNull = true)
+        StaticInvoke(DateTimeUtils.getClass,
+                     ObjectType(c),
+                     "toJavaDate",
+                     getPath :: Nil,
+                     propagateNull = true)
 
       case c if c == classOf[java.sql.Timestamp] =>
-        StaticInvoke(
-          DateTimeUtils.getClass,
-          ObjectType(c),
-          "toJavaTimestamp",
-          getPath :: Nil,
-          propagateNull = true)
+        StaticInvoke(DateTimeUtils.getClass,
+                     ObjectType(c),
+                     "toJavaTimestamp",
+                     getPath :: Nil,
+                     propagateNull = true)
 
       case c if c == classOf[java.lang.String] =>
         Invoke(getPath, "toString", ObjectType(classOf[String]))
@@ -235,25 +238,20 @@ object JavaTypeInference {
         primitiveMethod.map { method =>
           Invoke(getPath, method, ObjectType(c))
         }.getOrElse {
-          Invoke(
-            MapObjects(
-              p => deserializerFor(typeToken.getComponentType, Some(p)),
-              getPath,
-              inferDataType(elementType)._1),
-            "array",
-            ObjectType(c))
+          Invoke(MapObjects(p => deserializerFor(typeToken.getComponentType, Some(p)),
+                            getPath,
+                            inferDataType(elementType)._1),
+                 "array",
+                 ObjectType(c))
         }
 
       case c if listType.isAssignableFrom(typeToken) =>
         val et = elementType(typeToken)
-        val array =
-          Invoke(
-            MapObjects(
-              p => deserializerFor(et, Some(p)),
-              getPath,
-              inferDataType(et)._1),
-            "array",
-            ObjectType(classOf[Array[Any]]))
+        val array = Invoke(MapObjects(p => deserializerFor(et, Some(p)),
+                                      getPath,
+                                      inferDataType(et)._1),
+                           "array",
+                           ObjectType(classOf[Array[Any]]))
 
         StaticInvoke(classOf[java.util.Arrays], ObjectType(c), "asList", array :: Nil)
 
@@ -262,29 +260,22 @@ object JavaTypeInference {
         val keyDataType = inferDataType(keyType)._1
         val valueDataType = inferDataType(valueType)._1
 
-        val keyData =
-          Invoke(
-            MapObjects(
-              p => deserializerFor(keyType, Some(p)),
-              Invoke(getPath, "keyArray", ArrayType(keyDataType)),
-              keyDataType),
-            "array",
-            ObjectType(classOf[Array[Any]]))
+        val keyData = Invoke(MapObjects(p => deserializerFor(keyType, Some(p)),
+                                        Invoke(getPath, "keyArray", ArrayType(keyDataType)),
+                                        keyDataType),
+                             "array",
+                             ObjectType(classOf[Array[Any]]))
 
-        val valueData =
-          Invoke(
-            MapObjects(
-              p => deserializerFor(valueType, Some(p)),
-              Invoke(getPath, "valueArray", ArrayType(valueDataType)),
-              valueDataType),
-            "array",
-            ObjectType(classOf[Array[Any]]))
+        val valueData = Invoke(MapObjects(p => deserializerFor(valueType, Some(p)),
+                                          Invoke(getPath, "valueArray", ArrayType(valueDataType)),
+                                          valueDataType),
+                               "array",
+                               ObjectType(classOf[Array[Any]]))
 
-        StaticInvoke(
-          ArrayBasedMapData.getClass,
-          ObjectType(classOf[JMap[_, _]]),
-          "toJavaMap",
-          keyData :: valueData :: Nil)
+        StaticInvoke(ArrayBasedMapData.getClass,
+                     ObjectType(classOf[JMap[_, _]]),
+                     "toJavaMap",
+                     keyData :: valueData :: Nil)
 
       case other =>
         val properties = getJavaBeanProperties(other)
@@ -295,11 +286,12 @@ object JavaTypeInference {
           val fieldType = typeToken.method(p.getReadMethod).getReturnType
           val (_, nullable) = inferDataType(fieldType)
           val constructor = deserializerFor(fieldType, Some(addToPath(fieldName)))
-          val setter = if (nullable) {
-            constructor
-          } else {
-            AssertNotNull(constructor, Seq("currently no type path record in java"))
-          }
+          val setter =
+            if (nullable) {
+              constructor
+            } else {
+              AssertNotNull(constructor, Seq("currently no type path record in java"))
+            }
           p.getWriteMethod.getName -> setter
         }.toMap
 
@@ -308,9 +300,9 @@ object JavaTypeInference {
 
         if (path.nonEmpty) {
           expressions.If(
-            IsNull(getPath),
-            expressions.Literal.create(null, ObjectType(other)),
-            result
+              IsNull(getPath),
+              expressions.Literal.create(null, ObjectType(other)),
+              result
           )
         } else {
           result
@@ -331,10 +323,9 @@ object JavaTypeInference {
     def toCatalystArray(input: Expression, elementType: TypeToken[_]): Expression = {
       val (dataType, nullable) = inferDataType(elementType)
       if (ScalaReflection.isNativeType(dataType)) {
-        NewInstance(
-          classOf[GenericArrayData],
-          input :: Nil,
-          dataType = ArrayType(dataType, nullable))
+        NewInstance(classOf[GenericArrayData],
+                    input :: Nil,
+                    dataType = ArrayType(dataType, nullable))
       } else {
         MapObjects(serializerFor(_, elementType), input, ObjectType(elementType.getRawType))
       }
@@ -345,32 +336,28 @@ object JavaTypeInference {
     } else {
       typeToken.getRawType match {
         case c if c == classOf[String] =>
-          StaticInvoke(
-            classOf[UTF8String],
-            StringType,
-            "fromString",
-            inputObject :: Nil)
+          StaticInvoke(classOf[UTF8String],
+                       StringType,
+                       "fromString",
+                       inputObject :: Nil)
 
         case c if c == classOf[java.sql.Timestamp] =>
-          StaticInvoke(
-            DateTimeUtils.getClass,
-            TimestampType,
-            "fromJavaTimestamp",
-            inputObject :: Nil)
+          StaticInvoke(DateTimeUtils.getClass,
+                       TimestampType,
+                       "fromJavaTimestamp",
+                       inputObject :: Nil)
 
         case c if c == classOf[java.sql.Date] =>
-          StaticInvoke(
-            DateTimeUtils.getClass,
-            DateType,
-            "fromJavaDate",
-            inputObject :: Nil)
+          StaticInvoke(DateTimeUtils.getClass,
+                       DateType,
+                       "fromJavaDate",
+                       inputObject :: Nil)
 
         case c if c == classOf[java.math.BigDecimal] =>
-          StaticInvoke(
-            Decimal.getClass,
-            DecimalType.SYSTEM_DEFAULT,
-            "apply",
-            inputObject :: Nil)
+          StaticInvoke(Decimal.getClass,
+                       DecimalType.SYSTEM_DEFAULT,
+                       "apply",
+                       inputObject :: Nil)
 
         case c if c == classOf[java.lang.Boolean] =>
           Invoke(inputObject, "booleanValue", BooleanType)
@@ -402,18 +389,18 @@ object JavaTypeInference {
         case other =>
           val properties = getJavaBeanProperties(other)
           if (properties.length > 0) {
-            CreateNamedStruct(properties.flatMap { p =>
+            CreateNamedStruct(
+                properties.flatMap { p =>
               val fieldName = p.getName
               val fieldType = typeToken.method(p.getReadMethod).getReturnType
-              val fieldValue = Invoke(
-                inputObject,
-                p.getReadMethod.getName,
-                inferExternalType(fieldType.getRawType))
+              val fieldValue = Invoke(inputObject,
+                                      p.getReadMethod.getName,
+                                      inferExternalType(fieldType.getRawType))
               expressions.Literal(fieldName) :: serializerFor(fieldValue, fieldType) :: Nil
             })
           } else {
             throw new UnsupportedOperationException(
-              s"Cannot infer type for class ${other.getName} because it is not bean-compliant")
+                s"Cannot infer type for class ${other.getName} because it is not bean-compliant")
           }
       }
     }

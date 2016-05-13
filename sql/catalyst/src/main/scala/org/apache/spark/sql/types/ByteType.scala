@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.ScalaReflectionLock
  * The data type representing `Byte` values. Please use the singleton [[DataTypes.ByteType]].
  */
 @DeveloperApi
-class ByteType private() extends IntegralType {
+class ByteType private () extends IntegralType {
   // The companion object and this class is separated so the companion object also subclasses
   // this type. Otherwise, the companion object would be of type "ByteType$" in byte code.
   // Defined with a private constructor so the companion object is the only possible instantiation.

@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
  * considered equal if for the same input(s), the same result is produced.
  */
 class EquivalentExpressions {
+
   /**
    * Wrapper around an Expression that provides semantic equality.
    */
@@ -68,10 +69,9 @@ class EquivalentExpressions {
    * is found. That is, if `expr` has already been added, its children are not added.
    * If ignoreLeaf is true, leaf nodes are ignored.
    */
-  def addExprTree(
-      root: Expression,
-      ignoreLeaf: Boolean = true,
-      skipReferenceToExpressions: Boolean = true): Unit = {
+  def addExprTree(root: Expression,
+                  ignoreLeaf: Boolean = true,
+                  skipReferenceToExpressions: Boolean = true): Unit = {
     val skip = root.isInstanceOf[LeafExpression] && ignoreLeaf
     // There are some special expressions that we should not recurse into children.
     //   1. CodegenFallback: it's children will not be used to generate code (call eval() instead)
@@ -110,10 +110,11 @@ class EquivalentExpressions {
   def debugString(all: Boolean = false): String = {
     val sb: mutable.StringBuilder = new StringBuilder()
     sb.append("Equivalent expressions:\n")
-    equivalenceMap.foreach { case (k, v) =>
-      if (all || v.length > 1) {
-        sb.append("  " + v.mkString(", ")).append("\n")
-      }
+    equivalenceMap.foreach {
+      case (k, v) =>
+        if (all || v.length > 1) {
+          sb.append("  " + v.mkString(", ")).append("\n")
+        }
     }
     sb.toString()
   }

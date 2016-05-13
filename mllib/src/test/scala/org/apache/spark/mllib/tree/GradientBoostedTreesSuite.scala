@@ -38,8 +38,11 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
       case (numIterations, learningRate, subsamplingRate) =>
         val rdd = sc.parallelize(GradientBoostedTreesSuite.data, 2)
 
-        val treeStrategy = new Strategy(algo = Regression, impurity = Variance, maxDepth = 2,
-          categoricalFeaturesInfo = Map.empty, subsamplingRate = subsamplingRate)
+        val treeStrategy = new Strategy(algo = Regression,
+                                        impurity = Variance,
+                                        maxDepth = 2,
+                                        categoricalFeaturesInfo = Map.empty,
+                                        subsamplingRate = subsamplingRate)
         val boostingStrategy =
           new BoostingStrategy(treeStrategy, SquaredError, numIterations, learningRate)
 
@@ -51,7 +54,7 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
         } catch {
           case e: java.lang.AssertionError =>
             logError(s"FAILED for numIterations=$numIterations, learningRate=$learningRate," +
-              s" subsamplingRate=$subsamplingRate")
+                s" subsamplingRate=$subsamplingRate")
             throw e
         }
 
@@ -68,8 +71,11 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
       case (numIterations, learningRate, subsamplingRate) =>
         val rdd = sc.parallelize(GradientBoostedTreesSuite.data, 2)
 
-        val treeStrategy = new Strategy(algo = Regression, impurity = Variance, maxDepth = 2,
-          categoricalFeaturesInfo = Map.empty, subsamplingRate = subsamplingRate)
+        val treeStrategy = new Strategy(algo = Regression,
+                                        impurity = Variance,
+                                        maxDepth = 2,
+                                        categoricalFeaturesInfo = Map.empty,
+                                        subsamplingRate = subsamplingRate)
         val boostingStrategy =
           new BoostingStrategy(treeStrategy, AbsoluteError, numIterations, learningRate)
 
@@ -81,7 +87,7 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
         } catch {
           case e: java.lang.AssertionError =>
             logError(s"FAILED for numIterations=$numIterations, learningRate=$learningRate," +
-              s" subsamplingRate=$subsamplingRate")
+                s" subsamplingRate=$subsamplingRate")
             throw e
         }
 
@@ -98,9 +104,12 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
       case (numIterations, learningRate, subsamplingRate) =>
         val rdd = sc.parallelize(GradientBoostedTreesSuite.data, 2)
 
-        val treeStrategy = new Strategy(algo = Classification, impurity = Variance, maxDepth = 2,
-          numClasses = 2, categoricalFeaturesInfo = Map.empty,
-          subsamplingRate = subsamplingRate)
+        val treeStrategy = new Strategy(algo = Classification,
+                                        impurity = Variance,
+                                        maxDepth = 2,
+                                        numClasses = 2,
+                                        categoricalFeaturesInfo = Map.empty,
+                                        subsamplingRate = subsamplingRate)
         val boostingStrategy =
           new BoostingStrategy(treeStrategy, LogLoss, numIterations, learningRate)
 
@@ -112,7 +121,7 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
         } catch {
           case e: java.lang.AssertionError =>
             logError(s"FAILED for numIterations=$numIterations, learningRate=$learningRate," +
-              s" subsamplingRate=$subsamplingRate")
+                s" subsamplingRate=$subsamplingRate")
             throw e
         }
 
@@ -148,8 +157,9 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
         model.save(sc, path)
         val sameModel = GradientBoostedTreesModel.load(sc, path)
         assert(model.algo == sameModel.algo)
-        model.trees.zip(sameModel.trees).foreach { case (treeA, treeB) =>
-          DecisionTreeSuite.checkEqual(treeA, treeB)
+        model.trees.zip(sameModel.trees).foreach {
+          case (treeA, treeB) =>
+            DecisionTreeSuite.checkEqual(treeA, treeB)
         }
         assert(model.treeWeights === sameModel.treeWeights)
       } finally {
@@ -165,8 +175,11 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
 
     val rdd = sc.parallelize(GradientBoostedTreesSuite.data, 2)
 
-    val treeStrategy = new Strategy(algo = Regression, impurity = Variance, maxDepth = 2,
-      categoricalFeaturesInfo = Map.empty, checkpointInterval = 2)
+    val treeStrategy = new Strategy(algo = Regression,
+                                    impurity = Variance,
+                                    maxDepth = 2,
+                                    categoricalFeaturesInfo = Map.empty,
+                                    checkpointInterval = 2)
     val boostingStrategy = new BoostingStrategy(treeStrategy, SquaredError, 5, 0.1)
 
     val gbt = GradientBoostedTrees.train(rdd, boostingStrategy)
@@ -174,7 +187,6 @@ class GradientBoostedTreesSuite extends SparkFunSuite with MLlibTestSparkContext
     sc.checkpointDir = None
     Utils.deleteRecursively(tempDir)
   }
-
 }
 
 private[spark] object GradientBoostedTreesSuite {

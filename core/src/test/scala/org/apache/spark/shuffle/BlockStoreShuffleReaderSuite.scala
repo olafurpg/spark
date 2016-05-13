@@ -80,7 +80,7 @@ class BlockStoreShuffleReaderSuite extends SparkFunSuite with LocalSparkContext 
     val serializationStream = serializer.newInstance().serializeStream(byteOutputStream)
     (0 until keyValuePairsPerMap).foreach { i =>
       serializationStream.writeKey(i)
-      serializationStream.writeValue(2*i)
+      serializationStream.writeValue(2 * i)
     }
 
     // Setup the mocked BlockManager to return RecordingManagedBuffers.
@@ -120,20 +120,18 @@ class BlockStoreShuffleReaderSuite extends SparkFunSuite with LocalSparkContext 
       new BaseShuffleHandle(shuffleId, numMaps, dependency)
     }
 
-    val serializerManager = new SerializerManager(
-      serializer,
-      new SparkConf()
-        .set("spark.shuffle.compress", "false")
-        .set("spark.shuffle.spill.compress", "false"))
+    val serializerManager = new SerializerManager(serializer,
+                                                  new SparkConf()
+                                                    .set("spark.shuffle.compress", "false")
+                                                    .set("spark.shuffle.spill.compress", "false"))
 
-    val shuffleReader = new BlockStoreShuffleReader(
-      shuffleHandle,
-      reduceId,
-      reduceId + 1,
-      TaskContext.empty(),
-      serializerManager,
-      blockManager,
-      mapOutputTracker)
+    val shuffleReader = new BlockStoreShuffleReader(shuffleHandle,
+                                                    reduceId,
+                                                    reduceId + 1,
+                                                    TaskContext.empty(),
+                                                    serializerManager,
+                                                    blockManager,
+                                                    mapOutputTracker)
 
     assert(shuffleReader.read().length === keyValuePairsPerMap * numMaps)
 

@@ -52,7 +52,7 @@ class DummyClass7 {
 }
 
 object DummyString {
-  def apply(str: String) : DummyString = new DummyString(str.toArray)
+  def apply(str: String): DummyString = new DummyString(str.toArray)
 }
 class DummyString(val arr: Array[Char]) {
   override val hashCode: Int = 0
@@ -67,10 +67,10 @@ class DummyClass8 extends KnownSizeEstimation {
 }
 
 class SizeEstimatorSuite
-  extends SparkFunSuite
-  with BeforeAndAfterEach
-  with PrivateMethodTester
-  with ResetSystemProperties {
+    extends SparkFunSuite
+    with BeforeAndAfterEach
+    with PrivateMethodTester
+    with ResetSystemProperties {
 
   override def beforeEach() {
     // Set the arch to 64-bit and compressedOops to true to get a deterministic test-case
@@ -142,7 +142,6 @@ class SizeEstimatorSuite
 
     // Past size 100, our samples 100 elements, but we should still get the right size.
     assertResult(28016)(SizeEstimator.estimate(Array.fill(1000)(new DummyClass3)))
-
 
     val arr = new Array[Char](100000)
     assertResult(200016)(SizeEstimator.estimate(arr))

@@ -32,21 +32,29 @@ object PivotFirst {
   // UnsupportedOperationException), so we need to explicitly support each DataType.
   private val updateFunction: PartialFunction[DataType, (MutableRow, Int, Any) => Unit] = {
     case DoubleType =>
-      (row, offset, value) => row.setDouble(offset, value.asInstanceOf[Double])
-    case IntegerType =>
-      (row, offset, value) => row.setInt(offset, value.asInstanceOf[Int])
-    case LongType =>
-      (row, offset, value) => row.setLong(offset, value.asInstanceOf[Long])
-    case FloatType =>
-      (row, offset, value) => row.setFloat(offset, value.asInstanceOf[Float])
-    case BooleanType =>
-      (row, offset, value) => row.setBoolean(offset, value.asInstanceOf[Boolean])
-    case ShortType =>
-      (row, offset, value) => row.setShort(offset, value.asInstanceOf[Short])
-    case ByteType =>
-      (row, offset, value) => row.setByte(offset, value.asInstanceOf[Byte])
-    case d: DecimalType =>
-      (row, offset, value) => row.setDecimal(offset, value.asInstanceOf[Decimal], d.precision)
+      (row, offset, value) =>
+        row.setDouble(offset, value.asInstanceOf[Double])
+      case IntegerType =>
+      (row, offset, value) =>
+        row.setInt(offset, value.asInstanceOf[Int])
+      case LongType =>
+      (row, offset, value) =>
+        row.setLong(offset, value.asInstanceOf[Long])
+      case FloatType =>
+      (row, offset, value) =>
+        row.setFloat(offset, value.asInstanceOf[Float])
+      case BooleanType =>
+      (row, offset, value) =>
+        row.setBoolean(offset, value.asInstanceOf[Boolean])
+      case ShortType =>
+      (row, offset, value) =>
+        row.setShort(offset, value.asInstanceOf[Short])
+      case ByteType =>
+      (row, offset, value) =>
+        row.setByte(offset, value.asInstanceOf[Byte])
+      case d: DecimalType =>
+      (row, offset, value) =>
+        row.setDecimal(offset, value.asInstanceOf[Decimal], d.precision)
   }
 }
 
@@ -68,12 +76,12 @@ object PivotFirst {
  * @param pivotColumnValues the list of pivotColumn values in the order of desired output. Values
  *                          not listed here will be ignored.
  */
-case class PivotFirst(
-  pivotColumn: Expression,
-  valueColumn: Expression,
-  pivotColumnValues: Seq[Any],
-  mutableAggBufferOffset: Int = 0,
-  inputAggBufferOffset: Int = 0) extends ImperativeAggregate {
+case class PivotFirst(pivotColumn: Expression,
+                      valueColumn: Expression,
+                      pivotColumnValues: Seq[Any],
+                      mutableAggBufferOffset: Int = 0,
+                      inputAggBufferOffset: Int = 0)
+    extends ImperativeAggregate {
 
   override val children: Seq[Expression] = pivotColumn :: valueColumn :: Nil
 
@@ -140,7 +148,6 @@ case class PivotFirst(
   override def withNewMutableAggBufferOffset(newMutableAggBufferOffset: Int): ImperativeAggregate =
     copy(mutableAggBufferOffset = newMutableAggBufferOffset)
 
-
   override val aggBufferAttributes: Seq[AttributeReference] =
     pivotIndex.toList.sortBy(_._2).map(kv => AttributeReference(kv._1.toString, valueDataType)())
 
@@ -149,4 +156,3 @@ case class PivotFirst(
   override val inputAggBufferAttributes: Seq[AttributeReference] =
     aggBufferAttributes.map(_.newInstance())
 }
-

@@ -79,8 +79,9 @@ class MultivariateOnlineSummarizer extends MultivariateStatisticalSummary with S
       currMin = Array.fill[Double](n)(Double.MaxValue)
     }
 
-    require(n == instance.size, s"Dimensions mismatch when adding new sample." +
-      s" Expecting $n but got ${instance.size}.")
+    require(n == instance.size,
+            s"Dimensions mismatch when adding new sample." +
+            s" Expecting $n but got ${instance.size}.")
 
     val localCurrMean = currMean
     val localCurrM2n = currM2n
@@ -125,8 +126,9 @@ class MultivariateOnlineSummarizer extends MultivariateStatisticalSummary with S
   @Since("1.1.0")
   def merge(other: MultivariateOnlineSummarizer): this.type = {
     if (this.weightSum != 0.0 && other.weightSum != 0.0) {
-      require(n == other.n, s"Dimensions mismatch when merging with another summarizer. " +
-        s"Expecting $n but got ${other.n}.")
+      require(n == other.n,
+              s"Dimensions mismatch when merging with another summarizer. " +
+              s"Expecting $n but got ${other.n}.")
       totalCnt += other.totalCnt
       weightSum += other.weightSum
       weightSquareSum += other.weightSquareSum
@@ -203,8 +205,9 @@ class MultivariateOnlineSummarizer extends MultivariateStatisticalSummary with S
       var i = 0
       val len = currM2n.length
       while (i < len) {
-        realVariance(i) = (currM2n(i) + deltaMean(i) * deltaMean(i) * nnz(i) *
-          (weightSum - nnz(i)) / weightSum) / denominator
+        realVariance(i) =
+          (currM2n(i) + deltaMean(i) * deltaMean(i) * nnz(i) *
+              (weightSum - nnz(i)) / weightSum) / denominator
         i += 1
       }
     }

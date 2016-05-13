@@ -24,7 +24,8 @@ import scala.util.Random
 
 import org.scalatest.FunSuite // scalastyle:ignore funsuite
 
-class CountMinSketchSuite extends FunSuite { // scalastyle:ignore funsuite
+class CountMinSketchSuite extends FunSuite {
+  // scalastyle:ignore funsuite
   private val epsOfTotalCount = 0.0001
 
   private val confidence = 0.99
@@ -76,8 +77,8 @@ class CountMinSketchSuite extends FunSuite { // scalastyle:ignore funsuite
       }
 
       assert(
-        probCorrect > confidence,
-        s"Confidence not reached: required $confidence, reached $probCorrect"
+          probCorrect > confidence,
+          s"Confidence not reached: required $confidence, reached $probCorrect"
       )
     }
   }
@@ -133,7 +134,9 @@ class CountMinSketchSuite extends FunSuite { // scalastyle:ignore funsuite
 
   testItemType[Long]("Long") { _.nextLong() }
 
-  testItemType[String]("String") { r => r.nextString(r.nextInt(20)) }
+  testItemType[String]("String") { r =>
+    r.nextString(r.nextInt(20))
+  }
 
   test("incompatible merge") {
     intercept[IncompatibleMergeException] {

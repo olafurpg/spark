@@ -39,7 +39,7 @@ import org.apache.spark.streaming.util.WriteAheadLogUtils
  * @tparam T Class type of the object of this stream
  */
 abstract class ReceiverInputDStream[T: ClassTag](_ssc: StreamingContext)
-  extends InputDStream[T](_ssc) {
+    extends InputDStream[T](_ssc) {
 
   /**
    * Asynchronously maintains & sends new rate limits to the receiver through the receiver tracker.
@@ -104,14 +104,14 @@ abstract class ReceiverInputDStream[T: ClassTag](_ssc: StreamingContext)
         val isBlockIdValid = blockInfos.map { _.isBlockIdValid() }.toArray
         val walRecordHandles = blockInfos.map { _.walRecordHandleOption.get }.toArray
         new WriteAheadLogBackedBlockRDD[T](
-          ssc.sparkContext, blockIds, walRecordHandles, isBlockIdValid)
+            ssc.sparkContext, blockIds, walRecordHandles, isBlockIdValid)
       } else {
         // Else, create a BlockRDD. However, if there are some blocks with WAL info but not
         // others then that is unexpected and log a warning accordingly.
         if (blockInfos.exists(_.walRecordHandleOption.nonEmpty)) {
           if (WriteAheadLogUtils.enableReceiverLog(ssc.conf)) {
             logError("Some blocks do not have Write Ahead Log information; " +
-              "this is unexpected and data may not be recoverable after driver failures")
+                "this is unexpected and data may not be recoverable after driver failures")
           } else {
             logWarning("Some blocks have Write Ahead Log information; this is unexpected")
           }
@@ -120,9 +120,10 @@ abstract class ReceiverInputDStream[T: ClassTag](_ssc: StreamingContext)
           ssc.sparkContext.env.blockManager.master.contains(id)
         }
         if (validBlockIds.length != blockIds.length) {
-          logWarning("Some blocks could not be recovered as they were not found in memory. " +
-            "To prevent such data loss, enable Write Ahead Log (see programming guide " +
-            "for more details.")
+          logWarning(
+              "Some blocks could not be recovered as they were not found in memory. " +
+              "To prevent such data loss, enable Write Ahead Log (see programming guide " +
+              "for more details.")
         }
         new BlockRDD[T](ssc.sc, validBlockIds)
       }
@@ -130,8 +131,7 @@ abstract class ReceiverInputDStream[T: ClassTag](_ssc: StreamingContext)
       // If no block is ready now, creating WriteAheadLogBackedBlockRDD or BlockRDD
       // according to the configuration
       if (WriteAheadLogUtils.enableReceiverLog(ssc.conf)) {
-        new WriteAheadLogBackedBlockRDD[T](
-          ssc.sparkContext, Array.empty, Array.empty, Array.empty)
+        new WriteAheadLogBackedBlockRDD[T](ssc.sparkContext, Array.empty, Array.empty, Array.empty)
       } else {
         new BlockRDD[T](ssc.sc, Array.empty)
       }
@@ -147,4 +147,3 @@ abstract class ReceiverInputDStream[T: ClassTag](_ssc: StreamingContext)
       ssc.scheduler.receiverTracker.sendRateUpdate(id, rate)
   }
 }
-

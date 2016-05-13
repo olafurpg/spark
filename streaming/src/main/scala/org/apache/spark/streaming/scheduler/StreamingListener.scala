@@ -40,23 +40,23 @@ case class StreamingListenerBatchStarted(batchInfo: BatchInfo) extends Streaming
 
 @DeveloperApi
 case class StreamingListenerOutputOperationStarted(outputOperationInfo: OutputOperationInfo)
-  extends StreamingListenerEvent
+    extends StreamingListenerEvent
 
 @DeveloperApi
 case class StreamingListenerOutputOperationCompleted(outputOperationInfo: OutputOperationInfo)
-  extends StreamingListenerEvent
+    extends StreamingListenerEvent
 
 @DeveloperApi
 case class StreamingListenerReceiverStarted(receiverInfo: ReceiverInfo)
-  extends StreamingListenerEvent
+    extends StreamingListenerEvent
 
 @DeveloperApi
 case class StreamingListenerReceiverError(receiverInfo: ReceiverInfo)
-  extends StreamingListenerEvent
+    extends StreamingListenerEvent
 
 @DeveloperApi
 case class StreamingListenerReceiverStopped(receiverInfo: ReceiverInfo)
-  extends StreamingListenerEvent
+    extends StreamingListenerEvent
 
 /**
  * :: DeveloperApi ::
@@ -67,32 +67,30 @@ case class StreamingListenerReceiverStopped(receiverInfo: ReceiverInfo)
 trait StreamingListener {
 
   /** Called when a receiver has been started */
-  def onReceiverStarted(receiverStarted: StreamingListenerReceiverStarted) { }
+  def onReceiverStarted(receiverStarted: StreamingListenerReceiverStarted) {}
 
   /** Called when a receiver has reported an error */
-  def onReceiverError(receiverError: StreamingListenerReceiverError) { }
+  def onReceiverError(receiverError: StreamingListenerReceiverError) {}
 
   /** Called when a receiver has been stopped */
-  def onReceiverStopped(receiverStopped: StreamingListenerReceiverStopped) { }
+  def onReceiverStopped(receiverStopped: StreamingListenerReceiverStopped) {}
 
   /** Called when a batch of jobs has been submitted for processing. */
-  def onBatchSubmitted(batchSubmitted: StreamingListenerBatchSubmitted) { }
+  def onBatchSubmitted(batchSubmitted: StreamingListenerBatchSubmitted) {}
 
   /** Called when processing of a batch of jobs has started.  */
-  def onBatchStarted(batchStarted: StreamingListenerBatchStarted) { }
+  def onBatchStarted(batchStarted: StreamingListenerBatchStarted) {}
 
   /** Called when processing of a batch of jobs has completed. */
-  def onBatchCompleted(batchCompleted: StreamingListenerBatchCompleted) { }
+  def onBatchCompleted(batchCompleted: StreamingListenerBatchCompleted) {}
 
   /** Called when processing of a job of a batch has started. */
-  def onOutputOperationStarted(
-      outputOperationStarted: StreamingListenerOutputOperationStarted) { }
+  def onOutputOperationStarted(outputOperationStarted: StreamingListenerOutputOperationStarted) {}
 
   /** Called when processing of a job of a batch has completed. */
   def onOutputOperationCompleted(
-      outputOperationCompleted: StreamingListenerOutputOperationCompleted) { }
+      outputOperationCompleted: StreamingListenerOutputOperationCompleted) {}
 }
-
 
 /**
  * :: DeveloperApi ::
@@ -116,8 +114,8 @@ class StatsReportListener(numBatchInfos: Int = 10) extends StreamingListener {
   }
 
   def showMillisDistribution(heading: String, getMetric: BatchInfo => Option[Long]) {
-    org.apache.spark.scheduler.StatsReportListener.showMillisDistribution(
-      heading, extractDistribution(getMetric))
+    org.apache.spark.scheduler.StatsReportListener
+      .showMillisDistribution(heading, extractDistribution(getMetric))
   }
 
   def extractDistribution(getMetric: BatchInfo => Option[Long]): Option[Distribution] = {

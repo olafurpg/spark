@@ -65,11 +65,10 @@ private[deploy] object RPackageUtils extends Logging {
     """.stripMargin.trim
 
   /** Internal method for logging. We log to a printStream in tests, for debugging purposes. */
-  private def print(
-      msg: String,
-      printStream: PrintStream,
-      level: Level = Level.FINE,
-      e: Throwable = null): Unit = {
+  private def print(msg: String,
+                    printStream: PrintStream,
+                    level: Level = Level.FINE,
+                    e: Throwable = null): Unit = {
     if (printStream != null) {
       // scalastyle:off println
       printStream.println(msg)
@@ -101,10 +100,7 @@ private[deploy] object RPackageUtils extends Logging {
    * Multiple runs don't cause problems.
    */
   private def rPackageBuilder(
-      dir: File,
-      printStream: PrintStream,
-      verbose: Boolean,
-      libDir: String): Boolean = {
+      dir: File, printStream: PrintStream, verbose: Boolean, libDir: String): Boolean = {
     // this code should be always running on the driver.
     val pathToPkg = Seq(dir, "R", "pkg").mkString(File.separator)
     val installCmd = baseInstallCmd ++ Seq(libDir, pathToPkg)
@@ -121,7 +117,7 @@ private[deploy] object RPackageUtils extends Logging {
       val rPackageDir = RUtils.sparkRPackagePath(isDriver = true)
       env.put("SPARKR_PACKAGE_DIR", rPackageDir.mkString(","))
       env.put("R_PROFILE_USER",
-        Seq(rPackageDir(0), "SparkR", "profile", "general.R").mkString(File.separator))
+              Seq(rPackageDir(0), "SparkR", "profile", "general.R").mkString(File.separator))
 
       val process = builder.start()
       new RedirectThread(process.getInputStream, printStream, "redirect R packaging").start()
@@ -169,9 +165,7 @@ private[deploy] object RPackageUtils extends Logging {
    * Extracts the files under /R in the jar to a temporary directory for building.
    */
   private[deploy] def checkAndBuildRPackage(
-      jars: String,
-      printStream: PrintStream = null,
-      verbose: Boolean = false): Unit = {
+      jars: String, printStream: PrintStream = null, verbose: Boolean = false): Unit = {
     jars.split(",").foreach { jarPath =>
       val file = new File(Utils.resolveURI(jarPath))
       if (file.exists()) {
@@ -187,7 +181,8 @@ private[deploy] object RPackageUtils extends Logging {
               print(s"ERROR: Failed to build R package in $file.", printStream)
               print(RJarDoc, printStream)
             }
-          } finally { // clean up
+          } finally {
+            // clean up
             if (!rSource.delete()) {
               logWarning(s"Error deleting ${rSource.getPath()}")
             }
@@ -208,7 +203,8 @@ private[deploy] object RPackageUtils extends Logging {
       Set.empty[File]
     } else {
       if (dir.isDirectory) {
-        val subDir = dir.listFiles(new FilenameFilter {
+        val subDir = dir.listFiles(
+            new FilenameFilter {
           override def accept(dir: File, name: String): Boolean = {
             !excludePatterns.map(name.contains).reduce(_ || _) // exclude files with given pattern
           }

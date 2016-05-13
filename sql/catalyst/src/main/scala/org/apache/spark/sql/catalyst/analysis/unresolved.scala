@@ -32,14 +32,13 @@ import org.apache.spark.sql.types.{DataType, StructType}
  * resolved.
  */
 class UnresolvedException[TreeType <: TreeNode[_]](tree: TreeType, function: String)
-  extends TreeNodeException(tree, s"Invalid call to $function on unresolved object", null)
+    extends TreeNodeException(tree, s"Invalid call to $function on unresolved object", null)
 
 /**
  * Holds the name of a relation that has yet to be looked up in a catalog.
  */
-case class UnresolvedRelation(
-    tableIdentifier: TableIdentifier,
-    alias: Option[String] = None) extends LeafNode {
+case class UnresolvedRelation(tableIdentifier: TableIdentifier, alias: Option[String] = None)
+    extends LeafNode {
 
   /** Returns a `.` separated name for this relation. */
   def tableName: String = tableIdentifier.unquotedString
@@ -74,6 +73,7 @@ case class UnresolvedAttribute(nameParts: Seq[String]) extends Attribute with Un
 }
 
 object UnresolvedAttribute {
+
   /**
    * Creates an [[UnresolvedAttribute]], parsing segments separated by dots ('.').
    */
@@ -140,7 +140,7 @@ object UnresolvedAttribute {
  * The analyzer will resolve this generator.
  */
 case class UnresolvedGenerator(name: FunctionIdentifier, children: Seq[Expression])
-  extends Generator {
+    extends Generator {
 
   override def elementSchema: StructType = throw new UnresolvedException(this, "elementTypes")
   override def dataType: DataType = throw new UnresolvedException(this, "dataType")
@@ -162,10 +162,9 @@ case class UnresolvedGenerator(name: FunctionIdentifier, children: Seq[Expressio
 }
 
 case class UnresolvedFunction(
-    name: FunctionIdentifier,
-    children: Seq[Expression],
-    isDistinct: Boolean)
-  extends Expression with Unevaluable {
+    name: FunctionIdentifier, children: Seq[Expression], isDistinct: Boolean)
+    extends Expression
+    with Unevaluable {
 
   override def dataType: DataType = throw new UnresolvedException(this, "dataType")
   override def foldable: Boolean = throw new UnresolvedException(this, "foldable")
@@ -200,7 +199,6 @@ abstract class Star extends LeafExpression with NamedExpression {
   def expand(input: LogicalPlan, resolver: Resolver): Seq[NamedExpression]
 }
 
-
 /**
  * Represents all of the input attributes to a given relational operator, for example in
  * "SELECT * FROM ...".
@@ -221,11 +219,12 @@ case class UnresolvedStar(target: Option[Seq[String]]) extends Star with Unevalu
       // If there is no table specified, use all input attributes.
       case None => input.output
       // If there is a table, pick out attributes that are part of this table.
-      case Some(t) => if (t.size == 1) {
-        input.output.filter(_.qualifier.exists(resolver(_, t.head)))
-      } else {
-        List()
-      }
+      case Some(t) =>
+        if (t.size == 1) {
+          input.output.filter(_.qualifier.exists(resolver(_, t.head)))
+        } else {
+          List()
+        }
     }
     if (expandedAttributes.nonEmpty) return expandedAttributes
 
@@ -236,15 +235,16 @@ case class UnresolvedStar(target: Option[Seq[String]]) extends Star with Unevalu
     if (attribute.isDefined) {
       // This target resolved to an attribute in child. It must be a struct. Expand it.
       attribute.get.dataType match {
-        case s: StructType => s.zipWithIndex.map {
-          case (f, i) =>
-            val extract = GetStructField(attribute.get, i)
-            Alias(extract, f.name)()
-        }
+        case s: StructType =>
+          s.zipWithIndex.map {
+            case (f, i) =>
+              val extract = GetStructField(attribute.get, i)
+              Alias(extract, f.name)()
+          }
 
         case _ =>
-          throw new AnalysisException("Can only star expand struct data types. Attribute: `" +
-            target.get + "`")
+          throw new AnalysisException(
+              "Can only star expand struct data types. Attribute: `" + target.get + "`")
       }
     } else {
       val from = input.inputSet.map(_.name).mkString(", ")
@@ -267,7 +267,9 @@ case class UnresolvedStar(target: Option[Seq[String]]) extends Star with Unevalu
  * @param names the names to be associated with each output of computing [[child]].
  */
 case class MultiAlias(child: Expression, names: Seq[String])
-  extends UnaryExpression with NamedExpression with CodegenFallback {
+    extends UnaryExpression
+    with NamedExpression
+    with CodegenFallback {
 
   override def name: String = throw new UnresolvedException(this, "name")
 
@@ -286,7 +288,6 @@ case class MultiAlias(child: Expression, names: Seq[String])
   override lazy val resolved = false
 
   override def toString: String = s"$child AS $names"
-
 }
 
 /**
@@ -310,7 +311,8 @@ case class ResolvedStar(expressions: Seq[NamedExpression]) extends Star with Une
  *                   can be key of Map, index of Array, field name of Struct.
  */
 case class UnresolvedExtractValue(child: Expression, extraction: Expression)
-  extends UnaryExpression with Unevaluable {
+    extends UnaryExpression
+    with Unevaluable {
 
   override def dataType: DataType = throw new UnresolvedException(this, "dataType")
   override def foldable: Boolean = throw new UnresolvedException(this, "foldable")
@@ -329,7 +331,9 @@ case class UnresolvedExtractValue(child: Expression, extraction: Expression)
  *
  */
 case class UnresolvedAlias(child: Expression, aliasName: Option[String] = None)
-  extends UnaryExpression with NamedExpression with Unevaluable {
+    extends UnaryExpression
+    with NamedExpression
+    with Unevaluable {
 
   override def toAttribute: Attribute = throw new UnresolvedException(this, "toAttribute")
   override def qualifier: Option[String] = throw new UnresolvedException(this, "qualifier")
@@ -353,7 +357,9 @@ case class UnresolvedAlias(child: Expression, aliasName: Option[String] = None)
  *                        if we want to resolve deserializer by children output.
  */
 case class UnresolvedDeserializer(deserializer: Expression, inputAttributes: Seq[Attribute] = Nil)
-  extends UnaryExpression with Unevaluable with NonSQLExpression {
+    extends UnaryExpression
+    with Unevaluable
+    with NonSQLExpression {
   // The input attributes used to resolve deserializer expression must be all resolved.
   require(inputAttributes.forall(_.resolved), "Input attributes must all be resolved.")
 

@@ -20,9 +20,9 @@ package org.apache.spark.streaming.util
 import org.apache.spark.internal.Logging
 import org.apache.spark.util.{Clock, SystemClock}
 
-private[streaming]
-class RecurringTimer(clock: Clock, period: Long, callback: (Long) => Unit, name: String)
-  extends Logging {
+private[streaming] class RecurringTimer(
+    clock: Clock, period: Long, callback: (Long) => Unit, name: String)
+    extends Logging {
 
   private val thread = new Thread("RecurringTimer - " + name) {
     setDaemon(true)
@@ -112,8 +112,7 @@ class RecurringTimer(clock: Clock, period: Long, callback: (Long) => Unit, name:
   }
 }
 
-private[streaming]
-object RecurringTimer extends Logging {
+private[streaming] object RecurringTimer extends Logging {
 
   def main(args: Array[String]) {
     var lastRecurTime = 0L
@@ -124,10 +123,9 @@ object RecurringTimer extends Logging {
       logInfo("" + currentTime + ": " + (currentTime - lastRecurTime))
       lastRecurTime = currentTime
     }
-    val timer = new  RecurringTimer(new SystemClock(), period, onRecur, "Test")
+    val timer = new RecurringTimer(new SystemClock(), period, onRecur, "Test")
     timer.start()
     Thread.sleep(30 * 1000)
     timer.stop(true)
   }
 }
-

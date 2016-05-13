@@ -17,7 +17,6 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
-
 protected class AttributeEquals(val a: Attribute) {
   override def hashCode(): Int = a match {
     case ar: AttributeReference => ar.exprId.hashCode()
@@ -31,6 +30,7 @@ protected class AttributeEquals(val a: Attribute) {
 }
 
 object AttributeSet {
+
   /** Returns an empty [[AttributeSet]]. */
   val empty = apply(Iterable.empty)
 
@@ -39,10 +39,7 @@ object AttributeSet {
 
   /** Constructs a new [[AttributeSet]] given a sequence of [[Expression Expressions]]. */
   def apply(baseSet: Iterable[Expression]): AttributeSet = {
-    new AttributeSet(
-      baseSet
-        .flatMap(_.references)
-        .map(new AttributeEquals(_)).toSet)
+    new AttributeSet(baseSet.flatMap(_.references).map(new AttributeEquals(_)).toSet)
   }
 }
 
@@ -58,7 +55,8 @@ object AttributeSet {
  * when the transformation was a no-op).
  */
 class AttributeSet private (val baseSet: Set[AttributeEquals])
-  extends Traversable[Attribute] with Serializable {
+    extends Traversable[Attribute]
+    with Serializable {
 
   override def hashCode: Int = baseSet.hashCode()
 
@@ -74,7 +72,8 @@ class AttributeSet private (val baseSet: Set[AttributeEquals])
     baseSet.contains(new AttributeEquals(elem.toAttribute))
 
   /** Returns a new [[AttributeSet]] that contains `elem` in addition to the current elements. */
-  def +(elem: Attribute): AttributeSet =  // scalastyle:ignore
+  def +(elem: Attribute): AttributeSet =
+    // scalastyle:ignore
     new AttributeSet(baseSet + new AttributeEquals(elem))
 
   /** Returns a new [[AttributeSet]] that does not contain `elem`. */

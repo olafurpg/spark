@@ -46,7 +46,7 @@ import org.apache.spark.mllib.linalg.{Vector, Vectors}
  */
 @DeveloperApi
 class Param[T](val parent: String, val name: String, val doc: String, val isValid: T => Boolean)
-  extends Serializable {
+    extends Serializable {
 
   def this(parent: Identifiable, name: String, doc: String, isValid: T => Boolean) =
     this(parent.uid, name, doc, isValid)
@@ -74,7 +74,7 @@ class Param[T](val parent: String, val name: String, val doc: String, val isVali
         case _ => value.toString
       }
       throw new IllegalArgumentException(
-        s"$parent parameter $name given invalid value $valueToString.")
+          s"$parent parameter $name given invalid value $valueToString.")
     }
   }
 
@@ -95,7 +95,7 @@ class Param[T](val parent: String, val name: String, val doc: String, val isVali
         v.toJson
       case _ =>
         throw new NotImplementedError(
-          "The default jsonEncode only supports string and vector. " +
+            "The default jsonEncode only supports string and vector. " +
             s"${this.getClass.getName} must override jsonEncode for ${value.getClass.getName}.")
     }
   }
@@ -126,12 +126,13 @@ private[ml] object Param {
         x.asInstanceOf[T]
       case JObject(v) =>
         val keys = v.map(_._1)
-        assert(keys.contains("type") && keys.contains("values"),
-          s"Expect a JSON serialized vector but cannot find fields 'type' and 'values' in $json.")
+        assert(
+            keys.contains("type") && keys.contains("values"),
+            s"Expect a JSON serialized vector but cannot find fields 'type' and 'values' in $json.")
         Vectors.fromJson(json).asInstanceOf[T]
       case _ =>
         throw new NotImplementedError(
-          "The default jsonDecode only supports string and vector. " +
+            "The default jsonDecode only supports string and vector. " +
             s"${this.getClass.getName} must override jsonDecode to support its value type.")
     }
   }
@@ -160,8 +161,9 @@ object ParamValidators {
     case x: Double => x.toDouble
     case _ =>
       // The type should be checked before this is ever called.
-      throw new IllegalArgumentException("Numerical Param validation failed because" +
-        s" of unexpected input type: ${value.getClass}")
+      throw new IllegalArgumentException(
+          "Numerical Param validation failed because" +
+          s" of unexpected input type: ${value.getClass}")
   }
 
   /** Check if value > lowerBound */
@@ -191,11 +193,10 @@ object ParamValidators {
    * @param upperInclusive  If true, check for value <= upperBound.
    *                        If false, check for value < upperBound.
    */
-  def inRange[T](
-      lowerBound: Double,
-      upperBound: Double,
-      lowerInclusive: Boolean,
-      upperInclusive: Boolean): T => Boolean = { (value: T) =>
+  def inRange[T](lowerBound: Double,
+                 upperBound: Double,
+                 lowerInclusive: Boolean,
+                 upperInclusive: Boolean): T => Boolean = { (value: T) =>
     val x: Double = getDouble(value)
     val lowerValid = if (lowerInclusive) x >= lowerBound else x > lowerBound
     val upperValid = if (upperInclusive) x <= upperBound else x < upperBound
@@ -231,7 +232,7 @@ object ParamValidators {
  */
 @DeveloperApi
 class DoubleParam(parent: String, name: String, doc: String, isValid: Double => Boolean)
-  extends Param[Double](parent, name, doc, isValid) {
+    extends Param[Double](parent, name, doc, isValid) {
 
   def this(parent: String, name: String, doc: String) =
     this(parent, name, doc, ParamValidators.alwaysTrue)
@@ -254,6 +255,7 @@ class DoubleParam(parent: String, name: String, doc: String, isValid: Double => 
 }
 
 private[param] object DoubleParam {
+
   /** Encodes a param value into JValue. */
   def jValueEncode(value: Double): JValue = {
     value match {
@@ -291,7 +293,7 @@ private[param] object DoubleParam {
  */
 @DeveloperApi
 class IntParam(parent: String, name: String, doc: String, isValid: Int => Boolean)
-  extends Param[Int](parent, name, doc, isValid) {
+    extends Param[Int](parent, name, doc, isValid) {
 
   def this(parent: String, name: String, doc: String) =
     this(parent, name, doc, ParamValidators.alwaysTrue)
@@ -320,7 +322,7 @@ class IntParam(parent: String, name: String, doc: String, isValid: Int => Boolea
  */
 @DeveloperApi
 class FloatParam(parent: String, name: String, doc: String, isValid: Float => Boolean)
-  extends Param[Float](parent, name, doc, isValid) {
+    extends Param[Float](parent, name, doc, isValid) {
 
   def this(parent: String, name: String, doc: String) =
     this(parent, name, doc, ParamValidators.alwaysTrue)
@@ -381,7 +383,7 @@ private object FloatParam {
  */
 @DeveloperApi
 class LongParam(parent: String, name: String, doc: String, isValid: Long => Boolean)
-  extends Param[Long](parent, name, doc, isValid) {
+    extends Param[Long](parent, name, doc, isValid) {
 
   def this(parent: String, name: String, doc: String) =
     this(parent, name, doc, ParamValidators.alwaysTrue)
@@ -410,7 +412,7 @@ class LongParam(parent: String, name: String, doc: String, isValid: Long => Bool
  */
 @DeveloperApi
 class BooleanParam(parent: String, name: String, doc: String) // No need for isValid
-  extends Param[Boolean](parent, name, doc) {
+    extends Param[Boolean](parent, name, doc) {
 
   def this(parent: Identifiable, name: String, doc: String) = this(parent.uid, name, doc)
 
@@ -432,8 +434,9 @@ class BooleanParam(parent: String, name: String, doc: String) // No need for isV
  * Specialized version of [[Param[Array[String]]]] for Java.
  */
 @DeveloperApi
-class StringArrayParam(parent: Params, name: String, doc: String, isValid: Array[String] => Boolean)
-  extends Param[Array[String]](parent, name, doc, isValid) {
+class StringArrayParam(
+    parent: Params, name: String, doc: String, isValid: Array[String] => Boolean)
+    extends Param[Array[String]](parent, name, doc, isValid) {
 
   def this(parent: Params, name: String, doc: String) =
     this(parent, name, doc, ParamValidators.alwaysTrue)
@@ -457,8 +460,9 @@ class StringArrayParam(parent: Params, name: String, doc: String, isValid: Array
  * Specialized version of [[Param[Array[Double]]]] for Java.
  */
 @DeveloperApi
-class DoubleArrayParam(parent: Params, name: String, doc: String, isValid: Array[Double] => Boolean)
-  extends Param[Array[Double]](parent, name, doc, isValid) {
+class DoubleArrayParam(
+    parent: Params, name: String, doc: String, isValid: Array[Double] => Boolean)
+    extends Param[Array[Double]](parent, name, doc, isValid) {
 
   def this(parent: Params, name: String, doc: String) =
     this(parent, name, doc, ParamValidators.alwaysTrue)
@@ -488,7 +492,7 @@ class DoubleArrayParam(parent: Params, name: String, doc: String, isValid: Array
  */
 @DeveloperApi
 class IntArrayParam(parent: Params, name: String, doc: String, isValid: Array[Int] => Boolean)
-  extends Param[Array[Int]](parent, name, doc, isValid) {
+    extends Param[Array[Int]](parent, name, doc, isValid) {
 
   def this(parent: Params, name: String, doc: String) =
     this(parent, name, doc, ParamValidators.alwaysTrue)
@@ -514,9 +518,7 @@ class IntArrayParam(parent: Params, name: String, doc: String, isValid: Array[In
  */
 @Since("1.2.0")
 @Experimental
-case class ParamPair[T] @Since("1.2.0") (
-    @Since("1.2.0") param: Param[T],
-    @Since("1.2.0") value: T) {
+case class ParamPair[T] @Since("1.2.0")(@Since("1.2.0") param: Param[T], @Since("1.2.0") value: T) {
   // This is *the* place Param.validate is called.  Whenever a parameter is specified, we should
   // always construct a ParamPair so that validate is called.
   param.validate(value)
@@ -540,11 +542,9 @@ trait Params extends Identifiable with Serializable {
   lazy val params: Array[Param[_]] = {
     val methods = this.getClass.getMethods
     methods.filter { m =>
-        Modifier.isPublic(m.getModifiers) &&
-          classOf[Param[_]].isAssignableFrom(m.getReturnType) &&
-          m.getParameterTypes.isEmpty
-      }.sortBy(_.getName)
-      .map(m => m.invoke(this).asInstanceOf[Param[_]])
+      Modifier.isPublic(m.getModifiers) && classOf[Param[_]].isAssignableFrom(m.getReturnType) &&
+      m.getParameterTypes.isEmpty
+    }.sortBy(_.getName).map(m => m.invoke(this).asInstanceOf[Param[_]])
   }
 
   /**
@@ -570,13 +570,14 @@ trait Params extends Identifiable with Serializable {
    */
   def explainParam(param: Param[_]): String = {
     shouldOwn(param)
-    val valueStr = if (isDefined(param)) {
-      val defaultValueStr = getDefault(param).map("default: " + _)
-      val currentValueStr = get(param).map("current: " + _)
-      (defaultValueStr ++ currentValueStr).mkString("(", ", ", ")")
-    } else {
-      "(undefined)"
-    }
+    val valueStr =
+      if (isDefined(param)) {
+        val defaultValueStr = getDefault(param).map("default: " + _)
+        val currentValueStr = get(param).map("current: " + _)
+        (defaultValueStr ++ currentValueStr).mkString("(", ", ", ")")
+      } else {
+        "(undefined)"
+      }
     s"${param.name}: ${param.doc} $valueStr"
   }
 
@@ -607,9 +608,12 @@ trait Params extends Identifiable with Serializable {
 
   /** Gets a param by its name. */
   def getParam(paramName: String): Param[Any] = {
-    params.find(_.name == paramName).getOrElse {
-      throw new NoSuchElementException(s"Param $paramName does not exist.")
-    }.asInstanceOf[Param[Any]]
+    params
+      .find(_.name == paramName)
+      .getOrElse {
+        throw new NoSuchElementException(s"Param $paramName does not exist.")
+      }
+      .asInstanceOf[Param[Any]]
   }
 
   /**
@@ -658,8 +662,10 @@ trait Params extends Identifiable with Serializable {
    */
   final def getOrDefault[T](param: Param[T]): T = {
     shouldOwn(param)
-    get(param).orElse(getDefault(param)).getOrElse(
-      throw new NoSuchElementException(s"Failed to find a default value for ${param.name}"))
+    get(param)
+      .orElse(getDefault(param))
+      .getOrElse(
+          throw new NoSuchElementException(s"Failed to find a default value for ${param.name}"))
   }
 
   /** An alias for [[getOrDefault()]]. */
@@ -801,8 +807,8 @@ abstract class JavaParams extends Params
  */
 @Since("1.2.0")
 @Experimental
-final class ParamMap private[ml] (private val map: mutable.Map[Param[Any], Any])
-  extends Serializable {
+final class ParamMap private[ml](private val map: mutable.Map[Param[Any], Any])
+    extends Serializable {
 
   /* DEVELOPERS: About validating parameter values
    *   This and ParamPair are the only two collections of parameters.
@@ -903,9 +909,13 @@ final class ParamMap private[ml] (private val map: mutable.Map[Param[Any], Any])
 
   @Since("1.2.0")
   override def toString: String = {
-    map.toSeq.sortBy(_._1.name).map { case (param, value) =>
-      s"\t${param.parent}-${param.name}: $value"
-    }.mkString("{\n", ",\n", "\n}")
+    map.toSeq
+      .sortBy(_._1.name)
+      .map {
+        case (param, value) =>
+          s"\t${param.parent}-${param.name}: $value"
+      }
+      .mkString("{\n", ",\n", "\n}")
   }
 
   /**
@@ -933,8 +943,9 @@ final class ParamMap private[ml] (private val map: mutable.Map[Param[Any], Any])
    */
   @Since("1.2.0")
   def toSeq: Seq[ParamPair[_]] = {
-    map.toSeq.map { case (param, value) =>
-      ParamPair(param, value)
+    map.toSeq.map {
+      case (param, value) =>
+        ParamPair(param, value)
     }
   }
 

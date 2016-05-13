@@ -55,27 +55,29 @@ import org.apache.spark.sql.internal.SQLConf
  *   4. If all tasks are committed, commit the job, otherwise aborts the job;  If any exception is
  *      thrown during job commitment, also aborts the job.
  */
-private[sql] case class InsertIntoHadoopFsRelation(
-    outputPath: Path,
-    partitionColumns: Seq[Attribute],
-    bucketSpec: Option[BucketSpec],
-    fileFormat: FileFormat,
-    refreshFunction: () => Unit,
-    options: Map[String, String],
-    @transient query: LogicalPlan,
-    mode: SaveMode)
-  extends RunnableCommand {
+private[sql] case class InsertIntoHadoopFsRelation(outputPath: Path,
+                                                   partitionColumns: Seq[Attribute],
+                                                   bucketSpec: Option[BucketSpec],
+                                                   fileFormat: FileFormat,
+                                                   refreshFunction: () => Unit,
+                                                   options: Map[String, String],
+                                                   @transient query: LogicalPlan,
+                                                   mode: SaveMode)
+    extends RunnableCommand {
 
   override def children: Seq[LogicalPlan] = query :: Nil
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     // Most formats don't do well with duplicate columns, so lets not allow that
     if (query.schema.fieldNames.length != query.schema.fieldNames.distinct.length) {
-      val duplicateColumns = query.schema.fieldNames.groupBy(identity).collect {
-        case (x, ys) if ys.length > 1 => "\"" + x + "\""
-      }.mkString(", ")
-      throw new AnalysisException(s"Duplicate column(s) : $duplicateColumns found, " +
-          s"cannot save to file.")
+      val duplicateColumns = query.schema.fieldNames
+        .groupBy(identity)
+        .collect {
+          case (x, ys) if ys.length > 1 => "\"" + x + "\""
+        }
+        .mkString(", ")
+      throw new AnalysisException(
+          s"Duplicate column(s) : $duplicateColumns found, " + s"cannot save to file.")
     }
 
     val hadoopConf = sparkSession.sessionState.newHadoopConfWithOptions(options)
@@ -87,9 +89,10 @@ private[sql] case class InsertIntoHadoopFsRelation(
       case (SaveMode.ErrorIfExists, true) =>
         throw new AnalysisException(s"path $qualifiedOutputPath already exists.")
       case (SaveMode.Overwrite, true) =>
-        if (!fs.delete(qualifiedOutputPath, true /* recursively */)) {
-          throw new IOException(s"Unable to clear output " +
-            s"directory $qualifiedOutputPath prior to writing to it")
+        if (!fs.delete(qualifiedOutputPath, true /* recursively */ )) {
+          throw new IOException(
+              s"Unable to clear output " +
+              s"directory $qualifiedOutputPath prior to writing to it")
         }
         true
       case (SaveMode.Append, _) | (SaveMode.Overwrite, _) | (SaveMode.ErrorIfExists, false) =>
@@ -113,27 +116,26 @@ private[sql] case class InsertIntoHadoopFsRelation(
 
       val queryExecution = Dataset.ofRows(sparkSession, query).queryExecution
       SQLExecution.withNewExecutionId(sparkSession, queryExecution) {
-        val relation =
-          WriteRelation(
+        val relation = WriteRelation(
             sparkSession,
             dataColumns.toStructType,
             qualifiedOutputPath.toString,
             fileFormat.prepareWrite(sparkSession, _, options, dataColumns.toStructType),
             bucketSpec)
 
-        val writerContainer = if (partitionColumns.isEmpty && bucketSpec.isEmpty) {
-          new DefaultWriterContainer(relation, job, isAppend)
-        } else {
-          new DynamicPartitionWriterContainer(
-            relation,
-            job,
-            partitionColumns = partitionColumns,
-            dataColumns = dataColumns,
-            inputSchema = query.output,
-            PartitioningUtils.DEFAULT_PARTITION_NAME,
-            sparkSession.conf.get(SQLConf.PARTITION_MAX_FILES),
-            isAppend)
-        }
+        val writerContainer =
+          if (partitionColumns.isEmpty && bucketSpec.isEmpty) {
+            new DefaultWriterContainer(relation, job, isAppend)
+          } else {
+            new DynamicPartitionWriterContainer(relation,
+                                                job,
+                                                partitionColumns = partitionColumns,
+                                                dataColumns = dataColumns,
+                                                inputSchema = query.output,
+                                                PartitioningUtils.DEFAULT_PARTITION_NAME,
+                                                sparkSession.conf.get(SQLConf.PARTITION_MAX_FILES),
+                                                isAppend)
+          }
 
         // This call shouldn't be put into the `try` block below because it only initializes and
         // prepares the job, any exception thrown from here shouldn't cause abortJob() to be called.
@@ -143,10 +145,11 @@ private[sql] case class InsertIntoHadoopFsRelation(
           sparkSession.sparkContext.runJob(queryExecution.toRdd, writerContainer.writeRows _)
           writerContainer.commitJob()
           refreshFunction()
-        } catch { case cause: Throwable =>
-          logError("Aborting job.", cause)
-          writerContainer.abortJob()
-          throw new SparkException("Job aborted.", cause)
+        } catch {
+          case cause: Throwable =>
+            logError("Aborting job.", cause)
+            writerContainer.abortJob()
+            throw new SparkException("Job aborted.", cause)
         }
       }
     } else {

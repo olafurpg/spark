@@ -27,7 +27,7 @@ private[streaming] case class ReceivedBlockInfo(
     numRecords: Option[Long],
     metadataOption: Option[Any],
     blockStoreResult: ReceivedBlockStoreResult
-  ) {
+) {
 
   require(numRecords.isEmpty || numRecords.get >= 0, "numRecords must not be negative")
 
@@ -53,4 +53,3 @@ private[streaming] case class ReceivedBlockInfo(
     _isBlockIdValid = false
   }
 }
-

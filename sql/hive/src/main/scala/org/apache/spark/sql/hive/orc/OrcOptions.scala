@@ -20,9 +20,8 @@ package org.apache.spark.sql.hive.orc
 /**
  * Options for the ORC data source.
  */
-private[orc] class OrcOptions(
-    @transient private val parameters: Map[String, String])
-  extends Serializable {
+private[orc] class OrcOptions(@transient private val parameters: Map[String, String])
+    extends Serializable {
 
   import OrcOptions._
 
@@ -34,8 +33,9 @@ private[orc] class OrcOptions(
     val codecName = parameters.getOrElse("compression", "snappy").toLowerCase
     if (!shortOrcCompressionCodecNames.contains(codecName)) {
       val availableCodecs = shortOrcCompressionCodecNames.keys.map(_.toLowerCase)
-      throw new IllegalArgumentException(s"Codec [$codecName] " +
-        s"is not available. Available codecs are ${availableCodecs.mkString(", ")}.")
+      throw new IllegalArgumentException(
+          s"Codec [$codecName] " +
+          s"is not available. Available codecs are ${availableCodecs.mkString(", ")}.")
     }
     shortOrcCompressionCodecNames(codecName)
   }
@@ -43,10 +43,9 @@ private[orc] class OrcOptions(
 
 private[orc] object OrcOptions {
   // The ORC compression short names
-  private val shortOrcCompressionCodecNames = Map(
-    "none" -> "NONE",
-    "uncompressed" -> "NONE",
-    "snappy" -> "SNAPPY",
-    "zlib" -> "ZLIB",
-    "lzo" -> "LZO")
+  private val shortOrcCompressionCodecNames = Map("none" -> "NONE",
+                                                  "uncompressed" -> "NONE",
+                                                  "snappy" -> "SNAPPY",
+                                                  "zlib" -> "ZLIB",
+                                                  "lzo" -> "LZO")
 }

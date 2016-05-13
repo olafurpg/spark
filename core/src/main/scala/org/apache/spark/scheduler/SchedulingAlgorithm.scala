@@ -72,4 +72,3 @@ private[spark] class FairSchedulingAlgorithm extends SchedulingAlgorithm {
     }
   }
 }
-

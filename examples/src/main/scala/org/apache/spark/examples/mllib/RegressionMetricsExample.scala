@@ -27,15 +27,14 @@ import org.apache.spark.sql.SparkSession
 
 object RegressionMetricsExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("RegressionMetricsExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("RegressionMetricsExample").getOrCreate()
     // $example on$
     // Load the data
-    val data = spark
-      .read.format("libsvm").load("data/mllib/sample_linear_regression_data.txt")
-      .rdd.map(row => LabeledPoint(row.getDouble(0), row.get(1).asInstanceOf[Vector]))
+    val data = spark.read
+      .format("libsvm")
+      .load("data/mllib/sample_linear_regression_data.txt")
+      .rdd
+      .map(row => LabeledPoint(row.getDouble(0), row.get(1).asInstanceOf[Vector]))
       .cache()
 
     // Build the model
@@ -43,7 +42,7 @@ object RegressionMetricsExample {
     val model = LinearRegressionWithSGD.train(data, numIterations)
 
     // Get predictions
-    val valuesAndPreds = data.map{ point =>
+    val valuesAndPreds = data.map { point =>
       val prediction = model.predict(point.features)
       (prediction, point.label)
     }
@@ -69,4 +68,3 @@ object RegressionMetricsExample {
   }
 }
 // scalastyle:on println
-

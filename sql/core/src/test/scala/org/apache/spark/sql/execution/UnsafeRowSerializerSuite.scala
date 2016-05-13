@@ -52,9 +52,10 @@ class UnsafeRowSerializerSuite extends SparkFunSuite with LocalSparkContext {
 
   private def unsafeRowConverter(schema: Array[DataType]): Row => UnsafeRow = {
     val converter = UnsafeProjection.create(schema)
-    (row: Row) => {
-      converter(CatalystTypeConverters.convertToCatalyst(row).asInstanceOf[InternalRow])
-    }
+    (row: Row) =>
+      {
+        converter(CatalystTypeConverters.convertToCatalyst(row).asInstanceOf[InternalRow])
+      }
   }
 
   test("toUnsafeRow() test helper method") {
@@ -117,9 +118,9 @@ class UnsafeRowSerializerSuite extends SparkFunSuite with LocalSparkContext {
       val taskContext = new TaskContextImpl(0, 0, 0, 0, taskMemoryManager, new Properties, null)
 
       val sorter = new ExternalSorter[Int, UnsafeRow, UnsafeRow](
-        taskContext,
-        partitioner = Some(new HashPartitioner(10)),
-        serializer = new UnsafeRowSerializer(numFields = 1))
+          taskContext,
+          partitioner = Some(new HashPartitioner(10)),
+          serializer = new UnsafeRowSerializer(numFields = 1))
 
       // Ensure we spilled something and have to merge them later
       assert(sorter.numSpills === 0)
@@ -148,13 +149,11 @@ class UnsafeRowSerializerSuite extends SparkFunSuite with LocalSparkContext {
     sc = new SparkContext("local", "test", conf)
     val row = Row("Hello", 123)
     val unsafeRow = toUnsafeRow(row, Array(StringType, IntegerType))
-    val rowsRDD = sc.parallelize(Seq((0, unsafeRow), (1, unsafeRow), (0, unsafeRow)))
+    val rowsRDD = sc
+      .parallelize(Seq((0, unsafeRow), (1, unsafeRow), (0, unsafeRow)))
       .asInstanceOf[RDD[Product2[Int, InternalRow]]]
-    val dependency =
-      new ShuffleDependency[Int, InternalRow, InternalRow](
-        rowsRDD,
-        new PartitionIdPassthrough(2),
-        new UnsafeRowSerializer(2))
+    val dependency = new ShuffleDependency[Int, InternalRow, InternalRow](
+        rowsRDD, new PartitionIdPassthrough(2), new UnsafeRowSerializer(2))
     val shuffled = new ShuffledRowRDD(dependency)
     shuffled.count()
   }

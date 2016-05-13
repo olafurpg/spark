@@ -30,42 +30,45 @@ import org.apache.spark.util.collection.Sorter
 import org.apache.spark.util.random.XORShiftRandom
 
 class RadixSortSuite extends SparkFunSuite with Logging {
-  private val N = 10000  // scale this down for more readable results
+  private val N = 10000 // scale this down for more readable results
 
   /**
    * Describes a type of sort to test, e.g. two's complement descending. Each sort type has
    * a defined reference ordering as well as radix sort parameters that can be used to
    * reproduce the given ordering.
    */
-  case class RadixSortType(
-    name: String,
-    referenceComparator: PrefixComparator,
-    startByteIdx: Int, endByteIdx: Int, descending: Boolean, signed: Boolean)
+  case class RadixSortType(name: String,
+                           referenceComparator: PrefixComparator,
+                           startByteIdx: Int,
+                           endByteIdx: Int,
+                           descending: Boolean,
+                           signed: Boolean)
 
   val SORT_TYPES_TO_TEST = Seq(
-    RadixSortType("unsigned binary data asc", PrefixComparators.BINARY, 0, 7, false, false),
-    RadixSortType("unsigned binary data desc", PrefixComparators.BINARY_DESC, 0, 7, true, false),
-    RadixSortType("twos complement asc", PrefixComparators.LONG, 0, 7, false, true),
-    RadixSortType("twos complement desc", PrefixComparators.LONG_DESC, 0, 7, true, true),
-    RadixSortType(
-      "binary data partial",
-      new PrefixComparators.RadixSortSupport {
+      RadixSortType("unsigned binary data asc", PrefixComparators.BINARY, 0, 7, false, false),
+      RadixSortType("unsigned binary data desc", PrefixComparators.BINARY_DESC, 0, 7, true, false),
+      RadixSortType("twos complement asc", PrefixComparators.LONG, 0, 7, false, true),
+      RadixSortType("twos complement desc", PrefixComparators.LONG_DESC, 0, 7, true, true),
+      RadixSortType("binary data partial", new PrefixComparators.RadixSortSupport {
         override def sortDescending = false
         override def sortSigned = false
         override def compare(a: Long, b: Long): Int = {
           return PrefixComparators.BINARY.compare(a & 0xffffff0000L, b & 0xffffff0000L)
         }
-      },
-      2, 4, false, false))
+      }, 2, 4, false, false))
 
   private def generateTestData(size: Int, rand: => Long): (Array[JLong], LongArray) = {
-    val ref = Array.tabulate[Long](size) { i => rand }
+    val ref = Array.tabulate[Long](size) { i =>
+      rand
+    }
     val extended = ref ++ Array.fill[Long](size)(0)
     (ref.map(i => new JLong(i)), new LongArray(MemoryBlock.fromLongArray(extended)))
   }
 
   private def generateKeyPrefixTestData(size: Int, rand: => Long): (LongArray, LongArray) = {
-    val ref = Array.tabulate[Long](size * 2) { i => rand }
+    val ref = Array.tabulate[Long](size * 2) { i =>
+      rand
+    }
     val extended = ref ++ Array.fill[Long](size * 2)(0)
     (new LongArray(MemoryBlock.fromLongArray(ref)),
      new LongArray(MemoryBlock.fromLongArray(extended)))
@@ -93,14 +96,12 @@ class RadixSortSuite extends SparkFunSuite with Logging {
   }
 
   private def referenceKeyPrefixSort(buf: LongArray, lo: Int, hi: Int, refCmp: PrefixComparator) {
-    new Sorter(UnsafeSortDataFormat.INSTANCE).sort(
-      buf, lo, hi, new Comparator[RecordPointerAndKeyPrefix] {
-        override def compare(
-            r1: RecordPointerAndKeyPrefix,
-            r2: RecordPointerAndKeyPrefix): Int = {
-          refCmp.compare(r1.keyPrefix, r2.keyPrefix)
-        }
-      })
+    new Sorter(UnsafeSortDataFormat.INSTANCE)
+      .sort(buf, lo, hi, new Comparator[RecordPointerAndKeyPrefix] {
+      override def compare(r1: RecordPointerAndKeyPrefix, r2: RecordPointerAndKeyPrefix): Int = {
+        refCmp.compare(r1.keyPrefix, r2.keyPrefix)
+      }
+    })
   }
 
   private def fuzzTest(name: String)(testFn: Long => Unit): Unit = {
@@ -139,9 +140,12 @@ class RadixSortSuite extends SparkFunSuite with Logging {
       val rand = new XORShiftRandom(123)
       val (ref, buffer) = generateTestData(N, rand.nextLong)
       Arrays.sort(ref, toJavaComparator(sortType.referenceComparator))
-      val outOffset = RadixSort.sort(
-        buffer, N, sortType.startByteIdx, sortType.endByteIdx,
-        sortType.descending, sortType.signed)
+      val outOffset = RadixSort.sort(buffer,
+                                     N,
+                                     sortType.startByteIdx,
+                                     sortType.endByteIdx,
+                                     sortType.descending,
+                                     sortType.signed)
       val result = collectToArray(buffer, outOffset, N)
       assert(ref.view == result.view)
     }
@@ -150,9 +154,12 @@ class RadixSortSuite extends SparkFunSuite with Logging {
       val rand = new XORShiftRandom(123)
       val (buf1, buf2) = generateKeyPrefixTestData(N, rand.nextLong & 0xff)
       referenceKeyPrefixSort(buf1, 0, N, sortType.referenceComparator)
-      val outOffset = RadixSort.sortKeyPrefixArray(
-        buf2, N, sortType.startByteIdx, sortType.endByteIdx,
-        sortType.descending, sortType.signed)
+      val outOffset = RadixSort.sortKeyPrefixArray(buf2,
+                                                   N,
+                                                   sortType.startByteIdx,
+                                                   sortType.endByteIdx,
+                                                   sortType.descending,
+                                                   sortType.signed)
       val res1 = collectToArray(buf1, 0, N * 2)
       val res2 = collectToArray(buf2, outOffset, N * 2)
       assert(res1.view == res2.view)
@@ -163,9 +170,12 @@ class RadixSortSuite extends SparkFunSuite with Logging {
       val mask = randomBitMask(rand)
       val (ref, buffer) = generateTestData(N, rand.nextLong & mask)
       Arrays.sort(ref, toJavaComparator(sortType.referenceComparator))
-      val outOffset = RadixSort.sort(
-        buffer, N, sortType.startByteIdx, sortType.endByteIdx,
-        sortType.descending, sortType.signed)
+      val outOffset = RadixSort.sort(buffer,
+                                     N,
+                                     sortType.startByteIdx,
+                                     sortType.endByteIdx,
+                                     sortType.descending,
+                                     sortType.signed)
       val result = collectToArray(buffer, outOffset, N)
       assert(ref.view == result.view)
     }
@@ -175,9 +185,12 @@ class RadixSortSuite extends SparkFunSuite with Logging {
       val mask = randomBitMask(rand)
       val (buf1, buf2) = generateKeyPrefixTestData(N, rand.nextLong & mask)
       referenceKeyPrefixSort(buf1, 0, N, sortType.referenceComparator)
-      val outOffset = RadixSort.sortKeyPrefixArray(
-        buf2, N, sortType.startByteIdx, sortType.endByteIdx,
-        sortType.descending, sortType.signed)
+      val outOffset = RadixSort.sortKeyPrefixArray(buf2,
+                                                   N,
+                                                   sortType.startByteIdx,
+                                                   sortType.endByteIdx,
+                                                   sortType.descending,
+                                                   sortType.signed)
       val res1 = collectToArray(buf1, 0, N * 2)
       val res2 = collectToArray(buf2, outOffset, N * 2)
       assert(res1.view == res2.view)

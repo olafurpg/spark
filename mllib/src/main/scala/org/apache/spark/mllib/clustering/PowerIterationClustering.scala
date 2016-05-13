@@ -39,10 +39,11 @@ import org.apache.spark.util.random.XORShiftRandom
  * @param assignments an RDD of clustering [[PowerIterationClustering#Assignment]]s
  */
 @Since("1.3.0")
-class PowerIterationClusteringModel @Since("1.3.0") (
+class PowerIterationClusteringModel @Since("1.3.0")(
     @Since("1.3.0") val k: Int,
     @Since("1.3.0") val assignments: RDD[PowerIterationClustering.Assignment])
-  extends Saveable with Serializable {
+    extends Saveable
+    with Serializable {
 
   @Since("1.4.0")
   override def save(sc: SparkContext, path: String): Unit = {
@@ -60,21 +61,20 @@ object PowerIterationClusteringModel extends Loader[PowerIterationClusteringMode
     PowerIterationClusteringModel.SaveLoadV1_0.load(sc, path)
   }
 
-  private[clustering]
-  object SaveLoadV1_0 {
+  private[clustering] object SaveLoadV1_0 {
 
     private val thisFormatVersion = "1.0"
 
-    private[clustering]
-    val thisClassName = "org.apache.spark.mllib.clustering.PowerIterationClusteringModel"
+    private[clustering] val thisClassName =
+      "org.apache.spark.mllib.clustering.PowerIterationClusteringModel"
 
     @Since("1.4.0")
     def save(sc: SparkContext, model: PowerIterationClusteringModel, path: String): Unit = {
       val sqlContext = SQLContext.getOrCreate(sc)
       import sqlContext.implicits._
 
-      val metadata = compact(render(
-        ("class" -> thisClassName) ~ ("version" -> thisFormatVersion) ~ ("k" -> model.k)))
+      val metadata = compact(
+          render(("class" -> thisClassName) ~ ("version" -> thisFormatVersion) ~ ("k" -> model.k)))
       sc.parallelize(Seq(metadata), 1).saveAsTextFile(Loader.metadataPath(path))
 
       val dataRDD = model.assignments.toDF()
@@ -118,10 +118,9 @@ object PowerIterationClusteringModel extends Loader[PowerIterationClusteringMode
  * @see [[http://en.wikipedia.org/wiki/Spectral_clustering Spectral clustering (Wikipedia)]]
  */
 @Since("1.3.0")
-class PowerIterationClustering private[clustering] (
-    private var k: Int,
-    private var maxIterations: Int,
-    private var initMode: String) extends Serializable {
+class PowerIterationClustering private[clustering](
+    private var k: Int, private var maxIterations: Int, private var initMode: String)
+    extends Serializable {
 
   import org.apache.spark.mllib.clustering.PowerIterationClustering._
 
@@ -137,8 +136,7 @@ class PowerIterationClustering private[clustering] (
    */
   @Since("1.3.0")
   def setK(k: Int): this.type = {
-    require(k > 0,
-      s"Number of clusters must be positive but got ${k}")
+    require(k > 0, s"Number of clusters must be positive but got ${k}")
     this.k = k
     this
   }
@@ -148,8 +146,8 @@ class PowerIterationClustering private[clustering] (
    */
   @Since("1.3.0")
   def setMaxIterations(maxIterations: Int): this.type = {
-    require(maxIterations >= 0,
-      s"Maximum of iterations must be nonnegative but got ${maxIterations}")
+    require(
+        maxIterations >= 0, s"Maximum of iterations must be nonnegative but got ${maxIterations}")
     this.maxIterations = maxIterations
     this
   }
@@ -230,8 +228,9 @@ class PowerIterationClustering private[clustering] (
   private def pic(w: Graph[Double, Double]): PowerIterationClusteringModel = {
     val v = powerIter(w, maxIterations)
     val assignments = kMeans(v, k).mapPartitions({ iter =>
-      iter.map { case (id, cluster) =>
-        Assignment(id, cluster)
+      iter.map {
+        case (id, cluster) =>
+          Assignment(id, cluster)
       }
     }, preservesPartitioning = true)
     new PowerIterationClusteringModel(k, assignments)
@@ -252,59 +251,48 @@ object PowerIterationClustering extends Logging {
   /**
    * Normalizes the affinity graph (A) and returns the normalized affinity matrix (W).
    */
-  private[clustering]
-  def normalize(graph: Graph[Double, Double]): Graph[Double, Double] = {
-    val vD = graph.aggregateMessages[Double](
-      sendMsg = ctx => {
-        val i = ctx.srcId
-        val j = ctx.dstId
-        val s = ctx.attr
-        if (s < 0.0) {
-          throw new SparkException("Similarity must be nonnegative but found s($i, $j) = $s.")
-        }
-        if (s > 0.0) {
-          ctx.sendToSrc(s)
-        }
-      },
-      mergeMsg = _ + _,
-      TripletFields.EdgeOnly)
-    Graph(vD, graph.edges)
-      .mapTriplets(
-        e => e.attr / math.max(e.srcAttr, MLUtils.EPSILON),
-        new TripletFields(/* useSrc */ true,
-                          /* useDst */ false,
-                          /* useEdge */ true))
+  private[clustering] def normalize(graph: Graph[Double, Double]): Graph[Double, Double] = {
+    val vD = graph.aggregateMessages[Double](sendMsg = ctx => {
+      val i = ctx.srcId
+      val j = ctx.dstId
+      val s = ctx.attr
+      if (s < 0.0) {
+        throw new SparkException("Similarity must be nonnegative but found s($i, $j) = $s.")
+      }
+      if (s > 0.0) {
+        ctx.sendToSrc(s)
+      }
+    }, mergeMsg = _ + _, TripletFields.EdgeOnly)
+    Graph(vD, graph.edges).mapTriplets(e => e.attr / math.max(e.srcAttr, MLUtils.EPSILON),
+                                       new TripletFields( /* useSrc */ true,
+                                                         /* useDst */ false,
+                                                         /* useEdge */ true))
   }
 
   /**
    * Normalizes the affinity matrix (A) by row sums and returns the normalized affinity matrix (W).
    */
-  private[clustering]
-  def normalize(similarities: RDD[(Long, Long, Double)])
-    : Graph[Double, Double] = {
-    val edges = similarities.flatMap { case (i, j, s) =>
-      if (s < 0.0) {
-        throw new SparkException("Similarity must be nonnegative but found s($i, $j) = $s.")
-      }
-      if (i != j) {
-        Seq(Edge(i, j, s), Edge(j, i, s))
-      } else {
-        None
-      }
+  private[clustering] def normalize(
+      similarities: RDD[(Long, Long, Double)]): Graph[Double, Double] = {
+    val edges = similarities.flatMap {
+      case (i, j, s) =>
+        if (s < 0.0) {
+          throw new SparkException("Similarity must be nonnegative but found s($i, $j) = $s.")
+        }
+        if (i != j) {
+          Seq(Edge(i, j, s), Edge(j, i, s))
+        } else {
+          None
+        }
     }
     val gA = Graph.fromEdges(edges, 0.0)
-    val vD = gA.aggregateMessages[Double](
-      sendMsg = ctx => {
-        ctx.sendToSrc(ctx.attr)
-      },
-      mergeMsg = _ + _,
-      TripletFields.EdgeOnly)
-    Graph(vD, gA.edges)
-      .mapTriplets(
-        e => e.attr / math.max(e.srcAttr, MLUtils.EPSILON),
-        new TripletFields(/* useSrc */ true,
-                          /* useDst */ false,
-                          /* useEdge */ true))
+    val vD = gA.aggregateMessages[Double](sendMsg = ctx => {
+      ctx.sendToSrc(ctx.attr)
+    }, mergeMsg = _ + _, TripletFields.EdgeOnly)
+    Graph(vD, gA.edges).mapTriplets(e => e.attr / math.max(e.srcAttr, MLUtils.EPSILON),
+                                    new TripletFields( /* useSrc */ true,
+                                                      /* useDst */ false,
+                                                      /* useEdge */ true))
   }
 
   /**
@@ -314,15 +302,16 @@ object PowerIterationClustering extends Logging {
    * @return a graph with edges representing W and vertices representing a random vector
    *         with unit 1-norm
    */
-  private[clustering]
-  def randomInit(g: Graph[Double, Double]): Graph[Double, Double] = {
-    val r = g.vertices.mapPartitionsWithIndex(
-      (part, iter) => {
+  private[clustering] def randomInit(g: Graph[Double, Double]): Graph[Double, Double] = {
+    val r = g.vertices
+      .mapPartitionsWithIndex((part, iter) => {
         val random = new XORShiftRandom(part)
-        iter.map { case (id, _) =>
-          (id, random.nextGaussian())
+        iter.map {
+          case (id, _) =>
+            (id, random.nextGaussian())
         }
-      }, preservesPartitioning = true).cache()
+      }, preservesPartitioning = true)
+      .cache()
     val sum = r.values.map(math.abs).sum()
     val v0 = r.mapValues(x => x / sum)
     Graph(VertexRDD(v0), g.edges)
@@ -336,8 +325,7 @@ object PowerIterationClustering extends Logging {
    * @param g a graph representing the normalized affinity matrix (W)
    * @return a graph with edges representing W and vertices representing the degree vector
    */
-  private[clustering]
-  def initDegreeVector(g: Graph[Double, Double]): Graph[Double, Double] = {
+  private[clustering] def initDegreeVector(g: Graph[Double, Double]): Graph[Double, Double] = {
     val sum = g.vertices.values.sum()
     val v0 = g.vertices.mapValues(_ / sum)
     Graph(VertexRDD(v0), g.edges)
@@ -350,10 +338,8 @@ object PowerIterationClustering extends Logging {
    * @param maxIterations maximum number of iterations
    * @return a [[VertexRDD]] representing the pseudo-eigenvector
    */
-  private[clustering]
-  def powerIter(
-      g: Graph[Double, Double],
-      maxIterations: Int): VertexRDD[Double] = {
+  private[clustering] def powerIter(
+      g: Graph[Double, Double], maxIterations: Int): VertexRDD[Double] = {
     // the default tolerance used in the PIC paper, with a lower bound 1e-8
     val tol = math.max(1e-5 / g.vertices.count(), 1e-8)
     var prevDelta = Double.MaxValue
@@ -362,20 +348,26 @@ object PowerIterationClustering extends Logging {
     for (iter <- 0 until maxIterations if math.abs(diffDelta) > tol) {
       val msgPrefix = s"Iteration $iter"
       // multiply W by vt
-      val v = curG.aggregateMessages[Double](
-        sendMsg = ctx => ctx.sendToSrc(ctx.attr * ctx.dstAttr),
-        mergeMsg = _ + _,
-        new TripletFields(/* useSrc */ false,
-                          /* useDst */ true,
-                          /* useEdge */ true)).cache()
+      val v = curG
+        .aggregateMessages[Double](sendMsg = ctx => ctx.sendToSrc(ctx.attr * ctx.dstAttr),
+                                   mergeMsg = _ + _,
+                                   new TripletFields( /* useSrc */ false,
+                                                     /* useDst */ true,
+                                                     /* useEdge */ true))
+        .cache()
       // normalize v
       val norm = v.values.map(math.abs).sum()
       logInfo(s"$msgPrefix: norm(v) = $norm.")
       val v1 = v.mapValues(x => x / norm)
       // compare difference
-      val delta = curG.joinVertices(v1) { case (_, x, y) =>
-        math.abs(x - y)
-      }.vertices.values.sum()
+      val delta = curG
+        .joinVertices(v1) {
+          case (_, x, y) =>
+            math.abs(x - y)
+        }
+        .vertices
+        .values
+        .sum()
       logInfo(s"$msgPrefix: delta = $delta.")
       diffDelta = math.abs(delta - prevDelta)
       logInfo(s"$msgPrefix: diff(delta) = $diffDelta.")
@@ -392,13 +384,9 @@ object PowerIterationClustering extends Logging {
    * @param k number of clusters
    * @return a [[VertexRDD]] representing the clustering assignments
    */
-  private[clustering]
-  def kMeans(v: VertexRDD[Double], k: Int): VertexRDD[Int] = {
+  private[clustering] def kMeans(v: VertexRDD[Double], k: Int): VertexRDD[Int] = {
     val points = v.mapValues(x => Vectors.dense(x)).cache()
-    val model = new KMeans()
-      .setK(k)
-      .setSeed(0L)
-      .run(points.values)
+    val model = new KMeans().setK(k).setSeed(0L).run(points.values)
     points.mapValues(p => model.predict(p)).cache()
   }
 }

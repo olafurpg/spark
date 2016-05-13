@@ -31,10 +31,8 @@ import org.apache.spark.sql.types.DataType
  *
  * This is the physical copy of ScalarSubquery to be used inside SparkPlan.
  */
-case class ScalarSubquery(
-    @transient executedPlan: SparkPlan,
-    exprId: ExprId)
-  extends SubqueryExpression {
+case class ScalarSubquery(@transient executedPlan: SparkPlan, exprId: ExprId)
+    extends SubqueryExpression {
 
   override def query: LogicalPlan = throw new UnsupportedOperationException
   override def withNewPlan(plan: LogicalPlan): SubqueryExpression = {

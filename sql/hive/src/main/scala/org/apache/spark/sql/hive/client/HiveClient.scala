@@ -24,7 +24,6 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.expressions.Expression
 
-
 /**
  * An externally visible interface to the Hive client.  This interface is shared across both the
  * internal and external classloaders for a given version of Hive and thus must expose only
@@ -108,44 +107,36 @@ private[hive] trait HiveClient {
   /**
    * Create one or many partitions in the given table.
    */
-  def createPartitions(
-      db: String,
-      table: String,
-      parts: Seq[CatalogTablePartition],
-      ignoreIfExists: Boolean): Unit
+  def createPartitions(db: String,
+                       table: String,
+                       parts: Seq[CatalogTablePartition],
+                       ignoreIfExists: Boolean): Unit
 
   /**
    * Drop one or many partitions in the given table, assuming they exist.
    */
-  def dropPartitions(
-      db: String,
-      table: String,
-      specs: Seq[TablePartitionSpec],
-      ignoreIfNotExists: Boolean): Unit
+  def dropPartitions(db: String,
+                     table: String,
+                     specs: Seq[TablePartitionSpec],
+                     ignoreIfNotExists: Boolean): Unit
 
   /**
    * Rename one or many existing table partitions, assuming they exist.
    */
-  def renamePartitions(
-      db: String,
-      table: String,
-      specs: Seq[TablePartitionSpec],
-      newSpecs: Seq[TablePartitionSpec]): Unit
+  def renamePartitions(db: String,
+                       table: String,
+                       specs: Seq[TablePartitionSpec],
+                       newSpecs: Seq[TablePartitionSpec]): Unit
 
   /**
    * Alter one or more table partitions whose specs match the ones specified in `newParts`,
    * assuming the partitions exist.
    */
-  def alterPartitions(
-      db: String,
-      table: String,
-      newParts: Seq[CatalogTablePartition]): Unit
+  def alterPartitions(db: String, table: String, newParts: Seq[CatalogTablePartition]): Unit
 
   /** Returns the specified partition, or throws [[NoSuchPartitionException]]. */
   final def getPartition(
-      dbName: String,
-      tableName: String,
-      spec: TablePartitionSpec): CatalogTablePartition = {
+      dbName: String, tableName: String, spec: TablePartitionSpec): CatalogTablePartition = {
     getPartitionOption(dbName, tableName, spec).getOrElse {
       throw new NoSuchPartitionException(dbName, tableName, spec)
     }
@@ -153,25 +144,21 @@ private[hive] trait HiveClient {
 
   /** Returns the specified partition or None if it does not exist. */
   final def getPartitionOption(
-      db: String,
-      table: String,
-      spec: TablePartitionSpec): Option[CatalogTablePartition] = {
+      db: String, table: String, spec: TablePartitionSpec): Option[CatalogTablePartition] = {
     getPartitionOption(getTable(db, table), spec)
   }
 
   /** Returns the specified partition or None if it does not exist. */
   def getPartitionOption(
-      table: CatalogTable,
-      spec: TablePartitionSpec): Option[CatalogTablePartition]
+      table: CatalogTable, spec: TablePartitionSpec): Option[CatalogTablePartition]
 
   /**
    * Returns the partitions for the given table that match the supplied partition spec.
    * If no partition spec is specified, all partitions are returned.
    */
-  final def getPartitions(
-      db: String,
-      table: String,
-      partialSpec: Option[TablePartitionSpec]): Seq[CatalogTablePartition] = {
+  final def getPartitions(db: String,
+                          table: String,
+                          partialSpec: Option[TablePartitionSpec]): Seq[CatalogTablePartition] = {
     getPartitions(getTable(db, table), partialSpec)
   }
 
@@ -179,14 +166,12 @@ private[hive] trait HiveClient {
    * Returns the partitions for the given table that match the supplied partition spec.
    * If no partition spec is specified, all partitions are returned.
    */
-  def getPartitions(
-      table: CatalogTable,
-      partialSpec: Option[TablePartitionSpec] = None): Seq[CatalogTablePartition]
+  def getPartitions(table: CatalogTable,
+                    partialSpec: Option[TablePartitionSpec] = None): Seq[CatalogTablePartition]
 
   /** Returns partitions filtered by predicates for the given table. */
   def getPartitionsByFilter(
-      table: CatalogTable,
-      predicates: Seq[Expression]): Seq[CatalogTablePartition]
+      table: CatalogTable, predicates: Seq[Expression]): Seq[CatalogTablePartition]
 
   /** Loads a static partition into an existing table. */
   def loadPartition(
@@ -199,11 +184,10 @@ private[hive] trait HiveClient {
       isSkewedStoreAsSubdir: Boolean): Unit
 
   /** Loads data into an existing table. */
-  def loadTable(
-      loadPath: String, // TODO URI
-      tableName: String,
-      replace: Boolean,
-      holdDDLTime: Boolean): Unit
+  def loadTable(loadPath: String, // TODO URI
+                tableName: String,
+                replace: Boolean,
+                holdDDLTime: Boolean): Unit
 
   /** Loads new dynamic partitions into an existing table. */
   def loadDynamicPartitions(
@@ -254,5 +238,4 @@ private[hive] trait HiveClient {
 
   /** Used for testing only.  Removes all metadata from this instance of Hive. */
   def reset(): Unit
-
 }

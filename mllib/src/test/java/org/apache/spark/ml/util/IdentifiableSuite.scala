@@ -37,5 +37,4 @@ object IdentifiableSuite {
   class Test(override val uid: String) extends Identifiable {
     def this() = this(Identifiable.randomUID("test"))
   }
-
 }

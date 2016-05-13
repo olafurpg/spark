@@ -44,6 +44,7 @@ import org.apache.spark.unsafe.types.UTF8String
  * values to an [[ArrayBuffer]].
  */
 private[parquet] trait ParentContainerUpdater {
+
   /** Called before a record field is being converted */
   def start(): Unit = ()
 
@@ -71,7 +72,8 @@ private[parquet] trait HasParentContainerUpdater {
  * A convenient converter class for Parquet group types with an [[HasParentContainerUpdater]].
  */
 private[parquet] abstract class CatalystGroupConverter(val updater: ParentContainerUpdater)
-  extends GroupConverter with HasParentContainerUpdater
+    extends GroupConverter
+    with HasParentContainerUpdater
 
 /**
  * Parquet converter for Parquet primitive types.  Note that not all Spark SQL atomic types
@@ -79,7 +81,8 @@ private[parquet] abstract class CatalystGroupConverter(val updater: ParentContai
  * SQL.  For example, BYTE, SHORT, and INT in Spark SQL are all covered by INT32 in Parquet.
  */
 private[parquet] class CatalystPrimitiveConverter(val updater: ParentContainerUpdater)
-  extends PrimitiveConverter with HasParentContainerUpdater {
+    extends PrimitiveConverter
+    with HasParentContainerUpdater {
 
   override def addBoolean(value: Boolean): Unit = updater.setBoolean(value)
   override def addInt(value: Int): Unit = updater.setInt(value)
@@ -119,14 +122,12 @@ private[parquet] class CatalystPrimitiveConverter(val updater: ParentContainerUp
  * @param updater An updater which propagates converted field values to the parent container
  */
 private[parquet] class CatalystRowConverter(
-    parquetType: GroupType,
-    catalystType: StructType,
-    updater: ParentContainerUpdater)
-  extends CatalystGroupConverter(updater) with Logging {
+    parquetType: GroupType, catalystType: StructType, updater: ParentContainerUpdater)
+    extends CatalystGroupConverter(updater)
+    with Logging {
 
-  assert(
-    parquetType.getFieldCount == catalystType.length,
-    s"""Field counts of the Parquet schema and the Catalyst schema don't match:
+  assert(parquetType.getFieldCount == catalystType.length,
+         s"""Field counts of the Parquet schema and the Catalyst schema don't match:
        |
        |Parquet schema:
        |$parquetType
@@ -134,14 +135,12 @@ private[parquet] class CatalystRowConverter(
        |${catalystType.prettyJson}
      """.stripMargin)
 
-  assert(
-    !catalystType.existsRecursively(_.isInstanceOf[UserDefinedType[_]]),
-    s"""User-defined types in Catalyst schema should have already been expanded:
+  assert(!catalystType.existsRecursively(_.isInstanceOf[UserDefinedType[_]]),
+         s"""User-defined types in Catalyst schema should have already been expanded:
        |${catalystType.prettyJson}
      """.stripMargin)
 
-  logDebug(
-    s"""Building row converter for the following schema:
+  logDebug(s"""Building row converter for the following schema:
        |
        |Parquet form:
        |$parquetType
@@ -175,11 +174,16 @@ private[parquet] class CatalystRowConverter(
 
   // Converters for each field.
   private val fieldConverters: Array[Converter with HasParentContainerUpdater] = {
-    parquetType.getFields.asScala.zip(catalystType).zipWithIndex.map {
-      case ((parquetFieldType, catalystField), ordinal) =>
-        // Converted field value should be set to the `ordinal`-th cell of `currentRow`
-        newConverter(parquetFieldType, catalystField.dataType, new RowUpdater(currentRow, ordinal))
-    }.toArray
+    parquetType.getFields.asScala
+      .zip(catalystType)
+      .zipWithIndex
+      .map {
+        case ((parquetFieldType, catalystField), ordinal) =>
+          // Converted field value should be set to the `ordinal`-th cell of `currentRow`
+          newConverter(
+              parquetFieldType, catalystField.dataType, new RowUpdater(currentRow, ordinal))
+      }
+      .toArray
   }
 
   override def getConverter(fieldIndex: Int): Converter = fieldConverters(fieldIndex)
@@ -237,13 +241,13 @@ private[parquet] class CatalystRowConverter(
 
       // For BINARY and FIXED_LEN_BYTE_ARRAY backed decimals
       case t: DecimalType
-        if parquetType.asPrimitiveType().getPrimitiveTypeName == FIXED_LEN_BYTE_ARRAY ||
-           parquetType.asPrimitiveType().getPrimitiveTypeName == BINARY =>
+          if parquetType.asPrimitiveType().getPrimitiveTypeName == FIXED_LEN_BYTE_ARRAY ||
+          parquetType.asPrimitiveType().getPrimitiveTypeName == BINARY =>
         new CatalystBinaryDictionaryAwareDecimalConverter(t.precision, t.scale, updater)
 
       case t: DecimalType =>
         throw new RuntimeException(
-          s"Unable to create Parquet converter for decimal type ${t.json} whose Parquet type is " +
+            s"Unable to create Parquet converter for decimal type ${t.json} whose Parquet type is " +
             s"$parquetType.  Parquet DECIMAL type can only be backed by INT32, INT64, " +
             "FIXED_LEN_BYTE_ARRAY, or BINARY.")
 
@@ -256,9 +260,9 @@ private[parquet] class CatalystRowConverter(
           // Converts nanosecond timestamps stored as INT96
           override def addBinary(value: Binary): Unit = {
             assert(
-              value.length() == 12,
-              "Timestamps (with nanoseconds) are expected to be stored in 12-byte long binaries, " +
-              s"but got a ${value.length()}-byte binary.")
+                value.length() == 12,
+                "Timestamps (with nanoseconds) are expected to be stored in 12-byte long binaries, " +
+                s"but got a ${value.length()}-byte binary.")
 
             val buf = value.toByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
             val timeOfDayNanos = buf.getLong
@@ -298,7 +302,7 @@ private[parquet] class CatalystRowConverter(
 
       case t =>
         throw new RuntimeException(
-          s"Unable to create Parquet converter for data type ${t.json} " +
+            s"Unable to create Parquet converter for data type ${t.json} " +
             s"whose Parquet type is $parquetType")
     }
   }
@@ -307,7 +311,7 @@ private[parquet] class CatalystRowConverter(
    * Parquet converter for strings. A dictionary is used to minimize string decoding cost.
    */
   private final class CatalystStringConverter(updater: ParentContainerUpdater)
-    extends CatalystPrimitiveConverter(updater) {
+      extends CatalystPrimitiveConverter(updater) {
 
     private var expandedDictionary: Array[UTF8String] = null
 
@@ -339,7 +343,7 @@ private[parquet] class CatalystRowConverter(
    */
   private abstract class CatalystDecimalConverter(
       precision: Int, scale: Int, updater: ParentContainerUpdater)
-    extends CatalystPrimitiveConverter(updater) {
+      extends CatalystPrimitiveConverter(updater) {
 
     protected var expandedDictionary: Array[Decimal] = _
 
@@ -382,7 +386,7 @@ private[parquet] class CatalystRowConverter(
 
   private class CatalystIntDictionaryAwareDecimalConverter(
       precision: Int, scale: Int, updater: ParentContainerUpdater)
-    extends CatalystDecimalConverter(precision, scale, updater) {
+      extends CatalystDecimalConverter(precision, scale, updater) {
 
     override def setDictionary(dictionary: Dictionary): Unit = {
       this.expandedDictionary = Array.tabulate(dictionary.getMaxId + 1) { id =>
@@ -393,7 +397,7 @@ private[parquet] class CatalystRowConverter(
 
   private class CatalystLongDictionaryAwareDecimalConverter(
       precision: Int, scale: Int, updater: ParentContainerUpdater)
-    extends CatalystDecimalConverter(precision, scale, updater) {
+      extends CatalystDecimalConverter(precision, scale, updater) {
 
     override def setDictionary(dictionary: Dictionary): Unit = {
       this.expandedDictionary = Array.tabulate(dictionary.getMaxId + 1) { id =>
@@ -404,7 +408,7 @@ private[parquet] class CatalystRowConverter(
 
   private class CatalystBinaryDictionaryAwareDecimalConverter(
       precision: Int, scale: Int, updater: ParentContainerUpdater)
-    extends CatalystDecimalConverter(precision, scale, updater) {
+      extends CatalystDecimalConverter(precision, scale, updater) {
 
     override def setDictionary(dictionary: Dictionary): Unit = {
       this.expandedDictionary = Array.tabulate(dictionary.getMaxId + 1) { id =>
@@ -431,11 +435,10 @@ private[parquet] class CatalystRowConverter(
    *
    * @see https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#lists
    */
-  private final class CatalystArrayConverter(
-      parquetSchema: GroupType,
-      catalystSchema: ArrayType,
-      updater: ParentContainerUpdater)
-    extends CatalystGroupConverter(updater) {
+  private final class CatalystArrayConverter(parquetSchema: GroupType,
+                                             catalystSchema: ArrayType,
+                                             updater: ParentContainerUpdater)
+      extends CatalystGroupConverter(updater) {
 
     private var currentArray: ArrayBuffer[Any] = _
 
@@ -487,7 +490,8 @@ private[parquet] class CatalystRowConverter(
         case (t: PrimitiveType, _) => true
         case (t: GroupType, _) if t.getFieldCount > 1 => true
         case (t: GroupType, _) if t.getFieldCount == 1 && t.getName == "array" => true
-        case (t: GroupType, _) if t.getFieldCount == 1 && t.getName == parentName + "_tuple" => true
+        case (t: GroupType, _) if t.getFieldCount == 1 && t.getName == parentName + "_tuple" =>
+          true
         case (t: GroupType, StructType(Array(f))) if f.name == t.getFieldName(0) => true
         case _ => false
       }
@@ -495,7 +499,7 @@ private[parquet] class CatalystRowConverter(
 
     /** Array element converter */
     private final class ElementConverter(parquetType: Type, catalystType: DataType)
-      extends GroupConverter {
+        extends GroupConverter {
 
       private var currentElement: Any = _
 
@@ -513,21 +517,18 @@ private[parquet] class CatalystRowConverter(
 
   /** Parquet converter for maps */
   private final class CatalystMapConverter(
-      parquetType: GroupType,
-      catalystType: MapType,
-      updater: ParentContainerUpdater)
-    extends CatalystGroupConverter(updater) {
+      parquetType: GroupType, catalystType: MapType, updater: ParentContainerUpdater)
+      extends CatalystGroupConverter(updater) {
 
     private var currentKeys: ArrayBuffer[Any] = _
     private var currentValues: ArrayBuffer[Any] = _
 
     private val keyValueConverter = {
       val repeatedType = parquetType.getType(0).asGroupType()
-      new KeyValueConverter(
-        repeatedType.getType(0),
-        repeatedType.getType(1),
-        catalystType.keyType,
-        catalystType.valueType)
+      new KeyValueConverter(repeatedType.getType(0),
+                            repeatedType.getType(1),
+                            catalystType.keyType,
+                            catalystType.valueType)
     }
 
     override def getConverter(fieldIndex: Int): Converter = keyValueConverter
@@ -544,27 +545,25 @@ private[parquet] class CatalystRowConverter(
     }
 
     /** Parquet converter for key-value pairs within the map. */
-    private final class KeyValueConverter(
-        parquetKeyType: Type,
-        parquetValueType: Type,
-        catalystKeyType: DataType,
-        catalystValueType: DataType)
-      extends GroupConverter {
+    private final class KeyValueConverter(parquetKeyType: Type,
+                                          parquetValueType: Type,
+                                          catalystKeyType: DataType,
+                                          catalystValueType: DataType)
+        extends GroupConverter {
 
       private var currentKey: Any = _
 
       private var currentValue: Any = _
 
       private val converters = Array(
-        // Converter for keys
-        newConverter(parquetKeyType, catalystKeyType, new ParentContainerUpdater {
-          override def set(value: Any): Unit = currentKey = value
-        }),
-
-        // Converter for values
-        newConverter(parquetValueType, catalystValueType, new ParentContainerUpdater {
-          override def set(value: Any): Unit = currentValue = value
-        }))
+          // Converter for keys
+          newConverter(parquetKeyType, catalystKeyType, new ParentContainerUpdater {
+            override def set(value: Any): Unit = currentKey = value
+          }),
+          // Converter for values
+          newConverter(parquetValueType, catalystValueType, new ParentContainerUpdater {
+            override def set(value: Any): Unit = currentValue = value
+          }))
 
       override def getConverter(fieldIndex: Int): Converter = converters(fieldIndex)
 
@@ -595,10 +594,10 @@ private[parquet] class CatalystRowConverter(
    * of required primitives values.
    */
   private final class RepeatedPrimitiveConverter(
-      parquetType: Type,
-      catalystType: DataType,
-      parentUpdater: ParentContainerUpdater)
-    extends PrimitiveConverter with RepeatedConverter with HasParentContainerUpdater {
+      parquetType: Type, catalystType: DataType, parentUpdater: ParentContainerUpdater)
+      extends PrimitiveConverter
+      with RepeatedConverter
+      with HasParentContainerUpdater {
 
     val updater: ParentContainerUpdater = newArrayUpdater(parentUpdater)
 
@@ -614,7 +613,8 @@ private[parquet] class CatalystRowConverter(
 
     override def setDictionary(dict: Dictionary): Unit = elementConverter.setDictionary(dict)
     override def hasDictionarySupport: Boolean = elementConverter.hasDictionarySupport
-    override def addValueFromDictionary(id: Int): Unit = elementConverter.addValueFromDictionary(id)
+    override def addValueFromDictionary(id: Int): Unit =
+      elementConverter.addValueFromDictionary(id)
   }
 
   /**
@@ -622,10 +622,10 @@ private[parquet] class CatalystRowConverter(
    * required struct values.
    */
   private final class RepeatedGroupConverter(
-      parquetType: Type,
-      catalystType: DataType,
-      parentUpdater: ParentContainerUpdater)
-    extends GroupConverter with HasParentContainerUpdater with RepeatedConverter {
+      parquetType: Type, catalystType: DataType, parentUpdater: ParentContainerUpdater)
+      extends GroupConverter
+      with HasParentContainerUpdater
+      with RepeatedConverter {
 
     val updater: ParentContainerUpdater = newArrayUpdater(parentUpdater)
 
@@ -662,8 +662,9 @@ private[parquet] object CatalystRowConverter {
   }
 
   def binaryToSQLTimestamp(binary: Binary): SQLTimestamp = {
-    assert(binary.length() == 12, s"Timestamps (with nanoseconds) are expected to be stored in" +
-      s" 12-byte long binaries. Found a ${binary.length()}-byte binary instead.")
+    assert(binary.length() == 12,
+           s"Timestamps (with nanoseconds) are expected to be stored in" +
+           s" 12-byte long binaries. Found a ${binary.length()}-byte binary instead.")
     val buffer = binary.toByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
     val timeOfDayNanos = buffer.getLong
     val julianDay = buffer.getInt

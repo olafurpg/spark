@@ -10,7 +10,7 @@ package org.apache.spark.repl
 import scala.tools.nsc._
 import scala.tools.nsc.interpreter._
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{mutable, immutable}
 import scala.PartialFunction.cond
 import scala.reflect.internal.Chars
 import scala.reflect.internal.Flags._
@@ -19,11 +19,12 @@ import scala.language.implicitConversions
 private[repl] trait SparkMemberHandlers {
   val intp: SparkIMain
 
-  import intp.{ Request, global, naming }
+  import intp.{Request, global, naming}
   import global._
   import naming._
 
-  private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
+  private def codegenln(leadingPlus: Boolean, xs: String*): String =
+    codegen(leadingPlus, (xs ++ Array("\n")): _*)
   private def codegenln(xs: String*): String = codegenln(true, xs: _*)
 
   private def codegen(xs: String*): String = codegen(true, xs: _*)
@@ -45,7 +46,7 @@ private[repl] trait SparkMemberHandlers {
         // to get right.
         if (name.toString startsWith "x$") ()
         else importVars += name
-      case _        => super.traverse(ast)
+      case _ => super.traverse(ast)
     }
   }
   private object ImportVarsTraverser {
@@ -57,27 +58,30 @@ private[repl] trait SparkMemberHandlers {
   }
 
   def chooseHandler(member: Tree): MemberHandler = member match {
-    case member: DefDef        => new DefHandler(member)
-    case member: ValDef        => new ValHandler(member)
-    case member: Assign        => new AssignHandler(member)
-    case member: ModuleDef     => new ModuleHandler(member)
-    case member: ClassDef      => new ClassHandler(member)
-    case member: TypeDef       => new TypeAliasHandler(member)
-    case member: Import        => new ImportHandler(member)
+    case member: DefDef => new DefHandler(member)
+    case member: ValDef => new ValHandler(member)
+    case member: Assign => new AssignHandler(member)
+    case member: ModuleDef => new ModuleHandler(member)
+    case member: ClassDef => new ClassHandler(member)
+    case member: TypeDef => new TypeAliasHandler(member)
+    case member: Import => new ImportHandler(member)
     case DocDef(_, documented) => chooseHandler(documented)
-    case member                => new GenericHandler(member)
+    case member => new GenericHandler(member)
   }
 
-  sealed abstract class MemberDefHandler(override val member: MemberDef) extends MemberHandler(member) {
-    def symbol          = if (member.symbol eq null) NoSymbol else member.symbol
-    def name: Name      = member.name
+  sealed abstract class MemberDefHandler(override val member: MemberDef)
+      extends MemberHandler(member) {
+    def symbol = if (member.symbol eq null) NoSymbol else member.symbol
+    def name: Name = member.name
     def mods: Modifiers = member.mods
-    def keyword         = member.keyword
-    def prettyName      = name.decode
+    def keyword = member.keyword
+    def prettyName = name.decode
 
     override def definesImplicit = member.mods.isImplicit
-    override def definesTerm: Option[TermName] = Some(name.toTermName) filter (_ => name.isTermName)
-    override def definesType: Option[TypeName] = Some(name.toTypeName) filter (_ => name.isTypeName)
+    override def definesTerm: Option[TermName] =
+      Some(name.toTermName) filter (_ => name.isTermName)
+    override def definesType: Option[TypeName] =
+      Some(name.toTypeName) filter (_ => name.isTypeName)
     override def definedSymbols = if (symbol eq NoSymbol) Nil else List(symbol)
   }
 
@@ -86,17 +90,17 @@ private[repl] trait SparkMemberHandlers {
    */
   sealed abstract class MemberHandler(val member: Tree) {
     def definesImplicit = false
-    def definesValue    = false
+    def definesValue = false
     def isLegalTopLevel = false
 
-    def definesTerm     = Option.empty[TermName]
-    def definesType     = Option.empty[TypeName]
+    def definesTerm = Option.empty[TermName]
+    def definesType = Option.empty[TypeName]
 
     lazy val referencedNames = ImportVarsTraverser(member)
-    def importedNames        = List[Name]()
-    def definedNames         = definesTerm.toList ++ definesType.toList
-    def definedOrImported    = definedNames ++ importedNames
-    def definedSymbols       = List[Symbol]()
+    def importedNames = List[Name]()
+    def definedNames = definesTerm.toList ++ definesType.toList
+    def definedOrImported = definedNames ++ importedNames
+    def definedSymbols = List[Symbol]()
 
     def extraCodeToEvaluate(req: Request): String = ""
     def resultExtractionCode(req: Request): String = ""
@@ -108,7 +112,7 @@ private[repl] trait SparkMemberHandlers {
   class GenericHandler(member: Tree) extends MemberHandler(member)
 
   class ValHandler(member: ValDef) extends MemberDefHandler(member) {
-    val maxStringElements = 1000  // no need to mkString billions of elements
+    val maxStringElements = 1000 // no need to mkString billions of elements
     override def definesValue = true
 
     override def resultExtractionCode(req: Request): String = {
@@ -121,10 +125,13 @@ private[repl] trait SparkMemberHandlers {
           else any2stringOf(req fullPath name, maxStringElements)
 
         val vidString =
-          if (replProps.vids) """" + " @ " + "%%8x".format(System.identityHashCode(%s)) + " """.trim.format(req fullPath name)
+          if (replProps.vids)
+            """" + " @ " + "%%8x".format(System.identityHashCode(%s)) + " """.trim.format(
+                req fullPath name)
           else ""
 
-        """ + "%s%s: %s = " + %s""".format(string2code(prettyName), vidString, string2code(req typeOf name), resultString)
+        """ + "%s%s: %s = " + %s""".format(
+            string2code(prettyName), vidString, string2code(req typeOf name), resultString)
       }
     }
   }
@@ -150,7 +157,7 @@ private[repl] trait SparkMemberHandlers {
     /** Print out lhs instead of the generated varName */
     override def resultExtractionCode(req: Request) = {
       val lhsType = string2code(req lookupTypeOf name)
-      val res     = string2code(req fullPath name)
+      val res = string2code(req fullPath name)
       """ + "%s: %s = " + %s + "\n" """.format(string2code(lhs.toString), lhsType, res) + "\n"
     }
   }
@@ -187,7 +194,7 @@ private[repl] trait SparkMemberHandlers {
 
     def createImportForName(name: Name): String = {
       selectors foreach {
-        case sel @ ImportSelector(old, _, `name`, _)  => return "import %s.{ %s }".format(expr, sel)
+        case sel @ ImportSelector(old, _, `name`, _) => return "import %s.{ %s }".format(expr, sel)
         case _ => ()
       }
       "import %s.%s".format(expr, name)
@@ -198,7 +205,7 @@ private[repl] trait SparkMemberHandlers {
     def isPredefImport = isReferenceToPredef(expr)
 
     // wildcard imports, e.g. import foo._
-    private def selectorWild    = selectors filter (_.name == nme.USCOREkw)
+    private def selectorWild = selectors filter (_.name == nme.USCOREkw)
     // renamed imports, e.g. import foo.{ bar => baz }
     private def selectorRenames = selectors map (_.rename) filterNot (_ == null)
 
@@ -211,16 +218,17 @@ private[repl] trait SparkMemberHandlers {
     def implicitSymbols = importedSymbols filter (_.isImplicit)
     def importedSymbols = individualSymbols ++ wildcardSymbols
 
-    lazy val individualSymbols: List[Symbol] =
-      beforePickler(individualNames map (targetType nonPrivateMember _))
+    lazy val individualSymbols: List[Symbol] = beforePickler(
+        individualNames map (targetType nonPrivateMember _))
 
     lazy val wildcardSymbols: List[Symbol] =
       if (importsWildcard) beforePickler(targetType.nonPrivateMembers.toList)
       else Nil
 
     /** Complete list of names imported by a wildcard */
-    lazy val wildcardNames: List[Name]   = wildcardSymbols map (_.name)
-    lazy val individualNames: List[Name] = selectorRenames filterNot (_ == nme.USCOREkw) flatMap (_.bothNames)
+    lazy val wildcardNames: List[Name] = wildcardSymbols map (_.name)
+    lazy val individualNames: List[Name] =
+      selectorRenames filterNot (_ == nme.USCOREkw) flatMap (_.bothNames)
 
     /** The names imported by this statement */
     override lazy val importedNames: List[Name] = wildcardNames ++ individualNames

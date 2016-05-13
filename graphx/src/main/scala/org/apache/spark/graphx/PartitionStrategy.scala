@@ -22,6 +22,7 @@ package org.apache.spark.graphx
  * vertex IDs.
  */
 trait PartitionStrategy extends Serializable {
+
   /** Returns the partition number for a given edge. */
   def getPartition(src: VertexId, dst: VertexId, numParts: PartitionID): PartitionID
 }
@@ -30,6 +31,7 @@ trait PartitionStrategy extends Serializable {
  * Collection of built-in [[PartitionStrategy]] implementations.
  */
 object PartitionStrategy {
+
   /**
    * Assigns edges to partitions using a 2D partitioning of the sparse edge adjacency matrix,
    * guaranteeing a `2 * sqrt(numParts)` bound on vertex replication.
@@ -80,7 +82,6 @@ object PartitionStrategy {
         val col: PartitionID = (math.abs(src * mixingPrime) % ceilSqrtNumParts).toInt
         val row: PartitionID = (math.abs(dst * mixingPrime) % ceilSqrtNumParts).toInt
         (col * ceilSqrtNumParts + row) % numParts
-
       } else {
         // Otherwise use new method
         val cols = ceilSqrtNumParts
@@ -89,7 +90,6 @@ object PartitionStrategy {
         val col = (math.abs(src * mixingPrime) % numParts / rows).toInt
         val row = (math.abs(dst * mixingPrime) % (if (col < cols - 1) rows else lastColRows)).toInt
         col * rows + row
-
       }
     }
   }
@@ -105,7 +105,6 @@ object PartitionStrategy {
     }
   }
 
-
   /**
    * Assigns edges to partitions by hashing the source and destination vertex IDs, resulting in a
    * random vertex cut that colocates all same-direction edges between two vertices.
@@ -115,7 +114,6 @@ object PartitionStrategy {
       math.abs((src, dst).hashCode()) % numParts
     }
   }
-
 
   /**
    * Assigns edges to partitions by hashing the source and destination vertex IDs in a canonical

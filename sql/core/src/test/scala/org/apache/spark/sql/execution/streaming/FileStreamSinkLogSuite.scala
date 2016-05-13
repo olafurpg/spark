@@ -83,46 +83,40 @@ class FileStreamSinkLogSuite extends SparkFunSuite with SharedSQLContext {
   }
 
   test("compactLogs") {
-    val logs = Seq(
-      newFakeSinkFileStatus("/a/b/x", FileStreamSinkLog.ADD_ACTION),
-      newFakeSinkFileStatus("/a/b/y", FileStreamSinkLog.ADD_ACTION),
-      newFakeSinkFileStatus("/a/b/z", FileStreamSinkLog.ADD_ACTION))
+    val logs = Seq(newFakeSinkFileStatus("/a/b/x", FileStreamSinkLog.ADD_ACTION),
+                   newFakeSinkFileStatus("/a/b/y", FileStreamSinkLog.ADD_ACTION),
+                   newFakeSinkFileStatus("/a/b/z", FileStreamSinkLog.ADD_ACTION))
     assert(logs === compactLogs(logs))
 
-    val logs2 = Seq(
-      newFakeSinkFileStatus("/a/b/m", FileStreamSinkLog.ADD_ACTION),
-      newFakeSinkFileStatus("/a/b/n", FileStreamSinkLog.ADD_ACTION),
-      newFakeSinkFileStatus("/a/b/z", FileStreamSinkLog.DELETE_ACTION))
+    val logs2 = Seq(newFakeSinkFileStatus("/a/b/m", FileStreamSinkLog.ADD_ACTION),
+                    newFakeSinkFileStatus("/a/b/n", FileStreamSinkLog.ADD_ACTION),
+                    newFakeSinkFileStatus("/a/b/z", FileStreamSinkLog.DELETE_ACTION))
     assert(logs.dropRight(1) ++ logs2.dropRight(1) === compactLogs(logs ++ logs2))
   }
 
   test("serialize") {
     withFileStreamSinkLog { sinkLog =>
-      val logs = Seq(
-        SinkFileStatus(
-          path = "/a/b/x",
-          size = 100L,
-          isDir = false,
-          modificationTime = 1000L,
-          blockReplication = 1,
-          blockSize = 10000L,
-          action = FileStreamSinkLog.ADD_ACTION),
-        SinkFileStatus(
-          path = "/a/b/y",
-          size = 200L,
-          isDir = false,
-          modificationTime = 2000L,
-          blockReplication = 2,
-          blockSize = 20000L,
-          action = FileStreamSinkLog.DELETE_ACTION),
-        SinkFileStatus(
-          path = "/a/b/z",
-          size = 300L,
-          isDir = false,
-          modificationTime = 3000L,
-          blockReplication = 3,
-          blockSize = 30000L,
-          action = FileStreamSinkLog.ADD_ACTION))
+      val logs = Seq(SinkFileStatus(path = "/a/b/x",
+                                    size = 100L,
+                                    isDir = false,
+                                    modificationTime = 1000L,
+                                    blockReplication = 1,
+                                    blockSize = 10000L,
+                                    action = FileStreamSinkLog.ADD_ACTION),
+                     SinkFileStatus(path = "/a/b/y",
+                                    size = 200L,
+                                    isDir = false,
+                                    modificationTime = 2000L,
+                                    blockReplication = 2,
+                                    blockSize = 20000L,
+                                    action = FileStreamSinkLog.DELETE_ACTION),
+                     SinkFileStatus(path = "/a/b/z",
+                                    size = 300L,
+                                    isDir = false,
+                                    modificationTime = 3000L,
+                                    blockReplication = 3,
+                                    blockSize = 30000L,
+                                    action = FileStreamSinkLog.ADD_ACTION))
 
       // scalastyle:off
       val expected = s"""${FileStreamSinkLog.VERSION}
@@ -145,31 +139,27 @@ class FileStreamSinkLogSuite extends SparkFunSuite with SharedSQLContext {
           |{"path":"/a/b/z","size":300,"isDir":false,"modificationTime":3000,"blockReplication":3,"blockSize":30000,"action":"add"}""".stripMargin
       // scalastyle:on
 
-      val expected = Seq(
-        SinkFileStatus(
-          path = "/a/b/x",
-          size = 100L,
-          isDir = false,
-          modificationTime = 1000L,
-          blockReplication = 1,
-          blockSize = 10000L,
-          action = FileStreamSinkLog.ADD_ACTION),
-        SinkFileStatus(
-          path = "/a/b/y",
-          size = 200L,
-          isDir = false,
-          modificationTime = 2000L,
-          blockReplication = 2,
-          blockSize = 20000L,
-          action = FileStreamSinkLog.DELETE_ACTION),
-        SinkFileStatus(
-          path = "/a/b/z",
-          size = 300L,
-          isDir = false,
-          modificationTime = 3000L,
-          blockReplication = 3,
-          blockSize = 30000L,
-          action = FileStreamSinkLog.ADD_ACTION))
+      val expected = Seq(SinkFileStatus(path = "/a/b/x",
+                                        size = 100L,
+                                        isDir = false,
+                                        modificationTime = 1000L,
+                                        blockReplication = 1,
+                                        blockSize = 10000L,
+                                        action = FileStreamSinkLog.ADD_ACTION),
+                         SinkFileStatus(path = "/a/b/y",
+                                        size = 200L,
+                                        isDir = false,
+                                        modificationTime = 2000L,
+                                        blockReplication = 2,
+                                        blockSize = 20000L,
+                                        action = FileStreamSinkLog.DELETE_ACTION),
+                         SinkFileStatus(path = "/a/b/z",
+                                        size = 300L,
+                                        isDir = false,
+                                        modificationTime = 3000L,
+                                        blockReplication = 3,
+                                        blockSize = 30000L,
+                                        action = FileStreamSinkLog.ADD_ACTION))
 
       assert(expected === sinkLog.deserialize(logs.getBytes(UTF_8)))
 
@@ -194,11 +184,10 @@ class FileStreamSinkLogSuite extends SparkFunSuite with SharedSQLContext {
     withSQLConf(SQLConf.FILE_SINK_LOG_COMPACT_INTERVAL.key -> "3") {
       withFileStreamSinkLog { sinkLog =>
         for (batchId <- 0 to 10) {
-          sinkLog.add(
-            batchId,
-            Seq(newFakeSinkFileStatus("/a/b/" + batchId, FileStreamSinkLog.ADD_ACTION)))
-          val expectedFiles = (0 to batchId).map {
-            id => newFakeSinkFileStatus("/a/b/" + id, FileStreamSinkLog.ADD_ACTION)
+          sinkLog.add(batchId,
+                      Seq(newFakeSinkFileStatus("/a/b/" + batchId, FileStreamSinkLog.ADD_ACTION)))
+          val expectedFiles = (0 to batchId).map { id =>
+            newFakeSinkFileStatus("/a/b/" + id, FileStreamSinkLog.ADD_ACTION)
           }
           assert(sinkLog.allFiles() === expectedFiles)
           if (isCompactionBatch(batchId, 3)) {
@@ -213,21 +202,23 @@ class FileStreamSinkLogSuite extends SparkFunSuite with SharedSQLContext {
   test("delete expired file") {
     // Set FILE_SINK_LOG_CLEANUP_DELAY to 0 so that we can detect the deleting behaviour
     // deterministically
-    withSQLConf(
-      SQLConf.FILE_SINK_LOG_COMPACT_INTERVAL.key -> "3",
-      SQLConf.FILE_SINK_LOG_CLEANUP_DELAY.key -> "0") {
+    withSQLConf(SQLConf.FILE_SINK_LOG_COMPACT_INTERVAL.key -> "3",
+                SQLConf.FILE_SINK_LOG_CLEANUP_DELAY.key -> "0") {
       withFileStreamSinkLog { sinkLog =>
         val fs = sinkLog.metadataPath.getFileSystem(spark.sessionState.newHadoopConf())
 
         def listBatchFiles(): Set[String] = {
-          fs.listStatus(sinkLog.metadataPath).map(_.getPath.getName).filter { fileName =>
-            try {
-              getBatchIdFromFileName(fileName)
-              true
-            } catch {
-              case _: NumberFormatException => false
+          fs.listStatus(sinkLog.metadataPath)
+            .map(_.getPath.getName)
+            .filter { fileName =>
+              try {
+                getBatchIdFromFileName(fileName)
+                true
+              } catch {
+                case _: NumberFormatException => false
+              }
             }
-          }.toSet
+            .toSet
         }
 
         sinkLog.add(0, Seq(newFakeSinkFileStatus("/a/b/0", FileStreamSinkLog.ADD_ACTION)))
@@ -251,14 +242,13 @@ class FileStreamSinkLogSuite extends SparkFunSuite with SharedSQLContext {
    * in SinkFileStatus.
    */
   private def newFakeSinkFileStatus(path: String, action: String): SinkFileStatus = {
-    SinkFileStatus(
-      path = path,
-      size = 100L,
-      isDir = false,
-      modificationTime = 100L,
-      blockReplication = 1,
-      blockSize = 100L,
-      action = action)
+    SinkFileStatus(path = path,
+                   size = 100L,
+                   isDir = false,
+                   modificationTime = 100L,
+                   blockReplication = 1,
+                   blockSize = 100L,
+                   action = action)
   }
 
   private def withFileStreamSinkLog(f: FileStreamSinkLog => Unit): Unit = {

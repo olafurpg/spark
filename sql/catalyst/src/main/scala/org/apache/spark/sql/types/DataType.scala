@@ -32,6 +32,7 @@ import org.apache.spark.util.Utils
  */
 @DeveloperApi
 abstract class DataType extends AbstractDataType {
+
   /**
    * Enables matching against DataType for expressions:
    * {{{
@@ -93,15 +94,24 @@ abstract class DataType extends AbstractDataType {
   override private[sql] def acceptsType(other: DataType): Boolean = sameType(other)
 }
 
-
 object DataType {
 
   def fromJson(json: String): DataType = parseDataType(parse(json))
 
   private val nonDecimalNameToType = {
-    Seq(NullType, DateType, TimestampType, BinaryType, IntegerType, BooleanType, LongType,
-      DoubleType, FloatType, ShortType, ByteType, StringType, CalendarIntervalType)
-      .map(t => t.typeName -> t).toMap
+    Seq(NullType,
+        DateType,
+        TimestampType,
+        BinaryType,
+        IntegerType,
+        BooleanType,
+        LongType,
+        DoubleType,
+        FloatType,
+        ShortType,
+        ByteType,
+        StringType,
+        CalendarIntervalType).map(t => t.typeName -> t).toMap
   }
 
   /** Given the string representation of a type, return its DataType */
@@ -127,59 +137,47 @@ object DataType {
       nameToType(name)
 
     case JSortedObject(
-    ("containsNull", JBool(n)),
-    ("elementType", t: JValue),
-    ("type", JString("array"))) =>
+        ("containsNull", JBool(n)), ("elementType", t: JValue), ("type", JString("array"))) =>
       ArrayType(parseDataType(t), n)
 
-    case JSortedObject(
-    ("keyType", k: JValue),
-    ("type", JString("map")),
-    ("valueContainsNull", JBool(n)),
-    ("valueType", v: JValue)) =>
+    case JSortedObject(("keyType", k: JValue),
+                       ("type", JString("map")),
+                       ("valueContainsNull", JBool(n)),
+                       ("valueType", v: JValue)) =>
       MapType(parseDataType(k), parseDataType(v), n)
 
-    case JSortedObject(
-    ("fields", JArray(fields)),
-    ("type", JString("struct"))) =>
+    case JSortedObject(("fields", JArray(fields)), ("type", JString("struct"))) =>
       StructType(fields.map(parseStructField))
 
     // Scala/Java UDT
-    case JSortedObject(
-    ("class", JString(udtClass)),
-    ("pyClass", _),
-    ("sqlType", _),
-    ("type", JString("udt"))) =>
+    case JSortedObject(("class", JString(udtClass)),
+                       ("pyClass", _),
+                       ("sqlType", _),
+                       ("type", JString("udt"))) =>
       Utils.classForName(udtClass).newInstance().asInstanceOf[UserDefinedType[_]]
 
     // Python UDT
-    case JSortedObject(
-    ("pyClass", JString(pyClass)),
-    ("serializedClass", JString(serialized)),
-    ("sqlType", v: JValue),
-    ("type", JString("udt"))) =>
-        new PythonUserDefinedType(parseDataType(v), pyClass, serialized)
+    case JSortedObject(("pyClass", JString(pyClass)),
+                       ("serializedClass", JString(serialized)),
+                       ("sqlType", v: JValue),
+                       ("type", JString("udt"))) =>
+      new PythonUserDefinedType(parseDataType(v), pyClass, serialized)
   }
 
   private def parseStructField(json: JValue): StructField = json match {
-    case JSortedObject(
-    ("metadata", metadata: JObject),
-    ("name", JString(name)),
-    ("nullable", JBool(nullable)),
-    ("type", dataType: JValue)) =>
+    case JSortedObject(("metadata", metadata: JObject),
+                       ("name", JString(name)),
+                       ("nullable", JBool(nullable)),
+                       ("type", dataType: JValue)) =>
       StructField(name, parseDataType(dataType), nullable, Metadata.fromJObject(metadata))
     // Support reading schema when 'metadata' is missing.
     case JSortedObject(
-    ("name", JString(name)),
-    ("nullable", JBool(nullable)),
-    ("type", dataType: JValue)) =>
+        ("name", JString(name)), ("nullable", JBool(nullable)), ("type", dataType: JValue)) =>
       StructField(name, parseDataType(dataType), nullable)
   }
 
   protected[types] def buildFormattedString(
-    dataType: DataType,
-    prefix: String,
-    builder: StringBuilder): Unit = {
+      dataType: DataType, prefix: String, builder: StringBuilder): Unit = {
     dataType match {
       case array: ArrayType =>
         array.buildFormattedString(prefix, builder)
@@ -200,12 +198,12 @@ object DataType {
         equalsIgnoreNullability(leftElementType, rightElementType)
       case (MapType(leftKeyType, leftValueType, _), MapType(rightKeyType, rightValueType, _)) =>
         equalsIgnoreNullability(leftKeyType, rightKeyType) &&
-          equalsIgnoreNullability(leftValueType, rightValueType)
+        equalsIgnoreNullability(leftValueType, rightValueType)
       case (StructType(leftFields), StructType(rightFields)) =>
-        leftFields.length == rightFields.length &&
-          leftFields.zip(rightFields).forall { case (l, r) =>
+        leftFields.length == rightFields.length && leftFields.zip(rightFields).forall {
+          case (l, r) =>
             l.name == r.name && equalsIgnoreNullability(l.dataType, r.dataType)
-          }
+        }
       case (l, r) => l == r
     }
   }
@@ -230,17 +228,15 @@ object DataType {
         (tn || !fn) && equalsIgnoreCompatibleNullability(fromElement, toElement)
 
       case (MapType(fromKey, fromValue, fn), MapType(toKey, toValue, tn)) =>
-        (tn || !fn) &&
-          equalsIgnoreCompatibleNullability(fromKey, toKey) &&
-          equalsIgnoreCompatibleNullability(fromValue, toValue)
+        (tn || !fn) && equalsIgnoreCompatibleNullability(fromKey, toKey) &&
+        equalsIgnoreCompatibleNullability(fromValue, toValue)
 
       case (StructType(fromFields), StructType(toFields)) =>
-        fromFields.length == toFields.length &&
-          fromFields.zip(toFields).forall { case (fromField, toField) =>
-            fromField.name == toField.name &&
-              (toField.nullable || !fromField.nullable) &&
-              equalsIgnoreCompatibleNullability(fromField.dataType, toField.dataType)
-          }
+        fromFields.length == toFields.length && fromFields.zip(toFields).forall {
+          case (fromField, toField) =>
+            fromField.name == toField.name && (toField.nullable || !fromField.nullable) &&
+            equalsIgnoreCompatibleNullability(fromField.dataType, toField.dataType)
+        }
 
       case (fromDataType, toDataType) => fromDataType == toDataType
     }

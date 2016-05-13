@@ -25,10 +25,7 @@ import org.apache.spark.mllib.util.MLlibTestSparkContext
 class FPTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   test("add transaction") {
-    val tree = new FPTree[String]
-      .add(Seq("a", "b", "c"))
-      .add(Seq("a", "b", "y"))
-      .add(Seq("b"))
+    val tree = new FPTree[String].add(Seq("a", "b", "c")).add(Seq("a", "b", "y")).add(Seq("b"))
 
     assert(tree.root.children.size == 2)
     assert(tree.root.children.contains("a"))
@@ -53,10 +50,7 @@ class FPTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("merge tree") {
-    val tree1 = new FPTree[String]
-      .add(Seq("a", "b", "c"))
-      .add(Seq("a", "b", "y"))
-      .add(Seq("b"))
+    val tree1 = new FPTree[String].add(Seq("a", "b", "c")).add(Seq("a", "b", "y")).add(Seq("b"))
 
     val tree2 = new FPTree[String]
       .add(Seq("a", "b"))
@@ -102,13 +96,14 @@ class FPTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
       .add(Seq("b"))
       .add(Seq("b", "n"))
 
-    val freqItemsets = tree.extract(3L).map { case (items, count) =>
-      (items.toSet, count)
-    }.toSet
-    val expected = Set(
-      (Set("a"), 4L),
-      (Set("b"), 5L),
-      (Set("a", "b"), 3L))
+    val freqItemsets = tree
+      .extract(3L)
+      .map {
+        case (items, count) =>
+          (items.toSet, count)
+      }
+      .toSet
+    val expected = Set((Set("a"), 4L), (Set("b"), 5L), (Set("a", "b"), 3L))
     assert(freqItemsets === expected)
   }
 }

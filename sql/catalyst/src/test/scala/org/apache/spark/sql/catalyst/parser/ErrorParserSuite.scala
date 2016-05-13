@@ -50,18 +50,21 @@ class ErrorParserSuite extends SparkFunSuite {
   }
 
   test("mismatched input") {
-    intercept("select * from r order by q from t", 1, 27,
-      "mismatched input",
-      "---------------------------^^^")
+    intercept("select * from r order by q from t",
+              1,
+              27,
+              "mismatched input",
+              "---------------------------^^^")
     intercept("select *\nfrom r\norder by q\nfrom t", 4, 0, "mismatched input", "^^^")
   }
 
   test("semantic errors") {
-    intercept("select *\nfrom r\norder by q\ncluster by q", 3, 0,
-      "Combination of ORDER BY/SORT BY/DISTRIBUTE BY/CLUSTER BY is not supported",
-      "^^^")
-    intercept("select * from r except all select * from t", 1, 0,
-      "EXCEPT ALL is not supported",
-      "^^^")
+    intercept("select *\nfrom r\norder by q\ncluster by q",
+              3,
+              0,
+              "Combination of ORDER BY/SORT BY/DISTRIBUTE BY/CLUSTER BY is not supported",
+              "^^^")
+    intercept(
+        "select * from r except all select * from t", 1, 0, "EXCEPT ALL is not supported", "^^^")
   }
 }

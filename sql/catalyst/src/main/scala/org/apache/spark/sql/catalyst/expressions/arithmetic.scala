@@ -23,10 +23,11 @@ import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.CalendarInterval
 
-@ExpressionDescription(
-  usage = "_FUNC_(a) - Returns -a.")
-case class UnaryMinus(child: Expression) extends UnaryExpression
-    with ExpectsInputTypes with NullIntolerant {
+@ExpressionDescription(usage = "_FUNC_(a) - Returns -a.")
+case class UnaryMinus(child: Expression)
+    extends UnaryExpression
+    with ExpectsInputTypes
+    with NullIntolerant {
 
   override def inputTypes: Seq[AbstractDataType] = Seq(TypeCollection.NumericAndInterval)
 
@@ -38,14 +39,16 @@ case class UnaryMinus(child: Expression) extends UnaryExpression
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = dataType match {
     case dt: DecimalType => defineCodeGen(ctx, ev, c => s"$c.unary_$$minus()")
-    case dt: NumericType => nullSafeCodeGen(ctx, ev, eval => {
-      val originValue = ctx.freshName("origin")
-      // codegen would fail to compile if we just write (-($c))
-      // for example, we could not write --9223372036854775808L in code
-      s"""
+    case dt: NumericType =>
+      nullSafeCodeGen(ctx, ev, eval => {
+        val originValue = ctx.freshName("origin")
+        // codegen would fail to compile if we just write (-($c))
+        // for example, we could not write --9223372036854775808L in code
+        s"""
         ${ctx.javaType(dt)} $originValue = (${ctx.javaType(dt)})($eval);
         ${ev.value} = (${ctx.javaType(dt)})(-($originValue));
-      """})
+      """
+      })
     case dt: CalendarIntervalType => defineCodeGen(ctx, ev, c => s"$c.negate()")
   }
 
@@ -60,10 +63,11 @@ case class UnaryMinus(child: Expression) extends UnaryExpression
   override def sql: String = s"(-${child.sql})"
 }
 
-@ExpressionDescription(
-  usage = "_FUNC_(a) - Returns a.")
+@ExpressionDescription(usage = "_FUNC_(a) - Returns a.")
 case class UnaryPositive(child: Expression)
-    extends UnaryExpression with ExpectsInputTypes with NullIntolerant {
+    extends UnaryExpression
+    with ExpectsInputTypes
+    with NullIntolerant {
   override def prettyName: String = "positive"
 
   override def inputTypes: Seq[AbstractDataType] = Seq(TypeCollection.NumericAndInterval)
@@ -81,11 +85,12 @@ case class UnaryPositive(child: Expression)
 /**
  * A function that get the absolute value of the numeric value.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(expr) - Returns the absolute value of the numeric value.",
-  extended = "> SELECT _FUNC_('-1');\n 1")
+@ExpressionDescription(usage = "_FUNC_(expr) - Returns the absolute value of the numeric value.",
+                       extended = "> SELECT _FUNC_('-1');\n 1")
 case class Abs(child: Expression)
-    extends UnaryExpression with ExpectsInputTypes with NullIntolerant {
+    extends UnaryExpression
+    with ExpectsInputTypes
+    with NullIntolerant {
 
   override def inputTypes: Seq[AbstractDataType] = Seq(NumericType)
 
@@ -118,8 +123,8 @@ abstract class BinaryArithmetic extends BinaryOperator {
       defineCodeGen(ctx, ev, (eval1, eval2) => s"$eval1.$decimalMethod($eval2)")
     // byte and short are casted into int when add, minus, times or divide
     case ByteType | ShortType =>
-      defineCodeGen(ctx, ev,
-        (eval1, eval2) => s"(${ctx.javaType(dataType)})($eval1 $symbol $eval2)")
+      defineCodeGen(
+          ctx, ev, (eval1, eval2) => s"(${ctx.javaType(dataType)})($eval1 $symbol $eval2)")
     case _ =>
       defineCodeGen(ctx, ev, (eval1, eval2) => s"$eval1 $symbol $eval2")
   }
@@ -129,8 +134,7 @@ private[sql] object BinaryArithmetic {
   def unapply(e: BinaryArithmetic): Option[(Expression, Expression)] = Some((e.left, e.right))
 }
 
-@ExpressionDescription(
-  usage = "a _FUNC_ b - Returns a+b.")
+@ExpressionDescription(usage = "a _FUNC_ b - Returns a+b.")
 case class Add(left: Expression, right: Expression) extends BinaryArithmetic with NullIntolerant {
 
   override def inputType: AbstractDataType = TypeCollection.NumericAndInterval
@@ -151,8 +155,8 @@ case class Add(left: Expression, right: Expression) extends BinaryArithmetic wit
     case dt: DecimalType =>
       defineCodeGen(ctx, ev, (eval1, eval2) => s"$eval1.$$plus($eval2)")
     case ByteType | ShortType =>
-      defineCodeGen(ctx, ev,
-        (eval1, eval2) => s"(${ctx.javaType(dataType)})($eval1 $symbol $eval2)")
+      defineCodeGen(
+          ctx, ev, (eval1, eval2) => s"(${ctx.javaType(dataType)})($eval1 $symbol $eval2)")
     case CalendarIntervalType =>
       defineCodeGen(ctx, ev, (eval1, eval2) => s"$eval1.add($eval2)")
     case _ =>
@@ -160,10 +164,10 @@ case class Add(left: Expression, right: Expression) extends BinaryArithmetic wit
   }
 }
 
-@ExpressionDescription(
-  usage = "a _FUNC_ b - Returns a-b.")
+@ExpressionDescription(usage = "a _FUNC_ b - Returns a-b.")
 case class Subtract(left: Expression, right: Expression)
-    extends BinaryArithmetic with NullIntolerant {
+    extends BinaryArithmetic
+    with NullIntolerant {
 
   override def inputType: AbstractDataType = TypeCollection.NumericAndInterval
 
@@ -183,8 +187,8 @@ case class Subtract(left: Expression, right: Expression)
     case dt: DecimalType =>
       defineCodeGen(ctx, ev, (eval1, eval2) => s"$eval1.$$minus($eval2)")
     case ByteType | ShortType =>
-      defineCodeGen(ctx, ev,
-        (eval1, eval2) => s"(${ctx.javaType(dataType)})($eval1 $symbol $eval2)")
+      defineCodeGen(
+          ctx, ev, (eval1, eval2) => s"(${ctx.javaType(dataType)})($eval1 $symbol $eval2)")
     case CalendarIntervalType =>
       defineCodeGen(ctx, ev, (eval1, eval2) => s"$eval1.subtract($eval2)")
     case _ =>
@@ -192,10 +196,10 @@ case class Subtract(left: Expression, right: Expression)
   }
 }
 
-@ExpressionDescription(
-  usage = "a _FUNC_ b - Multiplies a by b.")
+@ExpressionDescription(usage = "a _FUNC_ b - Multiplies a by b.")
 case class Multiply(left: Expression, right: Expression)
-    extends BinaryArithmetic with NullIntolerant {
+    extends BinaryArithmetic
+    with NullIntolerant {
 
   override def inputType: AbstractDataType = NumericType
 
@@ -204,14 +208,15 @@ case class Multiply(left: Expression, right: Expression)
 
   private lazy val numeric = TypeUtils.getNumeric(dataType)
 
-  protected override def nullSafeEval(input1: Any, input2: Any): Any = numeric.times(input1, input2)
+  protected override def nullSafeEval(input1: Any, input2: Any): Any =
+    numeric.times(input1, input2)
 }
 
 @ExpressionDescription(
-  usage = "a _FUNC_ b - Divides a by b.",
-  extended = "> SELECT 3 _FUNC_ 2;\n 1.5")
+    usage = "a _FUNC_ b - Divides a by b.", extended = "> SELECT 3 _FUNC_ 2;\n 1.5")
 case class Divide(left: Expression, right: Expression)
-    extends BinaryArithmetic with NullIntolerant {
+    extends BinaryArithmetic
+    with NullIntolerant {
 
   override def inputType: AbstractDataType = NumericType
 
@@ -244,17 +249,19 @@ case class Divide(left: Expression, right: Expression)
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val eval1 = left.genCode(ctx)
     val eval2 = right.genCode(ctx)
-    val isZero = if (dataType.isInstanceOf[DecimalType]) {
-      s"${eval2.value}.isZero()"
-    } else {
-      s"${eval2.value} == 0"
-    }
+    val isZero =
+      if (dataType.isInstanceOf[DecimalType]) {
+        s"${eval2.value}.isZero()"
+      } else {
+        s"${eval2.value} == 0"
+      }
     val javaType = ctx.javaType(dataType)
-    val divide = if (dataType.isInstanceOf[DecimalType]) {
-      s"${eval1.value}.$decimalMethod(${eval2.value})"
-    } else {
-      s"($javaType)(${eval1.value} $symbol ${eval2.value})"
-    }
+    val divide =
+      if (dataType.isInstanceOf[DecimalType]) {
+        s"${eval1.value}.$decimalMethod(${eval2.value})"
+      } else {
+        s"($javaType)(${eval1.value} $symbol ${eval2.value})"
+      }
     if (!left.nullable && !right.nullable) {
       ev.copy(code = s"""
         ${eval2.code}
@@ -285,10 +292,10 @@ case class Divide(left: Expression, right: Expression)
   }
 }
 
-@ExpressionDescription(
-  usage = "a _FUNC_ b - Returns the remainder when dividing a by b.")
+@ExpressionDescription(usage = "a _FUNC_ b - Returns the remainder when dividing a by b.")
 case class Remainder(left: Expression, right: Expression)
-    extends BinaryArithmetic with NullIntolerant {
+    extends BinaryArithmetic
+    with NullIntolerant {
 
   override def inputType: AbstractDataType = NumericType
 
@@ -321,17 +328,19 @@ case class Remainder(left: Expression, right: Expression)
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val eval1 = left.genCode(ctx)
     val eval2 = right.genCode(ctx)
-    val isZero = if (dataType.isInstanceOf[DecimalType]) {
-      s"${eval2.value}.isZero()"
-    } else {
-      s"${eval2.value} == 0"
-    }
+    val isZero =
+      if (dataType.isInstanceOf[DecimalType]) {
+        s"${eval2.value}.isZero()"
+      } else {
+        s"${eval2.value} == 0"
+      }
     val javaType = ctx.javaType(dataType)
-    val remainder = if (dataType.isInstanceOf[DecimalType]) {
-      s"${eval1.value}.$decimalMethod(${eval2.value})"
-    } else {
-      s"($javaType)(${eval1.value} $symbol ${eval2.value})"
-    }
+    val remainder =
+      if (dataType.isInstanceOf[DecimalType]) {
+        s"${eval1.value}.$decimalMethod(${eval2.value})"
+      } else {
+        s"($javaType)(${eval1.value} $symbol ${eval2.value})"
+      }
     if (!left.nullable && !right.nullable) {
       ev.copy(code = s"""
         ${eval2.code}
@@ -363,7 +372,8 @@ case class Remainder(left: Expression, right: Expression)
 }
 
 case class MaxOf(left: Expression, right: Expression)
-  extends BinaryArithmetic with NonSQLExpression {
+    extends BinaryArithmetic
+    with NonSQLExpression {
 
   // TODO: Remove MaxOf and MinOf, and replace its usage with Greatest and Least.
 
@@ -418,7 +428,8 @@ case class MaxOf(left: Expression, right: Expression)
 }
 
 case class MinOf(left: Expression, right: Expression)
-  extends BinaryArithmetic with NonSQLExpression {
+    extends BinaryArithmetic
+    with NonSQLExpression {
 
   // TODO: Remove MaxOf and MinOf, and replace its usage with Greatest and Least.
 
@@ -473,8 +484,7 @@ case class MinOf(left: Expression, right: Expression)
 }
 
 @ExpressionDescription(
-  usage = "_FUNC_(a, b) - Returns the positive modulo",
-  extended = "> SELECT _FUNC_(10,3);\n 1")
+    usage = "_FUNC_(a, b) - Returns the positive modulo", extended = "> SELECT _FUNC_(10,3);\n 1")
 case class Pmod(left: Expression, right: Expression) extends BinaryArithmetic with NullIntolerant {
 
   override def toString: String = s"pmod($left, $right)"
@@ -535,37 +545,37 @@ case class Pmod(left: Expression, right: Expression) extends BinaryArithmetic wi
 
   private def pmod(a: Int, n: Int): Int = {
     val r = a % n
-    if (r < 0) {(r + n) % n} else r
+    if (r < 0) { (r + n) % n } else r
   }
 
   private def pmod(a: Long, n: Long): Long = {
     val r = a % n
-    if (r < 0) {(r + n) % n} else r
+    if (r < 0) { (r + n) % n } else r
   }
 
   private def pmod(a: Byte, n: Byte): Byte = {
     val r = a % n
-    if (r < 0) {((r + n) % n).toByte} else r.toByte
+    if (r < 0) { ((r + n) % n).toByte } else r.toByte
   }
 
   private def pmod(a: Double, n: Double): Double = {
     val r = a % n
-    if (r < 0) {(r + n) % n} else r
+    if (r < 0) { (r + n) % n } else r
   }
 
   private def pmod(a: Short, n: Short): Short = {
     val r = a % n
-    if (r < 0) {((r + n) % n).toShort} else r.toShort
+    if (r < 0) { ((r + n) % n).toShort } else r.toShort
   }
 
   private def pmod(a: Float, n: Float): Float = {
     val r = a % n
-    if (r < 0) {(r + n) % n} else r
+    if (r < 0) { (r + n) % n } else r
   }
 
   private def pmod(a: Decimal, n: Decimal): Decimal = {
     val r = a % n
-    if (r.compare(Decimal.ZERO) < 0) {(r + n) % n} else r
+    if (r.compare(Decimal.ZERO) < 0) { (r + n) % n } else r
   }
 
   override def sql: String = s"$prettyName(${left.sql}, ${right.sql})"

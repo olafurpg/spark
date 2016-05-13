@@ -40,7 +40,8 @@ private[r] class GeneralizedLinearRegressionWrapper private (
     val rResidualDegreeOfFreedom: Long,
     val rAic: Double,
     val rNumIterations: Int,
-    val isLoaded: Boolean = false) extends MLWritable {
+    val isLoaded: Boolean = false)
+    extends MLWritable {
 
   private val glm: GeneralizedLinearRegressionModel =
     pipeline.stages(1).asInstanceOf[GeneralizedLinearRegressionModel]
@@ -60,22 +61,20 @@ private[r] class GeneralizedLinearRegressionWrapper private (
 }
 
 private[r] object GeneralizedLinearRegressionWrapper
-  extends MLReadable[GeneralizedLinearRegressionWrapper] {
+    extends MLReadable[GeneralizedLinearRegressionWrapper] {
 
-  def fit(
-      formula: String,
-      data: DataFrame,
-      family: String,
-      link: String,
-      epsilon: Double,
-      maxit: Int): GeneralizedLinearRegressionWrapper = {
-    val rFormula = new RFormula()
-      .setFormula(formula)
+  def fit(formula: String,
+          data: DataFrame,
+          family: String,
+          link: String,
+          epsilon: Double,
+          maxit: Int): GeneralizedLinearRegressionWrapper = {
+    val rFormula = new RFormula().setFormula(formula)
     val rFormulaModel = rFormula.fit(data)
     // get labels and feature names from output schema
     val schema = rFormulaModel.transform(data).schema
-    val featureAttrs = AttributeGroup.fromStructField(schema(rFormula.getFeaturesCol))
-      .attributes.get
+    val featureAttrs =
+      AttributeGroup.fromStructField(schema(rFormula.getFeaturesCol)).attributes.get
     val features = featureAttrs.map(_.name.get)
     // assemble and fit the pipeline
     val glr = new GeneralizedLinearRegression()
@@ -84,45 +83,48 @@ private[r] object GeneralizedLinearRegressionWrapper
       .setFitIntercept(rFormula.hasIntercept)
       .setTol(epsilon)
       .setMaxIter(maxit)
-    val pipeline = new Pipeline()
-      .setStages(Array(rFormulaModel, glr))
-      .fit(data)
+    val pipeline = new Pipeline().setStages(Array(rFormulaModel, glr)).fit(data)
 
     val glm: GeneralizedLinearRegressionModel =
       pipeline.stages(1).asInstanceOf[GeneralizedLinearRegressionModel]
     val summary = glm.summary
 
-    val rFeatures: Array[String] = if (glm.getFitIntercept) {
-      Array("(Intercept)") ++ features
-    } else {
-      features
-    }
+    val rFeatures: Array[String] =
+      if (glm.getFitIntercept) {
+        Array("(Intercept)") ++ features
+      } else {
+        features
+      }
 
-    val rCoefficientStandardErrors = if (glm.getFitIntercept) {
-      Array(summary.coefficientStandardErrors.last) ++
+    val rCoefficientStandardErrors =
+      if (glm.getFitIntercept) {
+        Array(summary.coefficientStandardErrors.last) ++
         summary.coefficientStandardErrors.dropRight(1)
-    } else {
-      summary.coefficientStandardErrors
-    }
+      } else {
+        summary.coefficientStandardErrors
+      }
 
-    val rTValues = if (glm.getFitIntercept) {
-      Array(summary.tValues.last) ++ summary.tValues.dropRight(1)
-    } else {
-      summary.tValues
-    }
+    val rTValues =
+      if (glm.getFitIntercept) {
+        Array(summary.tValues.last) ++ summary.tValues.dropRight(1)
+      } else {
+        summary.tValues
+      }
 
-    val rPValues = if (glm.getFitIntercept) {
-      Array(summary.pValues.last) ++ summary.pValues.dropRight(1)
-    } else {
-      summary.pValues
-    }
+    val rPValues =
+      if (glm.getFitIntercept) {
+        Array(summary.pValues.last) ++ summary.pValues.dropRight(1)
+      } else {
+        summary.pValues
+      }
 
-    val rCoefficients: Array[Double] = if (glm.getFitIntercept) {
-      Array(glm.intercept) ++ glm.coefficients.toArray ++
+    val rCoefficients: Array[Double] =
+      if (glm.getFitIntercept) {
+        Array(glm.intercept) ++ glm.coefficients.toArray ++
         rCoefficientStandardErrors ++ rTValues ++ rPValues
-    } else {
-      glm.coefficients.toArray ++ rCoefficientStandardErrors ++ rTValues ++ rPValues
-    }
+      } else {
+        glm.coefficients.toArray ++ rCoefficientStandardErrors ++ rTValues ++ rPValues
+      }
 
     val rDispersion: Double = summary.dispersion
     val rNullDeviance: Double = summary.nullDeviance
@@ -132,9 +134,16 @@ private[r] object GeneralizedLinearRegressionWrapper
     val rAic: Double = summary.aic
     val rNumIterations: Int = summary.numIterations
 
-    new GeneralizedLinearRegressionWrapper(pipeline, rFeatures, rCoefficients, rDispersion,
-      rNullDeviance, rDeviance, rResidualDegreeOfFreedomNull, rResidualDegreeOfFreedom,
-      rAic, rNumIterations)
+    new GeneralizedLinearRegressionWrapper(pipeline,
+                                           rFeatures,
+                                           rCoefficients,
+                                           rDispersion,
+                                           rNullDeviance,
+                                           rDeviance,
+                                           rResidualDegreeOfFreedomNull,
+                                           rResidualDegreeOfFreedom,
+                                           rAic,
+                                           rNumIterations)
   }
 
   override def read: MLReader[GeneralizedLinearRegressionWrapper] =
@@ -143,13 +152,14 @@ private[r] object GeneralizedLinearRegressionWrapper
   override def load(path: String): GeneralizedLinearRegressionWrapper = super.load(path)
 
   class GeneralizedLinearRegressionWrapperWriter(instance: GeneralizedLinearRegressionWrapper)
-    extends MLWriter {
+      extends MLWriter {
 
     override protected def saveImpl(path: String): Unit = {
       val rMetadataPath = new Path(path, "rMetadata").toString
       val pipelinePath = new Path(path, "pipeline").toString
 
-      val rMetadata = ("class" -> instance.getClass.getName) ~
+      val rMetadata =
+        ("class" -> instance.getClass.getName) ~
         ("rFeatures" -> instance.rFeatures.toSeq) ~
         ("rCoefficients" -> instance.rCoefficients.toSeq) ~
         ("rDispersion" -> instance.rDispersion) ~
@@ -167,7 +177,7 @@ private[r] object GeneralizedLinearRegressionWrapper
   }
 
   class GeneralizedLinearRegressionWrapperReader
-    extends MLReader[GeneralizedLinearRegressionWrapper] {
+      extends MLReader[GeneralizedLinearRegressionWrapper] {
 
     override def load(path: String): GeneralizedLinearRegressionWrapper = {
       implicit val format = DefaultFormats
@@ -188,9 +198,17 @@ private[r] object GeneralizedLinearRegressionWrapper
 
       val pipeline = PipelineModel.load(pipelinePath)
 
-      new GeneralizedLinearRegressionWrapper(pipeline, rFeatures, rCoefficients, rDispersion,
-        rNullDeviance, rDeviance, rResidualDegreeOfFreedomNull, rResidualDegreeOfFreedom,
-        rAic, rNumIterations, isLoaded = true)
+      new GeneralizedLinearRegressionWrapper(pipeline,
+                                             rFeatures,
+                                             rCoefficients,
+                                             rDispersion,
+                                             rNullDeviance,
+                                             rDeviance,
+                                             rResidualDegreeOfFreedomNull,
+                                             rResidualDegreeOfFreedom,
+                                             rAic,
+                                             rNumIterations,
+                                             isLoaded = true)
     }
   }
 }

@@ -69,12 +69,12 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
     checkEvaluation(UnaryMinus(Literal(Int.MinValue)), Int.MinValue)
     checkEvaluation(UnaryMinus(Literal(Short.MinValue)), Short.MinValue)
     checkEvaluation(UnaryMinus(Literal(Byte.MinValue)), Byte.MinValue)
-    checkEvaluation(UnaryMinus(positiveShortLit), (- positiveShort).toShort)
-    checkEvaluation(UnaryMinus(negativeShortLit), (- negativeShort).toShort)
-    checkEvaluation(UnaryMinus(positiveIntLit), - positiveInt)
-    checkEvaluation(UnaryMinus(negativeIntLit), - negativeInt)
-    checkEvaluation(UnaryMinus(positiveLongLit), - positiveLong)
-    checkEvaluation(UnaryMinus(negativeLongLit), - negativeLong)
+    checkEvaluation(UnaryMinus(positiveShortLit), (-positiveShort).toShort)
+    checkEvaluation(UnaryMinus(negativeShortLit), (-negativeShort).toShort)
+    checkEvaluation(UnaryMinus(positiveIntLit), -positiveInt)
+    checkEvaluation(UnaryMinus(negativeIntLit), -negativeInt)
+    checkEvaluation(UnaryMinus(positiveLongLit), -positiveLong)
+    checkEvaluation(UnaryMinus(negativeLongLit), -negativeLong)
 
     DataTypeTestUtils.numericAndInterval.foreach { tpe =>
       checkConsistencyBetweenInterpretedAndCodegen(UnaryMinus, tpe)
@@ -89,8 +89,8 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
       checkEvaluation(Subtract(Literal.create(null, left.dataType), right), null)
       checkEvaluation(Subtract(left, Literal.create(null, right.dataType)), null)
     }
-    checkEvaluation(Subtract(positiveShortLit, negativeShortLit),
-      (positiveShort - negativeShort).toShort)
+    checkEvaluation(
+        Subtract(positiveShortLit, negativeShortLit), (positiveShort - negativeShort).toShort)
     checkEvaluation(Subtract(positiveIntLit, negativeIntLit), positiveInt - negativeInt)
     checkEvaluation(Subtract(positiveLongLit, negativeLongLit), positiveLong - negativeLong)
 
@@ -107,8 +107,8 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
       checkEvaluation(Multiply(Literal.create(null, left.dataType), right), null)
       checkEvaluation(Multiply(left, Literal.create(null, right.dataType)), null)
     }
-    checkEvaluation(Multiply(positiveShortLit, negativeShortLit),
-      (positiveShort * negativeShort).toShort)
+    checkEvaluation(
+        Multiply(positiveShortLit, negativeShortLit), (positiveShort * negativeShort).toShort)
     checkEvaluation(Multiply(positiveIntLit, negativeIntLit), positiveInt * negativeInt)
     checkEvaluation(Multiply(positiveLongLit, negativeLongLit), positiveLong * negativeLong)
 
@@ -125,7 +125,7 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
       checkEvaluation(Divide(left, right), convert(2))
       checkEvaluation(Divide(Literal.create(null, dataType), right), null)
       checkEvaluation(Divide(left, Literal.create(null, right.dataType)), null)
-      checkEvaluation(Divide(left, Literal(convert(0))), null)  // divide by zero
+      checkEvaluation(Divide(left, Literal(convert(0))), null) // divide by zero
     }
 
     DataTypeTestUtils.numericTypeWithoutDecimal.foreach { tpe =>
@@ -156,7 +156,7 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
       checkEvaluation(Remainder(left, right), convert(1))
       checkEvaluation(Remainder(Literal.create(null, left.dataType), right), null)
       checkEvaluation(Remainder(left, Literal.create(null, right.dataType)), null)
-      checkEvaluation(Remainder(left, Literal(convert(0))), null)  // mod by 0
+      checkEvaluation(Remainder(left, Literal(convert(0))), null) // mod by 0
     }
     checkEvaluation(Remainder(positiveShortLit, positiveShortLit), 0.toShort)
     checkEvaluation(Remainder(negativeShortLit, negativeShortLit), 0.toShort)
@@ -182,11 +182,11 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
       checkEvaluation(Abs(Literal.create(null, dataType)), null)
     }
     checkEvaluation(Abs(positiveShortLit), positiveShort)
-    checkEvaluation(Abs(negativeShortLit), (- negativeShort).toShort)
+    checkEvaluation(Abs(negativeShortLit), (-negativeShort).toShort)
     checkEvaluation(Abs(positiveIntLit), positiveInt)
-    checkEvaluation(Abs(negativeIntLit), - negativeInt)
+    checkEvaluation(Abs(negativeIntLit), -negativeInt)
     checkEvaluation(Abs(positiveLongLit), positiveLong)
-    checkEvaluation(Abs(negativeLongLit), - negativeLong)
+    checkEvaluation(Abs(negativeLongLit), -negativeLong)
 
     DataTypeTestUtils.numericTypeWithoutDecimal.foreach { tpe =>
       checkConsistencyBetweenInterpretedAndCodegen(Abs, tpe)
@@ -214,8 +214,8 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
   test("MaxOf for atomic type") {
     checkEvaluation(MaxOf(true, false), true)
     checkEvaluation(MaxOf("abc", "bcd"), "bcd")
-    checkEvaluation(MaxOf(Array(1.toByte, 2.toByte), Array(1.toByte, 3.toByte)),
-      Array(1.toByte, 3.toByte))
+    checkEvaluation(
+        MaxOf(Array(1.toByte, 2.toByte), Array(1.toByte, 3.toByte)), Array(1.toByte, 3.toByte))
   }
 
   test("MinOf basic") {
@@ -239,8 +239,8 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
   test("MinOf for atomic type") {
     checkEvaluation(MinOf(true, false), false)
     checkEvaluation(MinOf("abc", "bcd"), "abc")
-    checkEvaluation(MinOf(Array(1.toByte, 2.toByte), Array(1.toByte, 3.toByte)),
-      Array(1.toByte, 2.toByte))
+    checkEvaluation(
+        MinOf(Array(1.toByte, 2.toByte), Array(1.toByte, 3.toByte)), Array(1.toByte, 2.toByte))
   }
 
   test("pmod") {
@@ -250,7 +250,7 @@ class ArithmeticExpressionSuite extends SparkFunSuite with ExpressionEvalHelper 
       checkEvaluation(Pmod(left, right), convert(1))
       checkEvaluation(Pmod(Literal.create(null, left.dataType), right), null)
       checkEvaluation(Pmod(left, Literal.create(null, right.dataType)), null)
-      checkEvaluation(Remainder(left, Literal(convert(0))), null)  // mod by 0
+      checkEvaluation(Remainder(left, Literal(convert(0))), null) // mod by 0
     }
     checkEvaluation(Pmod(Literal(-7), Literal(3)), 2)
     checkEvaluation(Pmod(Literal(7.2D), Literal(4.1D)), 3.1000000000000005)

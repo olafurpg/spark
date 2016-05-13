@@ -55,11 +55,10 @@ class RegressionMetricsSuite extends SparkFunSuite with MLlibTestSparkContext {
     val predictionAndObservations = sc.parallelize(preds.zip(obs), 2)
     val metrics = new RegressionMetrics(predictionAndObservations)
     assert(metrics.explainedVariance ~== 157.3 absTol eps,
-      "explained variance regression score mismatch")
+           "explained variance regression score mismatch")
     assert(metrics.meanAbsoluteError ~== 3.7355556 absTol eps, "mean absolute error mismatch")
     assert(metrics.meanSquaredError ~== 17.539511 absTol eps, "mean squared error mismatch")
-    assert(metrics.rootMeanSquaredError ~== 4.18802 absTol eps,
-      "root mean squared error mismatch")
+    assert(metrics.rootMeanSquaredError ~== 4.18802 absTol eps, "root mean squared error mismatch")
     assert(metrics.r2 ~== 0.89968225 absTol eps, "r2 score mismatch")
   }
 
@@ -94,11 +93,11 @@ class RegressionMetricsSuite extends SparkFunSuite with MLlibTestSparkContext {
     val predictionAndObservations = sc.parallelize(preds.zip(obs), 2)
     val metrics = new RegressionMetrics(predictionAndObservations, true)
     assert(metrics.explainedVariance ~== 294.88167 absTol eps,
-      "explained variance regression score mismatch")
+           "explained variance regression score mismatch")
     assert(metrics.meanAbsoluteError ~== 4.5888889 absTol eps, "mean absolute error mismatch")
     assert(metrics.meanSquaredError ~== 39.958711 absTol eps, "mean squared error mismatch")
-    assert(metrics.rootMeanSquaredError ~== 6.3212903 absTol eps,
-      "root mean squared error mismatch")
+    assert(
+        metrics.rootMeanSquaredError ~== 6.3212903 absTol eps, "root mean squared error mismatch")
     assert(metrics.r2 ~== 0.99185395 absTol eps, "r2 score mismatch")
   }
 
@@ -126,11 +125,10 @@ class RegressionMetricsSuite extends SparkFunSuite with MLlibTestSparkContext {
     val predictionAndObservations = sc.parallelize(preds.zip(obs), 2)
     val metrics = new RegressionMetrics(predictionAndObservations)
     assert(metrics.explainedVariance ~== 174.83951 absTol eps,
-      "explained variance regression score mismatch")
+           "explained variance regression score mismatch")
     assert(metrics.meanAbsoluteError ~== 0.0 absTol eps, "mean absolute error mismatch")
     assert(metrics.meanSquaredError ~== 0.0 absTol eps, "mean squared error mismatch")
-    assert(metrics.rootMeanSquaredError ~== 0.0 absTol eps,
-      "root mean squared error mismatch")
+    assert(metrics.rootMeanSquaredError ~== 0.0 absTol eps, "root mean squared error mismatch")
     assert(metrics.r2 ~== 1.0 absTol eps, "r2 score mismatch")
   }
 }

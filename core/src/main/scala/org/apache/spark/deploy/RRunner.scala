@@ -54,11 +54,12 @@ object RRunner {
     // Check if the file path exists.
     // If not, change directory to current working directory for YARN cluster mode
     val rF = new File(rFile)
-    val rFileNormalized = if (!rF.exists()) {
-      new Path(rFile).getName
-    } else {
-      rFile
-    }
+    val rFileNormalized =
+      if (!rF.exists()) {
+        new Path(rFile).getName
+      } else {
+        rFile
+      }
 
     // Launch a SparkR backend server for the R process to connect to; this will let it see our
     // Java system properties etc.
@@ -85,7 +86,7 @@ object RRunner {
         // Put the R package directories into an env variable of comma-separated paths
         env.put("SPARKR_PACKAGE_DIR", rPackageDir.mkString(","))
         env.put("R_PROFILE_USER",
-          Seq(rPackageDir(0), "SparkR", "profile", "general.R").mkString(File.separator))
+                Seq(rPackageDir(0), "SparkR", "profile", "general.R").mkString(File.separator))
         builder.redirectErrorStream(true) // Ugly but needed for stdout and stderr to synchronize
         val process = builder.start()
 

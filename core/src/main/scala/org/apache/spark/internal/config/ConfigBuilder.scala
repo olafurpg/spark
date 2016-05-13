@@ -64,7 +64,6 @@ private object ConfigHelpers {
   }
 
   def byteToString(v: Long, unit: ByteUnit): String = unit.convertTo(v, ByteUnit.BYTE) + "b"
-
 }
 
 /**
@@ -75,9 +74,7 @@ private object ConfigHelpers {
  * can be used with [[SparkConf]].
  */
 private[spark] class TypedConfigBuilder[T](
-  val parent: ConfigBuilder,
-  val converter: String => T,
-  val stringConverter: T => String) {
+    val parent: ConfigBuilder, val converter: String => T, val stringConverter: T => String) {
 
   import ConfigHelpers._
 
@@ -95,7 +92,7 @@ private[spark] class TypedConfigBuilder[T](
     transform { v =>
       if (!validValues.contains(v)) {
         throw new IllegalArgumentException(
-          s"The value of ${parent.key} should be one of ${validValues.mkString(", ")}, but was $v")
+            s"The value of ${parent.key} should be one of ${validValues.mkString(", ")}, but was $v")
       }
       v
     }
@@ -108,18 +105,18 @@ private[spark] class TypedConfigBuilder[T](
 
   /** Creates a [[ConfigEntry]] that does not have a default value. */
   def createOptional: OptionalConfigEntry[T] = {
-    val entry = new OptionalConfigEntry[T](parent.key, converter, stringConverter, parent._doc,
-      parent._public)
-    parent._onCreate.foreach(_(entry))
+    val entry = new OptionalConfigEntry[T](
+        parent.key, converter, stringConverter, parent._doc, parent._public)
+    parent._onCreate.foreach(_ (entry))
     entry
   }
 
   /** Creates a [[ConfigEntry]] that has a default value. */
   def createWithDefault(default: T): ConfigEntry[T] = {
     val transformedDefault = converter(stringConverter(default))
-    val entry = new ConfigEntryWithDefault[T](parent.key, transformedDefault, converter,
-      stringConverter, parent._doc, parent._public)
-    parent._onCreate.foreach(_(entry))
+    val entry = new ConfigEntryWithDefault[T](
+        parent.key, transformedDefault, converter, stringConverter, parent._doc, parent._public)
+    parent._onCreate.foreach(_ (entry))
     entry
   }
 
@@ -129,12 +126,11 @@ private[spark] class TypedConfigBuilder[T](
    */
   def createWithDefaultString(default: String): ConfigEntry[T] = {
     val typedDefault = converter(default)
-    val entry = new ConfigEntryWithDefault[T](parent.key, typedDefault, converter, stringConverter,
-      parent._doc, parent._public)
-    parent._onCreate.foreach(_(entry))
+    val entry = new ConfigEntryWithDefault[T](
+        parent.key, typedDefault, converter, stringConverter, parent._doc, parent._public)
+    parent._onCreate.foreach(_ (entry))
     entry
   }
-
 }
 
 /**
@@ -200,5 +196,4 @@ private[spark] case class ConfigBuilder(key: String) {
   def fallbackConf[T](fallback: ConfigEntry[T]): ConfigEntry[T] = {
     new FallbackConfigEntry(key, _doc, _public, fallback)
   }
-
 }

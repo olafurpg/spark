@@ -33,9 +33,7 @@ private[spark] trait ShuffleManager {
    * Register a shuffle with the manager and obtain a handle for it to pass to tasks.
    */
   def registerShuffle[K, V, C](
-      shuffleId: Int,
-      numMaps: Int,
-      dependency: ShuffleDependency[K, V, C]): ShuffleHandle
+      shuffleId: Int, numMaps: Int, dependency: ShuffleDependency[K, V, C]): ShuffleHandle
 
   /** Get a writer for a given partition. Called on executors by map tasks. */
   def getWriter[K, V](handle: ShuffleHandle, mapId: Int, context: TaskContext): ShuffleWriter[K, V]
@@ -44,11 +42,10 @@ private[spark] trait ShuffleManager {
    * Get a reader for a range of reduce partitions (startPartition to endPartition-1, inclusive).
    * Called on executors by reduce tasks.
    */
-  def getReader[K, C](
-      handle: ShuffleHandle,
-      startPartition: Int,
-      endPartition: Int,
-      context: TaskContext): ShuffleReader[K, C]
+  def getReader[K, C](handle: ShuffleHandle,
+                      startPartition: Int,
+                      endPartition: Int,
+                      context: TaskContext): ShuffleReader[K, C]
 
   /**
    * Remove a shuffle's metadata from the ShuffleManager.

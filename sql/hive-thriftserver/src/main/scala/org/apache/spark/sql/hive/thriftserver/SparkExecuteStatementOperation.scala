@@ -40,14 +40,13 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types._
 import org.apache.spark.util.{Utils => SparkUtils}
 
-private[hive] class SparkExecuteStatementOperation(
-    parentSession: HiveSession,
-    statement: String,
-    confOverlay: JMap[String, String],
-    runInBackground: Boolean = true)
-    (sqlContext: SQLContext, sessionToActivePool: SMap[SessionHandle, String])
-  extends ExecuteStatementOperation(parentSession, statement, confOverlay, runInBackground)
-  with Logging {
+private[hive] class SparkExecuteStatementOperation(parentSession: HiveSession,
+                                                   statement: String,
+                                                   confOverlay: JMap[String, String],
+                                                   runInBackground: Boolean = true)(
+    sqlContext: SQLContext, sessionToActivePool: SMap[SessionHandle, String])
+    extends ExecuteStatementOperation(parentSession, statement, confOverlay, runInBackground)
+    with Logging {
 
   private var result: DataFrame = _
   private var iter: Iterator[SparkRow] = _
@@ -168,8 +167,8 @@ private[hive] class SparkExecuteStatementOperation(
           } catch {
             case e: Exception =>
               setOperationException(new HiveSQLException(e))
-              logError("Error running hive query as user : " +
-                sparkServiceUGI.getShortUserName(), e)
+              logError(
+                  "Error running hive query as user : " + sparkServiceUGI.getShortUserName(), e)
           }
         }
       }
@@ -182,7 +181,8 @@ private[hive] class SparkExecuteStatementOperation(
         case rejected: RejectedExecutionException =>
           setState(OperationState.ERROR)
           throw new HiveSQLException("The background threadpool cannot accept" +
-            " new task for execution, please retry the operation", rejected)
+                                     " new task for execution, please retry the operation",
+                                     rejected)
         case NonFatal(e) =>
           logError(s"Error executing query in background", e)
           setState(OperationState.ERROR)
@@ -200,11 +200,11 @@ private[hive] class SparkExecuteStatementOperation(
     Thread.currentThread().setContextClassLoader(executionHiveClassLoader)
 
     HiveThriftServer2.listener.onStatementStart(
-      statementId,
-      parentSession.getSessionHandle.getSessionId.toString,
-      statement,
-      statementId,
-      parentSession.getUsername)
+        statementId,
+        parentSession.getSessionHandle.getSessionId.toString,
+        statement,
+        statementId,
+        parentSession.getUsername)
     sqlContext.sparkContext.setJobGroup(statementId, statement)
     sessionToActivePool.get(parentSession.getSessionHandle).foreach { pool =>
       sqlContext.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
@@ -244,7 +244,7 @@ private[hive] class SparkExecuteStatementOperation(
         logError(s"Error executing query, currentState $currentState, ", e)
         setState(OperationState.ERROR)
         HiveThriftServer2.listener.onStatementError(
-          statementId, e.getMessage, SparkUtils.exceptionString(e))
+            statementId, e.getMessage, SparkUtils.exceptionString(e))
         throw new HiveSQLException(e.toString)
     }
     setState(OperationState.FINISHED)

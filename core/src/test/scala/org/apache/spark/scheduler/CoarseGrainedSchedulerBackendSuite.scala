@@ -37,5 +37,4 @@ class CoarseGrainedSchedulerBackendSuite extends SparkFunSuite with LocalSparkCo
     val smaller = sc.parallelize(1 to 4).collect()
     assert(smaller.size === 4)
   }
-
 }

@@ -37,7 +37,7 @@ private[spark] object CheckpointState extends Enumeration {
  * iterator and preferred locations of the checkpointed RDD.
  */
 private[spark] abstract class RDDCheckpointData[T: ClassTag](@transient private val rdd: RDD[T])
-  extends Serializable {
+    extends Serializable {
 
   import CheckpointState._
 
@@ -102,7 +102,6 @@ private[spark] abstract class RDDCheckpointData[T: ClassTag](@transient private 
   def getPartitions: Array[Partition] = RDDCheckpointData.synchronized {
     cpRDD.map(_.partitions).getOrElse { Array.empty }
   }
-
 }
 
 /**

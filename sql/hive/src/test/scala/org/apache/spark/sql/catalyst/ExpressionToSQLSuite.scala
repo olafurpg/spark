@@ -34,11 +34,7 @@ class ExpressionToSQLSuite extends SQLBuilderTest with SQLTestUtils {
     val bytes = Array[Byte](1, 2, 3, 4)
     Seq((bytes, "AQIDBA==")).toDF("a", "b").write.saveAsTable("t0")
 
-    spark
-      .range(10)
-      .select('id as 'key, concat(lit("val_"), 'id) as 'value)
-      .write
-      .saveAsTable("t1")
+    spark.range(10).select('id as 'key, concat(lit("val_"), 'id) as 'value).write.saveAsTable("t1")
 
     spark.range(10).select('id as 'a, 'id as 'b, 'id as 'c, 'id as 'd).write.saveAsTable("t2")
   }
@@ -58,8 +54,7 @@ class ExpressionToSQLSuite extends SQLBuilderTest with SQLTestUtils {
 
     val convertedSQL = try new SQLBuilder(df).toSQL catch {
       case NonFatal(e) =>
-        fail(
-          s"""Cannot convert the following HiveQL query plan back to SQL query string:
+        fail(s"""Cannot convert the following HiveQL query plan back to SQL query string:
             |
             |# Original HiveQL query string:
             |$hiveQl
@@ -71,9 +66,9 @@ class ExpressionToSQLSuite extends SQLBuilderTest with SQLTestUtils {
 
     try {
       checkAnswer(sql(convertedSQL), df)
-    } catch { case cause: Throwable =>
-      fail(
-        s"""Failed to execute converted SQL string or got wrong answer:
+    } catch {
+      case cause: Throwable =>
+        fail(s"""Failed to execute converted SQL string or got wrong answer:
           |
           |# Converted SQL query string:
           |$convertedSQL
@@ -83,8 +78,7 @@ class ExpressionToSQLSuite extends SQLBuilderTest with SQLTestUtils {
           |
           |# Resolved query plan:
           |${df.queryExecution.analyzed.treeString}
-         """.stripMargin,
-        cause)
+         """.stripMargin, cause)
     }
   }
 

@@ -20,8 +20,7 @@ package org.apache.spark.streaming.util
 import org.apache.spark.SparkContext
 import org.apache.spark.util.collection.OpenHashMap
 
-private[streaming]
-object RawTextHelper {
+private[streaming] object RawTextHelper {
 
   /**
    * Splits lines and counts the words.
@@ -51,7 +50,7 @@ object RawTextHelper {
         case (k, v) => (k, v)
       }
     }
-    map.toIterator.map{case (k, v) => (k, v)}
+    map.toIterator.map { case (k, v) => (k, v) }
   }
 
   /**
@@ -68,7 +67,7 @@ object RawTextHelper {
     var swap: (String, Long) = null
     var count = 0
 
-    while(data.hasNext) {
+    while (data.hasNext) {
       value = data.next()
       if (value != null) {
         count += 1
@@ -81,9 +80,9 @@ object RawTextHelper {
           }
           taken(len - 1) = value
           i = len - 1
-          while(i > 0 && taken(i - 1)._2 < taken(i)._2) {
+          while (i > 0 && taken(i - 1)._2 < taken(i)._2) {
             swap = taken(i)
-            taken(i) = taken(i-1)
+            taken(i) = taken(i - 1)
             taken(i - 1) = swap
             i -= 1
           }
@@ -100,8 +99,10 @@ object RawTextHelper {
   def warmUp(sc: SparkContext) {
     for (i <- 0 to 1) {
       sc.parallelize(1 to 200000, 1000)
-        .map(_ % 1331).map(_.toString)
-        .mapPartitions(splitAndCountPartitions).reduceByKey(_ + _, 10)
+        .map(_ % 1331)
+        .map(_.toString)
+        .mapPartitions(splitAndCountPartitions)
+        .reduceByKey(_ + _, 10)
         .count()
     }
   }

@@ -117,15 +117,13 @@ class FileStressSuite extends StreamTest with SharedSQLContext {
         .toDF("id", "data")
 
       if (partitionWrites) {
-        output
-          .write
+        output.write
           .partitionBy("id")
           .format("parquet")
           .option("checkpointLocation", checkpoint)
           .startStream(outputDir)
       } else {
-        output
-          .write
+        output.write
           .format("parquet")
           .option("checkpointLocation", checkpoint)
           .startStream(outputDir)

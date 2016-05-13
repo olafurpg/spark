@@ -30,20 +30,19 @@ import org.apache.spark.sql.hive.test.TestHive._
 import org.apache.spark.sql.hive.test.TestHive.implicits._
 import org.apache.spark.sql.internal.SQLConf
 
-case class AllDataTypesWithNonPrimitiveType(
-    stringField: String,
-    intField: Int,
-    longField: Long,
-    floatField: Float,
-    doubleField: Double,
-    shortField: Short,
-    byteField: Byte,
-    booleanField: Boolean,
-    array: Seq[Int],
-    arrayContainsNull: Seq[Option[Int]],
-    map: Map[Int, Long],
-    mapValueContainsNull: Map[Int, Option[Long]],
-    data: (Seq[Int], (Int, String)))
+case class AllDataTypesWithNonPrimitiveType(stringField: String,
+                                            intField: Int,
+                                            longField: Long,
+                                            floatField: Float,
+                                            doubleField: Double,
+                                            shortField: Short,
+                                            byteField: Byte,
+                                            booleanField: Boolean,
+                                            array: Seq[Int],
+                                            arrayContainsNull: Seq[Option[Int]],
+                                            map: Map[Int, Long],
+                                            mapValueContainsNull: Map[Int, Option[Long]],
+                                            data: (Seq[Int], (Int, String)))
 
 case class BinaryData(binaryData: Array[Byte])
 
@@ -65,9 +64,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
     }
 
     withOrcFile(data) { file =>
-      checkAnswer(
-        spark.read.orc(file),
-        data.toDF().collect())
+      checkAnswer(spark.read.orc(file), data.toDF().collect())
     }
   }
 
@@ -81,18 +78,23 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
   test("Read/write all types with non-primitive type") {
     val data: Seq[AllDataTypesWithNonPrimitiveType] = (0 to 255).map { i =>
       AllDataTypesWithNonPrimitiveType(
-        s"$i", i, i.toLong, i.toFloat, i.toDouble, i.toShort, i.toByte, i % 2 == 0,
-        0 until i,
-        (0 until i).map(Option(_).filter(_ % 3 == 0)),
-        (0 until i).map(i => i -> i.toLong).toMap,
-        (0 until i).map(i => i -> Option(i.toLong)).toMap + (i -> None),
-        (0 until i, (i, s"$i")))
+          s"$i",
+          i,
+          i.toLong,
+          i.toFloat,
+          i.toDouble,
+          i.toShort,
+          i.toByte,
+          i % 2 == 0,
+          0 until i,
+          (0 until i).map(Option(_).filter(_ % 3 == 0)),
+          (0 until i).map(i => i -> i.toLong).toMap,
+          (0 until i).map(i => i -> Option(i.toLong)).toMap + (i -> None),
+          (0 until i, (i, s"$i")))
     }
 
     withOrcFile(data) { file =>
-      checkAnswer(
-        read.orc(file),
-        data.toDF().collect())
+      checkAnswer(read.orc(file), data.toDF().collect())
     }
   }
 
@@ -106,7 +108,9 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
 
   test("Simple selection form ORC table") {
     val data = (1 to 10).map { i =>
-      Person(s"name_$i", i, (0 to 1).map { m => Contact(s"contact_$m", s"phone_$m") })
+      Person(s"name_$i", i, (0 to 1).map { m =>
+        Contact(s"contact_$m", s"phone_$m")
+      })
     }
 
     withOrcTable(data, "t") {
@@ -119,8 +123,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
       // leaf-0 = (LESS_THAN_EQUALS age 5)
       // expr = (not leaf-0)
       assertResult(10) {
-        sql("SELECT name, contacts FROM t where age > 5")
-          .rdd
+        sql("SELECT name, contacts FROM t where age > 5").rdd
           .flatMap(_.getAs[Seq[_]]("contacts"))
           .count()
       }
@@ -152,45 +155,38 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
   }
 
   test("save and load case class RDD with `None`s as orc") {
-    val data = (
-      None: Option[Int],
-      None: Option[Long],
-      None: Option[Float],
-      None: Option[Double],
-      None: Option[Boolean]
-    ) :: Nil
+    val data =
+      (
+          None: Option[Int],
+          None: Option[Long],
+          None: Option[Float],
+          None: Option[Double],
+          None: Option[Boolean]
+      ) :: Nil
 
     withOrcFile(data) { file =>
-      checkAnswer(
-        read.orc(file),
-        Row(Seq.fill(5)(null): _*))
+      checkAnswer(read.orc(file), Row(Seq.fill(5)(null): _*))
     }
   }
 
   // Hive supports zlib, snappy and none for Hive 1.2.1.
   test("Compression options for writing to an ORC file (SNAPPY, ZLIB and NONE)") {
     withTempPath { file =>
-      spark.range(0, 10).write
-        .option("compression", "ZLIB")
-        .orc(file.getCanonicalPath)
+      spark.range(0, 10).write.option("compression", "ZLIB").orc(file.getCanonicalPath)
       val expectedCompressionKind =
         OrcFileOperator.getFileReader(file.getCanonicalPath).get.getCompression
       assert("ZLIB" === expectedCompressionKind.name())
     }
 
     withTempPath { file =>
-      spark.range(0, 10).write
-        .option("compression", "SNAPPY")
-        .orc(file.getCanonicalPath)
+      spark.range(0, 10).write.option("compression", "SNAPPY").orc(file.getCanonicalPath)
       val expectedCompressionKind =
         OrcFileOperator.getFileReader(file.getCanonicalPath).get.getCompression
       assert("SNAPPY" === expectedCompressionKind.name())
     }
 
     withTempPath { file =>
-      spark.range(0, 10).write
-        .option("compression", "NONE")
-        .orc(file.getCanonicalPath)
+      spark.range(0, 10).write.option("compression", "NONE").orc(file.getCanonicalPath)
       val expectedCompressionKind =
         OrcFileOperator.getFileReader(file.getCanonicalPath).get.getCompression
       assert("NONE" === expectedCompressionKind.name())
@@ -200,9 +196,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
   // Following codec is not supported in Hive 1.2.1, ignore it now
   ignore("LZO compression options for writing to an ORC file not supported in Hive 1.2.1") {
     withTempPath { file =>
-      spark.range(0, 10).write
-        .option("compression", "LZO")
-        .orc(file.getCanonicalPath)
+      spark.range(0, 10).write.option("compression", "LZO").orc(file.getCanonicalPath)
       val expectedCompressionKind =
         OrcFileOperator.getFileReader(file.getCanonicalPath).get.getCompression
       assert("LZO" === expectedCompressionKind.name())
@@ -211,13 +205,10 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
 
   test("simple select queries") {
     withOrcTable((0 until 10).map(i => (i, i.toString)), "t") {
-      checkAnswer(
-        sql("SELECT `_1` FROM t where t.`_1` > 5"),
-        (6 until 10).map(Row.apply(_)))
+      checkAnswer(sql("SELECT `_1` FROM t where t.`_1` > 5"), (6 until 10).map(Row.apply(_)))
 
-      checkAnswer(
-        sql("SELECT `_1` FROM t as tmp where tmp.`_1` < 5"),
-        (0 until 5).map(Row.apply(_)))
+      checkAnswer(sql("SELECT `_1` FROM t as tmp where tmp.`_1` < 5"),
+                  (0 until 5).map(Row.apply(_)))
     }
   }
 
@@ -287,13 +278,12 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
 
   test("SPARK-5309 strings stored using dictionary compression in orc") {
     withOrcTable((0 until 1000).map(i => ("same", "run_" + i / 100, 1)), "t") {
-      checkAnswer(
-        sql("SELECT `_1`, `_2`, SUM(`_3`) FROM t GROUP BY `_1`, `_2`"),
-        (0 until 10).map(i => Row("same", "run_" + i, 100)))
+      checkAnswer(sql("SELECT `_1`, `_2`, SUM(`_3`) FROM t GROUP BY `_1`, `_2`"),
+                  (0 until 10).map(i => Row("same", "run_" + i, 100)))
 
       checkAnswer(
-        sql("SELECT `_1`, `_2`, SUM(`_3`) FROM t WHERE `_2` = 'run_5' GROUP BY `_1`, `_2`"),
-        List(Row("same", "run_5", 100)))
+          sql("SELECT `_1`, `_2`, SUM(`_3`) FROM t WHERE `_2` = 'run_5' GROUP BY `_1`, `_2`"),
+          List(Row("same", "run_5", 100)))
     }
   }
 
@@ -307,7 +297,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
         spark.read.format("orc").load(path).schema("acol")
       }
       checkAnswer(spark.read.format("orc").load(path).select("acol").sort("acol"),
-        (0 until 10).map(Row(_)))
+                  (0 until 10).map(Row(_)))
     }
   }
 
@@ -317,8 +307,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
 
       withTable("empty_orc") {
         withTempTable("empty", "single") {
-          spark.sql(
-            s"""CREATE TABLE empty_orc(key INT, value STRING)
+          spark.sql(s"""CREATE TABLE empty_orc(key INT, value STRING)
                |STORED AS ORC
                |LOCATION '$path'
              """.stripMargin)
@@ -328,8 +317,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
 
           // This creates 1 empty ORC file with Hive ORC SerDe.  We are using this trick because
           // Spark SQL ORC data source always avoids write empty ORC files.
-          spark.sql(
-            s"""INSERT INTO TABLE empty_orc
+          spark.sql(s"""INSERT INTO TABLE empty_orc
                |SELECT key, value FROM empty
              """.stripMargin)
 
@@ -342,8 +330,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
           val singleRowDF = Seq((0, "foo")).toDF("key", "value").coalesce(1)
           singleRowDF.registerTempTable("single")
 
-          spark.sql(
-            s"""INSERT INTO TABLE empty_orc
+          spark.sql(s"""INSERT INTO TABLE empty_orc
                |SELECT key, value FROM single
              """.stripMargin)
 
@@ -385,9 +372,8 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
           // A tricky part is, ORC does not process filter rows fully but return some possible
           // results. So, this checks if the number of result is less than the original count
           // of data, and then checks if it contains the expected data.
-          assert(
-            sourceDf.count < 10 && expectedData.subsetOf(data),
-            s"No data was filtered for predicate: $pred")
+          assert(sourceDf.count < 10 && expectedData.subsetOf(data),
+                 s"No data was filtered for predicate: $pred")
         }
 
         checkPredicate('a === 5, List(5).map(Row(_, null)))
@@ -410,13 +396,12 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
   test("SPARK-14070 Use ORC data source for SQL queries on ORC tables") {
     withTempPath { dir =>
       withSQLConf(SQLConf.ORC_FILTER_PUSHDOWN_ENABLED.key -> "true",
-        HiveUtils.CONVERT_METASTORE_ORC.key -> "true") {
+                  HiveUtils.CONVERT_METASTORE_ORC.key -> "true") {
         val path = dir.getCanonicalPath
 
         withTable("dummy_orc") {
           withTempTable("single") {
-            spark.sql(
-              s"""CREATE TABLE dummy_orc(key INT, value STRING)
+            spark.sql(s"""CREATE TABLE dummy_orc(key INT, value STRING)
                   |STORED AS ORC
                   |LOCATION '$path'
                """.stripMargin)
@@ -424,8 +409,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
             val singleRowDF = Seq((0, "foo")).toDF("key", "value").coalesce(1)
             singleRowDF.registerTempTable("single")
 
-            spark.sql(
-              s"""INSERT INTO TABLE dummy_orc
+            spark.sql(s"""INSERT INTO TABLE dummy_orc
                   |SELECT key, value FROM single
                """.stripMargin)
 
@@ -448,10 +432,7 @@ class OrcQuerySuite extends QueryTest with BeforeAndAfterAll with OrcTest {
     withSQLConf(SQLConf.ORC_FILTER_PUSHDOWN_ENABLED.key -> "true") {
       val data = (0 until 10).map(i => Tuple1(Array(i)))
       withOrcFile(data) { file =>
-        val actual = spark
-          .read
-          .orc(file)
-          .where("_1 is not null")
+        val actual = spark.read.orc(file).where("_1 is not null")
         val expected = data.toDF()
         checkAnswer(actual, expected)
       }

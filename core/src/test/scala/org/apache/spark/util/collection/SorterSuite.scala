@@ -28,7 +28,9 @@ class SorterSuite extends SparkFunSuite with Logging {
 
   test("equivalent to Arrays.sort") {
     val rand = new XORShiftRandom(123)
-    val data0 = Array.tabulate[Int](10000) { i => rand.nextInt() }
+    val data0 = Array.tabulate[Int](10000) { i =>
+      rand.nextInt()
+    }
     val data1 = data0.clone()
     val data2 = data0.clone()
 
@@ -46,7 +48,9 @@ class SorterSuite extends SparkFunSuite with Logging {
 
     // Construct an array of keys (to Java sort) and an array where the keys and values
     // alternate. Keys are random doubles, values are ordinals from 0 to length.
-    val keys = Array.tabulate[Double](5000) { i => rand.nextDouble() }
+    val keys = Array.tabulate[Double](5000) { i =>
+      rand.nextDouble()
+    }
     val keyValueArray = Array.tabulate[Number](10000) { i =>
       if (i % 2 == 0) keys(i / 2) else new Integer(i / 2)
     }
@@ -59,9 +63,10 @@ class SorterSuite extends SparkFunSuite with Logging {
     new Sorter(new KVArraySortDataFormat[Double, Number])
       .sort(keyValueArray, 0, keys.length, Ordering.Double)
 
-    keys.zipWithIndex.foreach { case (k, i) =>
-      assert(k === keyValueArray(2 * i))
-      assert(kvMap(k) === keyValueArray(2 * i + 1))
+    keys.zipWithIndex.foreach {
+      case (k, i) =>
+        assert(k === keyValueArray(2 * i))
+        assert(kvMap(k) === keyValueArray(2 * i + 1))
     }
   }
 

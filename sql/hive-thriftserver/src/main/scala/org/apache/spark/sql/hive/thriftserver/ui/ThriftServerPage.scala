@@ -29,7 +29,6 @@ import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2.{ExecutionInfo, 
 import org.apache.spark.ui._
 import org.apache.spark.ui.UIUtils._
 
-
 /** Page for Spark Web UI that shows statistics of a thrift server */
 private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage("") with Logging {
 
@@ -39,17 +38,17 @@ private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage(""
 
   /** Render the page */
   def render(request: HttpServletRequest): Seq[Node] = {
-    val content =
-      listener.synchronized { // make sure all parts in this page are consistent
-        generateBasicStats() ++
-        <br/> ++
-        <h4>
+    val content = listener.synchronized {
+      // make sure all parts in this page are consistent
+      generateBasicStats() ++
+      <br/> ++
+      <h4>
         {listener.getOnlineSessionNum} session(s) are online,
         running {listener.getTotalRunning} SQL statement(s)
         </h4> ++
-        generateSessionStatsTable() ++
-        generateSQLStatsTable()
-      }
+      generateSessionStatsTable() ++
+      generateSQLStatsTable()
+    }
     UIUtils.headerSparkPage("JDBC/ODBC Server", content, parent, Some(5000))
   }
 
@@ -69,19 +68,27 @@ private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage(""
   /** Generate stats of batch statements of the thrift server program */
   private def generateSQLStatsTable(): Seq[Node] = {
     val numStatement = listener.getExecutionList.size
-    val table = if (numStatement > 0) {
-      val headerRow = Seq("User", "JobID", "GroupID", "Start Time", "Finish Time", "Duration",
-        "Statement", "State", "Detail")
-      val dataRows = listener.getExecutionList
+    val table =
+      if (numStatement > 0) {
+        val headerRow = Seq("User",
+                            "JobID",
+                            "GroupID",
+                            "Start Time",
+                            "Finish Time",
+                            "Duration",
+                            "Statement",
+                            "State",
+                            "Detail")
+        val dataRows = listener.getExecutionList
 
-      def generateDataRow(info: ExecutionInfo): Seq[Node] = {
-        val jobLink = info.jobId.map { id: String =>
-          <a href={"%s/jobs/job?id=%s".format(UIUtils.prependBaseUri(parent.basePath), id)}>
+        def generateDataRow(info: ExecutionInfo): Seq[Node] = {
+          val jobLink = info.jobId.map { id: String =>
+            <a href={"%s/jobs/job?id=%s".format(UIUtils.prependBaseUri(parent.basePath), id)}>
             [{id}]
           </a>
-        }
-        val detail = if (info.state == ExecutionState.FAILED) info.detail else info.executePlan
-        <tr>
+          }
+          val detail = if (info.state == ExecutionState.FAILED) info.detail else info.executePlan
+          <tr>
           <td>{info.userName}</td>
           <td>
             {jobLink}
@@ -94,17 +101,18 @@ private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage(""
           <td>{info.state}</td>
           {errorMessageCell(detail)}
         </tr>
-      }
+        }
 
-      Some(UIUtils.listingTable(headerRow, generateDataRow,
-        dataRows, false, None, Seq(null), false))
-    } else {
-      None
-    }
+        Some(
+            UIUtils.listingTable(
+                headerRow, generateDataRow, dataRows, false, None, Seq(null), false))
+      } else {
+        None
+      }
 
     val content =
       <h5 id="sqlstat">SQL Statistics</h5> ++
-        <div>
+      <div>
           <ul class="unstyled">
             {table.getOrElse("No statistics have been generated yet.")}
           </ul>
@@ -116,24 +124,25 @@ private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage(""
   private def errorMessageCell(errorMessage: String): Seq[Node] = {
     val isMultiline = errorMessage.indexOf('\n') >= 0
     val errorSummary = StringEscapeUtils.escapeHtml4(
+        if (isMultiline) {
+      errorMessage.substring(0, errorMessage.indexOf('\n'))
+    } else {
+      errorMessage
+    })
+    val details =
       if (isMultiline) {
-        errorMessage.substring(0, errorMessage.indexOf('\n'))
-      } else {
-        errorMessage
-      })
-    val details = if (isMultiline) {
-      // scalastyle:off
-      <span onclick="this.parentNode.querySelector('.stacktrace-details').classList.toggle('collapsed')"
+        // scalastyle:off
+        <span onclick="this.parentNode.querySelector('.stacktrace-details').classList.toggle('collapsed')"
             class="expand-details">
         + details
       </span> ++
-      <div class="stacktrace-details collapsed">
+        <div class="stacktrace-details collapsed">
         <pre>{errorMessage}</pre>
       </div>
-      // scalastyle:on
-    } else {
-      ""
-    }
+        // scalastyle:on
+      } else {
+        ""
+      }
     <td>{errorSummary}{details}</td>
   }
 
@@ -141,14 +150,15 @@ private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage(""
   private def generateSessionStatsTable(): Seq[Node] = {
     val sessionList = listener.getSessionList
     val numBatches = sessionList.size
-    val table = if (numBatches > 0) {
-      val dataRows = sessionList
-      val headerRow = Seq("User", "IP", "Session ID", "Start Time", "Finish Time", "Duration",
-        "Total Execute")
-      def generateDataRow(session: SessionInfo): Seq[Node] = {
-        val sessionLink = "%s/%s/session?id=%s"
-          .format(UIUtils.prependBaseUri(parent.basePath), parent.prefix, session.sessionId)
-        <tr>
+    val table =
+      if (numBatches > 0) {
+        val dataRows = sessionList
+        val headerRow = Seq(
+            "User", "IP", "Session ID", "Start Time", "Finish Time", "Duration", "Total Execute")
+        def generateDataRow(session: SessionInfo): Seq[Node] = {
+          val sessionLink = "%s/%s/session?id=%s".format(
+              UIUtils.prependBaseUri(parent.basePath), parent.prefix, session.sessionId)
+          <tr>
           <td> {session.userName} </td>
           <td> {session.ip} </td>
           <td> <a href={sessionLink}> {session.sessionId} </a> </td>
@@ -157,11 +167,13 @@ private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage(""
           <td> {formatDurationOption(Some(session.totalTime))} </td>
           <td> {session.totalExecution.toString} </td>
         </tr>
+        }
+        Some(
+            UIUtils.listingTable(
+                headerRow, generateDataRow, dataRows, true, None, Seq(null), false))
+      } else {
+        None
       }
-      Some(UIUtils.listingTable(headerRow, generateDataRow, dataRows, true, None, Seq(null), false))
-    } else {
-      None
-    }
 
     val content =
       <h5 id="sessionstat">Session Statistics</h5> ++
@@ -173,7 +185,6 @@ private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage(""
 
     content
   }
-
 
   /**
    * Returns a human-readable string representing a duration such as "5 second 35 ms"
@@ -190,4 +201,3 @@ private[ui] class ThriftServerPage(parent: ThriftServerTab) extends WebUIPage(""
     UIUtils.listingTable(headers, generateDataRow, data, fixedWidth = true)
   }
 }
-

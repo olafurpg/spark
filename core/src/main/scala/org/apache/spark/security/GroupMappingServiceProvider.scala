@@ -25,7 +25,6 @@ package org.apache.spark.security
  * SecurityManager gets the corresponding groups a user belongs to from the instance of the groups
  * mapping provider specified by the entry spark.user.groups.mapping.
  */
-
 trait GroupMappingServiceProvider {
 
   /**
@@ -33,6 +32,5 @@ trait GroupMappingServiceProvider {
    * @param userName User's Name
    * @return set of groups that the user belongs to. Empty in case of an invalid user.
    */
-  def getGroups(userName : String) : Set[String]
-
+  def getGroups(userName: String): Set[String]
 }

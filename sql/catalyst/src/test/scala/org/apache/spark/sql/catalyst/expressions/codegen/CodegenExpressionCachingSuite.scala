@@ -81,20 +81,20 @@ class CodegenExpressionCachingSuite extends SparkFunSuite {
     assert(instance1.apply(null) === false)
     assert(instance2.apply(null) === true)
   }
-
 }
 
 /**
  * An expression that's non-deterministic and doesn't support codegen.
  */
 case class NondeterministicExpression()
-  extends LeafExpression with Nondeterministic with CodegenFallback {
-  override protected def initInternal(): Unit = { }
+    extends LeafExpression
+    with Nondeterministic
+    with CodegenFallback {
+  override protected def initInternal(): Unit = {}
   override protected def evalInternal(input: InternalRow): Any = false
   override def nullable: Boolean = false
   override def dataType: DataType = BooleanType
 }
-
 
 /**
  * An expression with mutable state so we can change it freely in our test suite.

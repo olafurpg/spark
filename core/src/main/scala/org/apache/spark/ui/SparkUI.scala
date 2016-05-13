@@ -24,8 +24,7 @@ import scala.collection.JavaConverters._
 import org.apache.spark.{SecurityManager, SparkConf, SparkContext}
 import org.apache.spark.internal.Logging
 import org.apache.spark.scheduler._
-import org.apache.spark.status.api.v1.{ApiRootResource, ApplicationAttemptInfo, ApplicationInfo,
-  UIRoot}
+import org.apache.spark.status.api.v1.{ApiRootResource, ApplicationAttemptInfo, ApplicationInfo, UIRoot}
 import org.apache.spark.storage.StorageStatusListener
 import org.apache.spark.ui.JettyUtils._
 import org.apache.spark.ui.env.{EnvironmentListener, EnvironmentTab}
@@ -38,26 +37,28 @@ import org.apache.spark.util.Utils
 /**
  * Top level user interface for a Spark application.
  */
-private[spark] class SparkUI private (
-    val sc: Option[SparkContext],
-    val conf: SparkConf,
-    securityManager: SecurityManager,
-    val environmentListener: EnvironmentListener,
-    val storageStatusListener: StorageStatusListener,
-    val executorsListener: ExecutorsListener,
-    val jobProgressListener: JobProgressListener,
-    val storageListener: StorageListener,
-    val operationGraphListener: RDDOperationGraphListener,
-    var appName: String,
-    val basePath: String,
-    val startTime: Long)
-  extends WebUI(securityManager, securityManager.getSSLOptions("ui"), SparkUI.getUIPort(conf),
-    conf, basePath, "SparkUI")
-  with Logging
-  with UIRoot {
+private[spark] class SparkUI private (val sc: Option[SparkContext],
+                                      val conf: SparkConf,
+                                      securityManager: SecurityManager,
+                                      val environmentListener: EnvironmentListener,
+                                      val storageStatusListener: StorageStatusListener,
+                                      val executorsListener: ExecutorsListener,
+                                      val jobProgressListener: JobProgressListener,
+                                      val storageListener: StorageListener,
+                                      val operationGraphListener: RDDOperationGraphListener,
+                                      var appName: String,
+                                      val basePath: String,
+                                      val startTime: Long)
+    extends WebUI(securityManager,
+                  securityManager.getSSLOptions("ui"),
+                  SparkUI.getUIPort(conf),
+                  conf,
+                  basePath,
+                  "SparkUI")
+    with Logging
+    with UIRoot {
 
   val killEnabled = sc.map(_.conf.getBoolean("spark.ui.killEnabled", true)).getOrElse(false)
-
 
   val stagesTab = new StagesTab(this)
 
@@ -74,9 +75,11 @@ private[spark] class SparkUI private (
     attachHandler(createRedirectHandler("/", "/jobs/", basePath = basePath))
     attachHandler(ApiRootResource.getServletHandler(this))
     // This should be POST only, but, the YARN AM proxy won't proxy POSTs
-    attachHandler(createRedirectHandler(
-      "/stages/stage/kill", "/stages/", stagesTab.handleKillRequest,
-      httpMethods = Set("GET", "POST")))
+    attachHandler(
+        createRedirectHandler("/stages/stage/kill",
+                              "/stages/",
+                              stagesTab.handleKillRequest,
+                              httpMethods = Set("GET", "POST")))
   }
   initialize()
 
@@ -108,31 +111,32 @@ private[spark] class SparkUI private (
   }
 
   def getApplicationInfoList: Iterator[ApplicationInfo] = {
-    Iterator(new ApplicationInfo(
-      id = appId,
-      name = appName,
-      coresGranted = None,
-      maxCores = None,
-      coresPerExecutor = None,
-      memoryPerExecutorMB = None,
-      attempts = Seq(new ApplicationAttemptInfo(
-        attemptId = None,
-        startTime = new Date(startTime),
-        endTime = new Date(-1),
-        duration = 0,
-        lastUpdated = new Date(startTime),
-        sparkUser = "",
-        completed = false
-      ))
-    ))
+    Iterator(
+        new ApplicationInfo(
+            id = appId,
+            name = appName,
+            coresGranted = None,
+            maxCores = None,
+            coresPerExecutor = None,
+            memoryPerExecutorMB = None,
+            attempts = Seq(
+                  new ApplicationAttemptInfo(
+                      attemptId = None,
+                      startTime = new Date(startTime),
+                      endTime = new Date(-1),
+                      duration = 0,
+                      lastUpdated = new Date(startTime),
+                      sparkUser = "",
+                      completed = false
+                  ))
+        ))
   }
 }
 
 private[spark] abstract class SparkUITab(parent: SparkUI, prefix: String)
-  extends WebUITab(parent, prefix) {
+    extends WebUITab(parent, prefix) {
 
   def appName: String = parent.getAppName
-
 }
 
 private[spark] object SparkUI {
@@ -146,30 +150,34 @@ private[spark] object SparkUI {
     conf.getInt("spark.ui.port", SparkUI.DEFAULT_PORT)
   }
 
-  def createLiveUI(
-      sc: SparkContext,
-      conf: SparkConf,
-      listenerBus: SparkListenerBus,
-      jobProgressListener: JobProgressListener,
-      securityManager: SecurityManager,
-      appName: String,
-      startTime: Long): SparkUI = {
-    create(Some(sc), conf, listenerBus, securityManager, appName,
-      jobProgressListener = Some(jobProgressListener), startTime = startTime)
+  def createLiveUI(sc: SparkContext,
+                   conf: SparkConf,
+                   listenerBus: SparkListenerBus,
+                   jobProgressListener: JobProgressListener,
+                   securityManager: SecurityManager,
+                   appName: String,
+                   startTime: Long): SparkUI = {
+    create(Some(sc),
+           conf,
+           listenerBus,
+           securityManager,
+           appName,
+           jobProgressListener = Some(jobProgressListener),
+           startTime = startTime)
   }
 
-  def createHistoryUI(
-      conf: SparkConf,
-      listenerBus: SparkListenerBus,
-      securityManager: SecurityManager,
-      appName: String,
-      basePath: String,
-      startTime: Long): SparkUI = {
+  def createHistoryUI(conf: SparkConf,
+                      listenerBus: SparkListenerBus,
+                      securityManager: SecurityManager,
+                      appName: String,
+                      basePath: String,
+                      startTime: Long): SparkUI = {
     val sparkUI = create(
-      None, conf, listenerBus, securityManager, appName, basePath, startTime = startTime)
+        None, conf, listenerBus, securityManager, appName, basePath, startTime = startTime)
 
-    val listenerFactories = ServiceLoader.load(classOf[SparkHistoryListenerFactory],
-      Utils.getContextOrSparkClassLoader).asScala
+    val listenerFactories = ServiceLoader
+      .load(classOf[SparkHistoryListenerFactory], Utils.getContextOrSparkClassLoader)
+      .asScala
     listenerFactories.foreach { listenerFactory =>
       val listeners = listenerFactory.createListeners(conf, sparkUI)
       listeners.foreach(listenerBus.addListener)
@@ -184,15 +192,14 @@ private[spark] object SparkUI {
    * @param jobProgressListener if supplied, this JobProgressListener will be used; otherwise, the
    *                            web UI will create and register its own JobProgressListener.
    */
-  private def create(
-      sc: Option[SparkContext],
-      conf: SparkConf,
-      listenerBus: SparkListenerBus,
-      securityManager: SecurityManager,
-      appName: String,
-      basePath: String = "",
-      jobProgressListener: Option[JobProgressListener] = None,
-      startTime: Long): SparkUI = {
+  private def create(sc: Option[SparkContext],
+                     conf: SparkConf,
+                     listenerBus: SparkListenerBus,
+                     securityManager: SecurityManager,
+                     appName: String,
+                     basePath: String = "",
+                     jobProgressListener: Option[JobProgressListener] = None,
+                     startTime: Long): SparkUI = {
 
     val _jobProgressListener: JobProgressListener = jobProgressListener.getOrElse {
       val listener = new JobProgressListener(conf)
@@ -212,8 +219,17 @@ private[spark] object SparkUI {
     listenerBus.addListener(storageListener)
     listenerBus.addListener(operationGraphListener)
 
-    new SparkUI(sc, conf, securityManager, environmentListener, storageStatusListener,
-      executorsListener, _jobProgressListener, storageListener, operationGraphListener,
-      appName, basePath, startTime)
+    new SparkUI(sc,
+                conf,
+                securityManager,
+                environmentListener,
+                storageStatusListener,
+                executorsListener,
+                _jobProgressListener,
+                storageListener,
+                operationGraphListener,
+                appName,
+                basePath,
+                startTime)
   }
 }

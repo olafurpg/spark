@@ -43,10 +43,9 @@ private[spark] trait Configurable extends HConfigurable {
  * the file.
  */
 private[spark] class WholeTextFileRecordReader(
-    split: CombineFileSplit,
-    context: TaskAttemptContext,
-    index: Integer)
-  extends RecordReader[Text, Text] with Configurable {
+    split: CombineFileSplit, context: TaskAttemptContext, index: Integer)
+    extends RecordReader[Text, Text]
+    with Configurable {
 
   private[this] val path = split.getPath(index)
   private[this] val fs = path.getFileSystem(context.getConfiguration)
@@ -71,13 +70,14 @@ private[spark] class WholeTextFileRecordReader(
     if (!processed) {
       val conf = new Configuration
       val factory = new CompressionCodecFactory(conf)
-      val codec = factory.getCodec(path)  // infers from file ext.
+      val codec = factory.getCodec(path) // infers from file ext.
       val fileIn = fs.open(path)
-      val innerBuffer = if (codec != null) {
-        ByteStreams.toByteArray(codec.createInputStream(fileIn))
-      } else {
-        ByteStreams.toByteArray(fileIn)
-      }
+      val innerBuffer =
+        if (codec != null) {
+          ByteStreams.toByteArray(codec.createInputStream(fileIn))
+        } else {
+          ByteStreams.toByteArray(fileIn)
+        }
 
       value = new Text(innerBuffer)
       Closeables.close(fileIn, false)
@@ -89,7 +89,6 @@ private[spark] class WholeTextFileRecordReader(
   }
 }
 
-
 /**
  * A [[org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReader CombineFileRecordReader]]
  * that can pass Hadoop Configuration to [[org.apache.hadoop.conf.Configurable Configurable]]
@@ -99,11 +98,12 @@ private[spark] class ConfigurableCombineFileRecordReader[K, V](
     split: InputSplit,
     context: TaskAttemptContext,
     recordReaderClass: Class[_ <: RecordReader[K, V] with HConfigurable])
-  extends CombineFileRecordReader[K, V](
-    split.asInstanceOf[CombineFileSplit],
-    context,
-    recordReaderClass
-  ) with Configurable {
+    extends CombineFileRecordReader[K, V](
+        split.asInstanceOf[CombineFileSplit],
+        context,
+        recordReaderClass
+    )
+    with Configurable {
 
   override def initNextRecordReader(): Boolean = {
     val r = super.initNextRecordReader()

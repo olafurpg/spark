@@ -29,8 +29,8 @@ import org.apache.spark.sql.types._
 // For example, getting a field out of an array, map, or struct.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 object ExtractValue {
+
   /**
    * Returns the resolved `ExtractValue`. It will return one kind of concrete `ExtractValue`,
    * depend on the type of `child` and `extraction`.
@@ -42,10 +42,7 @@ object ExtractValue {
    *    Array       |   Integral type    |         GetArrayItem
    *     Map        |   map key type     |         GetMapValue
    */
-  def apply(
-      child: Expression,
-      extraction: Expression,
-      resolver: Resolver): Expression = {
+  def apply(child: Expression, extraction: Expression, resolver: Resolver): Expression = {
 
     (child.dataType, extraction) match {
       case (StructType(fields), NonNullLiteral(v, StringType)) =>
@@ -56,8 +53,8 @@ object ExtractValue {
       case (ArrayType(StructType(fields), containsNull), NonNullLiteral(v, StringType)) =>
         val fieldName = v.toString
         val ordinal = findField(fields, fieldName, resolver)
-        GetArrayStructFields(child, fields(ordinal).copy(name = fieldName),
-          ordinal, fields.length, containsNull)
+        GetArrayStructFields(
+            child, fields(ordinal).copy(name = fieldName), ordinal, fields.length, containsNull)
 
       case (_: ArrayType, _) => GetArrayItem(child, extraction)
 
@@ -83,10 +80,10 @@ object ExtractValue {
     val ordinal = fields.indexWhere(checkField)
     if (ordinal == -1) {
       throw new AnalysisException(
-        s"No such struct field $fieldName in ${fields.map(_.name).mkString(", ")}")
+          s"No such struct field $fieldName in ${fields.map(_.name).mkString(", ")}")
     } else if (fields.indexWhere(checkField, ordinal + 1) != -1) {
       throw new AnalysisException(
-        s"Ambiguous reference to fields ${fields.filter(checkField).mkString(", ")}")
+          s"Ambiguous reference to fields ${fields.filter(checkField).mkString(", ")}")
     } else {
       ordinal
     }
@@ -104,7 +101,8 @@ trait ExtractValue extends Expression
  * For example, when get field `yEAr` from `<year: int, month: int>`, we should pass in `yEAr`.
  */
 case class GetStructField(child: Expression, ordinal: Int, name: Option[String] = None)
-  extends UnaryExpression with ExtractValue {
+    extends UnaryExpression
+    with ExtractValue {
 
   private[sql] lazy val childSchema = child.dataType.asInstanceOf[StructType]
 
@@ -147,12 +145,13 @@ case class GetStructField(child: Expression, ordinal: Int, name: Option[String] 
  *
  * No need to do type checking since it is handled by [[ExtractValue]].
  */
-case class GetArrayStructFields(
-    child: Expression,
-    field: StructField,
-    ordinal: Int,
-    numFields: Int,
-    containsNull: Boolean) extends UnaryExpression with ExtractValue {
+case class GetArrayStructFields(child: Expression,
+                                field: StructField,
+                                ordinal: Int,
+                                numFields: Int,
+                                containsNull: Boolean)
+    extends UnaryExpression
+    with ExtractValue {
 
   override def dataType: DataType = ArrayType(field.dataType, containsNull)
   override def toString: String = s"$child.${field.name}"
@@ -213,7 +212,9 @@ case class GetArrayStructFields(
  * We need to do type checking here as `ordinal` expression maybe unresolved.
  */
 case class GetArrayItem(child: Expression, ordinal: Expression)
-  extends BinaryExpression with ExpectsInputTypes with ExtractValue {
+    extends BinaryExpression
+    with ExpectsInputTypes
+    with ExtractValue {
 
   // We have done type checking for child in `ExtractValue`, so only need to check the `ordinal`.
   override def inputTypes: Seq[AbstractDataType] = Seq(AnyDataType, IntegralType)
@@ -260,7 +261,9 @@ case class GetArrayItem(child: Expression, ordinal: Expression)
  * We need to do type checking here as `key` expression maybe unresolved.
  */
 case class GetMapValue(child: Expression, key: Expression)
-  extends BinaryExpression with ExpectsInputTypes with ExtractValue {
+    extends BinaryExpression
+    with ExpectsInputTypes
+    with ExtractValue {
 
   private def keyType = child.dataType.asInstanceOf[MapType].keyType
 

@@ -11,7 +11,7 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -73,13 +73,13 @@ class ExecutorsListener(storageStatusListener: StorageStatusListener, conf: Spar
     executorIdToData(eid) = new ExecutorUIData(executorAdded.time)
   }
 
-  override def onExecutorRemoved(
-      executorRemoved: SparkListenerExecutorRemoved): Unit = synchronized {
-    val eid = executorRemoved.executorId
-    val uiData = executorIdToData(eid)
-    uiData.finishTime = Some(executorRemoved.time)
-    uiData.finishReason = Some(executorRemoved.reason)
-  }
+  override def onExecutorRemoved(executorRemoved: SparkListenerExecutorRemoved): Unit =
+    synchronized {
+      val eid = executorRemoved.executorId
+      val uiData = executorIdToData(eid)
+      uiData.finishTime = Some(executorRemoved.time)
+      uiData.finishReason = Some(executorRemoved.reason)
+    }
 
   override def onApplicationStart(applicationStart: SparkListenerApplicationStart): Unit = {
     applicationStart.driverLogs.foreach { logs =>
@@ -87,7 +87,9 @@ class ExecutorsListener(storageStatusListener: StorageStatusListener, conf: Spar
         s.blockManagerId.executorId == SparkContext.LEGACY_DRIVER_IDENTIFIER ||
         s.blockManagerId.executorId == SparkContext.DRIVER_IDENTIFIER
       }
-      storageStatus.foreach { s => executorToLogUrls(s.blockManagerId.executorId) = logs.toMap }
+      storageStatus.foreach { s =>
+        executorToLogUrls(s.blockManagerId.executorId) = logs.toMap
+      }
     }
   }
 
@@ -136,5 +138,4 @@ class ExecutorsListener(storageStatusListener: StorageStatusListener, conf: Spar
       }
     }
   }
-
 }

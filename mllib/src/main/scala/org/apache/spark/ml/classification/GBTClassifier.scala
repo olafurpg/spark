@@ -58,10 +58,11 @@ import org.apache.spark.sql.types.DoubleType
  */
 @Since("1.4.0")
 @Experimental
-class GBTClassifier @Since("1.4.0") (
-    @Since("1.4.0") override val uid: String)
-  extends Predictor[Vector, GBTClassifier, GBTClassificationModel]
-  with GBTClassifierParams with DefaultParamsWritable with Logging {
+class GBTClassifier @Since("1.4.0")(@Since("1.4.0") override val uid: String)
+    extends Predictor[Vector, GBTClassifier, GBTClassificationModel]
+    with GBTClassifierParams
+    with DefaultParamsWritable
+    with Logging {
 
   @Since("1.4.0")
   def this() = this(Identifiable.randomUID("gbtc"))
@@ -132,15 +133,17 @@ class GBTClassifier @Since("1.4.0") (
     val oldDataset: RDD[LabeledPoint] =
       dataset.select(col($(labelCol)).cast(DoubleType), col($(featuresCol))).rdd.map {
         case Row(label: Double, features: Vector) =>
-          require(label == 0 || label == 1, s"GBTClassifier was given" +
-            s" dataset with invalid label $label.  Labels must be in {0,1}; note that" +
-            s" GBTClassifier currently only supports binary classification.")
+          require(label == 0 || label == 1,
+                  s"GBTClassifier was given" +
+                  s" dataset with invalid label $label.  Labels must be in {0,1}; note that" +
+                  s" GBTClassifier currently only supports binary classification.")
           LabeledPoint(label, features)
       }
     val numFeatures = oldDataset.first().features.size
-    val boostingStrategy = super.getOldBoostingStrategy(categoricalFeatures, OldAlgo.Classification)
-    val (baseLearners, learnerWeights) = GradientBoostedTrees.run(oldDataset, boostingStrategy,
-      $(seed))
+    val boostingStrategy =
+      super.getOldBoostingStrategy(categoricalFeatures, OldAlgo.Classification)
+    val (baseLearners, learnerWeights) =
+      GradientBoostedTrees.run(oldDataset, boostingStrategy, $(seed))
     new GBTClassificationModel(uid, baseLearners, learnerWeights, numFeatures)
   }
 
@@ -172,18 +175,20 @@ object GBTClassifier extends DefaultParamsReadable[GBTClassifier] {
  */
 @Since("1.6.0")
 @Experimental
-class GBTClassificationModel private[ml](
-    @Since("1.6.0") override val uid: String,
-    private val _trees: Array[DecisionTreeRegressionModel],
-    private val _treeWeights: Array[Double],
-    @Since("1.6.0") override val numFeatures: Int)
-  extends PredictionModel[Vector, GBTClassificationModel]
-  with GBTClassifierParams with TreeEnsembleModel[DecisionTreeRegressionModel]
-  with MLWritable with Serializable {
+class GBTClassificationModel private[ml](@Since("1.6.0") override val uid: String,
+                                         private val _trees: Array[DecisionTreeRegressionModel],
+                                         private val _treeWeights: Array[Double],
+                                         @Since("1.6.0") override val numFeatures: Int)
+    extends PredictionModel[Vector, GBTClassificationModel]
+    with GBTClassifierParams
+    with TreeEnsembleModel[DecisionTreeRegressionModel]
+    with MLWritable
+    with Serializable {
 
   require(_trees.nonEmpty, "GBTClassificationModel requires at least 1 tree.")
-  require(_trees.length == _treeWeights.length, "GBTClassificationModel given trees, treeWeights" +
-    s" of non-matching lengths (${_trees.length}, ${_treeWeights.length}, respectively).")
+  require(_trees.length == _treeWeights.length,
+          "GBTClassificationModel given trees, treeWeights" +
+          s" of non-matching lengths (${_trees.length}, ${_treeWeights.length}, respectively).")
 
   /**
    * Construct a GBTClassificationModel
@@ -222,8 +227,8 @@ class GBTClassificationModel private[ml](
 
   @Since("1.4.0")
   override def copy(extra: ParamMap): GBTClassificationModel = {
-    copyValues(new GBTClassificationModel(uid, _trees, _treeWeights, numFeatures),
-      extra).setParent(parent)
+    copyValues(new GBTClassificationModel(uid, _trees, _treeWeights, numFeatures), extra)
+      .setParent(parent)
   }
 
   @Since("1.4.0")
@@ -262,14 +267,14 @@ object GBTClassificationModel extends MLReadable[GBTClassificationModel] {
   @Since("2.0.0")
   override def load(path: String): GBTClassificationModel = super.load(path)
 
-  private[GBTClassificationModel]
-  class GBTClassificationModelWriter(instance: GBTClassificationModel) extends MLWriter {
+  private[GBTClassificationModel] class GBTClassificationModelWriter(
+      instance: GBTClassificationModel)
+      extends MLWriter {
 
     override protected def saveImpl(path: String): Unit = {
 
       val extraMetadata: JObject = Map(
-        "numFeatures" -> instance.numFeatures,
-        "numTrees" -> instance.getNumTrees)
+          "numFeatures" -> instance.numFeatures, "numTrees" -> instance.getNumTrees)
       EnsembleModelReadWrite.saveImpl(instance, path, sqlContext, extraMetadata)
     }
   }
@@ -289,13 +294,13 @@ object GBTClassificationModel extends MLReadable[GBTClassificationModel] {
 
       val trees: Array[DecisionTreeRegressionModel] = treesData.map {
         case (treeMetadata, root) =>
-          val tree =
-            new DecisionTreeRegressionModel(treeMetadata.uid, root, numFeatures)
+          val tree = new DecisionTreeRegressionModel(treeMetadata.uid, root, numFeatures)
           DefaultParamsReader.getAndSetParams(tree, treeMetadata)
           tree
       }
-      require(numTrees == trees.length, s"GBTClassificationModel.load expected $numTrees" +
-        s" trees based on metadata but found ${trees.length} trees.")
+      require(numTrees == trees.length,
+              s"GBTClassificationModel.load expected $numTrees" +
+              s" trees based on metadata but found ${trees.length} trees.")
       val model = new GBTClassificationModel(metadata.uid, trees, treeWeights, numFeatures)
       DefaultParamsReader.getAndSetParams(model, metadata)
       model
@@ -303,13 +308,13 @@ object GBTClassificationModel extends MLReadable[GBTClassificationModel] {
   }
 
   /** Convert a model from the old API */
-  private[ml] def fromOld(
-      oldModel: OldGBTModel,
-      parent: GBTClassifier,
-      categoricalFeatures: Map[Int, Int],
-      numFeatures: Int = -1): GBTClassificationModel = {
-    require(oldModel.algo == OldAlgo.Classification, "Cannot convert GradientBoostedTreesModel" +
-      s" with algo=${oldModel.algo} (old API) to GBTClassificationModel (new API).")
+  private[ml] def fromOld(oldModel: OldGBTModel,
+                          parent: GBTClassifier,
+                          categoricalFeatures: Map[Int, Int],
+                          numFeatures: Int = -1): GBTClassificationModel = {
+    require(oldModel.algo == OldAlgo.Classification,
+            "Cannot convert GradientBoostedTreesModel" +
+            s" with algo=${oldModel.algo} (old API) to GBTClassificationModel (new API).")
     val newTrees = oldModel.trees.map { tree =>
       // parent for each tree is null since there is no good way to set this.
       DecisionTreeRegressionModel.fromOld(tree, null, categoricalFeatures)

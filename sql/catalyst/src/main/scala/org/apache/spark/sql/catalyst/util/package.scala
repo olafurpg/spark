@@ -51,45 +51,41 @@ package object util {
     val outStream = new ByteArrayOutputStream
     try {
       var reading = true
-      while ( reading ) {
+      while (reading) {
         inStream.read() match {
           case -1 => reading = false
           case c => outStream.write(c)
         }
       }
       outStream.flush()
-    }
-    finally {
+    } finally {
       inStream.close()
     }
     new String(outStream.toByteArray, encoding)
   }
 
   def resourceToBytes(
-      resource: String,
-      classLoader: ClassLoader = Utils.getSparkClassLoader): Array[Byte] = {
+      resource: String, classLoader: ClassLoader = Utils.getSparkClassLoader): Array[Byte] = {
     val inStream = classLoader.getResourceAsStream(resource)
     val outStream = new ByteArrayOutputStream
     try {
       var reading = true
-      while ( reading ) {
+      while (reading) {
         inStream.read() match {
           case -1 => reading = false
           case c => outStream.write(c)
         }
       }
       outStream.flush()
-    }
-    finally {
+    } finally {
       inStream.close()
     }
     outStream.toByteArray
   }
 
-  def resourceToString(
-      resource: String,
-      encoding: String = "UTF-8",
-      classLoader: ClassLoader = Utils.getSparkClassLoader): String = {
+  def resourceToString(resource: String,
+                       encoding: String = "UTF-8",
+                       classLoader: ClassLoader = Utils.getSparkClassLoader): String = {
     new String(resourceToBytes(resource, classLoader), encoding)
   }
 

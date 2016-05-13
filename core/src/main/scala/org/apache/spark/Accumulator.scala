@@ -49,16 +49,15 @@ package org.apache.spark
  * @param name human-readable name associated with this accumulator
  * @param countFailedValues whether to accumulate values from failed tasks
  * @tparam T result type
-*/
+ */
 @deprecated("use AccumulatorV2", "2.0.0")
-class Accumulator[T] private[spark] (
-    // SI-8813: This must explicitly be a private val, or else scala 2.11 doesn't compile
-    @transient private val initialValue: T,
-    param: AccumulatorParam[T],
-    name: Option[String] = None,
-    countFailedValues: Boolean = false)
-  extends Accumulable[T, T](initialValue, param, name, countFailedValues)
-
+class Accumulator[T] private[spark](
+                                    // SI-8813: This must explicitly be a private val, or else scala 2.11 doesn't compile
+                                    @transient private val initialValue: T,
+                                    param: AccumulatorParam[T],
+                                    name: Option[String] = None,
+                                    countFailedValues: Boolean = false)
+    extends Accumulable[T, T](initialValue, param, name, countFailedValues)
 
 /**
  * A simpler version of [[org.apache.spark.AccumulableParam]] where the only data type you can add
@@ -73,7 +72,6 @@ trait AccumulatorParam[T] extends AccumulableParam[T, T] {
     addInPlace(t1, t2)
   }
 }
-
 
 @deprecated("use AccumulatorV2", "2.0.0")
 object AccumulatorParam {

@@ -24,14 +24,14 @@ import scala.reflect.ClassTag
 import org.apache.spark._
 import org.apache.spark.util.Utils
 
-private[spark]
-class CartesianPartition(
+private[spark] class CartesianPartition(
     idx: Int,
     @transient private val rdd1: RDD[_],
     @transient private val rdd2: RDD[_],
     s1Index: Int,
     s2Index: Int
-  ) extends Partition {
+)
+    extends Partition {
   var s1 = rdd1.partitions(s1Index)
   var s2 = rdd2.partitions(s2Index)
   override val index: Int = idx
@@ -45,13 +45,10 @@ class CartesianPartition(
   }
 }
 
-private[spark]
-class CartesianRDD[T: ClassTag, U: ClassTag](
-    sc: SparkContext,
-    var rdd1 : RDD[T],
-    var rdd2 : RDD[U])
-  extends RDD[(T, U)](sc, Nil)
-  with Serializable {
+private[spark] class CartesianRDD[T: ClassTag, U: ClassTag](
+    sc: SparkContext, var rdd1: RDD[T], var rdd2: RDD[U])
+    extends RDD[(T, U)](sc, Nil)
+    with Serializable {
 
   val numPartitionsInRdd2 = rdd2.partitions.length
 
@@ -77,12 +74,12 @@ class CartesianRDD[T: ClassTag, U: ClassTag](
   }
 
   override def getDependencies: Seq[Dependency[_]] = List(
-    new NarrowDependency(rdd1) {
-      def getParents(id: Int): Seq[Int] = List(id / numPartitionsInRdd2)
-    },
-    new NarrowDependency(rdd2) {
-      def getParents(id: Int): Seq[Int] = List(id % numPartitionsInRdd2)
-    }
+      new NarrowDependency(rdd1) {
+        def getParents(id: Int): Seq[Int] = List(id / numPartitionsInRdd2)
+      },
+      new NarrowDependency(rdd2) {
+        def getParents(id: Int): Seq[Int] = List(id % numPartitionsInRdd2)
+      }
   )
 
   override def clearDependencies() {

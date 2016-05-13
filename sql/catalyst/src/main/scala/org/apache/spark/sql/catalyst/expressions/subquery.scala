@@ -26,6 +26,7 @@ import org.apache.spark.sql.types._
  * An interface for subquery that is used in expressions.
  */
 abstract class SubqueryExpression extends Expression {
+
   /**  The id of the subquery expression. */
   def exprId: ExprId
 
@@ -59,11 +60,11 @@ object SubqueryExpression {
  *
  * Note: `exprId` is used to have a unique name in explain string output.
  */
-case class ScalarSubquery(
-    query: LogicalPlan,
-    children: Seq[Expression] = Seq.empty,
-    exprId: ExprId = NamedExpression.newExprId)
-  extends SubqueryExpression with Unevaluable {
+case class ScalarSubquery(query: LogicalPlan,
+                          children: Seq[Expression] = Seq.empty,
+                          exprId: ExprId = NamedExpression.newExprId)
+    extends SubqueryExpression
+    with Unevaluable {
   override lazy val resolved: Boolean = childrenResolved && query.resolved
   override lazy val references: AttributeSet = {
     if (query.resolved) super.references -- query.outputSet
@@ -91,12 +92,13 @@ object ScalarSubquery {
  * [[PredicateSubquery]] expressions within a Filter plan (i.e. WHERE or a HAVING clause). This will
  * be rewritten into a left semi/anti join during analysis.
  */
-case class PredicateSubquery(
-    query: LogicalPlan,
-    children: Seq[Expression] = Seq.empty,
-    nullAware: Boolean = false,
-    exprId: ExprId = NamedExpression.newExprId)
-  extends SubqueryExpression with Predicate with Unevaluable {
+case class PredicateSubquery(query: LogicalPlan,
+                             children: Seq[Expression] = Seq.empty,
+                             nullAware: Boolean = false,
+                             exprId: ExprId = NamedExpression.newExprId)
+    extends SubqueryExpression
+    with Predicate
+    with Unevaluable {
   override lazy val resolved = childrenResolved && query.resolved
   override lazy val references: AttributeSet = super.references -- query.outputSet
   override def nullable: Boolean = nullAware
@@ -118,7 +120,7 @@ object PredicateSubquery {
    * turn the null-aware predicate into not-null-aware predicate.
    */
   def hasNullAwarePredicateWithinNot(e: Expression): Boolean = {
-    e.find{ x =>
+    e.find { x =>
       x.isInstanceOf[Not] && e.find {
         case p: PredicateSubquery => p.nullAware
         case _ => false
@@ -140,7 +142,8 @@ object PredicateSubquery {
  * }}}
  */
 case class ListQuery(query: LogicalPlan, exprId: ExprId = NamedExpression.newExprId)
-  extends SubqueryExpression with Unevaluable {
+    extends SubqueryExpression
+    with Unevaluable {
   override lazy val resolved = false
   override def children: Seq[Expression] = Seq.empty
   override def dataType: DataType = ArrayType(NullType)
@@ -162,7 +165,9 @@ case class ListQuery(query: LogicalPlan, exprId: ExprId = NamedExpression.newExp
  * }}}
  */
 case class Exists(query: LogicalPlan, exprId: ExprId = NamedExpression.newExprId)
-    extends SubqueryExpression with Predicate with Unevaluable {
+    extends SubqueryExpression
+    with Predicate
+    with Unevaluable {
   override lazy val resolved = false
   override def children: Seq[Expression] = Seq.empty
   override def nullable: Boolean = false

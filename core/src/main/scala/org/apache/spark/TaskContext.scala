@@ -26,8 +26,8 @@ import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.metrics.source.Source
 import org.apache.spark.util.{AccumulatorV2, TaskCompletionListener, TaskFailureListener}
 
-
 object TaskContext {
+
   /**
    * Return the currently active TaskContext. This can be called inside of
    * user functions to access contextual information about running tasks.
@@ -68,7 +68,6 @@ object TaskContext {
     new TaskContextImpl(0, 0, 0, 0, null, new Properties, null)
   }
 }
-
 
 /**
  * Contextual information about a task which can be read or mutated during
@@ -119,7 +118,8 @@ abstract class TaskContext extends Serializable {
    * Exceptions thrown by the listener will result in failure of the task.
    */
   def addTaskCompletionListener(f: (TaskContext) => Unit): TaskContext = {
-    addTaskCompletionListener(new TaskCompletionListener {
+    addTaskCompletionListener(
+        new TaskCompletionListener {
       override def onTaskCompletion(context: TaskContext): Unit = f(context)
     })
   }
@@ -135,7 +135,8 @@ abstract class TaskContext extends Serializable {
    * Operations defined here must be idempotent, as `onTaskFailure` can be called multiple times.
    */
   def addTaskFailureListener(f: (TaskContext, Throwable) => Unit): TaskContext = {
-    addTaskFailureListener(new TaskFailureListener {
+    addTaskFailureListener(
+        new TaskFailureListener {
       override def onTaskFailure(context: TaskContext, error: Throwable): Unit = f(context, error)
     })
   }
@@ -189,5 +190,4 @@ abstract class TaskContext extends Serializable {
    * deserializing in executors.
    */
   private[spark] def registerAccumulator(a: AccumulatorV2[_, _]): Unit
-
 }

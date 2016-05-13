@@ -76,14 +76,14 @@ object ProcessingTime {
    */
   def apply(interval: String): ProcessingTime = {
     if (StringUtils.isBlank(interval)) {
-      throw new IllegalArgumentException(
-        "interval cannot be null or blank.")
+      throw new IllegalArgumentException("interval cannot be null or blank.")
     }
-    val cal = if (interval.startsWith("interval")) {
-      CalendarInterval.fromString(interval)
-    } else {
-      CalendarInterval.fromString("interval " + interval)
-    }
+    val cal =
+      if (interval.startsWith("interval")) {
+        CalendarInterval.fromString(interval)
+      } else {
+        CalendarInterval.fromString("interval " + interval)
+      }
     if (cal == null) {
       throw new IllegalArgumentException(s"Invalid interval: $interval")
     }

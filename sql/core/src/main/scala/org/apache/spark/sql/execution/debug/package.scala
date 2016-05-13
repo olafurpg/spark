@@ -83,11 +83,12 @@ package object debug {
     def debug(): Unit = {
       val plan = query.queryExecution.executedPlan
       val visited = new collection.mutable.HashSet[TreeNodeRef]()
-      val debugPlan = plan transform {
-        case s: SparkPlan if !visited.contains(new TreeNodeRef(s)) =>
-          visited += new TreeNodeRef(s)
-          DebugExec(s)
-      }
+      val debugPlan =
+        plan transform {
+          case s: SparkPlan if !visited.contains(new TreeNodeRef(s)) =>
+            visited += new TreeNodeRef(s)
+            DebugExec(s)
+        }
       debugPrint(s"Results returned: ${debugPlan.execute().count()}")
       debugPlan.foreach {
         case d: DebugExec => d.dumpStats()
@@ -126,7 +127,7 @@ package object debug {
      *                     causing the wrong data to be projected.
      */
     case class ColumnMetrics(
-      elementTypes: Accumulator[HashSet[String]] = sparkContext.accumulator(HashSet.empty))
+        elementTypes: Accumulator[HashSet[String]] = sparkContext.accumulator(HashSet.empty))
 
     val tupleCount: Accumulator[Int] = sparkContext.accumulator[Int](0)
 
@@ -136,9 +137,10 @@ package object debug {
     def dumpStats(): Unit = {
       debugPrint(s"== ${child.simpleString} ==")
       debugPrint(s"Tuples output: ${tupleCount.value}")
-      child.output.zip(columnStats).foreach { case (attr, metric) =>
-        val actualDataTypes = metric.elementTypes.value.mkString("{", ",", "}")
-        debugPrint(s" ${attr.name} ${attr.dataType}: $actualDataTypes")
+      child.output.zip(columnStats).foreach {
+        case (attr, metric) =>
+          val actualDataTypes = metric.elementTypes.value.mkString("{", ",", "}")
+          debugPrint(s" ${attr.name} ${attr.dataType}: $actualDataTypes")
       }
     }
 

@@ -50,7 +50,7 @@ class OracleIntegrationSuite extends DockerJDBCIntegrationSuite with SharedSQLCo
   override val db = new DatabaseOnDocker {
     override val imageName = "wnameless/oracle-xe-11g:14.04.4"
     override val env = Map(
-      "ORACLE_ROOT_PASSWORD" -> "oracle"
+        "ORACLE_ROOT_PASSWORD" -> "oracle"
     )
     override val usesIpc = false
     override val jdbcPort: Int = 1521
@@ -59,8 +59,7 @@ class OracleIntegrationSuite extends DockerJDBCIntegrationSuite with SharedSQLCo
     override def getStartupProcessName: Option[String] = None
   }
 
-  override def dataPreparation(conn: Connection): Unit = {
-  }
+  override def dataPreparation(conn: Connection): Unit = {}
 
   test("SPARK-12941: String datatypes to be mapped to Varchar in Oracle") {
     // create a sample dataframe with string type

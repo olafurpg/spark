@@ -36,22 +36,15 @@ class MemorySinkSuite extends StreamTest with SharedSQLContext {
 
   private def testRegisterAsTable(): Unit = {
     val input = MemoryStream[Int]
-    val query = input.toDF().write
-      .format("memory")
-      .queryName("memStream")
-      .startStream()
+    val query = input.toDF().write.format("memory").queryName("memStream").startStream()
     input.addData(1, 2, 3)
     query.processAllAvailable()
 
-    checkDataset(
-      spark.table("memStream").as[Int],
-      1, 2, 3)
+    checkDataset(spark.table("memStream").as[Int], 1, 2, 3)
 
     input.addData(4, 5, 6)
     query.processAllAvailable()
-    checkDataset(
-      spark.table("memStream").as[Int],
-      1, 2, 3, 4, 5, 6)
+    checkDataset(spark.table("memStream").as[Int], 1, 2, 3, 4, 5, 6)
 
     query.stop()
   }
@@ -59,9 +52,7 @@ class MemorySinkSuite extends StreamTest with SharedSQLContext {
   test("error when no name is specified") {
     val error = intercept[AnalysisException] {
       val input = MemoryStream[Int]
-      val query = input.toDF().write
-          .format("memory")
-          .startStream()
+      val query = input.toDF().write.format("memory").startStream()
     }
 
     assert(error.message contains "queryName must be specified")
@@ -71,17 +62,21 @@ class MemorySinkSuite extends StreamTest with SharedSQLContext {
     val location = Utils.createTempDir(namePrefix = "steaming.checkpoint").getCanonicalPath
 
     val input = MemoryStream[Int]
-    val query = input.toDF().write
-        .format("memory")
-        .queryName("memStream")
-        .option("checkpointLocation", location)
-        .startStream()
+    val query = input
+      .toDF()
+      .write
+      .format("memory")
+      .queryName("memStream")
+      .option("checkpointLocation", location)
+      .startStream()
     input.addData(1, 2, 3)
     query.processAllAvailable()
     query.stop()
 
     intercept[AnalysisException] {
-      input.toDF().write
+      input
+        .toDF()
+        .write
         .format("memory")
         .queryName("memStream")
         .option("checkpointLocation", location)

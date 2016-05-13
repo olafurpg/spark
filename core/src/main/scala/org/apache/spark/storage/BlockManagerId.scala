@@ -35,24 +35,22 @@ import org.apache.spark.util.Utils
  */
 @DeveloperApi
 class BlockManagerId private (
-    private var executorId_ : String,
-    private var host_ : String,
-    private var port_ : Int)
-  extends Externalizable {
+    private var executorId_ : String, private var host_ : String, private var port_ : Int)
+    extends Externalizable {
 
-  private def this() = this(null, null, 0)  // For deserialization only
+  private def this() = this(null, null, 0) // For deserialization only
 
   def executorId: String = executorId_
 
   if (null != host_) {
     Utils.checkHost(host_, "Expected hostname")
-    assert (port_ > 0)
+    assert(port_ > 0)
   }
 
   def hostPort: String = {
     // DEBUG code
     Utils.checkHost(host)
-    assert (port > 0)
+    assert(port > 0)
     host + ":" + port
   }
 
@@ -62,7 +60,7 @@ class BlockManagerId private (
 
   def isDriver: Boolean = {
     executorId == SparkContext.DRIVER_IDENTIFIER ||
-      executorId == SparkContext.LEGACY_DRIVER_IDENTIFIER
+    executorId == SparkContext.LEGACY_DRIVER_IDENTIFIER
   }
 
   override def writeExternal(out: ObjectOutput): Unit = Utils.tryOrIOException {
@@ -91,7 +89,6 @@ class BlockManagerId private (
       false
   }
 }
-
 
 private[spark] object BlockManagerId {
 

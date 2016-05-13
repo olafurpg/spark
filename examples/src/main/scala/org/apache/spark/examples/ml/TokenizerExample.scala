@@ -25,17 +25,16 @@ import org.apache.spark.sql.SparkSession
 
 object TokenizerExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("TokenizerExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("TokenizerExample").getOrCreate()
 
     // $example on$
-    val sentenceDataFrame = spark.createDataFrame(Seq(
-      (0, "Hi I heard about Spark"),
-      (1, "I wish Java could use case classes"),
-      (2, "Logistic,regression,models,are,neat")
-    )).toDF("label", "sentence")
+    val sentenceDataFrame = spark
+      .createDataFrame(Seq(
+              (0, "Hi I heard about Spark"),
+              (1, "I wish Java could use case classes"),
+              (2, "Logistic,regression,models,are,neat")
+          ))
+      .toDF("label", "sentence")
 
     val tokenizer = new Tokenizer().setInputCol("sentence").setOutputCol("words")
     val regexTokenizer = new RegexTokenizer()

@@ -49,8 +49,12 @@ class LocalCheckpointSuite extends SparkFunSuite with LocalSparkContext {
   test("basic lineage truncation") {
     val numPartitions = 4
     val parallelRdd = sc.parallelize(1 to 100, numPartitions)
-    val mappedRdd = parallelRdd.map { i => i + 1 }
-    val filteredRdd = mappedRdd.filter { i => i % 2 == 0 }
+    val mappedRdd = parallelRdd.map { i =>
+      i + 1
+    }
+    val filteredRdd = mappedRdd.filter { i =>
+      i % 2 == 0
+    }
     val expectedPartitionIndices = (0 until numPartitions).toArray
     assert(filteredRdd.checkpointData.isEmpty)
     assert(filteredRdd.getStorageLevel === StorageLevel.NONE)
@@ -85,71 +89,59 @@ class LocalCheckpointSuite extends SparkFunSuite with LocalSparkContext {
 
   test("basic lineage truncation - caching before checkpointing") {
     testBasicLineageTruncationWithCaching(
-      newRdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint(),
-      StorageLevel.MEMORY_AND_DISK)
+        newRdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint(), StorageLevel.MEMORY_AND_DISK)
   }
 
   test("basic lineage truncation - caching after checkpointing") {
     testBasicLineageTruncationWithCaching(
-      newRdd.localCheckpoint().persist(StorageLevel.MEMORY_ONLY),
-      StorageLevel.MEMORY_AND_DISK)
+        newRdd.localCheckpoint().persist(StorageLevel.MEMORY_ONLY), StorageLevel.MEMORY_AND_DISK)
   }
 
   test("indirect lineage truncation") {
     testIndirectLineageTruncation(
-      newRdd.localCheckpoint(),
-      LocalRDDCheckpointData.DEFAULT_STORAGE_LEVEL)
+        newRdd.localCheckpoint(), LocalRDDCheckpointData.DEFAULT_STORAGE_LEVEL)
   }
 
   test("indirect lineage truncation - caching before checkpointing") {
     testIndirectLineageTruncation(
-      newRdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint(),
-      StorageLevel.MEMORY_AND_DISK)
+        newRdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint(), StorageLevel.MEMORY_AND_DISK)
   }
 
   test("indirect lineage truncation - caching after checkpointing") {
     testIndirectLineageTruncation(
-      newRdd.localCheckpoint().persist(StorageLevel.MEMORY_ONLY),
-      StorageLevel.MEMORY_AND_DISK)
+        newRdd.localCheckpoint().persist(StorageLevel.MEMORY_ONLY), StorageLevel.MEMORY_AND_DISK)
   }
 
   test("checkpoint without draining iterator") {
     testWithoutDrainingIterator(
-      newSortedRdd.localCheckpoint(),
-      LocalRDDCheckpointData.DEFAULT_STORAGE_LEVEL,
-      50)
+        newSortedRdd.localCheckpoint(), LocalRDDCheckpointData.DEFAULT_STORAGE_LEVEL, 50)
   }
 
   test("checkpoint without draining iterator - caching before checkpointing") {
-    testWithoutDrainingIterator(
-      newSortedRdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint(),
-      StorageLevel.MEMORY_AND_DISK,
-      50)
+    testWithoutDrainingIterator(newSortedRdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint(),
+                                StorageLevel.MEMORY_AND_DISK,
+                                50)
   }
 
   test("checkpoint without draining iterator - caching after checkpointing") {
-    testWithoutDrainingIterator(
-      newSortedRdd.localCheckpoint().persist(StorageLevel.MEMORY_ONLY),
-      StorageLevel.MEMORY_AND_DISK,
-      50)
+    testWithoutDrainingIterator(newSortedRdd.localCheckpoint().persist(StorageLevel.MEMORY_ONLY),
+                                StorageLevel.MEMORY_AND_DISK,
+                                50)
   }
 
   test("checkpoint blocks exist") {
     testCheckpointBlocksExist(
-      newRdd.localCheckpoint(),
-      LocalRDDCheckpointData.DEFAULT_STORAGE_LEVEL)
+        newRdd.localCheckpoint(), LocalRDDCheckpointData.DEFAULT_STORAGE_LEVEL)
   }
 
   test("checkpoint blocks exist - caching before checkpointing") {
     testCheckpointBlocksExist(
-      newRdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint(),
-      StorageLevel.MEMORY_AND_DISK)
+        newRdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint(), StorageLevel.MEMORY_AND_DISK)
   }
 
   test("checkpoint blocks exist - caching after checkpointing") {
     testCheckpointBlocksExist(
-      newRdd.localCheckpoint().persist(StorageLevel.MEMORY_ONLY),
-      StorageLevel.MEMORY_AND_DISK)
+        newRdd.localCheckpoint().persist(StorageLevel.MEMORY_ONLY), StorageLevel.MEMORY_AND_DISK)
   }
 
   test("missing checkpoint block fails with informative message") {
@@ -184,8 +176,12 @@ class LocalCheckpointSuite extends SparkFunSuite with LocalSparkContext {
    */
   private def newRdd: RDD[Int] = {
     sc.parallelize(1 to 100, 4)
-      .map { i => i + 1 }
-      .filter { i => i % 2 == 0 }
+      .map { i =>
+        i + 1
+      }
+      .filter { i =>
+        i % 2 == 0
+      }
   }
 
   /**
@@ -199,8 +195,7 @@ class LocalCheckpointSuite extends SparkFunSuite with LocalSparkContext {
    * @param rdd an RDD that is both marked for caching and local checkpointing
    */
   private def testBasicLineageTruncationWithCaching[T](
-      rdd: RDD[T],
-      targetStorageLevel: StorageLevel): Unit = {
+      rdd: RDD[T], targetStorageLevel: StorageLevel): Unit = {
     require(targetStorageLevel !== StorageLevel.NONE)
     require(rdd.getStorageLevel !== StorageLevel.NONE)
     require(rdd.isLocallyCheckpointed)
@@ -223,13 +218,18 @@ class LocalCheckpointSuite extends SparkFunSuite with LocalSparkContext {
    * @param rdd a locally checkpointed RDD
    */
   private def testIndirectLineageTruncation[T](
-      rdd: RDD[T],
-      targetStorageLevel: StorageLevel): Unit = {
+      rdd: RDD[T], targetStorageLevel: StorageLevel): Unit = {
     require(targetStorageLevel !== StorageLevel.NONE)
     require(rdd.isLocallyCheckpointed)
-    val rdd1 = rdd.map { i => i + "1" }
-    val rdd2 = rdd1.map { i => i + "2" }
-    val rdd3 = rdd2.map { i => i + "3" }
+    val rdd1 = rdd.map { i =>
+      i + "1"
+    }
+    val rdd2 = rdd1.map { i =>
+      i + "2"
+    }
+    val rdd3 = rdd2.map { i =>
+      i + "3"
+    }
     val rddDependencies = rdd.dependencies
     val rdd1Dependencies = rdd1.dependencies
     val rdd2Dependencies = rdd2.dependencies
@@ -267,9 +267,7 @@ class LocalCheckpointSuite extends SparkFunSuite with LocalSparkContext {
    * @param rdd a locally checkpointed RDD
    */
   private def testWithoutDrainingIterator[T](
-      rdd: RDD[T],
-      targetStorageLevel: StorageLevel,
-      targetCount: Int): Unit = {
+      rdd: RDD[T], targetStorageLevel: StorageLevel, targetCount: Int): Unit = {
     require(targetCount > 0)
     require(targetStorageLevel !== StorageLevel.NONE)
     require(rdd.isLocallyCheckpointed)
@@ -301,9 +299,7 @@ class LocalCheckpointSuite extends SparkFunSuite with LocalSparkContext {
    *
    * @param rdd a locally checkpointed RDD
    */
-  private def testCheckpointBlocksExist[T](
-      rdd: RDD[T],
-      targetStorageLevel: StorageLevel): Unit = {
+  private def testCheckpointBlocksExist[T](rdd: RDD[T], targetStorageLevel: StorageLevel): Unit = {
     val bmm = sc.env.blockManager.master
     val partitionIndices = rdd.partitions.map(_.index)
 
@@ -321,5 +317,4 @@ class LocalCheckpointSuite extends SparkFunSuite with LocalSparkContext {
       assert(status.values.head.storageLevel === targetStorageLevel)
     }
   }
-
 }

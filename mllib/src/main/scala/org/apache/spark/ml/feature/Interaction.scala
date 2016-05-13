@@ -44,8 +44,11 @@ import org.apache.spark.sql.types._
  */
 @Since("1.6.0")
 @Experimental
-class Interaction @Since("1.6.0") (override val uid: String) extends Transformer
-  with HasInputCols with HasOutputCol with DefaultParamsWritable {
+class Interaction @Since("1.6.0")(override val uid: String)
+    extends Transformer
+    with HasInputCols
+    with HasOutputCol
+    with DefaultParamsWritable {
 
   @Since("1.6.0")
   def this() = this(Identifiable.randomUID("interaction"))
@@ -110,8 +113,8 @@ class Interaction @Since("1.6.0") (override val uid: String) extends Transformer
       }
     }
     dataset.select(
-      col("*"),
-      interactFunc(struct(featureCols: _*)).as($(outputCol), featureAttrs.toMetadata()))
+        col("*"),
+        interactFunc(struct(featureCols: _*)).as($(outputCol), featureAttrs.toMetadata()))
   }
 
   /**
@@ -124,10 +127,12 @@ class Interaction @Since("1.6.0") (override val uid: String) extends Transformer
     def getNumFeatures(attr: Attribute): Int = {
       attr match {
         case nominal: NominalAttribute =>
-          math.max(1, nominal.getNumValues.getOrElse(
-            throw new SparkException("Nominal features must have attr numValues defined.")))
+          math.max(
+              1,
+              nominal.getNumValues.getOrElse(
+                  throw new SparkException("Nominal features must have attr numValues defined.")))
         case _ =>
-          1  // numeric feature
+          1 // numeric feature
       }
     }
     features.map { f =>
@@ -135,8 +140,11 @@ class Interaction @Since("1.6.0") (override val uid: String) extends Transformer
         case _: NumericType | BooleanType =>
           Array(getNumFeatures(Attribute.fromStructField(f)))
         case _: VectorUDT =>
-          val attrs = AttributeGroup.fromStructField(f).attributes.getOrElse(
-            throw new SparkException("Vector attributes must be defined for interaction."))
+          val attrs = AttributeGroup
+            .fromStructField(f)
+            .attributes
+            .getOrElse(
+                throw new SparkException("Vector attributes must be defined for interaction."))
           attrs.map(getNumFeatures).toArray
       }
       new FeatureEncoder(numFeatures)
@@ -191,13 +199,9 @@ class Interaction @Since("1.6.0") (override val uid: String) extends Transformer
    * @param groupName Optional name of the input feature group (for Vector type features).
    */
   private def encodedFeatureAttrs(
-      inputAttrs: Seq[Attribute],
-      groupName: Option[String]): Seq[Attribute] = {
+      inputAttrs: Seq[Attribute], groupName: Option[String]): Seq[Attribute] = {
 
-    def format(
-        index: Int,
-        attrName: Option[String],
-        categoryName: Option[String]): String = {
+    def format(index: Int, attrName: Option[String], categoryName: Option[String]): String = {
       val parts = Seq(groupName, Some(attrName.getOrElse(index.toString)), categoryName)
       parts.flatten.mkString("_")
     }
@@ -205,11 +209,11 @@ class Interaction @Since("1.6.0") (override val uid: String) extends Transformer
     inputAttrs.zipWithIndex.flatMap {
       case (nominal: NominalAttribute, i) =>
         if (nominal.values.isDefined) {
-          nominal.values.get.map(
-            v => BinaryAttribute.defaultAttr.withName(format(i, nominal.name, Some(v))))
+          nominal.values.get
+            .map(v => BinaryAttribute.defaultAttr.withName(format(i, nominal.name, Some(v))))
         } else {
           Array.tabulate(nominal.getNumValues.get)(
-            j => BinaryAttribute.defaultAttr.withName(format(i, nominal.name, Some(j.toString))))
+              j => BinaryAttribute.defaultAttr.withName(format(i, nominal.name, Some(j.toString))))
         }
       case (a: Attribute, i) =>
         Seq(NumericAttribute.defaultAttr.withName(format(i, a.name, None)))
@@ -218,7 +222,6 @@ class Interaction @Since("1.6.0") (override val uid: String) extends Transformer
 
   @Since("1.6.0")
   override def copy(extra: ParamMap): Interaction = defaultCopy(extra)
-
 }
 
 @Since("1.6.0")
@@ -265,22 +268,20 @@ private[ml] class FeatureEncoder(numFeatures: Array[Int]) extends Serializable {
       assert(numFeatures.length == 1, "DoubleType columns should only contain one feature.")
       val numOutputCols = numFeatures.head
       if (numOutputCols > 1) {
-        assert(
-          d >= 0.0 && d == d.toInt && d < numOutputCols,
-          s"Values from column must be indices, but got $d.")
+        assert(d >= 0.0 && d == d.toInt && d < numOutputCols,
+               s"Values from column must be indices, but got $d.")
         f(d.toInt, 1.0)
       } else {
         f(0, d)
       }
     case vec: Vector =>
       assert(numFeatures.length == vec.size,
-        s"Vector column size was ${vec.size}, expected ${numFeatures.length}")
+             s"Vector column size was ${vec.size}, expected ${numFeatures.length}")
       vec.foreachActive { (i, v) =>
         val numOutputCols = numFeatures(i)
         if (numOutputCols > 1) {
-          assert(
-            v >= 0.0 && v == v.toInt && v < numOutputCols,
-            s"Values from column must be indices, but got $v.")
+          assert(v >= 0.0 && v == v.toInt && v < numOutputCols,
+                 s"Values from column must be indices, but got $v.")
           f(outputOffsets(i) + v.toInt, 1.0)
         } else {
           f(outputOffsets(i), v)

@@ -30,5 +30,4 @@ trait JsonTestUtils {
     assert(a === JNothing, s"$errorMessage\nAdded:\n${JsonMethods.pretty(a)}")
     assert(d === JNothing, s"$errorMessage\nDeleted:\n${JsonMethods.pretty(d)}")
   }
-
 }

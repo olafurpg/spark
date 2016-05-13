@@ -62,11 +62,12 @@ private[spark] class RestSubmissionClient(master: String) extends Logging {
 
   private val supportedMasterPrefixes = Seq("spark://", "mesos://")
 
-  private val masters: Array[String] = if (master.startsWith("spark://")) {
-    Utils.parseStandaloneMasterUrls(master)
-  } else {
-    Array(master)
-  }
+  private val masters: Array[String] =
+    if (master.startsWith("spark://")) {
+      Utils.parseStandaloneMasterUrls(master)
+    } else {
+      Array(master)
+    }
 
   // Set of masters that lost contact with us, used to keep track of
   // whether there are masters still alive for us to communicate with
@@ -138,8 +139,7 @@ private[spark] class RestSubmissionClient(master: String) extends Logging {
 
   /** Request the status of a submission from the server. */
   def requestSubmissionStatus(
-      submissionId: String,
-      quiet: Boolean = false): SubmitRestProtocolResponse = {
+      submissionId: String, quiet: Boolean = false): SubmitRestProtocolResponse = {
     logInfo(s"Submitting a request for the status of submission $submissionId in $master.")
 
     var handled: Boolean = false
@@ -255,7 +255,7 @@ private[spark] class RestSubmissionClient(master: String) extends Logging {
         case response: SubmitRestProtocolResponse => response
         case unexpected =>
           throw new SubmitRestProtocolException(
-            s"Message received from server was not a response:\n${unexpected.toJson}")
+              s"Message received from server was not a response:\n${unexpected.toJson}")
       }
     }
 
@@ -305,17 +305,18 @@ private[spark] class RestSubmissionClient(master: String) extends Logging {
 
   /** Throw an exception if this is not standalone mode. */
   private def validateMaster(master: String): Unit = {
-    val valid = supportedMasterPrefixes.exists { prefix => master.startsWith(prefix) }
+    val valid = supportedMasterPrefixes.exists { prefix =>
+      master.startsWith(prefix)
+    }
     if (!valid) {
       throw new IllegalArgumentException(
-        "This REST client only supports master URLs that start with " +
+          "This REST client only supports master URLs that start with " +
           "one of the following: " + supportedMasterPrefixes.mkString(","))
     }
   }
 
   /** Report the status of a newly created submission. */
-  private def reportSubmissionStatus(
-      submitResponse: CreateSubmissionResponse): Unit = {
+  private def reportSubmissionStatus(submitResponse: CreateSubmissionResponse): Unit = {
     if (submitResponse.success) {
       val submissionId = submitResponse.submissionId
       if (submissionId != null) {
@@ -358,7 +359,9 @@ private[spark] class RestSubmissionClient(master: String) extends Logging {
           case _ =>
         }
         // Log exception stack trace, if present
-        exception.foreach { e => logError(e) }
+        exception.foreach { e =>
+          logError(e)
+        }
         return
       }
       Thread.sleep(REPORT_DRIVER_STATUS_INTERVAL)
@@ -401,19 +404,18 @@ private[spark] object RestSubmissionClient {
    * Submit an application, assuming Spark parameters are specified through the given config.
    * This is abstracted to its own method for testing purposes.
    */
-  def run(
-      appResource: String,
-      mainClass: String,
-      appArgs: Array[String],
-      conf: SparkConf,
-      env: Map[String, String] = Map()): SubmitRestProtocolResponse = {
+  def run(appResource: String,
+          mainClass: String,
+          appArgs: Array[String],
+          conf: SparkConf,
+          env: Map[String, String] = Map()): SubmitRestProtocolResponse = {
     val master = conf.getOption("spark.master").getOrElse {
       throw new IllegalArgumentException("'spark.master' must be set.")
     }
     val sparkProperties = conf.getAll.toMap
     val client = new RestSubmissionClient(master)
-    val submitRequest = client.constructSubmitRequest(
-      appResource, mainClass, appArgs, sparkProperties, env)
+    val submitRequest =
+      client.constructSubmitRequest(appResource, mainClass, appArgs, sparkProperties, env)
     client.createSubmission(submitRequest)
   }
 
@@ -437,7 +439,7 @@ private[spark] object RestSubmissionClient {
     env.filterKeys { k =>
       // SPARK_HOME is filtered out because it is usually wrong on the remote machine (SPARK-12345)
       (k.startsWith("SPARK_") && k != "SPARK_ENV_LOADED" && k != "SPARK_HOME") ||
-        k.startsWith("MESOS_")
+      k.startsWith("MESOS_")
     }
   }
 }

@@ -34,7 +34,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Dataset}
 import org.apache.spark.sql.functions._
 
-
 /**
  * :: Experimental ::
  * [[http://en.wikipedia.org/wiki/Random_forest  Random Forest]] learning algorithm for
@@ -44,10 +43,11 @@ import org.apache.spark.sql.functions._
  */
 @Since("1.4.0")
 @Experimental
-class RandomForestClassifier @Since("1.4.0") (
-    @Since("1.4.0") override val uid: String)
-  extends ProbabilisticClassifier[Vector, RandomForestClassifier, RandomForestClassificationModel]
-  with RandomForestClassifierParams with DefaultParamsWritable {
+class RandomForestClassifier @Since("1.4.0")(@Since("1.4.0") override val uid: String)
+    extends ProbabilisticClassifier[
+        Vector, RandomForestClassifier, RandomForestClassificationModel]
+    with RandomForestClassifierParams
+    with DefaultParamsWritable {
 
   @Since("1.4.0")
   def this() = this(Identifiable.randomUID("rfc"))
@@ -126,6 +126,7 @@ class RandomForestClassifier @Since("1.4.0") (
 @Since("1.4.0")
 @Experimental
 object RandomForestClassifier extends DefaultParamsReadable[RandomForestClassifier] {
+
   /** Accessor for supported impurity settings: entropy, gini */
   @Since("1.4.0")
   final val supportedImpurities: Array[String] = TreeClassifierParams.supportedImpurities
@@ -150,14 +151,16 @@ object RandomForestClassifier extends DefaultParamsReadable[RandomForestClassifi
  */
 @Since("1.4.0")
 @Experimental
-class RandomForestClassificationModel private[ml] (
+class RandomForestClassificationModel private[ml](
     @Since("1.5.0") override val uid: String,
     private val _trees: Array[DecisionTreeClassificationModel],
     @Since("1.6.0") override val numFeatures: Int,
     @Since("1.5.0") override val numClasses: Int)
-  extends ProbabilisticClassificationModel[Vector, RandomForestClassificationModel]
-  with RandomForestClassificationModelParams with TreeEnsembleModel[DecisionTreeClassificationModel]
-  with MLWritable with Serializable {
+    extends ProbabilisticClassificationModel[Vector, RandomForestClassificationModel]
+    with RandomForestClassificationModelParams
+    with TreeEnsembleModel[DecisionTreeClassificationModel]
+    with MLWritable
+    with Serializable {
 
   require(_trees.nonEmpty, "RandomForestClassificationModel requires at least 1 tree.")
 
@@ -167,9 +170,7 @@ class RandomForestClassificationModel private[ml] (
    * @param trees  Component trees
    */
   private[ml] def this(
-      trees: Array[DecisionTreeClassificationModel],
-      numFeatures: Int,
-      numClasses: Int) =
+      trees: Array[DecisionTreeClassificationModel], numFeatures: Int, numClasses: Int) =
     this(Identifiable.randomUID("rfc"), trees, numFeatures, numClasses)
 
   @Since("1.4.0")
@@ -215,7 +216,7 @@ class RandomForestClassificationModel private[ml] (
         dv
       case sv: SparseVector =>
         throw new RuntimeException("Unexpected error in RandomForestClassificationModel:" +
-          " raw2probabilityInPlace encountered SparseVector")
+            " raw2probabilityInPlace encountered SparseVector")
     }
   }
 
@@ -272,22 +273,21 @@ object RandomForestClassificationModel extends MLReadable[RandomForestClassifica
   @Since("2.0.0")
   override def load(path: String): RandomForestClassificationModel = super.load(path)
 
-  private[RandomForestClassificationModel]
-  class RandomForestClassificationModelWriter(instance: RandomForestClassificationModel)
-    extends MLWriter {
+  private[RandomForestClassificationModel] class RandomForestClassificationModelWriter(
+      instance: RandomForestClassificationModel)
+      extends MLWriter {
 
     override protected def saveImpl(path: String): Unit = {
       // Note: numTrees is not currently used, but could be nice to store for fast querying.
-      val extraMetadata: JObject = Map(
-        "numFeatures" -> instance.numFeatures,
-        "numClasses" -> instance.numClasses,
-        "numTrees" -> instance.getNumTrees)
+      val extraMetadata: JObject = Map("numFeatures" -> instance.numFeatures,
+                                       "numClasses" -> instance.numClasses,
+                                       "numTrees" -> instance.getNumTrees)
       EnsembleModelReadWrite.saveImpl(instance, path, sqlContext, extraMetadata)
     }
   }
 
   private class RandomForestClassificationModelReader
-    extends MLReader[RandomForestClassificationModel] {
+      extends MLReader[RandomForestClassificationModel] {
 
     /** Checked against metadata when loading model */
     private val className = classOf[RandomForestClassificationModel].getName
@@ -308,8 +308,9 @@ object RandomForestClassificationModel extends MLReadable[RandomForestClassifica
           DefaultParamsReader.getAndSetParams(tree, treeMetadata)
           tree
       }
-      require(numTrees == trees.length, s"RandomForestClassificationModel.load expected $numTrees" +
-        s" trees based on metadata but found ${trees.length} trees.")
+      require(numTrees == trees.length,
+              s"RandomForestClassificationModel.load expected $numTrees" +
+              s" trees based on metadata but found ${trees.length} trees.")
 
       val model = new RandomForestClassificationModel(metadata.uid, trees, numFeatures, numClasses)
       DefaultParamsReader.getAndSetParams(model, metadata)
@@ -318,14 +319,14 @@ object RandomForestClassificationModel extends MLReadable[RandomForestClassifica
   }
 
   /** Convert a model from the old API */
-  private[ml] def fromOld(
-      oldModel: OldRandomForestModel,
-      parent: RandomForestClassifier,
-      categoricalFeatures: Map[Int, Int],
-      numClasses: Int,
-      numFeatures: Int = -1): RandomForestClassificationModel = {
-    require(oldModel.algo == OldAlgo.Classification, "Cannot convert RandomForestModel" +
-      s" with algo=${oldModel.algo} (old API) to RandomForestClassificationModel (new API).")
+  private[ml] def fromOld(oldModel: OldRandomForestModel,
+                          parent: RandomForestClassifier,
+                          categoricalFeatures: Map[Int, Int],
+                          numClasses: Int,
+                          numFeatures: Int = -1): RandomForestClassificationModel = {
+    require(oldModel.algo == OldAlgo.Classification,
+            "Cannot convert RandomForestModel" +
+            s" with algo=${oldModel.algo} (old API) to RandomForestClassificationModel (new API).")
     val newTrees = oldModel.trees.map { tree =>
       // parent for each tree is null since there is no good way to set this.
       DecisionTreeClassificationModel.fromOld(tree, null, categoricalFeatures)

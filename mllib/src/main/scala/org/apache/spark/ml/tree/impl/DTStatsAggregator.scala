@@ -19,8 +19,6 @@ package org.apache.spark.ml.tree.impl
 
 import org.apache.spark.mllib.tree.impurity._
 
-
-
 /**
  * DecisionTree statistics aggregator for a node.
  * This holds a flat array of statistics for a set of (features, bins)
@@ -28,8 +26,8 @@ import org.apache.spark.mllib.tree.impurity._
  * This class is abstract to support learning with and without feature subsampling.
  */
 private[spark] class DTStatsAggregator(
-    val metadata: DecisionTreeMetadata,
-    featureSubset: Option[Array[Int]]) extends Serializable {
+    val metadata: DecisionTreeMetadata, featureSubset: Option[Array[Int]])
+    extends Serializable {
 
   /**
    * [[ImpurityAggregator]] instance specifying the impurity type.
@@ -124,12 +122,9 @@ private[spark] class DTStatsAggregator(
    *                           from [[getFeatureOffset]].
    */
   def featureUpdate(
-      featureOffset: Int,
-      binIndex: Int,
-      label: Double,
-      instanceWeight: Double): Unit = {
-    impurityAggregator.update(allStats, featureOffset + binIndex * statsSize,
-      label, instanceWeight)
+      featureOffset: Int, binIndex: Int, label: Double, instanceWeight: Double): Unit = {
+    impurityAggregator.update(
+        allStats, featureOffset + binIndex * statsSize, label, instanceWeight)
   }
 
   /**
@@ -147,8 +142,8 @@ private[spark] class DTStatsAggregator(
    * @param otherBinIndex  This bin is not modified.
    */
   def mergeForFeature(featureOffset: Int, binIndex: Int, otherBinIndex: Int): Unit = {
-    impurityAggregator.merge(allStats, featureOffset + binIndex * statsSize,
-      featureOffset + otherBinIndex * statsSize)
+    impurityAggregator.merge(
+        allStats, featureOffset + binIndex * statsSize, featureOffset + otherBinIndex * statsSize)
   }
 
   /**
@@ -156,9 +151,10 @@ private[spark] class DTStatsAggregator(
    * This method modifies this aggregator in-place.
    */
   def merge(other: DTStatsAggregator): DTStatsAggregator = {
-    require(allStatsSize == other.allStatsSize,
-      s"DTStatsAggregator.merge requires that both aggregators have the same length stats vectors."
-        + s" This aggregator is of length $allStatsSize, but the other is ${other.allStatsSize}.")
+    require(
+        allStatsSize == other.allStatsSize,
+        s"DTStatsAggregator.merge requires that both aggregators have the same length stats vectors." +
+        s" This aggregator is of length $allStatsSize, but the other is ${other.allStatsSize}.")
     var i = 0
     // TODO: Test BLAS.axpy
     while (i < allStatsSize) {
@@ -166,8 +162,9 @@ private[spark] class DTStatsAggregator(
       i += 1
     }
 
-    require(statsSize == other.statsSize,
-      s"DTStatsAggregator.merge requires that both aggregators have the same length parent " +
+    require(
+        statsSize == other.statsSize,
+        s"DTStatsAggregator.merge requires that both aggregators have the same length parent " +
         s"stats vectors. This aggregator's parent stats are length $statsSize, " +
         s"but the other is ${other.statsSize}.")
     var j = 0

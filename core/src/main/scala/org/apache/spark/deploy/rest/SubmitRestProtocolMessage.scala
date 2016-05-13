@@ -47,7 +47,7 @@ private[rest] abstract class SubmitRestProtocolMessage {
   var message: String = null
 
   // For JSON deserialization
-  private def setAction(a: String): Unit = { }
+  private def setAction(a: String): Unit = {}
 
   /**
    * Serialize the message to JSON.
@@ -128,7 +128,8 @@ private[spark] object SubmitRestProtocolMessage {
    */
   def fromJson(json: String): SubmitRestProtocolMessage = {
     val className = parseAction(json)
-    val clazz = Utils.classForName(packagePrefix + "." + className)
+    val clazz = Utils
+      .classForName(packagePrefix + "." + className)
       .asSubclass[SubmitRestProtocolMessage](classOf[SubmitRestProtocolMessage])
     fromJson(json, clazz)
   }

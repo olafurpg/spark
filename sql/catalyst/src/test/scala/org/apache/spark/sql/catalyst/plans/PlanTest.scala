@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.util._
  * Provides helper methods for comparing plans.
  */
 abstract class PlanTest extends SparkFunSuite with PredicateHelper {
+
   /**
    * Since attribute references are given globally unique ids during analysis,
    * we must normalize them to check if two different queries are identical.
@@ -71,8 +72,7 @@ abstract class PlanTest extends SparkFunSuite with PredicateHelper {
     val normalized1 = normalizePlan(normalizeExprIds(plan1))
     val normalized2 = normalizePlan(normalizeExprIds(plan2))
     if (normalized1 != normalized2) {
-      fail(
-        s"""
+      fail(s"""
           |== FAIL: Plans do not match ===
           |${sideBySide(normalized1.treeString, normalized2.treeString).mkString("\n")}
          """.stripMargin)

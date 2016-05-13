@@ -36,9 +36,8 @@ import org.apache.spark.storage.StorageLevel
  * edge to provide the triplet view. Shipping of the vertex attributes is managed by
  * `impl.ReplicatedVertexView`.
  */
-abstract class EdgeRDD[ED](
-    sc: SparkContext,
-    deps: Seq[Dependency[_]]) extends RDD[Edge[ED]](sc, deps) {
+abstract class EdgeRDD[ED](sc: SparkContext, deps: Seq[Dependency[_]])
+    extends RDD[Edge[ED]](sc, deps) {
 
   // scalastyle:off structural.type
   private[graphx] def partitionsRDD: RDD[(PartitionID, EdgePartition[ED, VD])] forSome { type VD }
@@ -80,9 +79,8 @@ abstract class EdgeRDD[ED](
    * @return a new EdgeRDD containing only edges that appear in both `this` and `other`,
    *         with values supplied by `f`
    */
-  def innerJoin[ED2: ClassTag, ED3: ClassTag]
-      (other: EdgeRDD[ED2])
-      (f: (VertexId, VertexId, ED, ED2) => ED3): EdgeRDD[ED3]
+  def innerJoin[ED2: ClassTag, ED3: ClassTag](other: EdgeRDD[ED2])(
+      f: (VertexId, VertexId, ED, ED2) => ED3): EdgeRDD[ED3]
 
   /**
    * Changes the target storage level while preserving all other properties of the
@@ -95,6 +93,7 @@ abstract class EdgeRDD[ED](
 }
 
 object EdgeRDD {
+
   /**
    * Creates an EdgeRDD from a set of edges.
    *

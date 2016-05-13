@@ -76,11 +76,10 @@ abstract class Collect extends ImperativeAggregate {
  * Collect a list of elements.
  */
 @ExpressionDescription(
-  usage = "_FUNC_(expr) - Collects and returns a list of non-unique elements.")
+    usage = "_FUNC_(expr) - Collects and returns a list of non-unique elements.")
 case class CollectList(
-    child: Expression,
-    mutableAggBufferOffset: Int = 0,
-    inputAggBufferOffset: Int = 0) extends Collect {
+    child: Expression, mutableAggBufferOffset: Int = 0, inputAggBufferOffset: Int = 0)
+    extends Collect {
 
   def this(child: Expression) = this(child, 0, 0)
 
@@ -98,12 +97,10 @@ case class CollectList(
 /**
  * Collect a list of unique elements.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(expr) - Collects and returns a set of unique elements.")
+@ExpressionDescription(usage = "_FUNC_(expr) - Collects and returns a set of unique elements.")
 case class CollectSet(
-    child: Expression,
-    mutableAggBufferOffset: Int = 0,
-    inputAggBufferOffset: Int = 0) extends Collect {
+    child: Expression, mutableAggBufferOffset: Int = 0, inputAggBufferOffset: Int = 0)
+    extends Collect {
 
   def this(child: Expression) = this(child, 0, 0)
 

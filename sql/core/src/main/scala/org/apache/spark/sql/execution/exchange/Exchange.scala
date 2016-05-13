@@ -46,7 +46,7 @@ abstract class Exchange extends UnaryExecNode {
  * preserve the original ids because they're what downstream operators are expecting.
  */
 case class ReusedExchangeExec(override val output: Seq[Attribute], child: Exchange)
-  extends LeafExecNode {
+    extends LeafExecNode {
 
   override def sameResult(plan: SparkPlan): Boolean = {
     // Ignore this wrapper. `plan` could also be a ReusedExchange, so we reverse the order here.

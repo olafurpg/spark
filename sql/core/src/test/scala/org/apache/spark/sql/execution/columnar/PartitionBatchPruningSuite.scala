@@ -24,11 +24,10 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.SharedSQLContext
 import org.apache.spark.sql.test.SQLTestData._
 
-
 class PartitionBatchPruningSuite
-  extends SparkFunSuite
-  with BeforeAndAfterEach
-  with SharedSQLContext {
+    extends SparkFunSuite
+    with BeforeAndAfterEach
+    with SharedSQLContext {
 
   import testImplicits._
 
@@ -59,10 +58,12 @@ class PartitionBatchPruningSuite
     super.beforeEach()
     // This creates accumulators, which get cleaned up after every single test,
     // so we need to do this before every test.
-    val pruningData = sparkContext.makeRDD((1 to 100).map { key =>
-      val string = if (((key - 1) / 10) % 2 == 0) null else key.toString
-      TestData(key, string)
-    }, 5).toDF()
+    val pruningData = sparkContext
+      .makeRDD((1 to 100).map { key =>
+        val string = if (((key - 1) / 10) % 2 == 0) null else key.toString
+        TestData(key, string)
+      }, 5)
+      .toDF()
     pruningData.registerTempTable("pruningData")
     spark.catalog.cacheTable("pruningData")
   }
@@ -100,7 +101,8 @@ class PartitionBatchPruningSuite
   // Conjunction and disjunction
   checkBatchPruning("SELECT key FROM pruningData WHERE key > 8 AND key <= 21", 2, 3)(9 to 21)
   checkBatchPruning("SELECT key FROM pruningData WHERE key < 2 OR key > 99", 2, 2)(Seq(1, 100))
-  checkBatchPruning("SELECT key FROM pruningData WHERE key < 12 AND key IS NOT NULL", 1, 2)(1 to 11)
+  checkBatchPruning("SELECT key FROM pruningData WHERE key < 12 AND key IS NOT NULL", 1, 2)(
+      1 to 11)
   checkBatchPruning("SELECT key FROM pruningData WHERE key < 2 OR (key > 78 AND key < 92)", 3, 4) {
     Seq(1) ++ (79 to 91)
   }
@@ -119,10 +121,7 @@ class PartitionBatchPruningSuite
     }
   }
 
-  def checkBatchPruning(
-      query: String,
-      expectedReadPartitions: Int,
-      expectedReadBatches: Int)(
+  def checkBatchPruning(query: String, expectedReadPartitions: Int, expectedReadBatches: Int)(
       expectedQueryResult: => Seq[Int]): Unit = {
 
     test(query) {
@@ -130,7 +129,7 @@ class PartitionBatchPruningSuite
       val queryExecution = df.queryExecution
 
       assertResult(expectedQueryResult.toArray, s"Wrong query result: $queryExecution") {
-        df.collect().map(_(0)).toArray
+        df.collect().map(_ (0)).toArray
       }
 
       val (readPartitions, readBatches) = df.queryExecution.sparkPlan.collect {
@@ -138,9 +137,8 @@ class PartitionBatchPruningSuite
       }.head
 
       assert(readBatches === expectedReadBatches, s"Wrong number of read batches: $queryExecution")
-      assert(
-        readPartitions === expectedReadPartitions,
-        s"Wrong number of read partitions: $queryExecution")
+      assert(readPartitions === expectedReadPartitions,
+             s"Wrong number of read partitions: $queryExecution")
     }
   }
 }

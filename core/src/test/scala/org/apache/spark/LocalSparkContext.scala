@@ -44,7 +44,6 @@ trait LocalSparkContext extends BeforeAndAfterEach with BeforeAndAfterAll { self
     LocalSparkContext.stop(sc)
     sc = null
   }
-
 }
 
 object LocalSparkContext {
@@ -64,5 +63,4 @@ object LocalSparkContext {
       stop(sc)
     }
   }
-
 }

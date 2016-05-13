@@ -65,11 +65,11 @@ trait Generator extends Expression {
 /**
  * A generator that produces its output using the provided lambda function.
  */
-case class UserDefinedGenerator(
-    elementSchema: StructType,
-    function: Row => TraversableOnce[InternalRow],
-    children: Seq[Expression])
-  extends Generator with CodegenFallback {
+case class UserDefinedGenerator(elementSchema: StructType,
+                                function: Row => TraversableOnce[InternalRow],
+                                children: Seq[Expression])
+    extends Generator
+    with CodegenFallback {
 
   @transient private[this] var inputRow: InterpretedProjection = _
   @transient private[this] var convertToScala: (InternalRow) => Row = _
@@ -77,7 +77,8 @@ case class UserDefinedGenerator(
   private def initializeConverters(): Unit = {
     inputRow = new InterpretedProjection(children)
     convertToScala = {
-      val inputSchema = StructType(children.map(e => StructField(e.simpleString, e.dataType, true)))
+      val inputSchema = StructType(
+          children.map(e => StructField(e.simpleString, e.dataType, true)))
       CatalystTypeConverters.createToScalaConverter(inputSchema)
     }.asInstanceOf[InternalRow => Row]
   }
@@ -98,7 +99,7 @@ case class UserDefinedGenerator(
  */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
-  usage = "_FUNC_(a) - Separates the elements of array a into multiple rows, or the elements of a map into multiple rows and columns.")
+    usage = "_FUNC_(a) - Separates the elements of array a into multiple rows, or the elements of a map into multiple rows and columns.")
 // scalastyle:on line.size.limit
 case class Explode(child: Expression) extends UnaryExpression with Generator with CodegenFallback {
 
@@ -109,7 +110,7 @@ case class Explode(child: Expression) extends UnaryExpression with Generator wit
       TypeCheckResult.TypeCheckSuccess
     } else {
       TypeCheckResult.TypeCheckFailure(
-        s"input to function explode should be array or map type, not ${child.dataType}")
+          s"input to function explode should be array or map type, not ${child.dataType}")
     }
   }
 

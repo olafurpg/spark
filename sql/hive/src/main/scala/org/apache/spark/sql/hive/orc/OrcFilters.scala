@@ -73,10 +73,9 @@ private[orc] object OrcFilters extends Logging {
     } yield builder.build()
   }
 
-  private def buildSearchArgument(
-      dataTypeMap: Map[String, DataType],
-      expression: Filter,
-      builder: Builder): Option[Builder] = {
+  private def buildSearchArgument(dataTypeMap: Map[String, DataType],
+                                  expression: Filter,
+                                  builder: Builder): Option[Builder] = {
     def newBuilder = SearchArgumentFactory.newBuilder()
 
     def isSearchableType(dataType: DataType): Boolean = dataType match {

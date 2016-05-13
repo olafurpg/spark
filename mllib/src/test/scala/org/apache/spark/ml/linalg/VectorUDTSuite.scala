@@ -39,8 +39,8 @@ class VectorUDTSuite extends SparkFunSuite {
     val sv2 = Vectors.sparse(2, Array(1), Array(2.0))
 
     for (v <- Seq(dv1, dv2, sv1, sv2)) {
-      val udt = UDTRegistration.getUDTFor(v.getClass.getName).get.newInstance()
-        .asInstanceOf[VectorUDT]
+      val udt =
+        UDTRegistration.getUDTFor(v.getClass.getName).get.newInstance().asInstanceOf[VectorUDT]
       assert(v === udt.deserialize(udt.serialize(v)))
       assert(udt.typeName == "vector")
       assert(udt.simpleString == "vector")
@@ -49,7 +49,7 @@ class VectorUDTSuite extends SparkFunSuite {
 
   test("JavaTypeInference with VectorUDT") {
     val (dataType, _) = JavaTypeInference.inferDataType(classOf[LabeledPoint])
-    assert(dataType.asInstanceOf[StructType].fields.map(_.dataType)
-      === Seq(new VectorUDT, DoubleType))
+    assert(dataType.asInstanceOf[StructType].fields.map(_.dataType) === Seq(new VectorUDT,
+                                                                            DoubleType))
   }
 }

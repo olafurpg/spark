@@ -30,11 +30,7 @@ case class FunctionResult(f1: String, f2: String)
  * case insensitive, database names and function names have both upper case
  * letters and lower case letters.
  */
-class UDFSuite
-  extends QueryTest
-  with SQLTestUtils
-  with TestHiveSingleton
-  with BeforeAndAfterEach {
+class UDFSuite extends QueryTest with SQLTestUtils with TestHiveSingleton with BeforeAndAfterEach {
 
   import hiveContext.implicits._
 
@@ -69,7 +65,8 @@ class UDFSuite
     hiveContext.udf.register("strlenScala", (_: String).length + (_: Int))
     assert(hiveContext.sql("SELECT RANDOM0() FROM src LIMIT 1").head().getDouble(0) >= 0.0)
     assert(hiveContext.sql("SELECT RANDOm1() FROM src LIMIT 1").head().getDouble(0) >= 0.0)
-    assert(hiveContext.sql("SELECT strlenscala('test', 1) FROM src LIMIT 1").head().getInt(0) === 5)
+    assert(
+        hiveContext.sql("SELECT strlenscala('test', 1) FROM src LIMIT 1").head().getInt(0) === 5)
   }
 
   test("temporary function: create and drop") {
@@ -79,8 +76,8 @@ class UDFSuite
       }
       sql(s"CREATE TEMPORARY FUNCTION $functionName AS '$functionClass'")
       checkAnswer(
-        sql(s"SELECT $functionNameLower(value) from $testTableName"),
-        expectedDF
+          sql(s"SELECT $functionNameLower(value) from $testTableName"),
+          expectedDF
       )
       intercept[AnalysisException] {
         sql(s"DROP TEMPORARY FUNCTION default.$functionName")
@@ -92,17 +89,17 @@ class UDFSuite
     withUserDefinedFunction(functionName -> false) {
       sql(s"CREATE FUNCTION $functionName AS '$functionClass'")
       checkAnswer(
-        sql("SHOW functions like '.*upper'"),
-        Row(s"default.$functionNameLower")
+          sql("SHOW functions like '.*upper'"),
+          Row(s"default.$functionNameLower")
       )
       checkAnswer(
-        sql(s"SELECT $functionName(value) from $testTableName"),
-        expectedDF
+          sql(s"SELECT $functionName(value) from $testTableName"),
+          expectedDF
       )
-      assert(
-        sql("SHOW functions").collect()
-          .map(_.getString(0))
-          .contains(s"default.$functionNameLower"))
+      assert(sql("SHOW functions")
+            .collect()
+            .map(_.getString(0))
+            .contains(s"default.$functionNameLower"))
     }
   }
 
@@ -117,12 +114,12 @@ class UDFSuite
       //  expectedDF
       // )
       checkAnswer(
-        sql(s"SELECT $functionName(value) from $testTableName"),
-        expectedDF
+          sql(s"SELECT $functionName(value) from $testTableName"),
+          expectedDF
       )
       checkAnswer(
-        sql(s"SELECT default.$functionName(value) from $testTableName"),
-        expectedDF
+          sql(s"SELECT default.$functionName(value) from $testTableName"),
+          expectedDF
       )
     }
 
@@ -130,8 +127,8 @@ class UDFSuite
     withUserDefinedFunction(s"DEfault.$functionNameLower" -> false) {
       sql(s"CREATE FUNCTION dEFault.$functionName AS '$functionClass'")
       checkAnswer(
-        sql(s"SELECT $functionNameUpper(value) from $testTableName"),
-        expectedDF
+          sql(s"SELECT $functionNameUpper(value) from $testTableName"),
+          expectedDF
       )
     }
   }
@@ -148,22 +145,22 @@ class UDFSuite
         // )
 
         checkAnswer(
-          sql(s"SHOW FUNCTIONS like $dbName.$functionNameUpper"),
-          Row(s"$dbName.$functionNameLower")
+            sql(s"SHOW FUNCTIONS like $dbName.$functionNameUpper"),
+            Row(s"$dbName.$functionNameLower")
         )
 
         sql(s"USE $dbName")
 
         checkAnswer(
-          sql(s"SELECT $functionName(value) from $testTableName"),
-          expectedDF
+            sql(s"SELECT $functionName(value) from $testTableName"),
+            expectedDF
         )
 
         sql(s"USE default")
 
         checkAnswer(
-          sql(s"SELECT $dbName.$functionName(value) from $testTableName"),
-          expectedDF
+            sql(s"SELECT $dbName.$functionName(value) from $testTableName"),
+            expectedDF
         )
 
         sql(s"USE $dbName")
@@ -182,14 +179,14 @@ class UDFSuite
 
         sql(s"USE $dbName")
 
-        assert(
-          sql("SHOW functions").collect()
-            .map(_.getString(0))
-            .contains(s"$dbName.$functionNameLower"))
+        assert(sql("SHOW functions")
+              .collect()
+              .map(_.getString(0))
+              .contains(s"$dbName.$functionNameLower"))
         checkAnswer(
-          sql(s"SELECT $functionNameLower(value) from $testTableName"),
-          expectedDF
-         )
+            sql(s"SELECT $functionNameLower(value) from $testTableName"),
+            expectedDF
+        )
 
         sql(s"USE default")
       }

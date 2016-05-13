@@ -164,7 +164,8 @@ object DecimalLiteral {
  * In order to do type checking, use Literal.create() instead of constructor
  */
 case class Literal protected (value: Any, dataType: DataType)
-  extends LeafExpression with CodegenFallback {
+    extends LeafExpression
+    with CodegenFallback {
 
   override def foldable: Boolean = true
   override def nullable: Boolean = value == null
@@ -176,7 +177,7 @@ case class Literal protected (value: Any, dataType: DataType)
   override def equals(other: Any): Boolean = other match {
     case o: Literal =>
       dataType.equals(o.dataType) &&
-        (value == null && null == o.value || value != null && value.equals(o.value))
+      (value == null && null == o.value || value != null && value.equals(o.value))
     case _ => false
   }
 
@@ -208,7 +209,7 @@ case class Literal protected (value: Any, dataType: DataType)
         case FloatType =>
           val v = value.asInstanceOf[Float]
           if (v.isNaN || v.isInfinite) {
-            super[CodegenFallback].doGenCode(ctx, ev)
+            super [CodegenFallback].doGenCode(ctx, ev)
           } else {
             ev.isNull = "false"
             ev.value = s"${value}f"
@@ -217,7 +218,7 @@ case class Literal protected (value: Any, dataType: DataType)
         case DoubleType =>
           val v = value.asInstanceOf[Double]
           if (v.isNaN || v.isInfinite) {
-            super[CodegenFallback].doGenCode(ctx, ev)
+            super [CodegenFallback].doGenCode(ctx, ev)
           } else {
             ev.isNull = "false"
             ev.value = s"${value}D"
@@ -237,7 +238,7 @@ case class Literal protected (value: Any, dataType: DataType)
           ev.copy("")
         // eval() version may be faster for non-primitive types
         case other =>
-          super[CodegenFallback].doGenCode(ctx, ev)
+          super [CodegenFallback].doGenCode(ctx, ev)
       }
     }
   }

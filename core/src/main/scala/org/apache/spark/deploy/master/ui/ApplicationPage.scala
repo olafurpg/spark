@@ -35,7 +35,8 @@ private[ui] class ApplicationPage(parent: MasterWebUI) extends WebUIPage("app") 
   def render(request: HttpServletRequest): Seq[Node] = {
     val appId = request.getParameter("appId")
     val state = master.askWithRetry[MasterStateResponse](RequestMasterState)
-    val app = state.activeApps.find(_.id == appId)
+    val app = state.activeApps
+      .find(_.id == appId)
       .getOrElse(state.completedApps.find(_.id == appId).orNull)
     if (app == null) {
       val msg = <div class="row-fluid">No running application with ID {appId}</div>
@@ -50,10 +51,10 @@ private[ui] class ApplicationPage(parent: MasterWebUI) extends WebUIPage("app") 
     }
     val removedExecutors = allExecutors.diff(executors)
     val executorsTable = UIUtils.listingTable(executorHeaders, executorRow, executors)
-    val removedExecutorsTable = UIUtils.listingTable(executorHeaders, executorRow, removedExecutors)
+    val removedExecutorsTable =
+      UIUtils.listingTable(executorHeaders, executorRow, removedExecutors)
 
-    val content =
-      <div class="row-fluid">
+    val content = <div class="row-fluid">
         <div class="span12">
           <ul class="unstyled">
             <li><strong>ID:</strong> {app.id}</li>

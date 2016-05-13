@@ -31,7 +31,9 @@ class ClassifierSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   test("extractLabeledPoints") {
     def getTestData(labels: Seq[Double]): DataFrame = {
-      val data = labels.map { label: Double => LabeledPoint(label, Vectors.dense(0.0)) }
+      val data = labels.map { label: Double =>
+        LabeledPoint(label, Vectors.dense(0.0))
+      }
       spark.createDataFrame(data)
     }
 
@@ -71,7 +73,9 @@ class ClassifierSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   test("getNumClasses") {
     def getTestData(labels: Seq[Double]): DataFrame = {
-      val data = labels.map { label: Double => LabeledPoint(label, Vectors.dense(0.0)) }
+      val data = labels.map { label: Double =>
+        LabeledPoint(label, Vectors.dense(0.0))
+      }
       spark.createDataFrame(data)
     }
 
@@ -105,12 +109,12 @@ object ClassifierSuite {
    * This excludes input columns to simplify some tests.
    */
   val allParamSettings: Map[String, Any] = Map(
-    "predictionCol" -> "myPrediction",
-    "rawPredictionCol" -> "myRawPrediction"
+      "predictionCol" -> "myPrediction",
+      "rawPredictionCol" -> "myRawPrediction"
   )
 
   class MockClassifier(override val uid: String)
-    extends Classifier[Vector, MockClassifier, MockClassificationModel] {
+      extends Classifier[Vector, MockClassifier, MockClassificationModel] {
 
     def this() = this(Identifiable.randomUID("mockclassifier"))
 
@@ -126,7 +130,7 @@ object ClassifierSuite {
   }
 
   class MockClassificationModel(override val uid: String)
-    extends ClassificationModel[Vector, MockClassificationModel] {
+      extends ClassificationModel[Vector, MockClassificationModel] {
 
     def this() = this(Identifiable.randomUID("mockclassificationmodel"))
 
@@ -136,5 +140,4 @@ object ClassifierSuite {
 
     override def numClasses: Int = throw new NotImplementedError()
   }
-
 }

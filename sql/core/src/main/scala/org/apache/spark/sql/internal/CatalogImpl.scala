@@ -30,7 +30,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
 import org.apache.spark.sql.execution.datasources.CreateTableUsing
 import org.apache.spark.sql.types.StructType
 
-
 /**
  * Internal implementation of the user-facing [[Catalog]].
  */
@@ -70,10 +69,9 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
   override def listDatabases(): Dataset[Database] = {
     val databases = sessionCatalog.listDatabases().map { dbName =>
       val metadata = sessionCatalog.getDatabaseMetadata(dbName)
-      new Database(
-        name = metadata.name,
-        description = metadata.description,
-        locationUri = metadata.locationUri)
+      new Database(name = metadata.name,
+                   description = metadata.description,
+                   locationUri = metadata.locationUri)
     }
     CatalogImpl.makeDataset(databases, sparkSession)
   }
@@ -96,12 +94,11 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
     val tables = sessionCatalog.listTables(dbName).map { tableIdent =>
       val isTemp = tableIdent.database.isEmpty
       val metadata = if (isTemp) None else Some(sessionCatalog.getTableMetadata(tableIdent))
-      new Table(
-        name = tableIdent.identifier,
-        database = metadata.flatMap(_.identifier.database).orNull,
-        description = metadata.flatMap(_.comment).orNull,
-        tableType = metadata.map(_.tableType.name).getOrElse("TEMPORARY"),
-        isTemporary = isTemp)
+      new Table(name = tableIdent.identifier,
+                database = metadata.flatMap(_.identifier.database).orNull,
+                description = metadata.flatMap(_.comment).orNull,
+                tableType = metadata.map(_.tableType.name).getOrElse("TEMPORARY"),
+                isTemporary = isTemp)
     }
     CatalogImpl.makeDataset(tables, sparkSession)
   }
@@ -123,11 +120,10 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
     requireDatabaseExists(dbName)
     val functions = sessionCatalog.listFunctions(dbName).map { funcIdent =>
       val metadata = sessionCatalog.lookupFunctionInfo(funcIdent)
-      new Function(
-        name = funcIdent.identifier,
-        description = null, // for now, this is always undefined
-        className = metadata.getClassName,
-        isTemporary = funcIdent.database.isEmpty)
+      new Function(name = funcIdent.identifier,
+                   description = null, // for now, this is always undefined
+                   className = metadata.getClassName,
+                   isTemporary = funcIdent.database.isEmpty)
     }
     CatalogImpl.makeDataset(functions, sparkSession)
   }
@@ -150,13 +146,12 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
     val partitionColumnNames = tableMetadata.partitionColumnNames.toSet
     val bucketColumnNames = tableMetadata.bucketColumnNames.toSet
     val columns = tableMetadata.schema.map { c =>
-      new Column(
-        name = c.name,
-        description = c.comment.orNull,
-        dataType = c.dataType,
-        nullable = c.nullable,
-        isPartition = partitionColumnNames.contains(c.name),
-        isBucket = bucketColumnNames.contains(c.name))
+      new Column(name = c.name,
+                 description = c.comment.orNull,
+                 dataType = c.dataType,
+                 nullable = c.nullable,
+                 isPartition = partitionColumnNames.contains(c.name),
+                 isBucket = bucketColumnNames.contains(c.name))
     }
     CatalogImpl.makeDataset(columns, sparkSession)
   }
@@ -198,9 +193,7 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
    */
   @Experimental
   override def createExternalTable(
-      tableName: String,
-      source: String,
-      options: java.util.Map[String, String]): DataFrame = {
+      tableName: String, source: String, options: java.util.Map[String, String]): DataFrame = {
     createExternalTable(tableName, source, options.asScala.toMap)
   }
 
@@ -215,21 +208,17 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
    */
   @Experimental
   override def createExternalTable(
-      tableName: String,
-      source: String,
-      options: Map[String, String]): DataFrame = {
+      tableName: String, source: String, options: Map[String, String]): DataFrame = {
     val tableIdent = sparkSession.sessionState.sqlParser.parseTableIdentifier(tableName)
-    val cmd =
-      CreateTableUsing(
-        tableIdent,
-        userSpecifiedSchema = None,
-        source,
-        temporary = false,
-        options = options,
-        partitionColumns = Array.empty[String],
-        bucketSpec = None,
-        allowExisting = false,
-        managedIfNoPath = false)
+    val cmd = CreateTableUsing(tableIdent,
+                               userSpecifiedSchema = None,
+                               source,
+                               temporary = false,
+                               options = options,
+                               partitionColumns = Array.empty[String],
+                               bucketSpec = None,
+                               allowExisting = false,
+                               managedIfNoPath = false)
     sparkSession.executePlan(cmd).toRdd
     sparkSession.table(tableIdent)
   }
@@ -243,11 +232,10 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
    * @since 2.0.0
    */
   @Experimental
-  override def createExternalTable(
-      tableName: String,
-      source: String,
-      schema: StructType,
-      options: java.util.Map[String, String]): DataFrame = {
+  override def createExternalTable(tableName: String,
+                                   source: String,
+                                   schema: StructType,
+                                   options: java.util.Map[String, String]): DataFrame = {
     createExternalTable(tableName, source, schema, options.asScala.toMap)
   }
 
@@ -261,23 +249,20 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
    * @since 2.0.0
    */
   @Experimental
-  override def createExternalTable(
-      tableName: String,
-      source: String,
-      schema: StructType,
-      options: Map[String, String]): DataFrame = {
+  override def createExternalTable(tableName: String,
+                                   source: String,
+                                   schema: StructType,
+                                   options: Map[String, String]): DataFrame = {
     val tableIdent = sparkSession.sessionState.sqlParser.parseTableIdentifier(tableName)
-    val cmd =
-      CreateTableUsing(
-        tableIdent,
-        userSpecifiedSchema = Some(schema),
-        source,
-        temporary = false,
-        options,
-        partitionColumns = Array.empty[String],
-        bucketSpec = None,
-        allowExisting = false,
-        managedIfNoPath = false)
+    val cmd = CreateTableUsing(tableIdent,
+                               userSpecifiedSchema = Some(schema),
+                               source,
+                               temporary = false,
+                               options,
+                               partitionColumns = Array.empty[String],
+                               bucketSpec = None,
+                               allowExisting = false,
+                               managedIfNoPath = false)
     sparkSession.executePlan(cmd).toRdd
     sparkSession.table(tableIdent)
   }
@@ -344,20 +329,16 @@ class CatalogImpl(sparkSession: SparkSession) extends Catalog {
   protected[sql] def isCached(qName: Dataset[_]): Boolean = {
     sparkSession.cacheManager.lookupCachedData(qName).nonEmpty
   }
-
 }
-
 
 private[sql] object CatalogImpl {
 
   def makeDataset[T <: DefinedByConstructorParams: TypeTag](
-      data: Seq[T],
-      sparkSession: SparkSession): Dataset[T] = {
+      data: Seq[T], sparkSession: SparkSession): Dataset[T] = {
     val enc = ExpressionEncoder[T]()
     val encoded = data.map(d => enc.toRow(d).copy())
     val plan = new LocalRelation(enc.schema.toAttributes, encoded)
     val queryExecution = sparkSession.executePlan(plan)
     new Dataset[T](sparkSession, queryExecution, enc)
   }
-
 }

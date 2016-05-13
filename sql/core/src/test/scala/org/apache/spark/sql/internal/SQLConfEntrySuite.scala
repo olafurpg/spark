@@ -116,10 +116,8 @@ class SQLConfEntrySuite extends SparkFunSuite {
 
   test("enumConf") {
     val key = "spark.sql.SQLConfEntrySuite.enum"
-    val confEntry = SQLConfigBuilder(key)
-      .stringConf
-      .checkValues(Set("a", "b", "c"))
-      .createWithDefault("a")
+    val confEntry =
+      SQLConfigBuilder(key).stringConf.checkValues(Set("a", "b", "c")).createWithDefault("a")
     assert(conf.getConf(confEntry) === "a")
 
     conf.setConf(confEntry, "b")
@@ -138,10 +136,7 @@ class SQLConfEntrySuite extends SparkFunSuite {
 
   test("stringSeqConf") {
     val key = "spark.sql.SQLConfEntrySuite.stringSeq"
-    val confEntry = SQLConfigBuilder(key)
-      .stringConf
-      .toSequence
-      .createWithDefault(Nil)
+    val confEntry = SQLConfigBuilder(key).stringConf.toSequence.createWithDefault(Nil)
     assert(conf.getConf(confEntry, Seq("a", "b", "c")) === Seq("a", "b", "c"))
 
     conf.setConf(confEntry, Seq("a", "b", "c", "d"))
@@ -155,9 +150,7 @@ class SQLConfEntrySuite extends SparkFunSuite {
 
   test("optionalConf") {
     val key = "spark.sql.SQLConfEntrySuite.optional"
-    val confEntry = SQLConfigBuilder(key)
-      .stringConf
-      .createOptional
+    val confEntry = SQLConfigBuilder(key).stringConf.createOptional
 
     assert(conf.getConf(confEntry) === None)
     conf.setConfString(key, "a")

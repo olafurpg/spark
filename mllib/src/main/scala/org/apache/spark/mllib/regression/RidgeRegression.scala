@@ -26,7 +26,6 @@ import org.apache.spark.mllib.regression.impl.GLMRegressionModel
 import org.apache.spark.mllib.util.{Loader, Saveable}
 import org.apache.spark.rdd.RDD
 
-
 /**
  * Regression model trained using RidgeRegression.
  *
@@ -35,16 +34,16 @@ import org.apache.spark.rdd.RDD
  *
  */
 @Since("0.8.0")
-class RidgeRegressionModel @Since("1.1.0") (
-    @Since("1.0.0") override val weights: Vector,
-    @Since("0.8.0") override val intercept: Double)
-  extends GeneralizedLinearModel(weights, intercept)
-  with RegressionModel with Serializable with Saveable with PMMLExportable {
+class RidgeRegressionModel @Since("1.1.0")(
+    @Since("1.0.0") override val weights: Vector, @Since("0.8.0") override val intercept: Double)
+    extends GeneralizedLinearModel(weights, intercept)
+    with RegressionModel
+    with Serializable
+    with Saveable
+    with PMMLExportable {
 
   override protected def predictPoint(
-      dataMatrix: Vector,
-      weightMatrix: Vector,
-      intercept: Double): Double = {
+      dataMatrix: Vector, weightMatrix: Vector, intercept: Double): Double = {
     weightMatrix.toBreeze.dot(dataMatrix.toBreeze) + intercept
   }
 
@@ -69,10 +68,10 @@ object RidgeRegressionModel extends Loader[RidgeRegressionModel] {
         val numFeatures = RegressionModel.getNumFeatures(metadata)
         val data = GLMRegressionModel.SaveLoadV1_0.loadData(sc, path, classNameV1_0, numFeatures)
         new RidgeRegressionModel(data.weights, data.intercept)
-      case _ => throw new Exception(
-        s"RidgeRegressionModel.load did not recognize model with (className, format version):" +
-        s"($loadedClassName, $version).  Supported:\n" +
-        s"  ($classNameV1_0, 1.0)")
+      case _ =>
+        throw new Exception(
+            s"RidgeRegressionModel.load did not recognize model with (className, format version):" +
+            s"($loadedClassName, $version).  Supported:\n" + s"  ($classNameV1_0, 1.0)")
     }
   }
 }
@@ -87,13 +86,14 @@ object RidgeRegressionModel extends Loader[RidgeRegressionModel] {
  */
 @Since("0.8.0")
 @deprecated("Use ml.regression.LinearRegression with elasticNetParam = 0.0. Note the default " +
-  "regParam is 0.01 for RidgeRegressionWithSGD, but is 0.0 for LinearRegression.", "2.0.0")
-class RidgeRegressionWithSGD private (
-    private var stepSize: Double,
-    private var numIterations: Int,
-    private var regParam: Double,
-    private var miniBatchFraction: Double)
-  extends GeneralizedLinearAlgorithm[RidgeRegressionModel] with Serializable {
+            "regParam is 0.01 for RidgeRegressionWithSGD, but is 0.0 for LinearRegression.",
+            "2.0.0")
+class RidgeRegressionWithSGD private (private var stepSize: Double,
+                                      private var numIterations: Int,
+                                      private var regParam: Double,
+                                      private var miniBatchFraction: Double)
+    extends GeneralizedLinearAlgorithm[RidgeRegressionModel]
+    with Serializable {
 
   private val gradient = new LeastSquaresGradient()
   private val updater = new SquaredL2Updater()
@@ -122,7 +122,8 @@ class RidgeRegressionWithSGD private (
  */
 @Since("0.8.0")
 @deprecated("Use ml.regression.LinearRegression with elasticNetParam = 0.0. Note the default " +
-  "regParam is 0.01 for RidgeRegressionWithSGD, but is 0.0 for LinearRegression.", "2.0.0")
+            "regParam is 0.01 for RidgeRegressionWithSGD, but is 0.0 for LinearRegression.",
+            "2.0.0")
 object RidgeRegressionWithSGD {
 
   /**
@@ -141,15 +142,14 @@ object RidgeRegressionWithSGD {
    *
    */
   @Since("1.0.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double,
-      regParam: Double,
-      miniBatchFraction: Double,
-      initialWeights: Vector): RidgeRegressionModel = {
-    new RidgeRegressionWithSGD(stepSize, numIterations, regParam, miniBatchFraction).run(
-      input, initialWeights)
+  def train(input: RDD[LabeledPoint],
+            numIterations: Int,
+            stepSize: Double,
+            regParam: Double,
+            miniBatchFraction: Double,
+            initialWeights: Vector): RidgeRegressionModel = {
+    new RidgeRegressionWithSGD(stepSize, numIterations, regParam, miniBatchFraction)
+      .run(input, initialWeights)
   }
 
   /**
@@ -165,12 +165,11 @@ object RidgeRegressionWithSGD {
    *
    */
   @Since("0.8.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double,
-      regParam: Double,
-      miniBatchFraction: Double): RidgeRegressionModel = {
+  def train(input: RDD[LabeledPoint],
+            numIterations: Int,
+            stepSize: Double,
+            regParam: Double,
+            miniBatchFraction: Double): RidgeRegressionModel = {
     new RidgeRegressionWithSGD(stepSize, numIterations, regParam, miniBatchFraction).run(input)
   }
 
@@ -187,11 +186,10 @@ object RidgeRegressionWithSGD {
    *
    */
   @Since("0.8.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double,
-      regParam: Double): RidgeRegressionModel = {
+  def train(input: RDD[LabeledPoint],
+            numIterations: Int,
+            stepSize: Double,
+            regParam: Double): RidgeRegressionModel = {
     train(input, numIterations, stepSize, regParam, 1.0)
   }
 
@@ -206,9 +204,7 @@ object RidgeRegressionWithSGD {
    *
    */
   @Since("0.8.0")
-  def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int): RidgeRegressionModel = {
+  def train(input: RDD[LabeledPoint], numIterations: Int): RidgeRegressionModel = {
     train(input, numIterations, 1.0, 0.01, 1.0)
   }
 }

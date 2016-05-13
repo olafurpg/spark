@@ -60,7 +60,6 @@ private[spark] abstract class EventLoop[E](name: String) extends Logging {
         case NonFatal(e) => logError("Unexpected error in " + name, e)
       }
     }
-
   }
 
   def start(): Unit = {
@@ -131,5 +130,4 @@ private[spark] abstract class EventLoop[E](name: String) extends Logging {
    * will be ignored.
    */
   protected def onError(e: Throwable): Unit
-
 }

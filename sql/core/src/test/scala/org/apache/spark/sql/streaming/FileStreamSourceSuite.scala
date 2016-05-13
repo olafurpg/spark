@@ -37,9 +37,8 @@ class FileStreamSourceTest extends StreamTest with SharedSQLContext {
    */
   abstract class AddFileData extends AddData {
     override def addData(query: Option[StreamExecution]): (Source, Offset) = {
-      require(
-        query.nonEmpty,
-        "Cannot add data when there is no query for finding the active file stream source")
+      require(query.nonEmpty,
+              "Cannot add data when there is no query for finding the active file stream source")
 
       val sources = query.get.logicalPlan.collect {
         case StreamingExecutionRelation(source, _) if source.isInstanceOf[FileStreamSource] =>
@@ -47,10 +46,10 @@ class FileStreamSourceTest extends StreamTest with SharedSQLContext {
       }
       if (sources.isEmpty) {
         throw new Exception(
-          "Could not find file source in the StreamExecution logical plan to add data to")
+            "Could not find file source in the StreamExecution logical plan to add data to")
       } else if (sources.size > 1) {
         throw new Exception(
-          "Could not select the file source in the StreamExecution logical plan as there" +
+            "Could not select the file source in the StreamExecution logical plan as there" +
             "are multiple file sources:\n\t" + sources.mkString("\n\t"))
       }
       val source = sources.head
@@ -65,8 +64,7 @@ class FileStreamSourceTest extends StreamTest with SharedSQLContext {
     protected def addData(source: FileStreamSource): Unit
   }
 
-  case class AddTextFileData(content: String, src: File, tmp: File)
-    extends AddFileData {
+  case class AddTextFileData(content: String, src: File, tmp: File) extends AddFileData {
 
     override def addData(source: FileStreamSource): Unit = {
       val tempFile = Utils.tempFileWith(new File(tmp, "text"))
@@ -101,9 +99,7 @@ class FileStreamSourceTest extends StreamTest with SharedSQLContext {
 
   /** Use `format` and `path` to create FileStreamSource via DataFrameReader */
   def createFileStream(
-      format: String,
-      path: String,
-      schema: Option[StructType] = None): DataFrame = {
+      format: String, path: String, schema: Option[StructType] = None): DataFrame = {
     val reader =
       if (schema.isDefined) {
         spark.read.format(format).schema(schema.get)
@@ -114,12 +110,13 @@ class FileStreamSourceTest extends StreamTest with SharedSQLContext {
   }
 
   protected def getSourceFromFileStream(df: DataFrame): FileStreamSource = {
-    val checkpointLocation = Utils.createTempDir(namePrefix = "streaming.metadata").getCanonicalPath
-    df.queryExecution.analyzed
-      .collect { case StreamingRelation(dataSource, _, _) =>
+    val checkpointLocation =
+      Utils.createTempDir(namePrefix = "streaming.metadata").getCanonicalPath
+    df.queryExecution.analyzed.collect {
+      case StreamingRelation(dataSource, _, _) =>
         // There is only one source in our tests so just set sourceId to 0
         dataSource.createSource(s"$checkpointLocation/sources/0").asInstanceOf[FileStreamSource]
-      }.head
+    }.head
   }
 
   protected def withTempDirs(body: (File, File) => Unit) {
@@ -142,16 +139,13 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
 
   /** Use `format` and `path` to create FileStreamSource via DataFrameReader */
   private def createFileStreamSource(
-      format: String,
-      path: String,
-      schema: Option[StructType] = None): FileStreamSource = {
+      format: String, path: String, schema: Option[StructType] = None): FileStreamSource = {
     getSourceFromFileStream(createFileStream(format, path, schema))
   }
 
-  private def createFileStreamSourceAndGetSchema(
-      format: Option[String],
-      path: Option[String],
-      schema: Option[StructType] = None): StructType = {
+  private def createFileStreamSourceAndGetSchema(format: Option[String],
+                                                 path: Option[String],
+                                                 schema: Option[StructType] = None): StructType = {
     val reader = spark.read
     format.foreach(reader.format)
     schema.foreach(reader.schema)
@@ -161,8 +155,7 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
       } else {
         reader.stream()
       }
-    df.queryExecution.analyzed
-      .collect { case s @ StreamingRelation(dataSource, _, _) => s.schema }.head
+    df.queryExecution.analyzed.collect { case s @ StreamingRelation(dataSource, _, _) => s.schema }.head
   }
 
   test("FileStreamSource schema: no path") {
@@ -181,7 +174,7 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
   test("FileStreamSource schema: text, no existing files, no schema") {
     withTempDir { src =>
       val schema = createFileStreamSourceAndGetSchema(
-        format = Some("text"), path = Some(src.getCanonicalPath), schema = None)
+          format = Some("text"), path = Some(src.getCanonicalPath), schema = None)
       assert(schema === new StructType().add("value", StringType))
     }
   }
@@ -190,7 +183,7 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
     withTempDir { src =>
       stringToFile(new File(src, "1"), "a\nb\nc")
       val schema = createFileStreamSourceAndGetSchema(
-        format = Some("text"), path = Some(src.getCanonicalPath), schema = None)
+          format = Some("text"), path = Some(src.getCanonicalPath), schema = None)
       assert(schema === new StructType().add("value", StringType))
     }
   }
@@ -200,7 +193,7 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
       stringToFile(new File(src, "1"), "a\nb\nc")
       val userSchema = new StructType().add("userColumn", StringType)
       val schema = createFileStreamSourceAndGetSchema(
-        format = Some("text"), path = Some(src.getCanonicalPath), schema = Some(userSchema))
+          format = Some("text"), path = Some(src.getCanonicalPath), schema = Some(userSchema))
       assert(schema === userSchema)
     }
   }
@@ -208,8 +201,9 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
   test("FileStreamSource schema: parquet, no existing files, no schema") {
     withTempDir { src =>
       val e = intercept[AnalysisException] {
-        createFileStreamSourceAndGetSchema(
-          format = Some("parquet"), path = Some(new File(src, "1").getCanonicalPath), schema = None)
+        createFileStreamSourceAndGetSchema(format = Some("parquet"),
+                                           path = Some(new File(src, "1").getCanonicalPath),
+                                           schema = None)
       }
       assert("Unable to infer schema. It must be specified manually.;" === e.getMessage)
     }
@@ -217,22 +211,30 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
 
   test("FileStreamSource schema: parquet, existing files, no schema") {
     withTempDir { src =>
-      Seq("a", "b", "c").toDS().as("userColumn").toDF().write
+      Seq("a", "b", "c")
+        .toDS()
+        .as("userColumn")
+        .toDF()
+        .write
         .mode(org.apache.spark.sql.SaveMode.Overwrite)
         .parquet(src.getCanonicalPath)
       val schema = createFileStreamSourceAndGetSchema(
-        format = Some("parquet"), path = Some(src.getCanonicalPath), schema = None)
+          format = Some("parquet"), path = Some(src.getCanonicalPath), schema = None)
       assert(schema === new StructType().add("value", StringType))
     }
   }
 
   test("FileStreamSource schema: parquet, existing files, schema") {
     withTempPath { src =>
-      Seq("a", "b", "c").toDS().as("oldUserColumn").toDF()
-        .write.parquet(new File(src, "1").getCanonicalPath)
+      Seq("a", "b", "c")
+        .toDS()
+        .as("oldUserColumn")
+        .toDF()
+        .write
+        .parquet(new File(src, "1").getCanonicalPath)
       val userSchema = new StructType().add("userColumn", StringType)
       val schema = createFileStreamSourceAndGetSchema(
-        format = Some("parquet"), path = Some(src.getCanonicalPath), schema = Some(userSchema))
+          format = Some("parquet"), path = Some(src.getCanonicalPath), schema = Some(userSchema))
       assert(schema === userSchema)
     }
   }
@@ -240,8 +242,9 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
   test("FileStreamSource schema: json, no existing files, no schema") {
     withTempDir { src =>
       val e = intercept[AnalysisException] {
-        createFileStreamSourceAndGetSchema(
-          format = Some("json"), path = Some(src.getCanonicalPath), schema = None)
+        createFileStreamSourceAndGetSchema(format = Some("json"),
+                                           path = Some(src.getCanonicalPath),
+                                           schema = None)
       }
       assert("Unable to infer schema. It must be specified manually.;" === e.getMessage)
     }
@@ -251,7 +254,7 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
     withTempDir { src =>
       stringToFile(new File(src, "1"), "{'c': '1'}\n{'c': '2'}\n{'c': '3'}")
       val schema = createFileStreamSourceAndGetSchema(
-        format = Some("json"), path = Some(src.getCanonicalPath), schema = None)
+          format = Some("json"), path = Some(src.getCanonicalPath), schema = None)
       assert(schema === new StructType().add("c", StringType))
     }
   }
@@ -261,172 +264,167 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
       stringToFile(new File(src, "1"), "{'c': '1'}\n{'c': '2'}\n{'c', '3'}")
       val userSchema = new StructType().add("userColumn", StringType)
       val schema = createFileStreamSourceAndGetSchema(
-        format = Some("json"), path = Some(src.getCanonicalPath), schema = Some(userSchema))
+          format = Some("json"), path = Some(src.getCanonicalPath), schema = Some(userSchema))
       assert(schema === userSchema)
     }
   }
 
   test("read from text files") {
-    withTempDirs { case (src, tmp) =>
-      val textStream = createFileStream("text", src.getCanonicalPath)
-      val filtered = textStream.filter($"value" contains "keep")
+    withTempDirs {
+      case (src, tmp) =>
+        val textStream = createFileStream("text", src.getCanonicalPath)
+        val filtered = textStream.filter($"value" contains "keep")
 
-      testStream(filtered)(
-        AddTextFileData("drop1\nkeep2\nkeep3", src, tmp),
-        CheckAnswer("keep2", "keep3"),
-        StopStream,
-        AddTextFileData("drop4\nkeep5\nkeep6", src, tmp),
-        StartStream(),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6"),
-        AddTextFileData("drop7\nkeep8\nkeep9", src, tmp),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6", "keep8", "keep9")
-      )
+        testStream(filtered)(
+            AddTextFileData("drop1\nkeep2\nkeep3", src, tmp),
+            CheckAnswer("keep2", "keep3"),
+            StopStream,
+            AddTextFileData("drop4\nkeep5\nkeep6", src, tmp),
+            StartStream(),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6"),
+            AddTextFileData("drop7\nkeep8\nkeep9", src, tmp),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6", "keep8", "keep9")
+        )
     }
   }
 
   test("read from json files") {
-    withTempDirs { case (src, tmp) =>
-      val fileStream = createFileStream("json", src.getCanonicalPath, Some(valueSchema))
-      val filtered = fileStream.filter($"value" contains "keep")
+    withTempDirs {
+      case (src, tmp) =>
+        val fileStream = createFileStream("json", src.getCanonicalPath, Some(valueSchema))
+        val filtered = fileStream.filter($"value" contains "keep")
 
-      testStream(filtered)(
-        AddTextFileData(
-          "{'value': 'drop1'}\n{'value': 'keep2'}\n{'value': 'keep3'}",
-          src,
-          tmp),
-        CheckAnswer("keep2", "keep3"),
-        StopStream,
-        AddTextFileData(
-          "{'value': 'drop4'}\n{'value': 'keep5'}\n{'value': 'keep6'}",
-          src,
-          tmp),
-        StartStream(),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6"),
-        AddTextFileData(
-          "{'value': 'drop7'}\n{'value': 'keep8'}\n{'value': 'keep9'}",
-          src,
-          tmp),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6", "keep8", "keep9")
-      )
+        testStream(filtered)(
+            AddTextFileData(
+                "{'value': 'drop1'}\n{'value': 'keep2'}\n{'value': 'keep3'}", src, tmp),
+            CheckAnswer("keep2", "keep3"),
+            StopStream,
+            AddTextFileData(
+                "{'value': 'drop4'}\n{'value': 'keep5'}\n{'value': 'keep6'}", src, tmp),
+            StartStream(),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6"),
+            AddTextFileData(
+                "{'value': 'drop7'}\n{'value': 'keep8'}\n{'value': 'keep9'}", src, tmp),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6", "keep8", "keep9")
+        )
     }
   }
 
   test("read from json files with inferring schema") {
-    withTempDirs { case (src, tmp) =>
+    withTempDirs {
+      case (src, tmp) =>
+        // Add a file so that we can infer its schema
+        stringToFile(new File(src, "existing"), "{'c': 'drop1'}\n{'c': 'keep2'}\n{'c': 'keep3'}")
 
-      // Add a file so that we can infer its schema
-      stringToFile(new File(src, "existing"), "{'c': 'drop1'}\n{'c': 'keep2'}\n{'c': 'keep3'}")
+        val fileStream = createFileStream("json", src.getCanonicalPath)
+        assert(fileStream.schema === StructType(Seq(StructField("c", StringType))))
 
-      val fileStream = createFileStream("json", src.getCanonicalPath)
-      assert(fileStream.schema === StructType(Seq(StructField("c", StringType))))
+        // FileStreamSource should infer the column "c"
+        val filtered = fileStream.filter($"c" contains "keep")
 
-      // FileStreamSource should infer the column "c"
-      val filtered = fileStream.filter($"c" contains "keep")
-
-      testStream(filtered)(
-        AddTextFileData("{'c': 'drop4'}\n{'c': 'keep5'}\n{'c': 'keep6'}", src, tmp),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6")
-      )
+        testStream(filtered)(
+            AddTextFileData("{'c': 'drop4'}\n{'c': 'keep5'}\n{'c': 'keep6'}", src, tmp),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6")
+        )
     }
   }
 
   test("reading from json files inside partitioned directory") {
-    withTempDirs { case (baseSrc, tmp) =>
-      val src = new File(baseSrc, "type=X")
-      src.mkdirs()
+    withTempDirs {
+      case (baseSrc, tmp) =>
+        val src = new File(baseSrc, "type=X")
+        src.mkdirs()
 
-      // Add a file so that we can infer its schema
-      stringToFile(new File(src, "existing"), "{'c': 'drop1'}\n{'c': 'keep2'}\n{'c': 'keep3'}")
+        // Add a file so that we can infer its schema
+        stringToFile(new File(src, "existing"), "{'c': 'drop1'}\n{'c': 'keep2'}\n{'c': 'keep3'}")
 
-      val fileStream = createFileStream("json", src.getCanonicalPath)
+        val fileStream = createFileStream("json", src.getCanonicalPath)
 
-      // FileStreamSource should infer the column "c"
-      val filtered = fileStream.filter($"c" contains "keep")
+        // FileStreamSource should infer the column "c"
+        val filtered = fileStream.filter($"c" contains "keep")
 
-      testStream(filtered)(
-        AddTextFileData("{'c': 'drop4'}\n{'c': 'keep5'}\n{'c': 'keep6'}", src, tmp),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6")
-      )
+        testStream(filtered)(
+            AddTextFileData("{'c': 'drop4'}\n{'c': 'keep5'}\n{'c': 'keep6'}", src, tmp),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6")
+        )
     }
   }
 
   test("reading from json files with changing schema") {
-    withTempDirs { case (src, tmp) =>
+    withTempDirs {
+      case (src, tmp) =>
+        // Add a file so that we can infer its schema
+        stringToFile(new File(src, "existing"), "{'k': 'value0'}")
 
-      // Add a file so that we can infer its schema
-      stringToFile(new File(src, "existing"), "{'k': 'value0'}")
+        val fileStream = createFileStream("json", src.getCanonicalPath)
 
-      val fileStream = createFileStream("json", src.getCanonicalPath)
+        // FileStreamSource should infer the column "k"
+        assert(fileStream.schema === StructType(Seq(StructField("k", StringType))))
 
-      // FileStreamSource should infer the column "k"
-      assert(fileStream.schema === StructType(Seq(StructField("k", StringType))))
+        // After creating DF and before starting stream, add data with different schema
+        // Should not affect the inferred schema any more
+        stringToFile(new File(src, "existing2"), "{'k': 'value1', 'v': 'new'}")
 
-      // After creating DF and before starting stream, add data with different schema
-      // Should not affect the inferred schema any more
-      stringToFile(new File(src, "existing2"), "{'k': 'value1', 'v': 'new'}")
+        testStream(fileStream)(
 
-      testStream(fileStream)(
-
-        // Should not pick up column v in the file added before start
-        AddTextFileData("{'k': 'value2'}", src, tmp),
-        CheckAnswer("value0", "value1", "value2"),
-
-        // Should read data in column k, and ignore v
-        AddTextFileData("{'k': 'value3', 'v': 'new'}", src, tmp),
-        CheckAnswer("value0", "value1", "value2", "value3"),
-
-        // Should ignore rows that do not have the necessary k column
-        AddTextFileData("{'v': 'value4'}", src, tmp),
-        CheckAnswer("value0", "value1", "value2", "value3", null))
+                               // Should not pick up column v in the file added before start
+                               AddTextFileData("{'k': 'value2'}", src, tmp),
+                               CheckAnswer("value0", "value1", "value2"),
+                               // Should read data in column k, and ignore v
+                               AddTextFileData("{'k': 'value3', 'v': 'new'}", src, tmp),
+                               CheckAnswer("value0", "value1", "value2", "value3"),
+                               // Should ignore rows that do not have the necessary k column
+                               AddTextFileData("{'v': 'value4'}", src, tmp),
+                               CheckAnswer("value0", "value1", "value2", "value3", null))
     }
   }
 
   test("read from parquet files") {
-    withTempDirs { case (src, tmp) =>
-      val fileStream = createFileStream("parquet", src.getCanonicalPath, Some(valueSchema))
-      val filtered = fileStream.filter($"value" contains "keep")
+    withTempDirs {
+      case (src, tmp) =>
+        val fileStream = createFileStream("parquet", src.getCanonicalPath, Some(valueSchema))
+        val filtered = fileStream.filter($"value" contains "keep")
 
-      testStream(filtered)(
-        AddParquetFileData(Seq("drop1", "keep2", "keep3"), src, tmp),
-        CheckAnswer("keep2", "keep3"),
-        StopStream,
-        AddParquetFileData(Seq("drop4", "keep5", "keep6"), src, tmp),
-        StartStream(),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6"),
-        AddParquetFileData(Seq("drop7", "keep8", "keep9"), src, tmp),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6", "keep8", "keep9")
-      )
+        testStream(filtered)(
+            AddParquetFileData(Seq("drop1", "keep2", "keep3"), src, tmp),
+            CheckAnswer("keep2", "keep3"),
+            StopStream,
+            AddParquetFileData(Seq("drop4", "keep5", "keep6"), src, tmp),
+            StartStream(),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6"),
+            AddParquetFileData(Seq("drop7", "keep8", "keep9"), src, tmp),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6", "keep8", "keep9")
+        )
     }
   }
 
   test("read from parquet files with changing schema") {
 
-    withTempDirs { case (src, tmp) =>
-      // Add a file so that we can infer its schema
-      AddParquetFileData.writeToFile(Seq("value0").toDF("k"), src, tmp)
+    withTempDirs {
+      case (src, tmp) =>
+        // Add a file so that we can infer its schema
+        AddParquetFileData.writeToFile(Seq("value0").toDF("k"), src, tmp)
 
-      val fileStream = createFileStream("parquet", src.getCanonicalPath)
+        val fileStream = createFileStream("parquet", src.getCanonicalPath)
 
-      // FileStreamSource should infer the column "k"
-      assert(fileStream.schema === StructType(Seq(StructField("k", StringType))))
+        // FileStreamSource should infer the column "k"
+        assert(fileStream.schema === StructType(Seq(StructField("k", StringType))))
 
-      // After creating DF and before starting stream, add data with different schema
-      // Should not affect the inferred schema any more
-      AddParquetFileData.writeToFile(Seq(("value1", 0)).toDF("k", "v"), src, tmp)
+        // After creating DF and before starting stream, add data with different schema
+        // Should not affect the inferred schema any more
+        AddParquetFileData.writeToFile(Seq(("value1", 0)).toDF("k", "v"), src, tmp)
 
-      testStream(fileStream)(
-        // Should not pick up column v in the file added before start
-        AddParquetFileData(Seq("value2").toDF("k"), src, tmp),
-        CheckAnswer("value0", "value1", "value2"),
-
-        // Should read data in column k, and ignore v
-        AddParquetFileData(Seq(("value3", 1)).toDF("k", "v"), src, tmp),
-        CheckAnswer("value0", "value1", "value2", "value3"),
-
-        // Should ignore rows that do not have the necessary k column
-        AddParquetFileData(Seq("value5").toDF("v"), src, tmp),
-        CheckAnswer("value0", "value1", "value2", "value3", null)
-      )
+        testStream(fileStream)(
+            // Should not pick up column v in the file added before start
+            AddParquetFileData(Seq("value2").toDF("k"), src, tmp),
+            CheckAnswer("value0", "value1", "value2"),
+            // Should read data in column k, and ignore v
+            AddParquetFileData(Seq(("value3", 1)).toDF("k", "v"), src, tmp),
+            CheckAnswer("value0", "value1", "value2", "value3"),
+            // Should ignore rows that do not have the necessary k column
+            AddParquetFileData(Seq("value5").toDF("v"), src, tmp),
+            CheckAnswer("value0", "value1", "value2", "value3", null)
+        )
     }
   }
 
@@ -446,93 +444,89 @@ class FileStreamSourceSuite extends FileStreamSourceTest with SharedSQLContext {
   }
 
   test("read new files in nested directories with globbing") {
-    withTempDirs { case (dir, tmp) =>
+    withTempDirs {
+      case (dir, tmp) =>
+        // src/*/* should consider all the files and directories that matches that glob.
+        // So any files that matches the glob as well as any files in directories that matches
+        // this glob should be read.
+        val fileStream = createFileStream("text", s"${dir.getCanonicalPath}/*/*")
+        val filtered = fileStream.filter($"value" contains "keep")
+        val subDir = new File(dir, "subdir")
+        val subSubDir = new File(subDir, "subsubdir")
+        val subSubSubDir = new File(subSubDir, "subsubsubdir")
 
-      // src/*/* should consider all the files and directories that matches that glob.
-      // So any files that matches the glob as well as any files in directories that matches
-      // this glob should be read.
-      val fileStream = createFileStream("text", s"${dir.getCanonicalPath}/*/*")
-      val filtered = fileStream.filter($"value" contains "keep")
-      val subDir = new File(dir, "subdir")
-      val subSubDir = new File(subDir, "subsubdir")
-      val subSubSubDir = new File(subSubDir, "subsubsubdir")
+        require(!subDir.exists())
+        require(!subSubDir.exists())
 
-      require(!subDir.exists())
-      require(!subSubDir.exists())
-
-      testStream(filtered)(
-        // Create new dir/subdir and write to it, should read
-        AddTextFileData("drop1\nkeep2", subDir, tmp),
-        CheckAnswer("keep2"),
-
-        // Add files to dir/subdir, should read
-        AddTextFileData("keep3", subDir, tmp),
-        CheckAnswer("keep2", "keep3"),
-
-        // Create new dir/subdir/subsubdir and write to it, should read
-        AddTextFileData("keep4", subSubDir, tmp),
-        CheckAnswer("keep2", "keep3", "keep4"),
-
-        // Add files to dir/subdir/subsubdir, should read
-        AddTextFileData("keep5", subSubDir, tmp),
-        CheckAnswer("keep2", "keep3", "keep4", "keep5"),
-
-        // 1. Add file to src dir, should not read as globbing src/*/* does not capture files in
-        //    dir, only captures files in dir/subdir/
-        // 2. Add files to dir/subDir/subsubdir/subsubsubdir, should not read as src/*/* should
-        //    not capture those files
-        AddTextFileData("keep6", dir, tmp),
-        AddTextFileData("keep7", subSubSubDir, tmp),
-        AddTextFileData("keep8", subDir, tmp), // needed to make query detect new data
-        CheckAnswer("keep2", "keep3", "keep4", "keep5", "keep8")
-      )
+        testStream(filtered)(
+            // Create new dir/subdir and write to it, should read
+            AddTextFileData("drop1\nkeep2", subDir, tmp),
+            CheckAnswer("keep2"),
+            // Add files to dir/subdir, should read
+            AddTextFileData("keep3", subDir, tmp),
+            CheckAnswer("keep2", "keep3"),
+            // Create new dir/subdir/subsubdir and write to it, should read
+            AddTextFileData("keep4", subSubDir, tmp),
+            CheckAnswer("keep2", "keep3", "keep4"),
+            // Add files to dir/subdir/subsubdir, should read
+            AddTextFileData("keep5", subSubDir, tmp),
+            CheckAnswer("keep2", "keep3", "keep4", "keep5"),
+            // 1. Add file to src dir, should not read as globbing src/*/* does not capture files in
+            //    dir, only captures files in dir/subdir/
+            // 2. Add files to dir/subDir/subsubdir/subsubsubdir, should not read as src/*/* should
+            //    not capture those files
+            AddTextFileData("keep6", dir, tmp),
+            AddTextFileData("keep7", subSubSubDir, tmp),
+            AddTextFileData("keep8", subDir, tmp), // needed to make query detect new data
+            CheckAnswer("keep2", "keep3", "keep4", "keep5", "keep8")
+        )
     }
   }
 
   test("read new files in partitioned table with globbing, should not read partition data") {
-    withTempDirs { case (dir, tmp) =>
-      val partitionFooSubDir = new File(dir, "partition=foo")
-      val partitionBarSubDir = new File(dir, "partition=bar")
+    withTempDirs {
+      case (dir, tmp) =>
+        val partitionFooSubDir = new File(dir, "partition=foo")
+        val partitionBarSubDir = new File(dir, "partition=bar")
 
-      val schema = new StructType().add("value", StringType).add("partition", StringType)
-      val fileStream = createFileStream("json", s"${dir.getCanonicalPath}/*/*", Some(schema))
-      val filtered = fileStream.filter($"value" contains "keep")
-      val nullStr = null.asInstanceOf[String]
-      testStream(filtered)(
-        // Create new partition=foo sub dir and write to it, should read only value, not partition
-        AddTextFileData("{'value': 'drop1'}\n{'value': 'keep2'}", partitionFooSubDir, tmp),
-        CheckAnswer(("keep2", nullStr)),
-
-        // Append to same partition=1 sub dir, should read only value, not partition
-        AddTextFileData("{'value': 'keep3'}", partitionFooSubDir, tmp),
-        CheckAnswer(("keep2", nullStr), ("keep3", nullStr)),
-
-        // Create new partition sub dir and write to it, should read only value, not partition
-        AddTextFileData("{'value': 'keep4'}", partitionBarSubDir, tmp),
-        CheckAnswer(("keep2", nullStr), ("keep3", nullStr), ("keep4", nullStr)),
-
-        // Append to same partition=2 sub dir, should read only value, not partition
-        AddTextFileData("{'value': 'keep5'}", partitionBarSubDir, tmp),
-        CheckAnswer(("keep2", nullStr), ("keep3", nullStr), ("keep4", nullStr), ("keep5", nullStr))
-      )
+        val schema = new StructType().add("value", StringType).add("partition", StringType)
+        val fileStream = createFileStream("json", s"${dir.getCanonicalPath}/*/*", Some(schema))
+        val filtered = fileStream.filter($"value" contains "keep")
+        val nullStr = null.asInstanceOf[String]
+        testStream(filtered)(
+            // Create new partition=foo sub dir and write to it, should read only value, not partition
+            AddTextFileData("{'value': 'drop1'}\n{'value': 'keep2'}", partitionFooSubDir, tmp),
+            CheckAnswer(("keep2", nullStr)),
+            // Append to same partition=1 sub dir, should read only value, not partition
+            AddTextFileData("{'value': 'keep3'}", partitionFooSubDir, tmp),
+            CheckAnswer(("keep2", nullStr), ("keep3", nullStr)),
+            // Create new partition sub dir and write to it, should read only value, not partition
+            AddTextFileData("{'value': 'keep4'}", partitionBarSubDir, tmp),
+            CheckAnswer(("keep2", nullStr), ("keep3", nullStr), ("keep4", nullStr)),
+            // Append to same partition=2 sub dir, should read only value, not partition
+            AddTextFileData("{'value': 'keep5'}", partitionBarSubDir, tmp),
+            CheckAnswer(
+                ("keep2", nullStr), ("keep3", nullStr), ("keep4", nullStr), ("keep5", nullStr))
+        )
     }
   }
 
   test("fault tolerance") {
-    withTempDirs { case (src, tmp) =>
-      val fileStream = createFileStream("text", src.getCanonicalPath)
-      val filtered = fileStream.filter($"value" contains "keep")
+    withTempDirs {
+      case (src, tmp) =>
+        val fileStream = createFileStream("text", src.getCanonicalPath)
+        val filtered = fileStream.filter($"value" contains "keep")
 
-      testStream(filtered)(
-        AddTextFileData("drop1\nkeep2\nkeep3", src, tmp),
-        CheckAnswer("keep2", "keep3"),
-        StopStream,
-        AddTextFileData("drop4\nkeep5\nkeep6", src, tmp),
-        StartStream(),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6"),
-        AddTextFileData("drop7\nkeep8\nkeep9", src, tmp),
-        CheckAnswer("keep2", "keep3", "keep5", "keep6", "keep8", "keep9")
-      )
+        testStream(filtered)(
+            AddTextFileData("drop1\nkeep2\nkeep3", src, tmp),
+            CheckAnswer("keep2", "keep3"),
+            StopStream,
+            AddTextFileData("drop4\nkeep5\nkeep6", src, tmp),
+            StartStream(),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6"),
+            AddTextFileData("drop7\nkeep8\nkeep9", src, tmp),
+            CheckAnswer("keep2", "keep3", "keep5", "keep6", "keep8", "keep9")
+        )
     }
   }
 }

@@ -48,9 +48,8 @@ private[spark] trait ExternalClusterManager {
    * @param scheduler TaskScheduler that will be used with the scheduler backend.
    * @return SchedulerBackend that works with a TaskScheduler
    */
-  def createSchedulerBackend(sc: SparkContext,
-      masterURL: String,
-      scheduler: TaskScheduler): SchedulerBackend
+  def createSchedulerBackend(
+      sc: SparkContext, masterURL: String, scheduler: TaskScheduler): SchedulerBackend
 
   /**
    * Initialize task scheduler and backend scheduler. This is called after the

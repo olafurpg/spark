@@ -19,7 +19,6 @@ package org.apache.spark.sql.catalyst.catalog
 
 import org.apache.spark.sql.catalyst.analysis.NoSuchDatabaseException
 
-
 /**
  * Interface for the system catalog (of columns, partitions, tables, and databases).
  *
@@ -94,48 +93,43 @@ abstract class ExternalCatalog {
 
   def listTables(db: String, pattern: String): Seq[String]
 
-  def loadTable(
-      db: String,
-      table: String,
-      loadPath: String,
-      isOverwrite: Boolean,
-      holdDDLTime: Boolean): Unit
+  def loadTable(db: String,
+                table: String,
+                loadPath: String,
+                isOverwrite: Boolean,
+                holdDDLTime: Boolean): Unit
 
-  def loadPartition(
-      db: String,
-      table: String,
-      loadPath: String,
-      partition: TablePartitionSpec,
-      isOverwrite: Boolean,
-      holdDDLTime: Boolean,
-      inheritTableSpecs: Boolean,
-      isSkewedStoreAsSubdir: Boolean): Unit
+  def loadPartition(db: String,
+                    table: String,
+                    loadPath: String,
+                    partition: TablePartitionSpec,
+                    isOverwrite: Boolean,
+                    holdDDLTime: Boolean,
+                    inheritTableSpecs: Boolean,
+                    isSkewedStoreAsSubdir: Boolean): Unit
 
   // --------------------------------------------------------------------------
   // Partitions
   // --------------------------------------------------------------------------
 
-  def createPartitions(
-      db: String,
-      table: String,
-      parts: Seq[CatalogTablePartition],
-      ignoreIfExists: Boolean): Unit
+  def createPartitions(db: String,
+                       table: String,
+                       parts: Seq[CatalogTablePartition],
+                       ignoreIfExists: Boolean): Unit
 
-  def dropPartitions(
-      db: String,
-      table: String,
-      parts: Seq[TablePartitionSpec],
-      ignoreIfNotExists: Boolean): Unit
+  def dropPartitions(db: String,
+                     table: String,
+                     parts: Seq[TablePartitionSpec],
+                     ignoreIfNotExists: Boolean): Unit
 
   /**
    * Override the specs of one or many existing table partitions, assuming they exist.
    * This assumes index i of `specs` corresponds to index i of `newSpecs`.
    */
-  def renamePartitions(
-      db: String,
-      table: String,
-      specs: Seq[TablePartitionSpec],
-      newSpecs: Seq[TablePartitionSpec]): Unit
+  def renamePartitions(db: String,
+                       table: String,
+                       specs: Seq[TablePartitionSpec],
+                       newSpecs: Seq[TablePartitionSpec]): Unit
 
   /**
    * Alter one or many table partitions whose specs that match those specified in `parts`,
@@ -144,10 +138,7 @@ abstract class ExternalCatalog {
    * Note: If the underlying implementation does not support altering a certain field,
    * this becomes a no-op.
    */
-  def alterPartitions(
-      db: String,
-      table: String,
-      parts: Seq[CatalogTablePartition]): Unit
+  def alterPartitions(db: String, table: String, parts: Seq[CatalogTablePartition]): Unit
 
   def getPartition(db: String, table: String, spec: TablePartitionSpec): CatalogTablePartition
 
@@ -161,10 +152,9 @@ abstract class ExternalCatalog {
    * @param table table name
    * @param partialSpec  partition spec
    */
-  def listPartitions(
-      db: String,
-      table: String,
-      partialSpec: Option[TablePartitionSpec] = None): Seq[CatalogTablePartition]
+  def listPartitions(db: String,
+                     table: String,
+                     partialSpec: Option[TablePartitionSpec] = None): Seq[CatalogTablePartition]
 
   // --------------------------------------------------------------------------
   // Functions
@@ -181,5 +171,4 @@ abstract class ExternalCatalog {
   def functionExists(db: String, funcName: String): Boolean
 
   def listFunctions(db: String, pattern: String): Seq[String]
-
 }

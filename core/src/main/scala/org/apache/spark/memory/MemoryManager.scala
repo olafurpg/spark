@@ -34,11 +34,11 @@ import org.apache.spark.unsafe.memory.MemoryAllocator
  * sorts and aggregations, while storage memory refers to that used for caching and propagating
  * internal data across the cluster. There exists one MemoryManager per JVM.
  */
-private[spark] abstract class MemoryManager(
-    conf: SparkConf,
-    numCores: Int,
-    onHeapStorageMemory: Long,
-    onHeapExecutionMemory: Long) extends Logging {
+private[spark] abstract class MemoryManager(conf: SparkConf,
+                                            numCores: Int,
+                                            onHeapStorageMemory: Long,
+                                            onHeapExecutionMemory: Long)
+    extends Logging {
 
   // -- Methods related to memory allocation policies and bookkeeping ------------------------------
 
@@ -104,20 +104,14 @@ private[spark] abstract class MemoryManager(
    * active tasks) before it is forced to spill. This can happen if the number of tasks increase
    * but an older task had a lot of memory already.
    */
-  private[memory]
-  def acquireExecutionMemory(
-      numBytes: Long,
-      taskAttemptId: Long,
-      memoryMode: MemoryMode): Long
+  private[memory] def acquireExecutionMemory(
+      numBytes: Long, taskAttemptId: Long, memoryMode: MemoryMode): Long
 
   /**
    * Release numBytes of execution memory belonging to the given task.
    */
-  private[memory]
-  def releaseExecutionMemory(
-      numBytes: Long,
-      taskAttemptId: Long,
-      memoryMode: MemoryMode): Unit = synchronized {
+  private[memory] def releaseExecutionMemory(
+      numBytes: Long, taskAttemptId: Long, memoryMode: MemoryMode): Unit = synchronized {
     memoryMode match {
       case MemoryMode.ON_HEAP => onHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId)
       case MemoryMode.OFF_HEAP => offHeapExecutionMemoryPool.releaseMemory(numBytes, taskAttemptId)
@@ -131,7 +125,7 @@ private[spark] abstract class MemoryManager(
    */
   private[memory] def releaseAllExecutionMemoryForTask(taskAttemptId: Long): Long = synchronized {
     onHeapExecutionMemoryPool.releaseAllMemoryForTask(taskAttemptId) +
-      offHeapExecutionMemoryPool.releaseAllMemoryForTask(taskAttemptId)
+    offHeapExecutionMemoryPool.releaseAllMemoryForTask(taskAttemptId)
   }
 
   /**
@@ -178,7 +172,7 @@ private[spark] abstract class MemoryManager(
    */
   private[memory] def getExecutionMemoryUsageForTask(taskAttemptId: Long): Long = synchronized {
     onHeapExecutionMemoryPool.getMemoryUsageForTask(taskAttemptId) +
-      offHeapExecutionMemoryPool.getMemoryUsageForTask(taskAttemptId)
+    offHeapExecutionMemoryPool.getMemoryUsageForTask(taskAttemptId)
   }
 
   // -- Fields related to Tungsten managed memory -------------------------------------------------
@@ -190,9 +184,9 @@ private[spark] abstract class MemoryManager(
   final val tungstenMemoryMode: MemoryMode = {
     if (conf.getBoolean("spark.memory.offHeap.enabled", false)) {
       require(conf.getSizeAsBytes("spark.memory.offHeap.size", 0) > 0,
-        "spark.memory.offHeap.size must be > 0 when spark.memory.offHeap.enabled == true")
+              "spark.memory.offHeap.size must be > 0 when spark.memory.offHeap.enabled == true")
       require(Platform.unaligned(),
-        "No support for unaligned Unsafe. Set spark.memory.offHeap.enabled to false.")
+              "No support for unaligned Unsafe. Set spark.memory.offHeap.enabled to false.")
       MemoryMode.OFF_HEAP
     } else {
       MemoryMode.ON_HEAP
@@ -207,8 +201,8 @@ private[spark] abstract class MemoryManager(
    * and then divide it by a factor of safety.
    */
   val pageSizeBytes: Long = {
-    val minPageSize = 1L * 1024 * 1024   // 1MB
-    val maxPageSize = 64L * minPageSize  // 64MB
+    val minPageSize = 1L * 1024 * 1024 // 1MB
+    val maxPageSize = 64L * minPageSize // 64MB
     val cores = if (numCores > 0) numCores else Runtime.getRuntime.availableProcessors()
     // Because of rounding to next power of 2, we may have safetyFactor as 8 in worst case
     val safetyFactor = 16

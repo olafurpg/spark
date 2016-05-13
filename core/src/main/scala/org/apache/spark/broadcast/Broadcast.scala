@@ -88,7 +88,6 @@ abstract class Broadcast[T: ClassTag](val id: Long) extends Serializable with Lo
     doUnpersist(blocking)
   }
 
-
   /**
    * Destroy all data and metadata related to this broadcast variable. Use this with caution;
    * once a broadcast variable has been destroyed, it cannot be used again.
@@ -142,7 +141,7 @@ abstract class Broadcast[T: ClassTag](val id: Long) extends Serializable with Lo
   protected def assertValid() {
     if (!_isValid) {
       throw new SparkException(
-        "Attempted to use %s after it was destroyed (%s) ".format(toString, _destroySite))
+          "Attempted to use %s after it was destroyed (%s) ".format(toString, _destroySite))
     }
   }
 

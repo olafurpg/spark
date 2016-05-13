@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql.execution.datasources
 
@@ -58,14 +58,14 @@ import org.apache.spark.util.Utils
  *                         list is empty, the relation is unpartitioned.
  * @param bucketSpec An optional specification for bucketing (hash-partitioning) of the data.
  */
-case class DataSource(
-    sparkSession: SparkSession,
-    className: String,
-    paths: Seq[String] = Nil,
-    userSpecifiedSchema: Option[StructType] = None,
-    partitionColumns: Seq[String] = Seq.empty,
-    bucketSpec: Option[BucketSpec] = None,
-    options: Map[String, String] = Map.empty) extends Logging {
+case class DataSource(sparkSession: SparkSession,
+                      className: String,
+                      paths: Seq[String] = Nil,
+                      userSpecifiedSchema: Option[StructType] = None,
+                      partitionColumns: Seq[String] = Seq.empty,
+                      bucketSpec: Option[BucketSpec] = None,
+                      options: Map[String, String] = Map.empty)
+    extends Logging {
 
   case class SourceInfo(name: String, schema: StructType)
 
@@ -74,13 +74,13 @@ case class DataSource(
 
   /** A map to maintain backward compatibility in case we move data sources around. */
   private val backwardCompatibilityMap = Map(
-    "org.apache.spark.sql.jdbc" -> classOf[jdbc.DefaultSource].getCanonicalName,
-    "org.apache.spark.sql.jdbc.DefaultSource" -> classOf[jdbc.DefaultSource].getCanonicalName,
-    "org.apache.spark.sql.json" -> classOf[json.DefaultSource].getCanonicalName,
-    "org.apache.spark.sql.json.DefaultSource" -> classOf[json.DefaultSource].getCanonicalName,
-    "org.apache.spark.sql.parquet" -> classOf[parquet.DefaultSource].getCanonicalName,
-    "org.apache.spark.sql.parquet.DefaultSource" -> classOf[parquet.DefaultSource].getCanonicalName,
-    "com.databricks.spark.csv" -> classOf[csv.DefaultSource].getCanonicalName
+      "org.apache.spark.sql.jdbc" -> classOf[jdbc.DefaultSource].getCanonicalName,
+      "org.apache.spark.sql.jdbc.DefaultSource" -> classOf[jdbc.DefaultSource].getCanonicalName,
+      "org.apache.spark.sql.json" -> classOf[json.DefaultSource].getCanonicalName,
+      "org.apache.spark.sql.json.DefaultSource" -> classOf[json.DefaultSource].getCanonicalName,
+      "org.apache.spark.sql.parquet" -> classOf[parquet.DefaultSource].getCanonicalName,
+      "org.apache.spark.sql.parquet.DefaultSource" -> classOf[parquet.DefaultSource].getCanonicalName,
+      "com.databricks.spark.csv" -> classOf[csv.DefaultSource].getCanonicalName
   )
 
   /** Given a provider name, look up the data source class definition. */
@@ -100,18 +100,18 @@ case class DataSource(
           case Failure(error) =>
             if (provider.startsWith("org.apache.spark.sql.hive.orc")) {
               throw new ClassNotFoundException(
-                "The ORC data source must be used with Hive support enabled.", error)
+                  "The ORC data source must be used with Hive support enabled.", error)
             } else {
               if (provider == "avro" || provider == "com.databricks.spark.avro") {
                 throw new ClassNotFoundException(
-                  s"Failed to find data source: $provider. Please use Spark package " +
-                  "http://spark-packages.org/package/databricks/spark-avro",
-                  error)
+                    s"Failed to find data source: $provider. Please use Spark package " +
+                    "http://spark-packages.org/package/databricks/spark-avro",
+                    error)
               } else {
                 throw new ClassNotFoundException(
-                  s"Failed to find data source: $provider. Please find packages at " +
-                  "http://spark-packages.org",
-                  error)
+                    s"Failed to find data source: $provider. Please find packages at " +
+                    "http://spark-packages.org",
+                    error)
               }
             }
         }
@@ -120,9 +120,10 @@ case class DataSource(
         head.getClass
       case sources =>
         // There are multiple registered aliases for the input
-        sys.error(s"Multiple sources found for $provider " +
-          s"(${sources.map(_.getClass.getName).mkString(", ")}), " +
-          "please specify the fully qualified class name.")
+        sys.error(
+            s"Multiple sources found for $provider " +
+            s"(${sources.map(_.getClass.getName).mkString(", ")}), " +
+            "please specify the fully qualified class name.")
     }
   }
 
@@ -137,10 +138,7 @@ case class DataSource(
         SparkHadoopUtil.get.globPathIfNecessary(qualified)
       }.toArray
       val fileCatalog = new ListingFileCatalog(sparkSession, globbedPaths, options, None)
-      format.inferSchema(
-        sparkSession,
-        caseInsensitiveOptions,
-        fileCatalog.allFiles())
+      format.inferSchema(sparkSession, caseInsensitiveOptions, fileCatalog.allFiles())
     }.getOrElse {
       throw new AnalysisException("Unable to infer schema. It must be specified manually.")
     }
@@ -150,8 +148,8 @@ case class DataSource(
   private def sourceSchema(): SourceInfo = {
     providingClass.newInstance() match {
       case s: StreamSourceProvider =>
-        val (name, schema) = s.sourceSchema(
-          sparkSession.wrapped, userSpecifiedSchema, className, options)
+        val (name, schema) =
+          s.sourceSchema(sparkSession.wrapped, userSpecifiedSchema, className, options)
         SourceInfo(name, schema)
 
       case format: FileFormat =>
@@ -163,7 +161,7 @@ case class DataSource(
 
       case _ =>
         throw new UnsupportedOperationException(
-          s"Data source $className does not support streamed reading")
+            s"Data source $className does not support streamed reading")
     }
   }
 
@@ -178,10 +176,10 @@ case class DataSource(
           throw new IllegalArgumentException("'path' is not specified")
         })
         new FileStreamSource(
-          sparkSession, path, className, sourceInfo.schema, metadataPath, options)
+            sparkSession, path, className, sourceInfo.schema, metadataPath, options)
       case _ =>
         throw new UnsupportedOperationException(
-          s"Data source $className does not support streamed reading")
+            s"Data source $className does not support streamed reading")
     }
   }
 
@@ -199,7 +197,7 @@ case class DataSource(
 
       case _ =>
         throw new UnsupportedOperationException(
-          s"Data source $className does not support streamed writing")
+            s"Data source $className does not support streamed writing")
     }
   }
 
@@ -253,24 +251,20 @@ case class DataSource(
         val basePath = new Path((caseInsensitiveOptions.get("path").toSeq ++ paths).head)
         val fileCatalog = new MetadataLogFileCatalog(sparkSession, basePath)
         val dataSchema = userSpecifiedSchema.orElse {
-          format.inferSchema(
-            sparkSession,
-            caseInsensitiveOptions,
-            fileCatalog.allFiles())
+          format.inferSchema(sparkSession, caseInsensitiveOptions, fileCatalog.allFiles())
         }.getOrElse {
           throw new AnalysisException(
-            s"Unable to infer schema for $format at ${fileCatalog.allFiles().mkString(",")}. " +
-                "It must be specified manually")
+              s"Unable to infer schema for $format at ${fileCatalog.allFiles().mkString(",")}. " +
+              "It must be specified manually")
         }
 
-        HadoopFsRelation(
-          sparkSession,
-          fileCatalog,
-          partitionSchema = fileCatalog.partitionSpec().partitionColumns,
-          dataSchema = dataSchema,
-          bucketSpec = None,
-          format,
-          options)
+        HadoopFsRelation(sparkSession,
+                         fileCatalog,
+                         partitionSchema = fileCatalog.partitionSpec().partitionColumns,
+                         dataSchema = dataSchema,
+                         bucketSpec = None,
+                         format,
+                         options)
 
       // This is a non-streaming file based datasource.
       case (format: FileFormat, _) =>
@@ -295,16 +289,16 @@ case class DataSource(
         // from that schema.
         val partitionSchema = userSpecifiedSchema.map { schema =>
           StructType(
-            partitionColumns.map { c =>
-              // TODO: Case sensitivity.
-              schema
-                  .find(_.name.toLowerCase() == c.toLowerCase())
-                  .getOrElse(throw new AnalysisException(s"Invalid partition column '$c'"))
-            })
+              partitionColumns.map { c =>
+            // TODO: Case sensitivity.
+            schema
+              .find(_.name.toLowerCase() == c.toLowerCase())
+              .getOrElse(throw new AnalysisException(s"Invalid partition column '$c'"))
+          })
         }
 
-        val fileCatalog =
-          new ListingFileCatalog(sparkSession, globbedPaths, options, partitionSchema)
+        val fileCatalog = new ListingFileCatalog(
+            sparkSession, globbedPaths, options, partitionSchema)
 
         val dataSchema = userSpecifiedSchema.map { schema =>
           val equality =
@@ -316,40 +310,33 @@ case class DataSource(
 
           StructType(schema.filterNot(f => partitionColumns.exists(equality(_, f.name))))
         }.orElse {
-          format.inferSchema(
-            sparkSession,
-            caseInsensitiveOptions,
-            fileCatalog.allFiles())
+          format.inferSchema(sparkSession, caseInsensitiveOptions, fileCatalog.allFiles())
         }.getOrElse {
           throw new AnalysisException(
-            s"Unable to infer schema for $format at ${allPaths.take(2).mkString(",")}. " +
+              s"Unable to infer schema for $format at ${allPaths.take(2).mkString(",")}. " +
               "It must be specified manually")
         }
 
         val enrichedOptions =
           format.prepareRead(sparkSession, caseInsensitiveOptions, fileCatalog.allFiles())
 
-        HadoopFsRelation(
-          sparkSession,
-          fileCatalog,
-          partitionSchema = fileCatalog.partitionSpec().partitionColumns,
-          dataSchema = dataSchema.asNullable,
-          bucketSpec = bucketSpec,
-          format,
-          enrichedOptions)
+        HadoopFsRelation(sparkSession,
+                         fileCatalog,
+                         partitionSchema = fileCatalog.partitionSpec().partitionColumns,
+                         dataSchema = dataSchema.asNullable,
+                         bucketSpec = bucketSpec,
+                         format,
+                         enrichedOptions)
 
       case _ =>
-        throw new AnalysisException(
-          s"$className is not a valid Spark SQL Data Source.")
+        throw new AnalysisException(s"$className is not a valid Spark SQL Data Source.")
     }
 
     relation
   }
 
   /** Writes the give [[DataFrame]] out to this [[DataSource]]. */
-  def write(
-      mode: SaveMode,
-      data: DataFrame): BaseRelation = {
+  def write(mode: SaveMode, data: DataFrame): BaseRelation = {
     if (data.schema.map(_.dataType).exists(_.isInstanceOf[CalendarIntervalType])) {
       throw new AnalysisException("Cannot save interval data type into external storage.")
     }
@@ -364,7 +351,8 @@ case class DataSource(
         //  3. It's OK that the output path doesn't exist yet;
         val caseInsensitiveOptions = new CaseInsensitiveMap(options)
         val outputPath = {
-          val path = new Path(caseInsensitiveOptions.getOrElse("path", {
+          val path = new Path(
+              caseInsensitiveOptions.getOrElse("path", {
             throw new IllegalArgumentException("'path' is not specified")
           }))
           val fs = path.getFileSystem(sparkSession.sessionState.newHadoopConf())
@@ -373,20 +361,20 @@ case class DataSource(
 
         val caseSensitive = sparkSession.sessionState.conf.caseSensitiveAnalysis
         PartitioningUtils.validatePartitionColumnDataTypes(
-          data.schema, partitionColumns, caseSensitive)
+            data.schema, partitionColumns, caseSensitive)
 
         // If we are appending to a table that already exists, make sure the partitioning matches
         // up.  If we fail to load the table for whatever reason, ignore the check.
         if (mode == SaveMode.Append) {
           val existingPartitionColumnSet = try {
             Some(
-              resolveRelation()
-                .asInstanceOf[HadoopFsRelation]
-                .location
-                .partitionSpec()
-                .partitionColumns
-                .fieldNames
-                .toSet)
+                resolveRelation()
+                  .asInstanceOf[HadoopFsRelation]
+                  .location
+                  .partitionSpec()
+                  .partitionColumns
+                  .fieldNames
+                  .toSet)
           } catch {
             case e: Exception =>
               None
@@ -395,8 +383,8 @@ case class DataSource(
           existingPartitionColumnSet.foreach { ex =>
             if (ex.map(_.toLowerCase) != partitionColumns.map(_.toLowerCase()).toSet) {
               throw new AnalysisException(
-                s"Requested partitioning does not equal existing partitioning: " +
-                s"$ex != ${partitionColumns.toSet}.")
+                  s"Requested partitioning does not equal existing partitioning: " +
+                  s"$ex != ${partitionColumns.toSet}.")
             }
           }
         }
@@ -404,8 +392,7 @@ case class DataSource(
         // For partitioned relation r, r.schema's column ordering can be different from the column
         // ordering of data.logicalPlan (partition columns are all moved after data column).  This
         // will be adjusted within InsertIntoHadoopFsRelation.
-        val plan =
-          InsertIntoHadoopFsRelation(
+        val plan = InsertIntoHadoopFsRelation(
             outputPath,
             partitionColumns.map(UnresolvedAttribute.quoted),
             bucketSpec,

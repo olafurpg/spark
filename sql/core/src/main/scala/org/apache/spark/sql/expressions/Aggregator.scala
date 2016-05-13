@@ -96,11 +96,7 @@ abstract class Aggregator[-IN, BUF, OUT] extends Serializable {
     implicit val bEncoder = bufferEncoder
     implicit val cEncoder = outputEncoder
 
-    val expr =
-      AggregateExpression(
-        TypedAggregateExpression(this),
-        Complete,
-        isDistinct = false)
+    val expr = AggregateExpression(TypedAggregateExpression(this), Complete, isDistinct = false)
 
     new TypedColumn[IN, OUT](expr, encoderFor[OUT])
   }

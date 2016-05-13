@@ -27,9 +27,7 @@ package org.apache.spark.sql.execution.datasources
  * @param sortColumnNames the names of the columns that used to sort data in each bucket.
  */
 private[sql] case class BucketSpec(
-    numBuckets: Int,
-    bucketColumnNames: Seq[String],
-    sortColumnNames: Seq[String])
+    numBuckets: Int, bucketColumnNames: Seq[String], sortColumnNames: Seq[String])
 
 private[sql] object BucketingUtils {
   // The file name of bucketed data should have 3 parts:

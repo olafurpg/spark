@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql
 
@@ -25,7 +25,6 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-
 
 /**
  * :: Experimental ::
@@ -164,7 +163,7 @@ final class DataFrameNaFunctions private[sql](df: DataFrame) {
         df.col(f.name)
       }
     }
-    df.select(projections : _*)
+    df.select(projections: _*)
   }
 
   /**
@@ -191,7 +190,7 @@ final class DataFrameNaFunctions private[sql](df: DataFrame) {
         df.col(f.name)
       }
     }
-    df.select(projections : _*)
+    df.select(projections: _*)
   }
 
   /**
@@ -334,7 +333,8 @@ final class DataFrameNaFunctions private[sql](df: DataFrame) {
    *
    * @since 1.3.1
    */
-  def replace[T](cols: Seq[String], replacement: Map[T, T]): DataFrame = replace0(cols, replacement)
+  def replace[T](cols: Seq[String], replacement: Map[T, T]): DataFrame =
+    replace0(cols, replacement)
 
   private def replace0[T](cols: Seq[String], replacement: Map[T, T]): DataFrame = {
     if (replacement.isEmpty || cols.isEmpty) {
@@ -358,7 +358,8 @@ final class DataFrameNaFunctions private[sql](df: DataFrame) {
     val columnEquals = df.sparkSession.sessionState.analyzer.resolver
     val projections = df.schema.fields.map { f =>
       val shouldReplace = cols.exists(colName => columnEquals(colName, f.name))
-      if (f.dataType.isInstanceOf[NumericType] && targetColumnType == DoubleType && shouldReplace) {
+      if (f.dataType.isInstanceOf[NumericType] && targetColumnType == DoubleType &&
+          shouldReplace) {
         replaceCol(f, replacementMap)
       } else if (f.dataType == targetColumnType && shouldReplace) {
         replaceCol(f, replacementMap)
@@ -366,38 +367,42 @@ final class DataFrameNaFunctions private[sql](df: DataFrame) {
         df.col(f.name)
       }
     }
-    df.select(projections : _*)
+    df.select(projections: _*)
   }
 
   private def fill0(values: Seq[(String, Any)]): DataFrame = {
     // Error handling
-    values.foreach { case (colName, replaceValue) =>
-      // Check column name exists
-      df.resolve(colName)
+    values.foreach {
+      case (colName, replaceValue) =>
+        // Check column name exists
+        df.resolve(colName)
 
-      // Check data type
-      replaceValue match {
-        case _: jl.Double | _: jl.Float | _: jl.Integer | _: jl.Long | _: jl.Boolean | _: String =>
+        // Check data type
+        replaceValue match {
+          case _: jl.Double | _: jl.Float | _: jl.Integer | _: jl.Long | _: jl.Boolean |
+              _: String =>
           // This is good
-        case _ => throw new IllegalArgumentException(
-          s"Unsupported value type ${replaceValue.getClass.getName} ($replaceValue).")
-      }
+          case _ =>
+            throw new IllegalArgumentException(
+                s"Unsupported value type ${replaceValue.getClass.getName} ($replaceValue).")
+        }
     }
 
     val columnEquals = df.sparkSession.sessionState.analyzer.resolver
     val projections = df.schema.fields.map { f =>
-      values.find { case (k, _) => columnEquals(k, f.name) }.map { case (_, v) =>
-        v match {
-          case v: jl.Float => fillCol[Float](f, v)
-          case v: jl.Double => fillCol[Double](f, v)
-          case v: jl.Long => fillCol[Long](f, v)
-          case v: jl.Integer => fillCol[Integer](f, v)
-          case v: jl.Boolean => fillCol[Boolean](f, v.booleanValue())
-          case v: String => fillCol[String](f, v)
-        }
+      values.find { case (k, _) => columnEquals(k, f.name) }.map {
+        case (_, v) =>
+          v match {
+            case v: jl.Float => fillCol[Float](f, v)
+            case v: jl.Double => fillCol[Double](f, v)
+            case v: jl.Long => fillCol[Long](f, v)
+            case v: jl.Integer => fillCol[Integer](f, v)
+            case v: jl.Boolean => fillCol[Boolean](f, v.booleanValue())
+            case v: String => fillCol[String](f, v)
+          }
       }.getOrElse(df.col(f.name))
     }
-    df.select(projections : _*)
+    df.select(projections: _*)
   }
 
   /**
@@ -422,8 +427,9 @@ final class DataFrameNaFunctions private[sql](df: DataFrame) {
   private def replaceCol(col: StructField, replacementMap: Map[_, _]): Column = {
     val keyExpr = df.col(col.name).expr
     def buildExpr(v: Any) = Cast(Literal(v), keyExpr.dataType)
-    val branches = replacementMap.flatMap { case (source, target) =>
-      Seq(buildExpr(source), buildExpr(target))
+    val branches = replacementMap.flatMap {
+      case (source, target) =>
+        Seq(buildExpr(source), buildExpr(target))
     }.toSeq
     new Column(CaseKeyWhen(keyExpr, branches :+ keyExpr)).as(col.name)
   }
@@ -433,7 +439,7 @@ final class DataFrameNaFunctions private[sql](df: DataFrame) {
     case v: Double => v
     case v: Long => v.toDouble
     case v: Int => v.toDouble
-    case v => throw new IllegalArgumentException(
-      s"Unsupported value type ${v.getClass.getName} ($v).")
+    case v =>
+      throw new IllegalArgumentException(s"Unsupported value type ${v.getClass.getName} ($v).")
   }
 }

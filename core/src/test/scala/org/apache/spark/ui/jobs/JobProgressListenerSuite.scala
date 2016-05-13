@@ -46,9 +46,7 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
   }
 
   private def createJobStartEvent(
-      jobId: Int,
-      stageIds: Seq[Int],
-      jobGroup: Option[String] = None): SparkListenerJobStart = {
+      jobId: Int, stageIds: Seq[Int], jobGroup: Option[String] = None): SparkListenerJobStart = {
     val stageInfos = stageIds.map { stageId =>
       new StageInfo(stageId, 0, stageId.toString, 0, null, null, "")
     }
@@ -77,8 +75,9 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
   }
 
   private def assertActiveJobsStateIsEmpty(listener: JobProgressListener) {
-    listener.getSizesOfActiveStateTrackingCollections.foreach { case (fieldName, size) =>
-      assert(size === 0, s"$fieldName was not empty")
+    listener.getSizesOfActiveStateTrackingCollections.foreach {
+      case (fieldName, size) =>
+        assert(size === 0, s"$fieldName was not empty")
     }
   }
 
@@ -93,8 +92,8 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     }
     assertActiveJobsStateIsEmpty(listener)
 
-    listener.completedStages.size should be (5)
-    listener.completedStages.map(_.stageId).toSet should be (Set(50, 49, 48, 47, 46))
+    listener.completedStages.size should be(5)
+    listener.completedStages.map(_.stageId).toSet should be(Set(50, 49, 48, 47, 46))
   }
 
   test("test clearing of stageIdToActiveJobs") {
@@ -116,7 +115,7 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     }
     listener.onJobEnd(createJobEndEvent(jobId, false))
     assertActiveJobsStateIsEmpty(listener)
-    listener.stageIdToActiveJobIds.size should be (0)
+    listener.stageIdToActiveJobIds.size should be(0)
   }
 
   test("test clearing of jobGroupToJobIds") {
@@ -133,7 +132,7 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     }
     assertActiveJobsStateIsEmpty(listener)
     // This collection won't become empty, but it should be bounded by spark.ui.retainedJobs
-    listener.jobGroupToJobIds.size should be (5)
+    listener.jobGroupToJobIds.size should be(5)
   }
 
   test("test LRU eviction of jobs") {
@@ -158,26 +157,26 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     for (jobId <- 11 to 50) {
       runJob(listener, jobId, shouldFail = false)
       // We shouldn't exceed the hard / soft limit sizes after the jobs have finished:
-      listener.getSizesOfSoftSizeLimitedCollections should be (softLimitSizes)
-      listener.getSizesOfHardSizeLimitedCollections should be (hardLimitSizes)
+      listener.getSizesOfSoftSizeLimitedCollections should be(softLimitSizes)
+      listener.getSizesOfHardSizeLimitedCollections should be(hardLimitSizes)
     }
 
-    listener.completedJobs.size should be (5)
-    listener.completedJobs.map(_.jobId).toSet should be (Set(50, 49, 48, 47, 46))
+    listener.completedJobs.size should be(5)
+    listener.completedJobs.map(_.jobId).toSet should be(Set(50, 49, 48, 47, 46))
 
     for (jobId <- 51 to 100) {
       runJob(listener, jobId, shouldFail = true)
       // We shouldn't exceed the hard / soft limit sizes after the jobs have finished:
-      listener.getSizesOfSoftSizeLimitedCollections should be (softLimitSizes)
-      listener.getSizesOfHardSizeLimitedCollections should be (hardLimitSizes)
+      listener.getSizesOfSoftSizeLimitedCollections should be(softLimitSizes)
+      listener.getSizesOfHardSizeLimitedCollections should be(hardLimitSizes)
     }
     assertActiveJobsStateIsEmpty(listener)
 
     // Completed and failed jobs each their own size limits, so this should still be the same:
-    listener.completedJobs.size should be (5)
-    listener.completedJobs.map(_.jobId).toSet should be (Set(50, 49, 48, 47, 46))
-    listener.failedJobs.size should be (5)
-    listener.failedJobs.map(_.jobId).toSet should be (Set(100, 99, 98, 97, 96))
+    listener.completedJobs.size should be(5)
+    listener.completedJobs.map(_.jobId).toSet should be(Set(50, 49, 48, 47, 46))
+    listener.failedJobs.size should be(5)
+    listener.failedJobs.map(_.jobId).toSet should be(Set(100, 99, 98, 97, 96))
   }
 
   test("test executor id to summary") {
@@ -195,9 +194,13 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     var task = new ShuffleMapTask(0)
     val taskType = Utils.getFormattedClassName(task)
     listener.onTaskEnd(
-      SparkListenerTaskEnd(task.stageId, 0, taskType, Success, taskInfo, taskMetrics))
-    assert(listener.stageIdToData.getOrElse((0, 0), fail())
-      .executorSummary.getOrElse("exe-1", fail()).shuffleRead === 1000)
+        SparkListenerTaskEnd(task.stageId, 0, taskType, Success, taskInfo, taskMetrics))
+    assert(
+        listener.stageIdToData
+          .getOrElse((0, 0), fail())
+          .executorSummary
+          .getOrElse("exe-1", fail())
+          .shuffleRead === 1000)
 
     // finish a task with unknown executor-id, nothing should happen
     taskInfo =
@@ -205,7 +208,7 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     taskInfo.finishTime = 1
     task = new ShuffleMapTask(0)
     listener.onTaskEnd(
-      SparkListenerTaskEnd(task.stageId, 0, taskType, Success, taskInfo, taskMetrics))
+        SparkListenerTaskEnd(task.stageId, 0, taskType, Success, taskInfo, taskMetrics))
     assert(listener.stageIdToData.size === 1)
 
     // finish this task, should get updated duration
@@ -213,18 +216,26 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     taskInfo.finishTime = 1
     task = new ShuffleMapTask(0)
     listener.onTaskEnd(
-      SparkListenerTaskEnd(task.stageId, 0, taskType, Success, taskInfo, taskMetrics))
-    assert(listener.stageIdToData.getOrElse((0, 0), fail())
-      .executorSummary.getOrElse("exe-1", fail()).shuffleRead === 2000)
+        SparkListenerTaskEnd(task.stageId, 0, taskType, Success, taskInfo, taskMetrics))
+    assert(
+        listener.stageIdToData
+          .getOrElse((0, 0), fail())
+          .executorSummary
+          .getOrElse("exe-1", fail())
+          .shuffleRead === 2000)
 
     // finish this task, should get updated duration
     taskInfo = new TaskInfo(1236L, 0, 2, 0L, "exe-2", "host1", TaskLocality.NODE_LOCAL, false)
     taskInfo.finishTime = 1
     task = new ShuffleMapTask(0)
     listener.onTaskEnd(
-      SparkListenerTaskEnd(task.stageId, 0, taskType, Success, taskInfo, taskMetrics))
-    assert(listener.stageIdToData.getOrElse((0, 0), fail())
-      .executorSummary.getOrElse("exe-2", fail()).shuffleRead === 1000)
+        SparkListenerTaskEnd(task.stageId, 0, taskType, Success, taskInfo, taskMetrics))
+    assert(
+        listener.stageIdToData
+          .getOrElse((0, 0), fail())
+          .executorSummary
+          .getOrElse("exe-2", fail())
+          .shuffleRead === 1000)
   }
 
   test("test task success vs failure counting for different task end reasons") {
@@ -237,26 +248,24 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     val taskType = Utils.getFormattedClassName(task)
 
     // Go through all the failure cases to make sure we are counting them as failures.
-    val taskFailedReasons = Seq(
-      Resubmitted,
-      new FetchFailed(null, 0, 0, 0, "ignored"),
-      ExceptionFailure("Exception", "description", null, null, None),
-      TaskResultLost,
-      TaskKilled,
-      ExecutorLostFailure("0", true, Some("Induced failure")),
-      UnknownReason)
+    val taskFailedReasons = Seq(Resubmitted,
+                                new FetchFailed(null, 0, 0, 0, "ignored"),
+                                ExceptionFailure("Exception", "description", null, null, None),
+                                TaskResultLost,
+                                TaskKilled,
+                                ExecutorLostFailure("0", true, Some("Induced failure")),
+                                UnknownReason)
     var failCount = 0
     for (reason <- taskFailedReasons) {
       listener.onTaskEnd(
-        SparkListenerTaskEnd(task.stageId, 0, taskType, reason, taskInfo, metrics))
+          SparkListenerTaskEnd(task.stageId, 0, taskType, reason, taskInfo, metrics))
       failCount += 1
       assert(listener.stageIdToData((task.stageId, 0)).numCompleteTasks === 0)
       assert(listener.stageIdToData((task.stageId, 0)).numFailedTasks === failCount)
     }
 
     // Make sure we count success as success.
-    listener.onTaskEnd(
-      SparkListenerTaskEnd(task.stageId, 1, taskType, Success, taskInfo, metrics))
+    listener.onTaskEnd(SparkListenerTaskEnd(task.stageId, 1, taskType, Success, taskInfo, metrics))
     assert(listener.stageIdToData((task.stageId, 1)).numCompleteTasks === 1)
     assert(listener.stageIdToData((task.stageId, 0)).numFailedTasks === failCount)
   }
@@ -288,8 +297,8 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     }
 
     def makeTaskInfo(taskId: Long, finishTime: Int = 0): TaskInfo = {
-      val taskInfo = new TaskInfo(taskId, 0, 1, 0L, execId, "host1", TaskLocality.NODE_LOCAL,
-        false)
+      val taskInfo =
+        new TaskInfo(taskId, 0, 1, 0L, execId, "host1", TaskLocality.NODE_LOCAL, false)
       taskInfo.finishTime = finishTime
       taskInfo
     }
@@ -299,10 +308,16 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     listener.onTaskStart(SparkListenerTaskStart(1, 0, makeTaskInfo(1236L)))
     listener.onTaskStart(SparkListenerTaskStart(1, 0, makeTaskInfo(1237L)))
 
-    listener.onExecutorMetricsUpdate(SparkListenerExecutorMetricsUpdate(execId, Array(
-      (1234L, 0, 0, makeTaskMetrics(0).accumulators().map(AccumulatorSuite.makeInfo)),
-      (1235L, 0, 0, makeTaskMetrics(100).accumulators().map(AccumulatorSuite.makeInfo)),
-      (1236L, 1, 0, makeTaskMetrics(200).accumulators().map(AccumulatorSuite.makeInfo)))))
+    listener.onExecutorMetricsUpdate(
+        SparkListenerExecutorMetricsUpdate(
+            execId,
+            Array(
+                (1234L, 0, 0, makeTaskMetrics(0).accumulators().map(AccumulatorSuite.makeInfo)),
+                (1235L, 0, 0, makeTaskMetrics(100).accumulators().map(AccumulatorSuite.makeInfo)),
+                (1236L,
+                 1,
+                 0,
+                 makeTaskMetrics(200).accumulators().map(AccumulatorSuite.makeInfo)))))
 
     var stage0Data = listener.stageIdToData.get((0, 0)).get
     var stage1Data = listener.stageIdToData.get((1, 0)).get
@@ -322,18 +337,18 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     assert(stage1Data.outputBytes == 208)
 
     assert(
-      stage0Data.taskData.get(1234L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 2)
+        stage0Data.taskData.get(1234L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 2)
     assert(
-      stage0Data.taskData.get(1235L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 102)
+        stage0Data.taskData.get(1235L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 102)
     assert(
-      stage1Data.taskData.get(1236L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 202)
+        stage1Data.taskData.get(1236L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 202)
 
     // task that was included in a heartbeat
-    listener.onTaskEnd(SparkListenerTaskEnd(0, 0, taskType, Success, makeTaskInfo(1234L, 1),
-      makeTaskMetrics(300)))
+    listener.onTaskEnd(SparkListenerTaskEnd(
+            0, 0, taskType, Success, makeTaskInfo(1234L, 1), makeTaskMetrics(300)))
     // task that wasn't included in a heartbeat
-    listener.onTaskEnd(SparkListenerTaskEnd(1, 0, taskType, Success, makeTaskInfo(1237L, 1),
-      makeTaskMetrics(400)))
+    listener.onTaskEnd(SparkListenerTaskEnd(
+            1, 0, taskType, Success, makeTaskInfo(1237L, 1), makeTaskMetrics(400)))
 
     stage0Data = listener.stageIdToData.get((0, 0)).get
     stage1Data = listener.stageIdToData.get((1, 0)).get
@@ -355,8 +370,8 @@ class JobProgressListenerSuite extends SparkFunSuite with LocalSparkContext with
     assert(stage0Data.outputBytes == 416)
     assert(stage1Data.outputBytes == 616)
     assert(
-      stage0Data.taskData.get(1234L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 302)
+        stage0Data.taskData.get(1234L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 302)
     assert(
-      stage1Data.taskData.get(1237L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 402)
+        stage1Data.taskData.get(1237L).get.metrics.get.shuffleReadMetrics.totalBlocksFetched == 402)
   }
 }

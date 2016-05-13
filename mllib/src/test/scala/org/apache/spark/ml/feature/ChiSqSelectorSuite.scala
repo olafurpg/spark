@@ -26,31 +26,31 @@ import org.apache.spark.mllib.util.MLlibTestSparkContext
 import org.apache.spark.mllib.util.TestingUtils._
 import org.apache.spark.sql.{Row, SparkSession}
 
-class ChiSqSelectorSuite extends SparkFunSuite with MLlibTestSparkContext
-  with DefaultReadWriteTest {
+class ChiSqSelectorSuite
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   test("Test Chi-Square selector") {
-    val spark = SparkSession.builder
-      .master("local[2]")
-      .appName("ChiSqSelectorSuite")
-      .getOrCreate()
+    val spark = SparkSession.builder.master("local[2]").appName("ChiSqSelectorSuite").getOrCreate()
     import spark.implicits._
 
     val data = Seq(
-      LabeledPoint(0.0, Vectors.sparse(3, Array((0, 8.0), (1, 7.0)))),
-      LabeledPoint(1.0, Vectors.sparse(3, Array((1, 9.0), (2, 6.0)))),
-      LabeledPoint(1.0, Vectors.dense(Array(0.0, 9.0, 8.0))),
-      LabeledPoint(2.0, Vectors.dense(Array(8.0, 9.0, 5.0)))
+        LabeledPoint(0.0, Vectors.sparse(3, Array((0, 8.0), (1, 7.0)))),
+        LabeledPoint(1.0, Vectors.sparse(3, Array((1, 9.0), (2, 6.0)))),
+        LabeledPoint(1.0, Vectors.dense(Array(0.0, 9.0, 8.0))),
+        LabeledPoint(2.0, Vectors.dense(Array(8.0, 9.0, 5.0)))
     )
 
     val preFilteredData = Seq(
-      Vectors.dense(0.0),
-      Vectors.dense(6.0),
-      Vectors.dense(8.0),
-      Vectors.dense(5.0)
+        Vectors.dense(0.0),
+        Vectors.dense(6.0),
+        Vectors.dense(8.0),
+        Vectors.dense(5.0)
     )
 
-    val df = sc.parallelize(data.zip(preFilteredData))
+    val df = sc
+      .parallelize(data.zip(preFilteredData))
       .map(x => (x._1.label, x._1.features, x._2))
       .toDF("label", "data", "preFilteredData")
 
@@ -84,9 +84,9 @@ class ChiSqSelectorSuite extends SparkFunSuite with MLlibTestSparkContext
 
   test("should support all NumericType labels and not support other types") {
     val css = new ChiSqSelector()
-    MLTestingUtils.checkNumericTypes[ChiSqSelectorModel, ChiSqSelector](
-      css, spark) { (expected, actual) =>
+    MLTestingUtils.checkNumericTypes[ChiSqSelectorModel, ChiSqSelector](css, spark) {
+      (expected, actual) =>
         assert(expected.selectedFeatures === actual.selectedFeatures)
-      }
+    }
   }
 }

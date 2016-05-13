@@ -25,8 +25,7 @@ import org.apache.spark.mllib.linalg.{Matrix, Vector}
 import org.apache.spark.mllib.linalg.distributed.RowMatrix
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.stat.correlation.Correlations
-import org.apache.spark.mllib.stat.test.{ChiSqTest, ChiSqTestResult, KolmogorovSmirnovTest,
-  KolmogorovSmirnovTestResult}
+import org.apache.spark.mllib.stat.test.{ChiSqTest, ChiSqTestResult, KolmogorovSmirnovTest, KolmogorovSmirnovTestResult}
 import org.apache.spark.rdd.RDD
 
 /**
@@ -109,7 +108,8 @@ object Statistics {
    *         specified method.
    */
   @Since("1.1.0")
-  def corr(x: RDD[Double], y: RDD[Double], method: String): Double = Correlations.corr(x, y, method)
+  def corr(x: RDD[Double], y: RDD[Double], method: String): Double =
+    Correlations.corr(x, y, method)
 
   /**
    * Java-friendly version of [[corr()]]
@@ -194,8 +194,8 @@ object Statistics {
    *        statistic, p-value, and null hypothesis.
    */
   @Since("1.5.0")
-  def kolmogorovSmirnovTest(data: RDD[Double], cdf: Double => Double)
-    : KolmogorovSmirnovTestResult = {
+  def kolmogorovSmirnovTest(
+      data: RDD[Double], cdf: Double => Double): KolmogorovSmirnovTestResult = {
     KolmogorovSmirnovTest.testOneSample(data, cdf)
   }
 
@@ -212,8 +212,8 @@ object Statistics {
    */
   @Since("1.5.0")
   @varargs
-  def kolmogorovSmirnovTest(data: RDD[Double], distName: String, params: Double*)
-    : KolmogorovSmirnovTestResult = {
+  def kolmogorovSmirnovTest(
+      data: RDD[Double], distName: String, params: Double*): KolmogorovSmirnovTestResult = {
     KolmogorovSmirnovTest.testOneSample(data, distName, params: _*)
   }
 
@@ -221,9 +221,7 @@ object Statistics {
   @Since("1.5.0")
   @varargs
   def kolmogorovSmirnovTest(
-      data: JavaDoubleRDD,
-      distName: String,
-      params: Double*): KolmogorovSmirnovTestResult = {
+      data: JavaDoubleRDD, distName: String, params: Double*): KolmogorovSmirnovTestResult = {
     kolmogorovSmirnovTest(data.rdd.asInstanceOf[RDD[Double]], distName, params: _*)
   }
 }

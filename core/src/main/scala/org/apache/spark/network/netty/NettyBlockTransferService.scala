@@ -39,12 +39,11 @@ import org.apache.spark.util.Utils
 /**
  * A BlockTransferService that uses Netty to fetch a set of blocks at at time.
  */
-private[spark] class NettyBlockTransferService(
-    conf: SparkConf,
-    securityManager: SecurityManager,
-    override val hostName: String,
-    numCores: Int)
-  extends BlockTransferService {
+private[spark] class NettyBlockTransferService(conf: SparkConf,
+                                               securityManager: SecurityManager,
+                                               override val hostName: String,
+                                               numCores: Int)
+    extends BlockTransferService {
 
   // TODO: Don't use Java serialization, use a more cross-version compatible serialization format.
   private val serializer = new JavaSerializer(conf)
@@ -62,8 +61,11 @@ private[spark] class NettyBlockTransferService(
     var clientBootstrap: Option[TransportClientBootstrap] = None
     if (authEnabled) {
       serverBootstrap = Some(new SaslServerBootstrap(transportConf, securityManager))
-      clientBootstrap = Some(new SaslClientBootstrap(transportConf, conf.getAppId, securityManager,
-        securityManager.isSaslEncryptionEnabled()))
+      clientBootstrap = Some(
+          new SaslClientBootstrap(transportConf,
+                                  conf.getAppId,
+                                  securityManager,
+                                  securityManager.isSaslEncryptionEnabled()))
     }
     transportContext = new TransportContext(transportConf, rpcHandler)
     clientFactory = transportContext.createClientFactory(clientBootstrap.toSeq.asJava)
@@ -83,12 +85,11 @@ private[spark] class NettyBlockTransferService(
     Utils.startServiceOnPort(portToTry, startService, conf, getClass.getName)._1
   }
 
-  override def fetchBlocks(
-      host: String,
-      port: Int,
-      execId: String,
-      blockIds: Array[String],
-      listener: BlockFetchingListener): Unit = {
+  override def fetchBlocks(host: String,
+                           port: Int,
+                           execId: String,
+                           blockIds: Array[String],
+                           listener: BlockFetchingListener): Unit = {
     logTrace(s"Fetch blocks from $host:$port (executor id $execId)")
     try {
       val blockFetchStarter = new RetryingBlockFetcher.BlockFetchStarter {
@@ -115,14 +116,13 @@ private[spark] class NettyBlockTransferService(
 
   override def port: Int = server.getPort
 
-  override def uploadBlock(
-      hostname: String,
-      port: Int,
-      execId: String,
-      blockId: BlockId,
-      blockData: ManagedBuffer,
-      level: StorageLevel,
-      classTag: ClassTag[_]): Future[Unit] = {
+  override def uploadBlock(hostname: String,
+                           port: Int,
+                           execId: String,
+                           blockId: BlockId,
+                           blockData: ManagedBuffer,
+                           level: StorageLevel,
+                           classTag: ClassTag[_]): Future[Unit] = {
     val result = Promise[Unit]()
     val client = clientFactory.createClient(hostname, port)
 
@@ -134,16 +134,16 @@ private[spark] class NettyBlockTransferService(
     val array = JavaUtils.bufferToArray(blockData.nioByteBuffer())
 
     client.sendRpc(new UploadBlock(appId, execId, blockId.toString, metadata, array).toByteBuffer,
-      new RpcResponseCallback {
-        override def onSuccess(response: ByteBuffer): Unit = {
-          logTrace(s"Successfully uploaded block $blockId")
-          result.success((): Unit)
-        }
-        override def onFailure(e: Throwable): Unit = {
-          logError(s"Error while uploading block $blockId", e)
-          result.failure(e)
-        }
-      })
+                   new RpcResponseCallback {
+                     override def onSuccess(response: ByteBuffer): Unit = {
+                       logTrace(s"Successfully uploaded block $blockId")
+                       result.success((): Unit)
+                     }
+                     override def onFailure(e: Throwable): Unit = {
+                       logError(s"Error while uploading block $blockId", e)
+                       result.failure(e)
+                     }
+                   })
 
     result.future
   }

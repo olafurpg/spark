@@ -17,7 +17,6 @@
 
 package org.apache.spark.sql.catalyst
 
-
 /**
  * An identifier that optionally specifies a database.
  *
@@ -40,7 +39,6 @@ sealed trait IdentifierWithDatabase {
   override def toString: String = quotedString
 }
 
-
 /**
  * Identifies a table in a database.
  * If `database` is not defined, the current database is used.
@@ -48,25 +46,23 @@ sealed trait IdentifierWithDatabase {
  * unquotedString as the function name.
  */
 case class TableIdentifier(table: String, database: Option[String])
-  extends IdentifierWithDatabase {
+    extends IdentifierWithDatabase {
 
   override val identifier: String = table
 
   def this(table: String) = this(table, None)
-
 }
 
 object TableIdentifier {
   def apply(tableName: String): TableIdentifier = new TableIdentifier(tableName)
 }
 
-
 /**
  * Identifies a function in a database.
  * If `database` is not defined, the current database is used.
  */
 case class FunctionIdentifier(funcName: String, database: Option[String])
-  extends IdentifierWithDatabase {
+    extends IdentifierWithDatabase {
 
   override val identifier: String = funcName
 

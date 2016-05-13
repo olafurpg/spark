@@ -30,12 +30,10 @@ case class OtherTuple(_1: Int, _2: Int)
 
 class EliminateSerializationSuite extends PlanTest {
   private object Optimize extends RuleExecutor[LogicalPlan] {
-    val batches =
-      Batch("Serialization", FixedPoint(100),
-        EliminateSerialization) :: Nil
+    val batches = Batch("Serialization", FixedPoint(100), EliminateSerialization) :: Nil
   }
 
-  implicit private def productEncoder[T <: Product : TypeTag] = ExpressionEncoder[T]()
+  implicit private def productEncoder[T <: Product: TypeTag] = ExpressionEncoder[T]()
   implicit private def intEncoder = ExpressionEncoder[Int]()
 
   test("back to back serialization") {
@@ -60,11 +58,10 @@ class EliminateSerializationSuite extends PlanTest {
 
     val optimized = Optimize.execute(plan)
 
-    val expected = AppendColumnsWithObject(
-      func.asInstanceOf[Any => Any],
-      productEncoder[(Int, Int)].namedExpressions,
-      intEncoder.namedExpressions,
-      input).analyze
+    val expected = AppendColumnsWithObject(func.asInstanceOf[Any => Any],
+                                           productEncoder[(Int, Int)].namedExpressions,
+                                           intEncoder.namedExpressions,
+                                           input).analyze
 
     comparePlans(optimized, expected)
   }

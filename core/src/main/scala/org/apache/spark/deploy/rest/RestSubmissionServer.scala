@@ -11,7 +11,7 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -48,9 +48,8 @@ import org.apache.spark.util.Utils
  * server error.
  */
 private[spark] abstract class RestSubmissionServer(
-    val host: String,
-    val requestedPort: Int,
-    val masterConf: SparkConf) extends Logging {
+    val host: String, val requestedPort: Int, val masterConf: SparkConf)
+    extends Logging {
   protected val submitRequestServlet: SubmitRequestServlet
   protected val killRequestServlet: KillRequestServlet
   protected val statusRequestServlet: StatusRequestServlet
@@ -60,10 +59,10 @@ private[spark] abstract class RestSubmissionServer(
   // A mapping from URL prefixes to servlets that serve them. Exposed for testing.
   protected val baseContext = s"/${RestSubmissionServer.PROTOCOL_VERSION}/submissions"
   protected lazy val contextToServlet = Map[String, RestServlet](
-    s"$baseContext/create/*" -> submitRequestServlet,
-    s"$baseContext/kill/*" -> killRequestServlet,
-    s"$baseContext/status/*" -> statusRequestServlet,
-    "/*" -> new ErrorServlet // default handler
+      s"$baseContext/create/*" -> submitRequestServlet,
+      s"$baseContext/kill/*" -> killRequestServlet,
+      s"$baseContext/status/*" -> statusRequestServlet,
+      "/*" -> new ErrorServlet // default handler
   )
 
   /** Start the server and return the bound port. */
@@ -90,8 +89,9 @@ private[spark] abstract class RestSubmissionServer(
 
     val mainHandler = new ServletContextHandler
     mainHandler.setContextPath("/")
-    contextToServlet.foreach { case (prefix, servlet) =>
-      mainHandler.addServlet(new ServletHolder(servlet), prefix)
+    contextToServlet.foreach {
+      case (prefix, servlet) =>
+        mainHandler.addServlet(new ServletHolder(servlet), prefix)
     }
     server.setHandler(mainHandler)
     server.start()
@@ -119,8 +119,7 @@ private[rest] abstract class RestServlet extends HttpServlet with Logging {
    * This validates the response before sending it to ensure it is properly constructed.
    */
   protected def sendResponse(
-      responseMessage: SubmitRestProtocolResponse,
-      responseServlet: HttpServletResponse): Unit = {
+      responseMessage: SubmitRestProtocolResponse, responseServlet: HttpServletResponse): Unit = {
     val message = validateResponse(responseMessage, responseServlet)
     responseServlet.setContentType("application/json")
     responseServlet.setCharacterEncoding("utf-8")
@@ -135,8 +134,7 @@ private[rest] abstract class RestServlet extends HttpServlet with Logging {
    * only in the client JSON are treated as unexpected.
    */
   protected def findUnknownFields(
-      requestJson: String,
-      requestMessage: SubmitRestProtocolMessage): Array[String] = {
+      requestJson: String, requestMessage: SubmitRestProtocolMessage): Array[String] = {
     val clientSideJson = parse(requestJson)
     val serverSideJson = parse(requestMessage.toJson)
     val Diff(_, _, unknown) = clientSideJson.diff(serverSideJson)
@@ -202,9 +200,7 @@ private[rest] abstract class KillRequestServlet extends RestServlet {
    * If a submission ID is specified in the URL, have the Master kill the corresponding
    * driver and return an appropriate response to the client. Otherwise, return error.
    */
-  protected override def doPost(
-      request: HttpServletRequest,
-      response: HttpServletResponse): Unit = {
+  protected override def doPost(request: HttpServletRequest, response: HttpServletResponse): Unit = {
     val submissionId = parseSubmissionId(request.getPathInfo)
     val responseMessage = submissionId.map(handleKill).getOrElse {
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
@@ -225,9 +221,7 @@ private[rest] abstract class StatusRequestServlet extends RestServlet {
    * If a submission ID is specified in the URL, request the status of the corresponding
    * driver from the Master and include it in the response. Otherwise, return error.
    */
-  protected override def doGet(
-      request: HttpServletRequest,
-      response: HttpServletResponse): Unit = {
+  protected override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
     val submissionId = parseSubmissionId(request.getPathInfo)
     val responseMessage = submissionId.map(handleStatus).getOrElse {
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
@@ -252,29 +246,26 @@ private[rest] abstract class SubmitRequestServlet extends RestServlet {
    * client indicating so. Otherwise, return error instead.
    */
   protected override def doPost(
-      requestServlet: HttpServletRequest,
-      responseServlet: HttpServletResponse): Unit = {
-    val responseMessage =
-      try {
-        val requestMessageJson = Source.fromInputStream(requestServlet.getInputStream).mkString
-        val requestMessage = SubmitRestProtocolMessage.fromJson(requestMessageJson)
-        // The response should have already been validated on the client.
-        // In case this is not true, validate it ourselves to avoid potential NPEs.
-        requestMessage.validate()
-        handleSubmit(requestMessageJson, requestMessage, responseServlet)
-      } catch {
-        // The client failed to provide a valid JSON, so this is not our fault
-        case e @ (_: JsonProcessingException | _: SubmitRestProtocolException) =>
-          responseServlet.setStatus(HttpServletResponse.SC_BAD_REQUEST)
-          handleError("Malformed request: " + formatException(e))
-      }
+      requestServlet: HttpServletRequest, responseServlet: HttpServletResponse): Unit = {
+    val responseMessage = try {
+      val requestMessageJson = Source.fromInputStream(requestServlet.getInputStream).mkString
+      val requestMessage = SubmitRestProtocolMessage.fromJson(requestMessageJson)
+      // The response should have already been validated on the client.
+      // In case this is not true, validate it ourselves to avoid potential NPEs.
+      requestMessage.validate()
+      handleSubmit(requestMessageJson, requestMessage, responseServlet)
+    } catch {
+      // The client failed to provide a valid JSON, so this is not our fault
+      case e @ (_: JsonProcessingException | _: SubmitRestProtocolException) =>
+        responseServlet.setStatus(HttpServletResponse.SC_BAD_REQUEST)
+        handleError("Malformed request: " + formatException(e))
+    }
     sendResponse(responseMessage, responseServlet)
   }
 
-  protected def handleSubmit(
-      requestMessageJson: String,
-      requestMessage: SubmitRestProtocolMessage,
-      responseServlet: HttpServletResponse): SubmitRestProtocolResponse
+  protected def handleSubmit(requestMessageJson: String,
+                             requestMessage: SubmitRestProtocolMessage,
+                             responseServlet: HttpServletResponse): SubmitRestProtocolResponse
 }
 
 /**
@@ -285,30 +276,28 @@ private class ErrorServlet extends RestServlet {
 
   /** Service a faulty request by returning an appropriate error message to the client. */
   protected override def service(
-      request: HttpServletRequest,
-      response: HttpServletResponse): Unit = {
+      request: HttpServletRequest, response: HttpServletResponse): Unit = {
     val path = request.getPathInfo
     val parts = path.stripPrefix("/").split("/").filter(_.nonEmpty).toList
     var versionMismatch = false
-    var msg =
-      parts match {
-        case Nil =>
-          // http://host:port/
-          "Missing protocol version."
-        case `serverVersion` :: Nil =>
-          // http://host:port/correct-version
-          "Missing the /submissions prefix."
-        case `serverVersion` :: "submissions" :: tail =>
-          // http://host:port/correct-version/submissions/*
-          "Missing an action: please specify one of /create, /kill, or /status."
-        case unknownVersion :: tail =>
-          // http://host:port/unknown-version/*
-          versionMismatch = true
-          s"Unknown protocol version '$unknownVersion'."
-        case _ =>
-          // never reached
-          s"Malformed path $path."
-      }
+    var msg = parts match {
+      case Nil =>
+        // http://host:port/
+        "Missing protocol version."
+      case `serverVersion` :: Nil =>
+        // http://host:port/correct-version
+        "Missing the /submissions prefix."
+      case `serverVersion` :: "submissions" :: tail =>
+        // http://host:port/correct-version/submissions/*
+        "Missing an action: please specify one of /create, /kill, or /status."
+      case unknownVersion :: tail =>
+        // http://host:port/unknown-version/*
+        versionMismatch = true
+        s"Unknown protocol version '$unknownVersion'."
+      case _ =>
+        // never reached
+        s"Malformed path $path."
+    }
     msg += s" Please submit requests through http://[host]:[port]/$serverVersion/submissions/..."
     val error = handleError(msg)
     // If there is a version mismatch, include the highest protocol version that

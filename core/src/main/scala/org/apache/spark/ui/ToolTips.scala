@@ -37,7 +37,7 @@ private[spark] object ToolTips {
 
   val STORAGE_MEMORY =
     "Memory used / total available memory for storage of data " +
-      "like RDD partitions cached in memory. "
+    "like RDD partitions cached in memory. "
 
   val SHUFFLE_WRITE =
     "Bytes and records written to disk in order to be read by a shuffle in a future stage."
@@ -88,6 +88,5 @@ private[spark] object ToolTips {
        also create multiple RDDs internally. Cached RDDs are shown in green.
     """
 
-  val TASK_TIME =
-  "Shaded red when garbage collection (GC) time is over 10% of task time"
+  val TASK_TIME = "Shaded red when garbage collection (GC) time is over 10% of task time"
 }

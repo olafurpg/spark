@@ -61,9 +61,8 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     }
     // If the Kryo serializer is not used correctly, the shuffle would fail because the
     // default Java serializer cannot handle the non serializable class.
-    val c = new ShuffledRDD[Int,
-      NonJavaSerializableClass,
-      NonJavaSerializableClass](b, new HashPartitioner(NUM_BLOCKS))
+    val c = new ShuffledRDD[Int, NonJavaSerializableClass, NonJavaSerializableClass](
+        b, new HashPartitioner(NUM_BLOCKS))
     c.setSerializer(new KryoSerializer(conf))
     val shuffleId = c.dependencies.head.asInstanceOf[ShuffleDependency[_, _, _]].shuffleId
 
@@ -85,9 +84,8 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     }
     // If the Kryo serializer is not used correctly, the shuffle would fail because the
     // default Java serializer cannot handle the non serializable class.
-    val c = new ShuffledRDD[Int,
-      NonJavaSerializableClass,
-      NonJavaSerializableClass](b, new HashPartitioner(3))
+    val c = new ShuffledRDD[Int, NonJavaSerializableClass, NonJavaSerializableClass](
+        b, new HashPartitioner(3))
     c.setSerializer(new KryoSerializer(conf))
     assert(c.count === 10)
   }
@@ -99,7 +97,7 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     // 201 partitions (greater than "spark.shuffle.sort.bypassMergeThreshold") from 4 keys
     val NUM_BLOCKS = 201
     val a = sc.parallelize(1 to 4, NUM_BLOCKS)
-    val b = a.map(x => (x, x*2))
+    val b = a.map(x => (x, x * 2))
 
     // NOTE: The default Java serializer doesn't create zero-sized blocks.
     //       So, use Kryo
@@ -126,7 +124,7 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     // 201 partitions (greater than "spark.shuffle.sort.bypassMergeThreshold") from 4 keys
     val NUM_BLOCKS = 201
     val a = sc.parallelize(1 to 4, NUM_BLOCKS)
-    val b = a.map(x => (x, x*2))
+    val b = a.map(x => (x, x * 2))
 
     // NOTE: The default Java serializer should create zero-sized blocks
     val c = new ShuffledRDD[Int, Int, Int](b, new HashPartitioner(NUM_BLOCKS))
@@ -150,10 +148,11 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     def p[T1, T2](_1: T1, _2: T2): MutablePair[T1, T2] = MutablePair(_1, _2)
     val data = Array(p(1, 1), p(1, 2), p(1, 3), p(2, 1))
     val pairs: RDD[MutablePair[Int, Int]] = sc.parallelize(data, 2)
-    val results = new ShuffledRDD[Int, Int, Int](pairs,
-      new HashPartitioner(2)).collect()
+    val results = new ShuffledRDD[Int, Int, Int](pairs, new HashPartitioner(2)).collect()
 
-    data.foreach { pair => results should contain ((pair._1, pair._2)) }
+    data.foreach { pair =>
+      results should contain((pair._1, pair._2))
+    }
   }
 
   test("sorting on mutable pairs") {
@@ -163,12 +162,12 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     def p[T1, T2](_1: T1, _2: T2): MutablePair[T1, T2] = MutablePair(_1, _2)
     val data = Array(p(1, 11), p(3, 33), p(100, 100), p(2, 22))
     val pairs: RDD[MutablePair[Int, Int]] = sc.parallelize(data, 2)
-    val results = new OrderedRDDFunctions[Int, Int, MutablePair[Int, Int]](pairs)
-      .sortByKey().collect()
-    results(0) should be ((1, 11))
-    results(1) should be ((2, 22))
-    results(2) should be ((3, 33))
-    results(3) should be ((100, 100))
+    val results =
+      new OrderedRDDFunctions[Int, Int, MutablePair[Int, Int]](pairs).sortByKey().collect()
+    results(0) should be((1, 11))
+    results(1) should be((2, 22))
+    results(2) should be((3, 33))
+    results(3) should be((100, 100))
   }
 
   test("cogroup using mutable pairs") {
@@ -209,7 +208,7 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     val results = new SubtractedRDD(pairs1, pairs2, new HashPartitioner(2)).collect()
     results should have length (1)
     // substracted rdd return results as Tuple2
-    results(0) should be ((3, 33))
+    results(0) should be((3, 33))
   }
 
   test("sort with Java non serializable class - Kryo") {
@@ -243,11 +242,10 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
   }
 
   test("shuffle with different compression settings (SPARK-3426)") {
-    for (
-      shuffleSpillCompress <- Set(true, false);
-      shuffleCompress <- Set(true, false)
-    ) {
-      val myConf = conf.clone()
+    for (shuffleSpillCompress <- Set(true, false);
+         shuffleCompress <- Set(true, false)) {
+      val myConf = conf
+        .clone()
         .setAppName("test")
         .setMaster("local")
         .set("spark.shuffle.spill.compress", shuffleSpillCompress.toString)
@@ -261,7 +259,8 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
         assert(diskBlockManager.getAllFiles().nonEmpty)
       } catch {
         case e: Exception =>
-          val errMsg = s"Failed with spark.shuffle.spill.compress=$shuffleSpillCompress," +
+          val errMsg =
+            s"Failed with spark.shuffle.spill.compress=$shuffleSpillCompress," +
             s" spark.shuffle.compress=$shuffleCompress"
           throw new Exception(errMsg, e)
       }
@@ -295,10 +294,7 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     val numRecords = 10000
 
     val metrics = ShuffleSuite.runAndReturnMetrics(sc) {
-      sc.parallelize(1 to numRecords, 4)
-        .map(key => (key, 1))
-        .groupByKey()
-        .collect()
+      sc.parallelize(1 to numRecords, 4).map(key => (key, 1)).groupByKey().collect()
     }
 
     assert(metrics.recordsRead === numRecords)
@@ -312,9 +308,7 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     val numRecords = 10000
 
     val metrics = ShuffleSuite.runAndReturnMetrics(sc) {
-      sc.parallelize(1 to numRecords, 4)
-        .flatMap(key => Array.fill(100)((key, 1)))
-        .countByKey()
+      sc.parallelize(1 to numRecords, 4).flatMap(key => Array.fill(100)((key, 1))).countByKey()
     }
 
     assert(metrics.recordsRead === numRecords)
@@ -335,28 +329,35 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     val shuffleHandle = manager.registerShuffle(0, 1, shuffleDep)
 
     // first attempt -- its successful
-    val writer1 = manager.getWriter[Int, Int](shuffleHandle, 0,
-      new TaskContextImpl(0, 0, 0L, 0, taskMemoryManager, new Properties, metricsSystem))
-    val data1 = (1 to 10).map { x => x -> x}
+    val writer1 = manager.getWriter[Int, Int](
+        shuffleHandle,
+        0,
+        new TaskContextImpl(0, 0, 0L, 0, taskMemoryManager, new Properties, metricsSystem))
+    val data1 = (1 to 10).map { x =>
+      x -> x
+    }
 
     // second attempt -- also successful.  We'll write out different data,
     // just to simulate the fact that the records may get written differently
     // depending on what gets spilled, what gets combined, etc.
-    val writer2 = manager.getWriter[Int, Int](shuffleHandle, 0,
-      new TaskContextImpl(0, 0, 1L, 0, taskMemoryManager, new Properties, metricsSystem))
-    val data2 = (11 to 20).map { x => x -> x}
+    val writer2 = manager.getWriter[Int, Int](
+        shuffleHandle,
+        0,
+        new TaskContextImpl(0, 0, 1L, 0, taskMemoryManager, new Properties, metricsSystem))
+    val data2 = (11 to 20).map { x =>
+      x -> x
+    }
 
     // interleave writes of both attempts -- we want to test that both attempts can occur
     // simultaneously, and everything is still OK
 
-    def writeAndClose(
-      writer: ShuffleWriter[Int, Int])(
-      iter: Iterator[(Int, Int)]): Option[MapStatus] = {
+    def writeAndClose(writer: ShuffleWriter[Int, Int])(
+        iter: Iterator[(Int, Int)]): Option[MapStatus] = {
       val files = writer.write(iter)
       writer.stop(true)
     }
-    val interleaver = new InterleaveIterators(
-      data1, writeAndClose(writer1), data2, writeAndClose(writer2))
+    val interleaver =
+      new InterleaveIterators(data1, writeAndClose(writer1), data2, writeAndClose(writer2))
     val (mapOutput1, mapOutput2) = interleaver.run()
 
     // check that we can read the map output and it has the right data
@@ -366,12 +367,16 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
     assert(mapOutput1.get.getSizeForBlock(0) === mapOutput1.get.getSizeForBlock(0))
 
     // register one of the map outputs -- doesn't matter which one
-    mapOutput1.foreach { case mapStatus =>
-      mapTrackerMaster.registerMapOutputs(0, Array(mapStatus))
+    mapOutput1.foreach {
+      case mapStatus =>
+        mapTrackerMaster.registerMapOutputs(0, Array(mapStatus))
     }
 
-    val reader = manager.getReader[Int, Int](shuffleHandle, 0, 1,
-      new TaskContextImpl(1, 0, 2L, 0, taskMemoryManager, new Properties, metricsSystem))
+    val reader = manager.getReader[Int, Int](
+        shuffleHandle,
+        0,
+        1,
+        new TaskContextImpl(1, 0, 2L, 0, taskMemoryManager, new Properties, metricsSystem))
     val readData = reader.read().toIndexedSeq
     assert(readData === data1.toIndexedSeq || readData === data2.toIndexedSeq)
 
@@ -386,10 +391,7 @@ abstract class ShuffleSuite extends SparkFunSuite with Matchers with LocalSparkC
  * process one element, before pausing to wait for the other function to "catch up".
  */
 class InterleaveIterators[T, R](
-  data1: Seq[T],
-  f1: Iterator[T] => R,
-  data2: Seq[T],
-  f2: Iterator[T] => R) {
+    data1: Seq[T], f1: Iterator[T] => R, data2: Seq[T], f2: Iterator[T] => R) {
 
   require(data1.size == data2.size)
 
@@ -435,10 +437,7 @@ object ShuffleSuite {
   }
 
   case class AggregatedShuffleMetrics(
-    recordsWritten: Long,
-    recordsRead: Long,
-    bytesWritten: Long,
-    byresRead: Long)
+      recordsWritten: Long, recordsRead: Long, bytesWritten: Long, byresRead: Long)
 
   def runAndReturnMetrics(sc: SparkContext)(job: => Unit): AggregatedShuffleMetrics = {
     @volatile var recordsWritten: Long = 0

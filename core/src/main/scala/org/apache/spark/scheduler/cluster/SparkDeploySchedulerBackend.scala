@@ -29,12 +29,10 @@ import org.apache.spark.scheduler._
 import org.apache.spark.util.Utils
 
 private[spark] class SparkDeploySchedulerBackend(
-    scheduler: TaskSchedulerImpl,
-    sc: SparkContext,
-    masters: Array[String])
-  extends CoarseGrainedSchedulerBackend(scheduler, sc.env.rpcEnv)
-  with AppClientListener
-  with Logging {
+    scheduler: TaskSchedulerImpl, sc: SparkContext, masters: Array[String])
+    extends CoarseGrainedSchedulerBackend(scheduler, sc.env.rpcEnv)
+    with AppClientListener
+    with Logging {
 
   private var client: AppClient = null
   private var stopping = false
@@ -55,23 +53,33 @@ private[spark] class SparkDeploySchedulerBackend(
     launcherBackend.connect()
 
     // The endpoint for executors to talk to us
-    val driverUrl = RpcEndpointAddress(
-      sc.conf.get("spark.driver.host"),
-      sc.conf.get("spark.driver.port").toInt,
-      CoarseGrainedSchedulerBackend.ENDPOINT_NAME).toString
-    val args = Seq(
-      "--driver-url", driverUrl,
-      "--executor-id", "{{EXECUTOR_ID}}",
-      "--hostname", "{{HOSTNAME}}",
-      "--cores", "{{CORES}}",
-      "--app-id", "{{APP_ID}}",
-      "--worker-url", "{{WORKER_URL}}")
-    val extraJavaOpts = sc.conf.getOption("spark.executor.extraJavaOptions")
-      .map(Utils.splitCommandString).getOrElse(Seq.empty)
-    val classPathEntries = sc.conf.getOption("spark.executor.extraClassPath")
-      .map(_.split(java.io.File.pathSeparator).toSeq).getOrElse(Nil)
-    val libraryPathEntries = sc.conf.getOption("spark.executor.extraLibraryPath")
-      .map(_.split(java.io.File.pathSeparator).toSeq).getOrElse(Nil)
+    val driverUrl = RpcEndpointAddress(sc.conf.get("spark.driver.host"),
+                                       sc.conf.get("spark.driver.port").toInt,
+                                       CoarseGrainedSchedulerBackend.ENDPOINT_NAME).toString
+    val args = Seq("--driver-url",
+                   driverUrl,
+                   "--executor-id",
+                   "{{EXECUTOR_ID}}",
+                   "--hostname",
+                   "{{HOSTNAME}}",
+                   "--cores",
+                   "{{CORES}}",
+                   "--app-id",
+                   "{{APP_ID}}",
+                   "--worker-url",
+                   "{{WORKER_URL}}")
+    val extraJavaOpts = sc.conf
+      .getOption("spark.executor.extraJavaOptions")
+      .map(Utils.splitCommandString)
+      .getOrElse(Seq.empty)
+    val classPathEntries = sc.conf
+      .getOption("spark.executor.extraClassPath")
+      .map(_.split(java.io.File.pathSeparator).toSeq)
+      .getOrElse(Nil)
+    val libraryPathEntries = sc.conf
+      .getOption("spark.executor.extraLibraryPath")
+      .map(_.split(java.io.File.pathSeparator).toSeq)
+      .getOrElse(Nil)
 
     // When testing, expose the parent class path to the child. This is processed by
     // compute-classpath.{cmd,sh} and makes all needed jars available to child processes
@@ -87,7 +95,11 @@ private[spark] class SparkDeploySchedulerBackend(
     val sparkJavaOpts = Utils.sparkJavaOpts(conf, SparkConf.isExecutorStartupConf)
     val javaOpts = sparkJavaOpts ++ extraJavaOpts
     val command = Command("org.apache.spark.executor.CoarseGrainedExecutorBackend",
-      args, sc.executorEnvs, classPathEntries ++ testingClassPath, libraryPathEntries, javaOpts)
+                          args,
+                          sc.executorEnvs,
+                          classPathEntries ++ testingClassPath,
+                          libraryPathEntries,
+                          javaOpts)
     val appUIAddress = sc.ui.map(_.appUIAddress).getOrElse("")
     val coresPerExecutor = conf.getOption("spark.executor.cores").map(_.toInt)
     // If we're using dynamic allocation, set our initial executor limit to 0 for now.
@@ -98,8 +110,15 @@ private[spark] class SparkDeploySchedulerBackend(
       } else {
         None
       }
-    val appDesc = new ApplicationDescription(sc.appName, maxCores, sc.executorMemory, command,
-      appUIAddress, sc.eventLogDir, sc.eventLogCodec, coresPerExecutor, initialExecutorLimit)
+    val appDesc = new ApplicationDescription(sc.appName,
+                                             maxCores,
+                                             sc.executorMemory,
+                                             command,
+                                             appUIAddress,
+                                             sc.eventLogDir,
+                                             sc.eventLogCodec,
+                                             coresPerExecutor,
+                                             initialExecutorLimit)
     client = new AppClient(sc.env.rpcEnv, masters, appDesc, this, conf)
     client.start()
     launcherBackend.setState(SparkAppHandle.State.SUBMITTED)
@@ -139,10 +158,11 @@ private[spark] class SparkDeploySchedulerBackend(
     }
   }
 
-  override def executorAdded(fullId: String, workerId: String, hostPort: String, cores: Int,
-    memory: Int) {
-    logInfo("Granted executor ID %s on hostPort %s with %d cores, %s RAM".format(
-      fullId, hostPort, cores, Utils.megabytesToString(memory)))
+  override def executorAdded(
+      fullId: String, workerId: String, hostPort: String, cores: Int, memory: Int) {
+    logInfo(
+        "Granted executor ID %s on hostPort %s with %d cores, %s RAM".format(
+            fullId, hostPort, cores, Utils.megabytesToString(memory)))
   }
 
   override def executorRemoved(fullId: String, message: String, exitStatus: Option[Int]) {
@@ -216,5 +236,4 @@ private[spark] class SparkDeploySchedulerBackend(
       launcherBackend.close()
     }
   }
-
 }

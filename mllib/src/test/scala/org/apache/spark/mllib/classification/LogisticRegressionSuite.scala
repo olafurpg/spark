@@ -32,23 +32,16 @@ import org.apache.spark.mllib.util.TestingUtils._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.Utils
 
-
 object LogisticRegressionSuite {
 
   def generateLogisticInputAsList(
-    offset: Double,
-    scale: Double,
-    nPoints: Int,
-    seed: Int): java.util.List[LabeledPoint] = {
+      offset: Double, scale: Double, nPoints: Int, seed: Int): java.util.List[LabeledPoint] = {
     generateLogisticInput(offset, scale, nPoints, seed).asJava
   }
 
   // Generate input of the form Y = logistic(offset + scale*X)
   def generateLogisticInput(
-      offset: Double,
-      scale: Double,
-      nPoints: Int,
-      seed: Int): Seq[LabeledPoint] = {
+      offset: Double, scale: Double, nPoints: Int, seed: Int): Seq[LabeledPoint] = {
     val rnd = new Random(seed)
     val x1 = Array.fill[Double](nPoints)(rnd.nextGaussian())
 
@@ -84,20 +77,20 @@ object LogisticRegressionSuite {
    * @param nPoints the number of instance of generated data.
    * @param seed the seed for random generator. For consistent testing result, it will be fixed.
    */
-  def generateMultinomialLogisticInput(
-      weights: Array[Double],
-      xMean: Array[Double],
-      xVariance: Array[Double],
-      addIntercept: Boolean,
-      nPoints: Int,
-      seed: Int): Seq[LabeledPoint] = {
+  def generateMultinomialLogisticInput(weights: Array[Double],
+                                       xMean: Array[Double],
+                                       xVariance: Array[Double],
+                                       addIntercept: Boolean,
+                                       nPoints: Int,
+                                       seed: Int): Seq[LabeledPoint] = {
     val rnd = new Random(seed)
 
     val xDim = xMean.length
     val xWithInterceptsDim = if (addIntercept) xDim + 1 else xDim
     val nClasses = weights.length / xWithInterceptsDim + 1
 
-    val x = Array.fill[Vector](nPoints)(Vectors.dense(Array.fill[Double](xDim)(rnd.nextGaussian())))
+    val x =
+      Array.fill[Vector](nPoints)(Vectors.dense(Array.fill[Double](xDim)(rnd.nextGaussian())))
 
     x.foreach { vector =>
       // This doesn't work if `vector` is a sparse vector.
@@ -155,11 +148,14 @@ object LogisticRegressionSuite {
 
   /** Binary labels, 3 features */
   private val binaryModel = new LogisticRegressionModel(
-    weights = Vectors.dense(0.1, 0.2, 0.3), intercept = 0.5, numFeatures = 3, numClasses = 2)
+      weights = Vectors.dense(0.1, 0.2, 0.3), intercept = 0.5, numFeatures = 3, numClasses = 2)
 
   /** 3 classes, 2 features */
   private val multiclassModel = new LogisticRegressionModel(
-    weights = Vectors.dense(0.1, 0.2, 0.3, 0.4), intercept = 1.0, numFeatures = 2, numClasses = 3)
+      weights = Vectors.dense(0.1, 0.2, 0.3, 0.4),
+      intercept = 1.0,
+      numFeatures = 2,
+      numClasses = 3)
 
   private def checkModelsEqual(a: LogisticRegressionModel, b: LogisticRegressionModel): Unit = {
     assert(a.weights == b.weights)
@@ -169,7 +165,6 @@ object LogisticRegressionSuite {
     assert(a.getThreshold == b.getThreshold)
   }
 }
-
 
 class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext with Matchers {
 
@@ -197,18 +192,17 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
       val xVariance = Array(0.6856, 0.1899, 3.116, 0.581)
 
       val testData = LogisticRegressionSuite.generateMultinomialLogisticInput(
-        coefficients, xMean, xVariance, true, nPoints, 42)
+          coefficients, xMean, xVariance, true, nPoints, 42)
 
       sc.parallelize(testData, 2)
     }
   }
 
   def validatePrediction(
-      predictions: Seq[Double],
-      input: Seq[LabeledPoint],
-      expectedAcc: Double = 0.83) {
-    val numOffPredictions = predictions.zip(input).count { case (prediction, expected) =>
-      prediction != expected.label
+      predictions: Seq[Double], input: Seq[LabeledPoint], expectedAcc: Double = 0.83) {
+    val numOffPredictions = predictions.zip(input).count {
+      case (prediction, expected) =>
+        prediction != expected.label
     }
     // At least 83% of the predictions should be on.
     ((input.length - numOffPredictions).toDouble / input.length) should be > expectedAcc
@@ -225,11 +219,7 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
     val testRDD = sc.parallelize(testData, 2)
     testRDD.cache()
     val lr = new LogisticRegressionWithSGD().setIntercept(true)
-    lr.optimizer
-      .setStepSize(10.0)
-      .setRegParam(0.0)
-      .setNumIterations(20)
-      .setConvergenceTol(0.0005)
+    lr.optimizer.setStepSize(10.0).setRegParam(0.0).setNumIterations(20).setConvergenceTol(0.0005)
 
     val model = lr.run(testRDD)
 
@@ -263,10 +253,8 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
     testRDD.cache()
 
     // Override the updater
-    class LogisticRegressionWithLBFGSCustomUpdater
-        extends LogisticRegressionWithLBFGS {
-      override val optimizer =
-        new LBFGS(new LogisticGradient, myUpdater)
+    class LogisticRegressionWithLBFGSCustomUpdater extends LogisticRegressionWithLBFGS {
+      override val optimizer = new LBFGS(new LogisticGradient, myUpdater)
     }
 
     val lr = new LogisticRegressionWithLBFGSCustomUpdater().setIntercept(true)
@@ -301,10 +289,7 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
 
     // Use half as many iterations as the previous test.
     val lr = new LogisticRegressionWithSGD().setIntercept(true)
-    lr.optimizer
-      .setStepSize(10.0)
-      .setRegParam(0.0)
-      .setNumIterations(10)
+    lr.optimizer.setStepSize(10.0).setRegParam(0.0).setNumIterations(10)
 
     val model = lr.run(testRDD, initialWeights)
 
@@ -336,10 +321,7 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
 
     // Use half as many iterations as the previous test.
     val lr = new LogisticRegressionWithSGD().setIntercept(true)
-    lr.optimizer.
-      setStepSize(1.0).
-      setNumIterations(10).
-      setRegParam(1.0)
+    lr.optimizer.setStepSize(1.0).setNumIterations(10).setRegParam(1.0)
 
     val model = lr.run(testRDD, initialWeights)
 
@@ -389,6 +371,7 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
   }
 
   test("numerical stability of scaling features using logistic regression with LBFGS") {
+
     /**
      * If we rescale the features, the condition number will be changed so the convergence rate
      * and the solution will not equal to the original solution multiple by the scaling factor
@@ -399,7 +382,6 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
      * the same, and the solution should equal to the original solution multiple by the scaling
      * factor.
      */
-
     val nPoints = 10000
     val A = 2.0
     val B = -1.5
@@ -411,10 +393,12 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
     val testRDD1 = sc.parallelize(testData, 2)
 
     val testRDD2 = sc.parallelize(
-      testData.map(x => LabeledPoint(x.label, Vectors.fromBreeze(x.features.toBreeze * 1.0E3))), 2)
+        testData.map(x => LabeledPoint(x.label, Vectors.fromBreeze(x.features.toBreeze * 1.0E3))),
+        2)
 
     val testRDD3 = sc.parallelize(
-      testData.map(x => LabeledPoint(x.label, Vectors.fromBreeze(x.features.toBreeze * 1.0E6))), 2)
+        testData.map(x => LabeledPoint(x.label, Vectors.fromBreeze(x.features.toBreeze * 1.0E6))),
+        2)
 
     testRDD1.cache()
     testRDD2.cache()
@@ -456,15 +440,22 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
      * The following weights and xMean/xVariance are computed from iris dataset with lambda = 0.2.
      * As a result, we are actually drawing samples from probability distribution of built model.
      */
-    val weights = Array(
-      -0.57997, 0.912083, -0.371077, -0.819866, 2.688191,
-      -0.16624, -0.84355, -0.048509, -0.301789, 4.170682)
+    val weights = Array(-0.57997,
+                        0.912083,
+                        -0.371077,
+                        -0.819866,
+                        2.688191,
+                        -0.16624,
+                        -0.84355,
+                        -0.048509,
+                        -0.301789,
+                        4.170682)
 
     val xMean = Array(5.843, 3.057, 3.758, 1.199)
     val xVariance = Array(0.6856, 0.1899, 3.116, 0.581)
 
     val testData = LogisticRegressionSuite.generateMultinomialLogisticInput(
-      weights, xMean, xVariance, true, nPoints, 42)
+        weights, xMean, xVariance, true, nPoints, 42)
 
     val testRDD = sc.parallelize(testData, 2)
     testRDD.cache()
@@ -523,21 +514,28 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
      *    data.V4 -0.06463799
      *    data.V5 -0.29198337
      */
-
-    val weightsR = Vectors.dense(Array(
-      -0.5837166, 0.9285260, -0.3783612, -0.8123411, 2.6228269,
-      -0.1691865, -0.811048, -0.0646380, -0.2919834, 4.1119745))
+    val weightsR = Vectors.dense(
+        Array(-0.5837166,
+              0.9285260,
+              -0.3783612,
+              -0.8123411,
+              2.6228269,
+              -0.1691865,
+              -0.811048,
+              -0.0646380,
+              -0.2919834,
+              4.1119745))
 
     assert(model.weights ~== weightsR relTol 0.05)
 
     val validationData = LogisticRegressionSuite.generateMultinomialLogisticInput(
-      weights, xMean, xVariance, true, nPoints, 17)
+        weights, xMean, xVariance, true, nPoints, 17)
     val validationRDD = sc.parallelize(validationData, 2)
     // The validation accuracy is not good since this model (even the original weights) doesn't have
     // very steep curve in logistic function so that when we draw samples from distribution, it's
     // very easy to assign to another labels. However, this prediction result is consistent to R.
-    validatePrediction(model.predict(validationRDD.map(_.features)).collect(), validationData, 0.47)
-
+    validatePrediction(
+        model.predict(validationRDD.map(_.features)).collect(), validationData, 0.47)
   }
 
   test("model save/load: binary classification") {
@@ -902,7 +900,6 @@ class LogisticRegressionSuite extends SparkFunSuite with MLlibTestSparkContext w
     assert(model2.intercept ~== interceptR2 absTol 1E-3)
     assert(model2.weights ~= coefficientsR2 relTol 1E-2)
   }
-
 }
 
 class LogisticRegressionClusterSuite extends SparkFunSuite with LocalClusterSparkContext {
@@ -910,10 +907,13 @@ class LogisticRegressionClusterSuite extends SparkFunSuite with LocalClusterSpar
   test("task size should be small in both training and prediction using SGD optimizer") {
     val m = 4
     val n = 200000
-    val points = sc.parallelize(0 until m, 2).mapPartitionsWithIndex { (idx, iter) =>
-      val random = new Random(idx)
-      iter.map(i => LabeledPoint(1.0, Vectors.dense(Array.fill(n)(random.nextDouble()))))
-    }.cache()
+    val points = sc
+      .parallelize(0 until m, 2)
+      .mapPartitionsWithIndex { (idx, iter) =>
+        val random = new Random(idx)
+        iter.map(i => LabeledPoint(1.0, Vectors.dense(Array.fill(n)(random.nextDouble()))))
+      }
+      .cache()
     // If we serialize data directly in the task closure, the size of the serialized task would be
     // greater than 1MB and hence Spark would throw an error.
     val model = LogisticRegressionWithSGD.train(points, 2)
@@ -927,10 +927,13 @@ class LogisticRegressionClusterSuite extends SparkFunSuite with LocalClusterSpar
   test("task size should be small in both training and prediction using LBFGS optimizer") {
     val m = 4
     val n = 200000
-    val points = sc.parallelize(0 until m, 2).mapPartitionsWithIndex { (idx, iter) =>
-      val random = new Random(idx)
-      iter.map(i => LabeledPoint(1.0, Vectors.dense(Array.fill(n)(random.nextDouble()))))
-    }.cache()
+    val points = sc
+      .parallelize(0 until m, 2)
+      .mapPartitionsWithIndex { (idx, iter) =>
+        val random = new Random(idx)
+        iter.map(i => LabeledPoint(1.0, Vectors.dense(Array.fill(n)(random.nextDouble()))))
+      }
+      .cache()
     // If we serialize data directly in the task closure, the size of the serialized task would be
     // greater than 1MB and hence Spark would throw an error.
     val lr = new LogisticRegressionWithLBFGS().setIntercept(true)
@@ -942,5 +945,4 @@ class LogisticRegressionClusterSuite extends SparkFunSuite with LocalClusterSpar
     // Materialize the RDDs
     predictions.count()
   }
-
 }

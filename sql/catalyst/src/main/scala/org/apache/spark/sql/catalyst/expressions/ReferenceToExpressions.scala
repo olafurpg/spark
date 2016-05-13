@@ -32,7 +32,7 @@ import org.apache.spark.sql.types.DataType
  * @param children The expressions that used as input values for [[BoundReference]].
  */
 case class ReferenceToExpressions(result: Expression, children: Seq[Expression])
-  extends Expression {
+    extends Expression {
 
   override def nullable: Boolean = result.nullable
   override def dataType: DataType = result.dataType
@@ -47,8 +47,9 @@ case class ReferenceToExpressions(result: Expression, children: Seq[Expression])
       case b: BoundReference if b.ordinal > maxOrdinal => maxOrdinal = b.ordinal
     }
     if (maxOrdinal > children.length) {
-      return TypeCheckFailure(s"The result expression need $maxOrdinal input expressions, but " +
-        s"there are only ${children.length} inputs.")
+      return TypeCheckFailure(
+          s"The result expression need $maxOrdinal input expressions, but " +
+          s"there are only ${children.length} inputs.")
     }
 
     TypeCheckSuccess
@@ -71,6 +72,7 @@ case class ReferenceToExpressions(result: Expression, children: Seq[Expression])
     }.genCode(ctx)
 
     ExprCode(code = childrenGen.map(_.code).mkString("\n") + "\n" + resultGen.code,
-      isNull = resultGen.isNull, value = resultGen.value)
+             isNull = resultGen.isNull,
+             value = resultGen.value)
   }
 }

@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql.execution.python
 
@@ -30,7 +30,6 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types.{DataType, StructField, StructType}
 
-
 /**
  * A physical plan that evaluates a [[PythonUDF]], one partition of tuples at a time.
  *
@@ -42,7 +41,7 @@ import org.apache.spark.sql.types.{DataType, StructField, StructType}
  * slow, this could lead to the queue growing unbounded and eventually run out of memory.
  */
 case class BatchEvalPythonExec(udfs: Seq[PythonUDF], output: Seq[Attribute], child: SparkPlan)
-  extends SparkPlan {
+    extends SparkPlan {
 
   def children: Seq[SparkPlan] = child :: Nil
 
@@ -64,7 +63,7 @@ case class BatchEvalPythonExec(udfs: Seq[PythonUDF], output: Seq[Attribute], chi
     val reuseWorker = inputRDD.conf.getBoolean("spark.python.worker.reuse", defaultValue = true)
 
     inputRDD.mapPartitions { iter =>
-      EvaluatePython.registerPicklers()  // register pickler for Row
+      EvaluatePython.registerPicklers() // register pickler for Row
 
       // The queue used to buffer input rows so we can drain it to
       // combine input with output from Python.
@@ -124,24 +123,26 @@ case class BatchEvalPythonExec(udfs: Seq[PythonUDF], output: Seq[Attribute], chi
       val unpickle = new Unpickler
       val mutableRow = new GenericMutableRow(1)
       val joined = new JoinedRow
-      val resultType = if (udfs.length == 1) {
-        udfs.head.dataType
-      } else {
-        StructType(udfs.map(u => StructField("", u.dataType, u.nullable)))
-      }
+      val resultType =
+        if (udfs.length == 1) {
+          udfs.head.dataType
+        } else {
+          StructType(udfs.map(u => StructField("", u.dataType, u.nullable)))
+        }
       val resultProj = UnsafeProjection.create(output, output)
 
       outputIterator.flatMap { pickedResult =>
         val unpickledBatch = unpickle.loads(pickedResult)
         unpickledBatch.asInstanceOf[java.util.ArrayList[Any]].asScala
       }.map { result =>
-        val row = if (udfs.length == 1) {
-          // fast path for single UDF
-          mutableRow(0) = EvaluatePython.fromJava(result, resultType)
-          mutableRow
-        } else {
-          EvaluatePython.fromJava(result, resultType).asInstanceOf[InternalRow]
-        }
+        val row =
+          if (udfs.length == 1) {
+            // fast path for single UDF
+            mutableRow(0) = EvaluatePython.fromJava(result, resultType)
+            mutableRow
+          } else {
+            EvaluatePython.fromJava(result, resultType).asInstanceOf[InternalRow]
+          }
         resultProj(joined(queue.poll(), row))
       }
     }

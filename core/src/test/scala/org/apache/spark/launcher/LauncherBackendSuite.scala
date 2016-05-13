@@ -29,14 +29,13 @@ import org.apache.spark._
 
 class LauncherBackendSuite extends SparkFunSuite with Matchers {
 
-  private val tests = Seq(
-    "local" -> "local",
-    "standalone/client" -> "local-cluster[1,1,1024]")
+  private val tests = Seq("local" -> "local", "standalone/client" -> "local-cluster[1,1,1024]")
 
-  tests.foreach { case (name, master) =>
-    test(s"$name: launcher handle") {
-      testWithMaster(master)
-    }
+  tests.foreach {
+    case (name, master) =>
+      test(s"$name: launcher handle") {
+        testWithMaster(master)
+      }
   }
 
   private def testWithMaster(master: String): Unit = {
@@ -60,13 +59,12 @@ class LauncherBackendSuite extends SparkFunSuite with Matchers {
       handle.stop()
 
       eventually(timeout(30 seconds), interval(100 millis)) {
-        handle.getState() should be (SparkAppHandle.State.KILLED)
+        handle.getState() should be(SparkAppHandle.State.KILLED)
       }
     } finally {
       handle.kill()
     }
   }
-
 }
 
 object TestApp {
@@ -76,5 +74,4 @@ object TestApp {
       Thread.sleep(TimeUnit.SECONDS.toMillis(20))
     }
   }
-
 }

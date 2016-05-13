@@ -33,7 +33,8 @@ import org.apache.spark.sql.types.DataType
  */
 @Experimental
 class ElementwiseProduct(override val uid: String)
-  extends UnaryTransformer[Vector, Vector, ElementwiseProduct] with DefaultParamsWritable {
+    extends UnaryTransformer[Vector, Vector, ElementwiseProduct]
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("elemProd"))
 

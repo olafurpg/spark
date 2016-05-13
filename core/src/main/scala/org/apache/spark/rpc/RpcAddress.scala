@@ -19,7 +19,6 @@ package org.apache.spark.rpc
 
 import org.apache.spark.util.Utils
 
-
 /**
  * Address for an RPC environment, with hostname and port.
  */
@@ -32,7 +31,6 @@ private[spark] case class RpcAddress(host: String, port: Int) {
 
   override def toString: String = hostPort
 }
-
 
 private[spark] object RpcAddress {
 

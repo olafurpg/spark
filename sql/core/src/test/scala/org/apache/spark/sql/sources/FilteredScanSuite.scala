@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql.sources
 
@@ -30,23 +30,22 @@ import org.apache.spark.unsafe.types.UTF8String
 
 class FilteredScanSource extends RelationProvider {
   override def createRelation(
-      sqlContext: SQLContext,
-      parameters: Map[String, String]): BaseRelation = {
+      sqlContext: SQLContext, parameters: Map[String, String]): BaseRelation = {
     SimpleFilteredScan(parameters("from").toInt, parameters("to").toInt)(sqlContext.sparkSession)
   }
 }
 
 case class SimpleFilteredScan(from: Int, to: Int)(@transient val sparkSession: SparkSession)
-  extends BaseRelation
-  with PrunedFilteredScan {
+    extends BaseRelation
+    with PrunedFilteredScan {
 
   override def sqlContext: SQLContext = sparkSession.wrapped
 
   override def schema: StructType =
     StructType(
-      StructField("a", IntegerType, nullable = false) ::
-      StructField("b", IntegerType, nullable = false) ::
-      StructField("c", StringType, nullable = false) :: Nil)
+        StructField("a", IntegerType, nullable = false) ::
+        StructField("b", IntegerType, nullable = false) ::
+        StructField("c", StringType, nullable = false) :: Nil)
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
     def unhandled(filter: Filter): Boolean = {
@@ -72,11 +71,16 @@ case class SimpleFilteredScan(from: Int, to: Int)(@transient val sparkSession: S
 
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
     val rowBuilders = requiredColumns.map {
-      case "a" => (i: Int) => Seq(i)
-      case "b" => (i: Int) => Seq(i * 2)
-      case "c" => (i: Int) =>
-        val c = (i - 1 + 'a').toChar.toString
-        Seq(c * 5 + c.toUpperCase * 5)
+      case "a" =>
+        (i: Int) =>
+          Seq(i)
+        case "b" =>
+        (i: Int) =>
+          Seq(i * 2)
+        case "c" =>
+        (i: Int) =>
+          val c = (i - 1 + 'a').toChar.toString
+          Seq(c * 5 + c.toUpperCase * 5)
     }
 
     FiltersPushed.list = filters
@@ -84,21 +88,45 @@ case class SimpleFilteredScan(from: Int, to: Int)(@transient val sparkSession: S
 
     // Predicate test on integer column
     def translateFilterOnA(filter: Filter): Int => Boolean = filter match {
-      case EqualTo("a", v) => (a: Int) => a == v
-      case EqualNullSafe("a", v) => (a: Int) => a == v
-      case LessThan("a", v: Int) => (a: Int) => a < v
-      case LessThanOrEqual("a", v: Int) => (a: Int) => a <= v
-      case GreaterThan("a", v: Int) => (a: Int) => a > v
-      case GreaterThanOrEqual("a", v: Int) => (a: Int) => a >= v
-      case In("a", values) => (a: Int) => values.map(_.asInstanceOf[Int]).toSet.contains(a)
-      case IsNull("a") => (a: Int) => false // Int can't be null
-      case IsNotNull("a") => (a: Int) => true
-      case Not(pred) => (a: Int) => !translateFilterOnA(pred)(a)
-      case And(left, right) => (a: Int) =>
-        translateFilterOnA(left)(a) && translateFilterOnA(right)(a)
-      case Or(left, right) => (a: Int) =>
-        translateFilterOnA(left)(a) || translateFilterOnA(right)(a)
-      case _ => (a: Int) => true
+      case EqualTo("a", v) =>
+        (a: Int) =>
+          a == v
+        case EqualNullSafe("a", v) =>
+        (a: Int) =>
+          a == v
+        case LessThan("a", v: Int) =>
+        (a: Int) =>
+          a < v
+        case LessThanOrEqual("a", v: Int) =>
+        (a: Int) =>
+          a <= v
+        case GreaterThan("a", v: Int) =>
+        (a: Int) =>
+          a > v
+        case GreaterThanOrEqual("a", v: Int) =>
+        (a: Int) =>
+          a >= v
+        case In("a", values) =>
+        (a: Int) =>
+          values.map(_.asInstanceOf[Int]).toSet.contains(a)
+        case IsNull("a") =>
+        (a: Int) =>
+          false // Int can't be null
+        case IsNotNull("a") =>
+        (a: Int) =>
+          true
+        case Not(pred) =>
+        (a: Int) =>
+          !translateFilterOnA(pred)(a)
+        case And(left, right) =>
+        (a: Int) =>
+          translateFilterOnA(left)(a) && translateFilterOnA(right)(a)
+        case Or(left, right) =>
+        (a: Int) =>
+          translateFilterOnA(left)(a) || translateFilterOnA(right)(a)
+        case _ =>
+        (a: Int) =>
+          true
     }
 
     // Predicate test on string column
@@ -108,8 +136,12 @@ case class SimpleFilteredScan(from: Int, to: Int)(@transient val sparkSession: S
       case StringContains("c", v) => _.contains(v)
       case EqualTo("c", v: String) => _.equals(v)
       case EqualTo("c", v: UTF8String) => sys.error("UTF8String should not appear in filters")
-      case In("c", values) => (s: String) => values.map(_.asInstanceOf[String]).toSet.contains(s)
-      case _ => (c: String) => true
+      case In("c", values) =>
+        (s: String) =>
+          values.map(_.asInstanceOf[String]).toSet.contains(s)
+        case _ =>
+        (c: String) =>
+          true
     }
 
     def eval(a: Int) = {
@@ -117,8 +149,10 @@ case class SimpleFilteredScan(from: Int, to: Int)(@transient val sparkSession: S
       filters.forall(translateFilterOnA(_)(a)) && filters.forall(translateFilterOnC(_)(c))
     }
 
-    sparkSession.sparkContext.parallelize(from to to).filter(eval).map(i =>
-      Row.fromSeq(rowBuilders.map(_(i)).reduceOption(_ ++ _).getOrElse(Seq.empty)))
+    sparkSession.sparkContext
+      .parallelize(from to to)
+      .filter(eval)
+      .map(i => Row.fromSeq(rowBuilders.map(_ (i)).reduceOption(_ ++ _).getOrElse(Seq.empty)))
   }
 }
 
@@ -137,8 +171,7 @@ class FilteredScanSuite extends DataSourceTest with SharedSQLContext with Predic
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    sql(
-      """
+    sql("""
         |CREATE TEMPORARY TABLE oneToTenFiltered
         |USING org.apache.spark.sql.sources.FilteredScanSource
         |OPTIONS (
@@ -148,90 +181,64 @@ class FilteredScanSuite extends DataSourceTest with SharedSQLContext with Predic
       """.stripMargin)
   }
 
-  sqlTest(
-    "SELECT * FROM oneToTenFiltered",
-    (1 to 10).map(i => Row(i, i * 2, (i - 1 + 'a').toChar.toString * 5
-      + (i - 1 + 'a').toChar.toString.toUpperCase * 5)).toSeq)
+  sqlTest("SELECT * FROM oneToTenFiltered",
+          (1 to 10)
+            .map(i =>
+                  Row(i,
+                      i * 2,
+                      (i - 1 + 'a').toChar.toString * 5 +
+                      (i - 1 + 'a').toChar.toString.toUpperCase * 5))
+            .toSeq)
+
+  sqlTest("SELECT a, b FROM oneToTenFiltered", (1 to 10).map(i => Row(i, i * 2)).toSeq)
+
+  sqlTest("SELECT b, a FROM oneToTenFiltered", (1 to 10).map(i => Row(i * 2, i)).toSeq)
+
+  sqlTest("SELECT a FROM oneToTenFiltered", (1 to 10).map(i => Row(i)).toSeq)
+
+  sqlTest("SELECT b FROM oneToTenFiltered", (1 to 10).map(i => Row(i * 2)).toSeq)
+
+  sqlTest("SELECT a * 2 FROM oneToTenFiltered", (1 to 10).map(i => Row(i * 2)).toSeq)
+
+  sqlTest("SELECT A AS b FROM oneToTenFiltered", (1 to 10).map(i => Row(i)).toSeq)
+
+  sqlTest("SELECT x.b, y.a FROM oneToTenFiltered x JOIN oneToTenFiltered y ON x.a = y.b",
+          (1 to 5).map(i => Row(i * 4, i)).toSeq)
+
+  sqlTest("SELECT x.a, y.b FROM oneToTenFiltered x JOIN oneToTenFiltered y ON x.a = y.b",
+          (2 to 10 by 2).map(i => Row(i, i)).toSeq)
+
+  sqlTest("SELECT a, b FROM oneToTenFiltered WHERE a = 1", Seq(1).map(i => Row(i, i * 2)))
 
   sqlTest(
-    "SELECT a, b FROM oneToTenFiltered",
-    (1 to 10).map(i => Row(i, i * 2)).toSeq)
+      "SELECT a, b FROM oneToTenFiltered WHERE a IN (1,3,5)", Seq(1, 3, 5).map(i => Row(i, i * 2)))
 
-  sqlTest(
-    "SELECT b, a FROM oneToTenFiltered",
-    (1 to 10).map(i => Row(i * 2, i)).toSeq)
+  sqlTest("SELECT a, b FROM oneToTenFiltered WHERE A = 1", Seq(1).map(i => Row(i, i * 2)))
 
-  sqlTest(
-    "SELECT a FROM oneToTenFiltered",
-    (1 to 10).map(i => Row(i)).toSeq)
+  sqlTest("SELECT a, b FROM oneToTenFiltered WHERE b = 2", Seq(1).map(i => Row(i, i * 2)))
 
-  sqlTest(
-    "SELECT b FROM oneToTenFiltered",
-    (1 to 10).map(i => Row(i * 2)).toSeq)
+  sqlTest("SELECT a, b FROM oneToTenFiltered WHERE a IS NULL", Seq.empty[Row])
 
-  sqlTest(
-    "SELECT a * 2 FROM oneToTenFiltered",
-    (1 to 10).map(i => Row(i * 2)).toSeq)
+  sqlTest("SELECT a, b FROM oneToTenFiltered WHERE a IS NOT NULL",
+          (1 to 10).map(i => Row(i, i * 2)).toSeq)
 
-  sqlTest(
-    "SELECT A AS b FROM oneToTenFiltered",
-    (1 to 10).map(i => Row(i)).toSeq)
+  sqlTest("SELECT a, b FROM oneToTenFiltered WHERE a < 5 AND a > 1",
+          (2 to 4).map(i => Row(i, i * 2)).toSeq)
 
-  sqlTest(
-    "SELECT x.b, y.a FROM oneToTenFiltered x JOIN oneToTenFiltered y ON x.a = y.b",
-    (1 to 5).map(i => Row(i * 4, i)).toSeq)
+  sqlTest("SELECT a, b FROM oneToTenFiltered WHERE a < 3 OR a > 8",
+          Seq(1, 2, 9, 10).map(i => Row(i, i * 2)))
 
-  sqlTest(
-    "SELECT x.a, y.b FROM oneToTenFiltered x JOIN oneToTenFiltered y ON x.a = y.b",
-    (2 to 10 by 2).map(i => Row(i, i)).toSeq)
+  sqlTest("SELECT a, b FROM oneToTenFiltered WHERE NOT (a < 6)",
+          (6 to 10).map(i => Row(i, i * 2)).toSeq)
 
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE a = 1",
-    Seq(1).map(i => Row(i, i * 2)))
+  sqlTest("SELECT a, b, c FROM oneToTenFiltered WHERE c like 'c%'",
+          Seq(Row(3, 3 * 2, "c" * 5 + "C" * 5)))
 
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE a IN (1,3,5)",
-    Seq(1, 3, 5).map(i => Row(i, i * 2)))
+  sqlTest("SELECT a, b, c FROM oneToTenFiltered WHERE c like '%D'",
+          Seq(Row(4, 4 * 2, "d" * 5 + "D" * 5)))
 
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE A = 1",
-    Seq(1).map(i => Row(i, i * 2)))
-
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE b = 2",
-    Seq(1).map(i => Row(i, i * 2)))
-
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE a IS NULL",
-    Seq.empty[Row])
-
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE a IS NOT NULL",
-    (1 to 10).map(i => Row(i, i * 2)).toSeq)
-
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE a < 5 AND a > 1",
-    (2 to 4).map(i => Row(i, i * 2)).toSeq)
-
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE a < 3 OR a > 8",
-    Seq(1, 2, 9, 10).map(i => Row(i, i * 2)))
-
-  sqlTest(
-    "SELECT a, b FROM oneToTenFiltered WHERE NOT (a < 6)",
-    (6 to 10).map(i => Row(i, i * 2)).toSeq)
-
-  sqlTest(
-    "SELECT a, b, c FROM oneToTenFiltered WHERE c like 'c%'",
-    Seq(Row(3, 3 * 2, "c" * 5 + "C" * 5)))
-
-  sqlTest(
-    "SELECT a, b, c FROM oneToTenFiltered WHERE c like '%D'",
-    Seq(Row(4, 4 * 2, "d" * 5 + "D" * 5)))
-
-  sqlTest(
-    "SELECT a, b, c FROM oneToTenFiltered WHERE c like '%eE%'",
-    Seq(Row(5, 5 * 2, "e" * 5 + "E" * 5)))
+  sqlTest("SELECT a, b, c FROM oneToTenFiltered WHERE c like '%eE%'",
+          Seq(Row(5, 5 * 2, "e" * 5 + "E" * 5)))
 
   testPushDown("SELECT * FROM oneToTenFiltered WHERE A = 1", 1, Set("a", "b", "c"))
   testPushDown("SELECT a FROM oneToTenFiltered WHERE A = 1", 1, Set("a"))
@@ -257,11 +264,10 @@ class FilteredScanSuite extends DataSourceTest with SharedSQLContext with Predic
   testPushDown("SELECT * FROM oneToTenFiltered WHERE a IN (1,3,5)", 3, Set("a", "b", "c"))
 
   testPushDown("SELECT * FROM oneToTenFiltered WHERE a = 20", 0, Set("a", "b", "c"))
-  testPushDown(
-    "SELECT * FROM oneToTenFiltered WHERE b = 1",
-    10,
-    Set("a", "b", "c"),
-    Set(EqualTo("b", 1)))
+  testPushDown("SELECT * FROM oneToTenFiltered WHERE b = 1",
+               10,
+               Set("a", "b", "c"),
+               Set(EqualTo("b", 1)))
 
   testPushDown("SELECT * FROM oneToTenFiltered WHERE a < 5 AND a > 1", 3, Set("a", "b", "c"))
   testPushDown("SELECT * FROM oneToTenFiltered WHERE a < 3 OR a > 8", 4, Set("a", "b", "c"))
@@ -284,29 +290,24 @@ class FilteredScanSuite extends DataSourceTest with SharedSQLContext with Predic
   testPushDown("SELECT c FROM oneToTenFiltered WHERE A + b > 9", 10, Set("a", "b", "c"))
 
   // A query with an inconvertible filter, an unhandled filter, and a handled filter.
-  testPushDown(
-    """SELECT a
+  testPushDown("""SELECT a
       |  FROM oneToTenFiltered
       | WHERE a + b > 9
       |   AND b < 16
       |   AND c IN ('bbbbbBBBBB', 'cccccCCCCC', 'dddddDDDDD', 'foo')
     """.stripMargin.split("\n").map(_.trim).mkString(" "),
-    3,
-    Set("a", "b"),
-    Set(LessThan("b", 16)))
+               3,
+               Set("a", "b"),
+               Set(LessThan("b", 16)))
 
-  def testPushDown(
-    sqlString: String,
-    expectedCount: Int,
-    requiredColumnNames: Set[String]): Unit = {
+  def testPushDown(sqlString: String, expectedCount: Int, requiredColumnNames: Set[String]): Unit = {
     testPushDown(sqlString, expectedCount, requiredColumnNames, Set.empty[Filter])
   }
 
-  def testPushDown(
-    sqlString: String,
-    expectedCount: Int,
-    requiredColumnNames: Set[String],
-    expectedUnhandledFilters: Set[Filter]): Unit = {
+  def testPushDown(sqlString: String,
+                   expectedCount: Int,
+                   requiredColumnNames: Set[String],
+                   expectedUnhandledFilters: Set[Filter]): Unit = {
 
     test(s"PushDown Returns $expectedCount: $sqlString") {
       // These tests check a particular plan, disable whole stage codegen.
@@ -328,17 +329,15 @@ class FilteredScanSuite extends DataSourceTest with SharedSQLContext with Predic
         }.get
 
         assert(
-          relation.unhandledFilters(FiltersPushed.list.toArray).toSet === expectedUnhandledFilters)
+            relation.unhandledFilters(FiltersPushed.list.toArray).toSet === expectedUnhandledFilters)
 
         if (rawCount != expectedCount) {
-          fail(
-            s"Wrong # of results for pushed filter. Got $rawCount, Expected $expectedCount\n" +
-              s"Filters pushed: ${FiltersPushed.list.mkString(",")}\n" +
-              queryExecution)
+          fail(s"Wrong # of results for pushed filter. Got $rawCount, Expected $expectedCount\n" +
+              s"Filters pushed: ${FiltersPushed.list.mkString(",")}\n" + queryExecution)
         }
       } finally {
         caseInsensitiveContext.conf.setConf(SQLConf.WHOLESTAGE_CODEGEN_ENABLED,
-          SQLConf.WHOLESTAGE_CODEGEN_ENABLED.defaultValue.get)
+                                            SQLConf.WHOLESTAGE_CODEGEN_ENABLED.defaultValue.get)
       }
     }
   }

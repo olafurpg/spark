@@ -35,7 +35,7 @@ object Analytics extends Logging {
   def main(args: Array[String]): Unit = {
     if (args.length < 2) {
       System.err.println(
-        "Usage: Analytics <taskType> <file> --numEPart=<num_edge_partitions> [other options]")
+          "Usage: Analytics <taskType> <file> --numEPart=<num_edge_partitions> [other options]")
       System.err.println("Supported 'taskType' as follows:")
       System.err.println("  pagerank    Compute PageRank")
       System.err.println("  cc          Compute the connected components of vertices")
@@ -60,12 +60,16 @@ object Analytics extends Logging {
       println("Set the number of edge partitions using --numEPart.")
       sys.exit(1)
     }
-    val partitionStrategy: Option[PartitionStrategy] = options.remove("partStrategy")
-      .map(PartitionStrategy.fromString(_))
-    val edgeStorageLevel = options.remove("edgeStorageLevel")
-      .map(StorageLevel.fromString(_)).getOrElse(StorageLevel.MEMORY_ONLY)
-    val vertexStorageLevel = options.remove("vertexStorageLevel")
-      .map(StorageLevel.fromString(_)).getOrElse(StorageLevel.MEMORY_ONLY)
+    val partitionStrategy: Option[PartitionStrategy] =
+      options.remove("partStrategy").map(PartitionStrategy.fromString(_))
+    val edgeStorageLevel = options
+      .remove("edgeStorageLevel")
+      .map(StorageLevel.fromString(_))
+      .getOrElse(StorageLevel.MEMORY_ONLY)
+    val vertexStorageLevel = options
+      .remove("vertexStorageLevel")
+      .map(StorageLevel.fromString(_))
+      .getOrElse(StorageLevel.MEMORY_ONLY)
 
     taskType match {
       case "pagerank" =>
@@ -83,10 +87,13 @@ object Analytics extends Logging {
 
         val sc = new SparkContext(conf.setAppName("PageRank(" + fname + ")"))
 
-        val unpartitionedGraph = GraphLoader.edgeListFile(sc, fname,
-          numEdgePartitions = numEPart,
-          edgeStorageLevel = edgeStorageLevel,
-          vertexStorageLevel = vertexStorageLevel).cache()
+        val unpartitionedGraph = GraphLoader
+          .edgeListFile(sc,
+                        fname,
+                        numEdgePartitions = numEPart,
+                        edgeStorageLevel = edgeStorageLevel,
+                        vertexStorageLevel = vertexStorageLevel)
+          .cache()
         val graph = partitionStrategy.foldLeft(unpartitionedGraph)(_.partitionBy(_))
 
         println("GRAPHX: Number of vertices " + graph.vertices.count)
@@ -116,10 +123,13 @@ object Analytics extends Logging {
         println("======================================")
 
         val sc = new SparkContext(conf.setAppName("ConnectedComponents(" + fname + ")"))
-        val unpartitionedGraph = GraphLoader.edgeListFile(sc, fname,
-          numEdgePartitions = numEPart,
-          edgeStorageLevel = edgeStorageLevel,
-          vertexStorageLevel = vertexStorageLevel).cache()
+        val unpartitionedGraph = GraphLoader
+          .edgeListFile(sc,
+                        fname,
+                        numEdgePartitions = numEPart,
+                        edgeStorageLevel = edgeStorageLevel,
+                        vertexStorageLevel = vertexStorageLevel)
+          .cache()
         val graph = partitionStrategy.foldLeft(unpartitionedGraph)(_.partitionBy(_))
 
         val cc = ConnectedComponents.run(graph)
@@ -136,15 +146,19 @@ object Analytics extends Logging {
         println("======================================")
 
         val sc = new SparkContext(conf.setAppName("TriangleCount(" + fname + ")"))
-        val graph = GraphLoader.edgeListFile(sc, fname,
-          canonicalOrientation = true,
-          numEdgePartitions = numEPart,
-          edgeStorageLevel = edgeStorageLevel,
-          vertexStorageLevel = vertexStorageLevel)
+        val graph = GraphLoader
+          .edgeListFile(sc,
+                        fname,
+                        canonicalOrientation = true,
+                        numEdgePartitions = numEPart,
+                        edgeStorageLevel = edgeStorageLevel,
+                        vertexStorageLevel = vertexStorageLevel)
           // TriangleCount requires the graph to be partitioned
-          .partitionBy(partitionStrategy.getOrElse(RandomVertexCut)).cache()
+          .partitionBy(partitionStrategy.getOrElse(RandomVertexCut))
+          .cache()
         val triangles = TriangleCount.run(graph)
-        println("Triangles: " + triangles.vertices.map {
+        println(
+            "Triangles: " + triangles.vertices.map {
           case (vid, data) => data.toLong
         }.reduce(_ + _) / 3)
         sc.stop()

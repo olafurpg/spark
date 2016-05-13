@@ -60,11 +60,11 @@ class KafkaStreamSuite extends SparkFunSuite with Eventually with BeforeAndAfter
     kafkaTestUtils.sendMessages(topic, sent)
 
     val kafkaParams = Map("zookeeper.connect" -> kafkaTestUtils.zkAddress,
-      "group.id" -> s"test-consumer-${Random.nextInt(10000)}",
-      "auto.offset.reset" -> "smallest")
+                          "group.id" -> s"test-consumer-${Random.nextInt(10000)}",
+                          "auto.offset.reset" -> "smallest")
 
     val stream = KafkaUtils.createStream[String, String, StringDecoder, StringDecoder](
-      ssc, kafkaParams, Map(topic -> 1), StorageLevel.MEMORY_ONLY)
+        ssc, kafkaParams, Map(topic -> 1), StorageLevel.MEMORY_ONLY)
     val result = new mutable.HashMap[String, Long]()
     stream.map(_._2).countByValue().foreachRDD { r =>
       r.collect().foreach { kv =>

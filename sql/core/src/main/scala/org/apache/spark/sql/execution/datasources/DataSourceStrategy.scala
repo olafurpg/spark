@@ -46,13 +46,11 @@ import org.apache.spark.unsafe.types.UTF8String
 private[sql] object DataSourceAnalysis extends Rule[LogicalPlan] {
   override def apply(plan: LogicalPlan): LogicalPlan = plan transform {
     case i @ logical.InsertIntoTable(
-           l @ LogicalRelation(t: HadoopFsRelation, _, _), part, query, overwrite, false)
+        l @ LogicalRelation(t: HadoopFsRelation, _, _), part, query, overwrite, false)
         if query.resolved && t.schema.asNullable == query.schema.asNullable =>
-
       // Sanity checks
       if (t.location.paths.size != 1) {
-        throw new AnalysisException(
-          "Can only write data to relations with a single path.")
+        throw new AnalysisException("Can only write data to relations with a single path.")
       }
 
       val outputPath = t.location.paths.head
@@ -62,22 +60,19 @@ private[sql] object DataSourceAnalysis extends Rule[LogicalPlan] {
 
       val mode = if (overwrite) SaveMode.Overwrite else SaveMode.Append
       if (overwrite && inputPaths.contains(outputPath)) {
-        throw new AnalysisException(
-          "Cannot overwrite a path that is also being read from.")
+        throw new AnalysisException("Cannot overwrite a path that is also being read from.")
       }
 
-      InsertIntoHadoopFsRelation(
-        outputPath,
-        t.partitionSchema.fields.map(_.name).map(UnresolvedAttribute(_)),
-        t.bucketSpec,
-        t.fileFormat,
-        () => t.refresh(),
-        t.options,
-        query,
-        mode)
+      InsertIntoHadoopFsRelation(outputPath,
+                                 t.partitionSchema.fields.map(_.name).map(UnresolvedAttribute(_)),
+                                 t.bucketSpec,
+                                 t.fileFormat,
+                                 () => t.refresh(),
+                                 t.options,
+                                 query,
+                                 mode)
   }
 }
-
 
 /**
  * Replaces [[SimpleCatalogRelation]] with data source table if its table property contains data
@@ -95,18 +90,15 @@ private[sql] class FindDataSourceTable(sparkSession: SparkSession) extends Rule[
     val bucketSpec = DDLUtils.getBucketSpecFromTableProperties(table)
 
     val options = table.storage.serdeProperties
-    val dataSource =
-      DataSource(
-        sparkSession,
-        userSpecifiedSchema = userSpecifiedSchema,
-        partitionColumns = partitionColumns,
-        bucketSpec = bucketSpec,
-        className = table.properties("spark.sql.sources.provider"),
-        options = options)
+    val dataSource = DataSource(sparkSession,
+                                userSpecifiedSchema = userSpecifiedSchema,
+                                partitionColumns = partitionColumns,
+                                bucketSpec = bucketSpec,
+                                className = table.properties("spark.sql.sources.provider"),
+                                options = options)
 
     LogicalRelation(
-      dataSource.resolveRelation(),
-      metastoreTableIdentifier = Some(table.identifier))
+        dataSource.resolveRelation(), metastoreTableIdentifier = Some(table.identifier))
   }
 
   override def apply(plan: LogicalPlan): LogicalPlan = plan transform {
@@ -119,40 +111,40 @@ private[sql] class FindDataSourceTable(sparkSession: SparkSession) extends Rule[
   }
 }
 
-
 /**
  * A Strategy for planning scans over data sources defined using the sources API.
  */
 private[sql] object DataSourceStrategy extends Strategy with Logging {
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters, l @ LogicalRelation(t: CatalystScan, _, _)) =>
-      pruneFilterProjectRaw(
-        l,
-        projects,
-        filters,
-        (requestedColumns, allPredicates, _) =>
-          toCatalystRDD(l, requestedColumns, t.buildScan(requestedColumns, allPredicates))) :: Nil
+      pruneFilterProjectRaw(l,
+                            projects,
+                            filters,
+                            (requestedColumns, allPredicates, _) =>
+                              toCatalystRDD(l,
+                                            requestedColumns,
+                                            t.buildScan(requestedColumns, allPredicates))) :: Nil
 
     case PhysicalOperation(projects, filters, l @ LogicalRelation(t: PrunedFilteredScan, _, _)) =>
-      pruneFilterProject(
-        l,
-        projects,
-        filters,
-        (a, f) => toCatalystRDD(l, a, t.buildScan(a.map(_.name).toArray, f))) :: Nil
+      pruneFilterProject(l,
+                         projects,
+                         filters,
+                         (a,
+                         f) => toCatalystRDD(l, a, t.buildScan(a.map(_.name).toArray, f))) :: Nil
 
     case PhysicalOperation(projects, filters, l @ LogicalRelation(t: PrunedScan, _, _)) =>
-      pruneFilterProject(
-        l,
-        projects,
-        filters,
-        (a, _) => toCatalystRDD(l, a, t.buildScan(a.map(_.name).toArray))) :: Nil
+      pruneFilterProject(l,
+                         projects,
+                         filters,
+                         (a, _) => toCatalystRDD(l, a, t.buildScan(a.map(_.name).toArray))) :: Nil
 
     case l @ LogicalRelation(baseRelation: TableScan, _, _) =>
       execution.DataSourceScanExec.create(
-        l.output, toCatalystRDD(l, baseRelation.buildScan()), baseRelation) :: Nil
+          l.output, toCatalystRDD(l, baseRelation.buildScan()), baseRelation) :: Nil
 
-    case i @ logical.InsertIntoTable(l @ LogicalRelation(t: InsertableRelation, _, _),
-      part, query, overwrite, false) if part.isEmpty =>
+    case i @ logical.InsertIntoTable(
+        l @ LogicalRelation(t: InsertableRelation, _, _), part, query, overwrite, false)
+        if part.isEmpty =>
       ExecutedCommandExec(InsertIntoDataSource(l, query, overwrite)) :: Nil
 
     case _ => Nil
@@ -164,25 +156,22 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
     val mutableRow = new SpecificMutableRow(Seq(bucketColumn.dataType))
     mutableRow(0) = Cast(Literal(value), bucketColumn.dataType).eval(null)
     val bucketIdGeneration = UnsafeProjection.create(
-      HashPartitioning(bucketColumn :: Nil, numBuckets).partitionIdExpression :: Nil,
-      bucketColumn :: Nil)
+        HashPartitioning(bucketColumn :: Nil, numBuckets).partitionIdExpression :: Nil,
+        bucketColumn :: Nil)
 
     bucketIdGeneration(mutableRow).getInt(0)
   }
 
   // Based on Public API.
-  protected def pruneFilterProject(
-      relation: LogicalRelation,
-      projects: Seq[NamedExpression],
-      filterPredicates: Seq[Expression],
-      scanBuilder: (Seq[Attribute], Array[Filter]) => RDD[InternalRow]) = {
+  protected def pruneFilterProject(relation: LogicalRelation,
+                                   projects: Seq[NamedExpression],
+                                   filterPredicates: Seq[Expression],
+                                   scanBuilder: (Seq[Attribute],
+                                   Array[Filter]) => RDD[InternalRow]) = {
     pruneFilterProjectRaw(
-      relation,
-      projects,
-      filterPredicates,
-      (requestedColumns, _, pushedFilters) => {
-        scanBuilder(requestedColumns, pushedFilters.toArray)
-      })
+        relation, projects, filterPredicates, (requestedColumns, _, pushedFilters) => {
+      scanBuilder(requestedColumns, pushedFilters.toArray)
+    })
   }
 
   // Based on Catalyst expressions. The `scanBuilder` function accepts three arguments:
@@ -199,21 +188,24 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
   //     `PrunedFilteredScan` and `HadoopFsRelation`).
   //
   // Note that 2 and 3 shouldn't be used together.
-  protected def pruneFilterProjectRaw(
-    relation: LogicalRelation,
-    projects: Seq[NamedExpression],
-    filterPredicates: Seq[Expression],
-    scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) => RDD[InternalRow]) = {
+  protected def pruneFilterProjectRaw(relation: LogicalRelation,
+                                      projects: Seq[NamedExpression],
+                                      filterPredicates: Seq[Expression],
+                                      scanBuilder: (Seq[Attribute], Seq[Expression],
+                                      Seq[Filter]) => RDD[InternalRow]) = {
 
     val projectSet = AttributeSet(projects.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
 
-    val candidatePredicates = filterPredicates.map { _ transform {
-      case a: AttributeReference => relation.attributeMap(a) // Match original case of attributes.
-    }}
+    val candidatePredicates = filterPredicates.map {
+      _ transform {
+        case a: AttributeReference =>
+          relation.attributeMap(a) // Match original case of attributes.
+      }
+    }
 
-    val (unhandledPredicates, pushedFilters) =
-      selectFilters(relation.relation, candidatePredicates)
+    val (unhandledPredicates, pushedFilters) = selectFilters(
+        relation.relation, candidatePredicates)
 
     // A set of column attributes that are only referenced by pushed down filters.  We can eliminate
     // them from requested columns.
@@ -221,7 +213,7 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
       val handledPredicates = filterPredicates.filterNot(unhandledPredicates.contains)
       val unhandledSet = AttributeSet(unhandledPredicates.flatMap(_.references))
       AttributeSet(handledPredicates.flatMap(_.references)) --
-        (projectSet ++ unhandledSet).map(relation.attributeMap)
+      (projectSet ++ unhandledSet).map(relation.attributeMap)
     }
 
     // Combines all Catalyst filter `Expression`s that are either not convertible to data source
@@ -238,14 +230,13 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
       pairs.toMap
     }
 
-    if (projects.map(_.toAttribute) == projects &&
-        projectSet.size == projects.size &&
+    if (projects.map(_.toAttribute) == projects && projectSet.size == projects.size &&
         filterSet.subsetOf(projectSet)) {
       // When it is possible to just use column pruning to get the right projection and
       // when the columns of this projection are enough to evaluate all filter conditions,
       // just do a scan followed by a filter, with no extra project.
       val requestedColumns = projects
-        // Safe due to if above.
+      // Safe due to if above.
         .asInstanceOf[Seq[Attribute]]
         // Match original case of attributes.
         .map(relation.attributeMap)
@@ -253,9 +244,11 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
         .filterNot(handledSet.contains)
 
       val scan = execution.DataSourceScanExec.create(
-        projects.map(_.toAttribute),
-        scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
-        relation.relation, metadata, relation.metastoreTableIdentifier)
+          projects.map(_.toAttribute),
+          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
+          relation.relation,
+          metadata,
+          relation.metastoreTableIdentifier)
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
       // Don't request columns that are only referenced by pushed filters.
@@ -263,11 +256,13 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
         (projectSet ++ filterSet -- handledSet).map(relation.attributeMap).toSeq
 
       val scan = execution.DataSourceScanExec.create(
-        requestedColumns,
-        scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
-        relation.relation, metadata, relation.metastoreTableIdentifier)
+          requestedColumns,
+          scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
+          relation.relation,
+          metadata,
+          relation.metastoreTableIdentifier)
       execution.ProjectExec(
-        projects, filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
+          projects, filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
     }
   }
 
@@ -275,9 +270,7 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
    * Convert RDD of Row into RDD of InternalRow with objects in catalyst types
    */
   private[this] def toCatalystRDD(
-      relation: LogicalRelation,
-      output: Seq[Attribute],
-      rdd: RDD[Row]): RDD[InternalRow] = {
+      relation: LogicalRelation, output: Seq[Attribute], rdd: RDD[Row]): RDD[InternalRow] = {
     if (relation.relation.needConversion) {
       execution.RDDConversions.rowToRowRdd(rdd, output.map(_.dataType))
     } else {
@@ -381,18 +374,16 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
    *         will be pushed down to the data source.
    */
   protected[sql] def selectFilters(
-    relation: BaseRelation,
-    predicates: Seq[Expression]): (Seq[Expression], Seq[Filter]) = {
+      relation: BaseRelation, predicates: Seq[Expression]): (Seq[Expression], Seq[Filter]) = {
 
     // For conciseness, all Catalyst filter expressions of type `expressions.Expression` below are
     // called `predicate`s, while all data source filters of type `sources.Filter` are simply called
     // `filter`s.
 
-    val translated: Seq[(Expression, Filter)] =
-      for {
-        predicate <- predicates
-        filter <- translateFilter(predicate)
-      } yield predicate -> filter
+    val translated: Seq[(Expression, Filter)] = for {
+      predicate <- predicates
+      filter <- translateFilter(predicate)
+    } yield predicate -> filter
 
     // A map from original Catalyst expressions to corresponding translated data source filters.
     val translatedMap: Map[Expression, Filter] = translated.toMap

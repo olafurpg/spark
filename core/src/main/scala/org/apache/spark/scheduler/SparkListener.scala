@@ -40,70 +40,63 @@ trait SparkListenerEvent {
 
 @DeveloperApi
 case class SparkListenerStageSubmitted(stageInfo: StageInfo, properties: Properties = null)
-  extends SparkListenerEvent
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerStageCompleted(stageInfo: StageInfo) extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerTaskStart(stageId: Int, stageAttemptId: Int, taskInfo: TaskInfo)
-  extends SparkListenerEvent
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerTaskGettingResult(taskInfo: TaskInfo) extends SparkListenerEvent
 
 @DeveloperApi
-case class SparkListenerTaskEnd(
-    stageId: Int,
-    stageAttemptId: Int,
-    taskType: String,
-    reason: TaskEndReason,
-    taskInfo: TaskInfo,
-    // may be null if the task has failed
-    @Nullable taskMetrics: TaskMetrics)
-  extends SparkListenerEvent
+case class SparkListenerTaskEnd(stageId: Int,
+                                stageAttemptId: Int,
+                                taskType: String,
+                                reason: TaskEndReason,
+                                taskInfo: TaskInfo,
+                                // may be null if the task has failed
+                                @Nullable taskMetrics: TaskMetrics)
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerJobStart(
-    jobId: Int,
-    time: Long,
-    stageInfos: Seq[StageInfo],
-    properties: Properties = null)
-  extends SparkListenerEvent {
+    jobId: Int, time: Long, stageInfos: Seq[StageInfo], properties: Properties = null)
+    extends SparkListenerEvent {
   // Note: this is here for backwards-compatibility with older versions of this event which
   // only stored stageIds and not StageInfos:
   val stageIds: Seq[Int] = stageInfos.map(_.stageId)
 }
 
 @DeveloperApi
-case class SparkListenerJobEnd(
-    jobId: Int,
-    time: Long,
-    jobResult: JobResult)
-  extends SparkListenerEvent
+case class SparkListenerJobEnd(jobId: Int, time: Long, jobResult: JobResult)
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerEnvironmentUpdate(environmentDetails: Map[String, Seq[(String, String)]])
-  extends SparkListenerEvent
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerBlockManagerAdded(time: Long, blockManagerId: BlockManagerId, maxMem: Long)
-  extends SparkListenerEvent
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerBlockManagerRemoved(time: Long, blockManagerId: BlockManagerId)
-  extends SparkListenerEvent
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerUnpersistRDD(rddId: Int) extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerExecutorAdded(time: Long, executorId: String, executorInfo: ExecutorInfo)
-  extends SparkListenerEvent
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerExecutorRemoved(time: Long, executorId: String, reason: String)
-  extends SparkListenerEvent
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerBlockUpdated(blockUpdatedInfo: BlockUpdatedInfo) extends SparkListenerEvent
@@ -115,18 +108,17 @@ case class SparkListenerBlockUpdated(blockUpdatedInfo: BlockUpdatedInfo) extends
  */
 @DeveloperApi
 case class SparkListenerExecutorMetricsUpdate(
-    execId: String,
-    accumUpdates: Seq[(Long, Int, Int, Seq[AccumulableInfo])])
-  extends SparkListenerEvent
+    execId: String, accumUpdates: Seq[(Long, Int, Int, Seq[AccumulableInfo])])
+    extends SparkListenerEvent
 
 @DeveloperApi
-case class SparkListenerApplicationStart(
-    appName: String,
-    appId: Option[String],
-    time: Long,
-    sparkUser: String,
-    appAttemptId: Option[String],
-    driverLogs: Option[Map[String, String]] = None) extends SparkListenerEvent
+case class SparkListenerApplicationStart(appName: String,
+                                         appId: Option[String],
+                                         time: Long,
+                                         sparkUser: String,
+                                         appAttemptId: Option[String],
+                                         driverLogs: Option[Map[String, String]] = None)
+    extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerApplicationEnd(time: Long) extends SparkListenerEvent
@@ -142,12 +134,12 @@ private[spark] case class SparkListenerLogStart(sparkVersion: String) extends Sp
  * rebuild the history UI.
  */
 private[spark] trait SparkHistoryListenerFactory {
+
   /**
    * Create listeners used to rebuild the history UI.
    */
   def createListeners(conf: SparkConf, sparkUI: SparkUI): Seq[SparkListener]
 }
-
 
 /**
  * Interface for listening to events from the Spark scheduler. Most applications should probably
@@ -249,7 +241,6 @@ private[spark] trait SparkListenerInterface {
   def onOtherEvent(event: SparkListenerEvent): Unit
 }
 
-
 /**
  * :: DeveloperApi ::
  * A default implementation for [[SparkListenerInterface]] that has no-op implementations for
@@ -259,41 +250,40 @@ private[spark] trait SparkListenerInterface {
  */
 @DeveloperApi
 abstract class SparkListener extends SparkListenerInterface {
-  override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = { }
+  override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = {}
 
-  override def onStageSubmitted(stageSubmitted: SparkListenerStageSubmitted): Unit = { }
+  override def onStageSubmitted(stageSubmitted: SparkListenerStageSubmitted): Unit = {}
 
-  override def onTaskStart(taskStart: SparkListenerTaskStart): Unit = { }
+  override def onTaskStart(taskStart: SparkListenerTaskStart): Unit = {}
 
-  override def onTaskGettingResult(taskGettingResult: SparkListenerTaskGettingResult): Unit = { }
+  override def onTaskGettingResult(taskGettingResult: SparkListenerTaskGettingResult): Unit = {}
 
-  override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = { }
+  override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = {}
 
-  override def onJobStart(jobStart: SparkListenerJobStart): Unit = { }
+  override def onJobStart(jobStart: SparkListenerJobStart): Unit = {}
 
-  override def onJobEnd(jobEnd: SparkListenerJobEnd): Unit = { }
+  override def onJobEnd(jobEnd: SparkListenerJobEnd): Unit = {}
 
-  override def onEnvironmentUpdate(environmentUpdate: SparkListenerEnvironmentUpdate): Unit = { }
+  override def onEnvironmentUpdate(environmentUpdate: SparkListenerEnvironmentUpdate): Unit = {}
 
-  override def onBlockManagerAdded(blockManagerAdded: SparkListenerBlockManagerAdded): Unit = { }
+  override def onBlockManagerAdded(blockManagerAdded: SparkListenerBlockManagerAdded): Unit = {}
 
-  override def onBlockManagerRemoved(
-      blockManagerRemoved: SparkListenerBlockManagerRemoved): Unit = { }
+  override def onBlockManagerRemoved(blockManagerRemoved: SparkListenerBlockManagerRemoved): Unit = {}
 
-  override def onUnpersistRDD(unpersistRDD: SparkListenerUnpersistRDD): Unit = { }
+  override def onUnpersistRDD(unpersistRDD: SparkListenerUnpersistRDD): Unit = {}
 
-  override def onApplicationStart(applicationStart: SparkListenerApplicationStart): Unit = { }
+  override def onApplicationStart(applicationStart: SparkListenerApplicationStart): Unit = {}
 
-  override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = { }
+  override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {}
 
   override def onExecutorMetricsUpdate(
-      executorMetricsUpdate: SparkListenerExecutorMetricsUpdate): Unit = { }
+      executorMetricsUpdate: SparkListenerExecutorMetricsUpdate): Unit = {}
 
-  override def onExecutorAdded(executorAdded: SparkListenerExecutorAdded): Unit = { }
+  override def onExecutorAdded(executorAdded: SparkListenerExecutorAdded): Unit = {}
 
-  override def onExecutorRemoved(executorRemoved: SparkListenerExecutorRemoved): Unit = { }
+  override def onExecutorRemoved(executorRemoved: SparkListenerExecutorRemoved): Unit = {}
 
-  override def onBlockUpdated(blockUpdated: SparkListenerBlockUpdated): Unit = { }
+  override def onBlockUpdated(blockUpdated: SparkListenerBlockUpdated): Unit = {}
 
-  override def onOtherEvent(event: SparkListenerEvent): Unit = { }
+  override def onOtherEvent(event: SparkListenerEvent): Unit = {}
 }

@@ -35,22 +35,21 @@ class RowMatrixSuite extends SparkFunSuite with MLlibTestSparkContext {
   val n = 3
   val arr = Array(0.0, 3.0, 6.0, 9.0, 1.0, 4.0, 7.0, 0.0, 2.0, 5.0, 8.0, 1.0)
   val denseData = Seq(
-    Vectors.dense(0.0, 1.0, 2.0),
-    Vectors.dense(3.0, 4.0, 5.0),
-    Vectors.dense(6.0, 7.0, 8.0),
-    Vectors.dense(9.0, 0.0, 1.0)
+      Vectors.dense(0.0, 1.0, 2.0),
+      Vectors.dense(3.0, 4.0, 5.0),
+      Vectors.dense(6.0, 7.0, 8.0),
+      Vectors.dense(9.0, 0.0, 1.0)
   )
   val sparseData = Seq(
-    Vectors.sparse(3, Seq((1, 1.0), (2, 2.0))),
-    Vectors.sparse(3, Seq((0, 3.0), (1, 4.0), (2, 5.0))),
-    Vectors.sparse(3, Seq((0, 6.0), (1, 7.0), (2, 8.0))),
-    Vectors.sparse(3, Seq((0, 9.0), (2, 1.0)))
+      Vectors.sparse(3, Seq((1, 1.0), (2, 2.0))),
+      Vectors.sparse(3, Seq((0, 3.0), (1, 4.0), (2, 5.0))),
+      Vectors.sparse(3, Seq((0, 6.0), (1, 7.0), (2, 8.0))),
+      Vectors.sparse(3, Seq((0, 9.0), (2, 1.0)))
   )
 
-  val principalComponents = BDM(
-    (0.0, 1.0, 0.0),
-    (math.sqrt(2.0) / 2.0, 0.0, math.sqrt(2.0) / 2.0),
-    (math.sqrt(2.0) / 2.0, 0.0, - math.sqrt(2.0) / 2.0))
+  val principalComponents = BDM((0.0, 1.0, 0.0),
+                                (math.sqrt(2.0) / 2.0, 0.0, math.sqrt(2.0) / 2.0),
+                                (math.sqrt(2.0) / 2.0, 0.0, -math.sqrt(2.0) / 2.0))
   val explainedVariance = BDV(4.0 / 7.0, 3.0 / 7.0, 0.0)
 
   var denseMat: RowMatrix = _
@@ -81,11 +80,7 @@ class RowMatrixSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("toBreeze") {
-    val expected = BDM(
-      (0.0, 1.0, 2.0),
-      (3.0, 4.0, 5.0),
-      (6.0, 7.0, 8.0),
-      (9.0, 0.0, 1.0))
+    val expected = BDM((0.0, 1.0, 2.0), (3.0, 4.0, 5.0), (6.0, 7.0, 8.0), (9.0, 0.0, 1.0))
     for (mat <- Seq(denseMat, sparseMat)) {
       assert(mat.toBreeze() === expected)
     }
@@ -102,10 +97,7 @@ class RowMatrixSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   test("similar columns") {
     val colMags = Vectors.dense(math.sqrt(126), math.sqrt(66), math.sqrt(94))
-    val expected = BDM(
-      (0.0, 54.0, 72.0),
-      (0.0, 0.0, 78.0),
-      (0.0, 0.0, 0.0))
+    val expected = BDM((0.0, 54.0, 72.0), (0.0, 0.0, 78.0), (0.0, 0.0, 0.0))
 
     for (i <- 0 until n; j <- 0 until n) {
       expected(i, j) /= (colMags(i) * colMags(j))
@@ -118,7 +110,7 @@ class RowMatrixSuite extends SparkFunSuite with MLlibTestSparkContext {
           val actual = expected(i, j)
           val estimate = G(i, j)
           assert(math.abs(actual - estimate) / actual < 0.2,
-            s"Similarities not close enough: $actual vs $estimate")
+                 s"Similarities not close enough: $actual vs $estimate")
         }
       }
     }
@@ -197,8 +189,8 @@ class RowMatrixSuite extends SparkFunSuite with MLlibTestSparkContext {
     for (j <- 0 until k) {
       val aj = A(::, j)
       val bj = B(::, j)
-      assert(closeToZero(aj - bj) || closeToZero(aj + bj),
-        s"The $j-th columns mismatch: $aj and $bj")
+      assert(
+          closeToZero(aj - bj) || closeToZero(aj + bj), s"The $j-th columns mismatch: $aj and $bj")
     }
   }
 
@@ -208,9 +200,8 @@ class RowMatrixSuite extends SparkFunSuite with MLlibTestSparkContext {
       assert(pc.numRows === n)
       assert(pc.numCols === k)
       assertColumnEqualUpToSign(pc.toBreeze.asInstanceOf[BDM[Double]], principalComponents, k)
-      assert(
-        closeToZero(BDV(expVariance.toArray) -
-        BDV(Arrays.copyOfRange(explainedVariance.data, 0, k))))
+      assert(closeToZero(
+              BDV(expVariance.toArray) - BDV(Arrays.copyOfRange(explainedVariance.data, 0, k))))
       // Check that this method returns the same answer
       assert(pc === mat.computePrincipalComponents(k))
     }
@@ -222,12 +213,13 @@ class RowMatrixSuite extends SparkFunSuite with MLlibTestSparkContext {
       val AB = mat.multiply(B)
       assert(AB.numRows() === m)
       assert(AB.numCols() === 2)
-      assert(AB.rows.collect().toSeq === Seq(
-        Vectors.dense(5.0, 14.0),
-        Vectors.dense(14.0, 50.0),
-        Vectors.dense(23.0, 86.0),
-        Vectors.dense(2.0, 32.0)
-      ))
+      assert(
+          AB.rows.collect().toSeq === Seq(
+              Vectors.dense(5.0, 14.0),
+              Vectors.dense(14.0, 50.0),
+              Vectors.dense(23.0, 86.0),
+              Vectors.dense(2.0, 32.0)
+          ))
     }
   }
 
@@ -243,7 +235,7 @@ class RowMatrixSuite extends SparkFunSuite with MLlibTestSparkContext {
         assert(summary.max === Vectors.dense(9.0, 7.0, 8.0), "max mismatch")
         assert(summary.min === Vectors.dense(0.0, 0.0, 1.0), "column mismatch.")
         assert(summary.normL2 === Vectors.dense(math.sqrt(126), math.sqrt(66), math.sqrt(94)),
-          "magnitude mismatch.")
+               "magnitude mismatch.")
         assert(summary.normL1 === Vectors.dense(18.0, 12.0, 16.0), "L1 norm mismatch")
       }
     }

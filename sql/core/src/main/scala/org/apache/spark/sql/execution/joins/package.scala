@@ -27,5 +27,4 @@ package object joins {
   case object BuildRight extends BuildSide
 
   case object BuildLeft extends BuildSide
-
 }

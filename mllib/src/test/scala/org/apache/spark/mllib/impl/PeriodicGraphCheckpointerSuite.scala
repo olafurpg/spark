@@ -25,7 +25,6 @@ import org.apache.spark.mllib.util.MLlibTestSparkContext
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
 
-
 class PeriodicGraphCheckpointerSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   import PeriodicGraphCheckpointerSuite._
@@ -58,7 +57,7 @@ class PeriodicGraphCheckpointerSuite extends SparkFunSuite with MLlibTestSparkCo
     sc.setCheckpointDir(path)
     val graph1 = createGraph(sc)
     val checkpointer = new PeriodicGraphCheckpointer[Double, Double](
-      checkpointInterval, graph1.vertices.sparkContext)
+        checkpointInterval, graph1.vertices.sparkContext)
     checkpointer.update(graph1)
     graph1.edges.count()
     graph1.vertices.count()
@@ -89,11 +88,10 @@ private object PeriodicGraphCheckpointerSuite {
 
   case class GraphToCheck(graph: Graph[Double, Double], gIndex: Int)
 
-  val edges = Seq(
-    Edge[Double](0, 1, 0),
-    Edge[Double](1, 2, 0),
-    Edge[Double](2, 3, 0),
-    Edge[Double](3, 4, 0))
+  val edges = Seq(Edge[Double](0, 1, 0),
+                  Edge[Double](1, 2, 0),
+                  Edge[Double](2, 3, 0),
+                  Edge[Double](3, 4, 0))
 
   def createGraph(sc: SparkContext): Graph[Double, Double] = {
     Graph.fromEdges[Double, Double](sc.parallelize(edges), 0)
@@ -121,11 +119,11 @@ private object PeriodicGraphCheckpointerSuite {
       }
     } catch {
       case _: AssertionError =>
-        throw new Exception(s"PeriodicGraphCheckpointerSuite.checkPersistence failed with:\n" +
-          s"\t gIndex = $gIndex\n" +
-          s"\t iteration = $iteration\n" +
-          s"\t graph.vertices.getStorageLevel = ${graph.vertices.getStorageLevel}\n" +
-          s"\t graph.edges.getStorageLevel = ${graph.edges.getStorageLevel}\n")
+        throw new Exception(
+            s"PeriodicGraphCheckpointerSuite.checkPersistence failed with:\n" +
+            s"\t gIndex = $gIndex\n" + s"\t iteration = $iteration\n" +
+            s"\t graph.vertices.getStorageLevel = ${graph.vertices.getStorageLevel}\n" +
+            s"\t graph.edges.getStorageLevel = ${graph.edges.getStorageLevel}\n")
     }
   }
 
@@ -142,8 +140,8 @@ private object PeriodicGraphCheckpointerSuite {
     //       is fixed (though it can then be simplified and not look for the files).
     val fs = FileSystem.get(graph.vertices.sparkContext.hadoopConfiguration)
     graph.getCheckpointFiles.foreach { checkpointFile =>
-      assert(!fs.exists(new Path(checkpointFile)),
-        "Graph checkpoint file should have been removed")
+      assert(
+          !fs.exists(new Path(checkpointFile)), "Graph checkpoint file should have been removed")
     }
   }
 
@@ -153,10 +151,7 @@ private object PeriodicGraphCheckpointerSuite {
    * @param iteration  Total number of graphs inserted into checkpointer.
    */
   def checkCheckpoint(
-      graph: Graph[_, _],
-      gIndex: Int,
-      iteration: Int,
-      checkpointInterval: Int): Unit = {
+      graph: Graph[_, _], gIndex: Int, iteration: Int, checkpointInterval: Int): Unit = {
     try {
       if (gIndex % checkpointInterval == 0) {
         // We allow 2 checkpoint intervals since we perform an action (checkpointing a second graph)
@@ -174,14 +169,13 @@ private object PeriodicGraphCheckpointerSuite {
       }
     } catch {
       case e: AssertionError =>
-        throw new Exception(s"PeriodicGraphCheckpointerSuite.checkCheckpoint failed with:\n" +
-          s"\t gIndex = $gIndex\n" +
-          s"\t iteration = $iteration\n" +
-          s"\t checkpointInterval = $checkpointInterval\n" +
-          s"\t graph.isCheckpointed = ${graph.isCheckpointed}\n" +
-          s"\t graph.getCheckpointFiles = ${graph.getCheckpointFiles.mkString(", ")}\n" +
-          s"  AssertionError message: ${e.getMessage}")
+        throw new Exception(
+            s"PeriodicGraphCheckpointerSuite.checkCheckpoint failed with:\n" +
+            s"\t gIndex = $gIndex\n" +
+            s"\t iteration = $iteration\n" + s"\t checkpointInterval = $checkpointInterval\n" +
+            s"\t graph.isCheckpointed = ${graph.isCheckpointed}\n" +
+            s"\t graph.getCheckpointFiles = ${graph.getCheckpointFiles.mkString(", ")}\n" +
+            s"  AssertionError message: ${e.getMessage}")
     }
   }
-
 }

@@ -29,8 +29,7 @@ import org.apache.spark.sql.types._
 
 @BeanInfo
 private[sql] case class MyLabeledPoint(
-  @BeanProperty label: Double,
-  @BeanProperty features: UDT.MyDenseVector)
+    @BeanProperty label: Double, @BeanProperty features: UDT.MyDenseVector)
 
 // Wrapped in an object to check Scala compatibility. See SPARK-13929
 object UDT {
@@ -68,15 +67,14 @@ object UDT {
 
     override def equals(other: Any): Boolean = other.isInstanceOf[MyDenseVectorUDT]
   }
-
 }
 
 class UserDefinedTypeSuite extends QueryTest with SharedSQLContext with ParquetTest {
   import testImplicits._
 
-  private lazy val pointsRDD = Seq(
-    MyLabeledPoint(1.0, new UDT.MyDenseVector(Array(0.1, 1.0))),
-    MyLabeledPoint(0.0, new UDT.MyDenseVector(Array(0.2, 2.0)))).toDF()
+  private lazy val pointsRDD =
+    Seq(MyLabeledPoint(1.0, new UDT.MyDenseVector(Array(0.1, 1.0))),
+        MyLabeledPoint(0.0, new UDT.MyDenseVector(Array(0.2, 2.0)))).toDF()
 
   test("register user type: MyDenseVector for MyLabeledPoint") {
     val labels: RDD[Double] = pointsRDD.select('label).rdd.map { case Row(v: Double) => v }
@@ -96,20 +94,16 @@ class UserDefinedTypeSuite extends QueryTest with SharedSQLContext with ParquetT
   test("UDTs and UDFs") {
     spark.udf.register("testType", (d: UDT.MyDenseVector) => d.isInstanceOf[UDT.MyDenseVector])
     pointsRDD.registerTempTable("points")
-    checkAnswer(
-      sql("SELECT testType(features) from points"),
-      Seq(Row(true), Row(true)))
+    checkAnswer(sql("SELECT testType(features) from points"), Seq(Row(true), Row(true)))
   }
 
   testStandardAndLegacyModes("UDTs with Parquet") {
     withTempPath { dir =>
       val path = dir.getCanonicalPath
       pointsRDD.write.parquet(path)
-      checkAnswer(
-        spark.read.parquet(path),
-        Seq(
-          Row(1.0, new UDT.MyDenseVector(Array(0.1, 1.0))),
-          Row(0.0, new UDT.MyDenseVector(Array(0.2, 2.0)))))
+      checkAnswer(spark.read.parquet(path),
+                  Seq(Row(1.0, new UDT.MyDenseVector(Array(0.1, 1.0))),
+                      Row(0.0, new UDT.MyDenseVector(Array(0.2, 2.0)))))
     }
   }
 
@@ -117,11 +111,9 @@ class UserDefinedTypeSuite extends QueryTest with SharedSQLContext with ParquetT
     withTempPath { dir =>
       val path = dir.getCanonicalPath
       pointsRDD.repartition(1).write.parquet(path)
-      checkAnswer(
-        spark.read.parquet(path),
-        Seq(
-          Row(1.0, new UDT.MyDenseVector(Array(0.1, 1.0))),
-          Row(0.0, new UDT.MyDenseVector(Array(0.2, 2.0)))))
+      checkAnswer(spark.read.parquet(path),
+                  Seq(Row(1.0, new UDT.MyDenseVector(Array(0.1, 1.0))),
+                      Row(0.0, new UDT.MyDenseVector(Array(0.2, 2.0)))))
     }
   }
 
@@ -131,25 +123,30 @@ class UserDefinedTypeSuite extends QueryTest with SharedSQLContext with ParquetT
     df.collect()(0).getAs[UDT.MyDenseVector](1)
     df.take(1)(0).getAs[UDT.MyDenseVector](1)
     df.limit(1).groupBy('int).agg(first('vec)).collect()(0).getAs[UDT.MyDenseVector](0)
-    df.orderBy('int).limit(1).groupBy('int).agg(first('vec)).collect()(0)
+    df.orderBy('int)
+      .limit(1)
+      .groupBy('int)
+      .agg(first('vec))
+      .collect()(0)
       .getAs[UDT.MyDenseVector](0)
   }
 
   test("UDTs with JSON") {
     val data = Seq(
-      "{\"id\":1,\"vec\":[1.1,2.2,3.3,4.4]}",
-      "{\"id\":2,\"vec\":[2.25,4.5,8.75]}"
+        "{\"id\":1,\"vec\":[1.1,2.2,3.3,4.4]}",
+        "{\"id\":2,\"vec\":[2.25,4.5,8.75]}"
     )
-    val schema = StructType(Seq(
-      StructField("id", IntegerType, false),
-      StructField("vec", new UDT.MyDenseVectorUDT, false)
-    ))
+    val schema = StructType(
+        Seq(
+            StructField("id", IntegerType, false),
+            StructField("vec", new UDT.MyDenseVectorUDT, false)
+        ))
 
     val stringRDD = sparkContext.parallelize(data)
     val jsonRDD = spark.read.schema(schema).json(stringRDD)
     checkAnswer(
-      jsonRDD,
-      Row(1, new UDT.MyDenseVector(Array(1.1, 2.2, 3.3, 4.4))) ::
+        jsonRDD,
+        Row(1, new UDT.MyDenseVector(Array(1.1, 2.2, 3.3, 4.4))) ::
         Row(2, new UDT.MyDenseVector(Array(2.25, 4.5, 8.75))) ::
         Nil
     )
@@ -157,22 +154,22 @@ class UserDefinedTypeSuite extends QueryTest with SharedSQLContext with ParquetT
 
   test("UDTs with JSON and Dataset") {
     val data = Seq(
-      "{\"id\":1,\"vec\":[1.1,2.2,3.3,4.4]}",
-      "{\"id\":2,\"vec\":[2.25,4.5,8.75]}"
+        "{\"id\":1,\"vec\":[1.1,2.2,3.3,4.4]}",
+        "{\"id\":2,\"vec\":[2.25,4.5,8.75]}"
     )
 
-    val schema = StructType(Seq(
-      StructField("id", IntegerType, false),
-      StructField("vec", new UDT.MyDenseVectorUDT, false)
-    ))
+    val schema = StructType(
+        Seq(
+            StructField("id", IntegerType, false),
+            StructField("vec", new UDT.MyDenseVectorUDT, false)
+        ))
 
     val stringRDD = sparkContext.parallelize(data)
-    val jsonDataset = spark.read.schema(schema).json(stringRDD)
-      .as[(Int, UDT.MyDenseVector)]
+    val jsonDataset = spark.read.schema(schema).json(stringRDD).as[(Int, UDT.MyDenseVector)]
     checkDataset(
-      jsonDataset,
-      (1, new UDT.MyDenseVector(Array(1.1, 2.2, 3.3, 4.4))),
-      (2, new UDT.MyDenseVector(Array(2.25, 4.5, 8.75)))
+        jsonDataset,
+        (1, new UDT.MyDenseVector(Array(1.1, 2.2, 3.3, 4.4))),
+        (2, new UDT.MyDenseVector(Array(2.25, 4.5, 8.75)))
     )
   }
 
@@ -188,6 +185,5 @@ class UserDefinedTypeSuite extends QueryTest with SharedSQLContext with ParquetT
 
     val toCatalystConverter = CatalystTypeConverters.createToCatalystConverter(udt)
     assert(toCatalystConverter(null) === null)
-
   }
 }

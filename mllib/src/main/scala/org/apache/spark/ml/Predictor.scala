@@ -31,8 +31,11 @@ import org.apache.spark.sql.types.{DataType, DoubleType, StructType}
 /**
  * (private[ml])  Trait for parameters for prediction (regression and classification).
  */
-private[ml] trait PredictorParams extends Params
-  with HasLabelCol with HasFeaturesCol with HasPredictionCol {
+private[ml] trait PredictorParams
+    extends Params
+    with HasLabelCol
+    with HasFeaturesCol
+    with HasPredictionCol {
 
   /**
    * Validates and transforms the input schema with the provided param map.
@@ -44,9 +47,7 @@ private[ml] trait PredictorParams extends Params
    * @return output schema
    */
   protected def validateAndTransformSchema(
-      schema: StructType,
-      fitting: Boolean,
-      featuresDataType: DataType): StructType = {
+      schema: StructType, fitting: Boolean, featuresDataType: DataType): StructType = {
     // TODO: Support casting Array[Double] and Array[Float] to Vector when FeaturesType = Vector
     SchemaUtils.checkColumnType(schema, $(featuresCol), featuresDataType)
     if (fitting) {
@@ -68,11 +69,11 @@ private[ml] trait PredictorParams extends Params
  *            parameter to specify the concrete type for the corresponding model.
  */
 @DeveloperApi
-abstract class Predictor[
-    FeaturesType,
-    Learner <: Predictor[FeaturesType, Learner, M],
-    M <: PredictionModel[FeaturesType, M]]
-  extends Estimator[M] with PredictorParams {
+abstract class Predictor[FeaturesType,
+                         Learner <: Predictor[FeaturesType, Learner, M],
+                         M <: PredictionModel[FeaturesType, M]]
+    extends Estimator[M]
+    with PredictorParams {
 
   /** @group setParam */
   def setLabelCol(value: String): Learner = set(labelCol, value).asInstanceOf[Learner]
@@ -138,7 +139,8 @@ abstract class Predictor[
  */
 @DeveloperApi
 abstract class PredictionModel[FeaturesType, M <: PredictionModel[FeaturesType, M]]
-  extends Model[M] with PredictorParams {
+    extends Model[M]
+    with PredictorParams {
 
   /** @group setParam */
   def setFeaturesCol(value: String): M = set(featuresCol, value).asInstanceOf[M]
@@ -176,8 +178,8 @@ abstract class PredictionModel[FeaturesType, M <: PredictionModel[FeaturesType, 
     if ($(predictionCol).nonEmpty) {
       transformImpl(dataset)
     } else {
-      this.logWarning(s"$uid: Predictor.transform() was called as NOOP" +
-        " since no output columns were set.")
+      this.logWarning(
+          s"$uid: Predictor.transform() was called as NOOP" + " since no output columns were set.")
       dataset.toDF
     }
   }

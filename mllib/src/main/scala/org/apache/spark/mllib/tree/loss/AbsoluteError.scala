@@ -19,7 +19,6 @@ package org.apache.spark.mllib.tree.loss
 
 import org.apache.spark.annotation.{DeveloperApi, Since}
 
-
 /**
  * :: DeveloperApi ::
  * Class for absolute error loss calculation (for regression).

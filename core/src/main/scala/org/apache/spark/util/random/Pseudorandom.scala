@@ -25,6 +25,7 @@ import org.apache.spark.annotation.DeveloperApi
  */
 @DeveloperApi
 trait Pseudorandom {
+
   /** Set random seed. */
   def setSeed(seed: Long): Unit
 }

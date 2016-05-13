@@ -33,5 +33,4 @@ object YarnTestAccessor {
   def getRegisteredExecutorFile(service: YarnShuffleService): File = {
     service.registeredExecutorFile
   }
-
 }

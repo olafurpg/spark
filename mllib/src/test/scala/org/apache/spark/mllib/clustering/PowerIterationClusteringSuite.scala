@@ -90,19 +90,17 @@ class PowerIterationClusteringSuite extends SparkFunSuite with MLlibTestSparkCon
       (i.toLong, j.toLong, sim(points(i), points(j)))
     }
 
-    val edges = similarities.flatMap { case (i, j, s) =>
-      if (i != j) {
-        Seq(Edge(i, j, s), Edge(j, i, s))
-      } else {
-        None
-      }
+    val edges = similarities.flatMap {
+      case (i, j, s) =>
+        if (i != j) {
+          Seq(Edge(i, j, s), Edge(j, i, s))
+        } else {
+          None
+        }
     }
     val graph = Graph.fromEdges(sc.parallelize(edges, 2), 0.0)
 
-    val model = new PowerIterationClustering()
-      .setK(2)
-      .setMaxIterations(40)
-      .run(graph)
+    val model = new PowerIterationClustering().setK(2).setMaxIterations(40).run(graph)
     val predictions = Array.fill(2)(mutable.Set.empty[Long])
     model.assignments.collect().foreach { a =>
       predictions(a.cluster) += a.id
@@ -143,27 +141,28 @@ class PowerIterationClusteringSuite extends SparkFunSuite with MLlibTestSparkCon
      1/3 1/3   0 1/3
      1/2   0 1/2   0
      */
-    val similarities = Seq[(Long, Long, Double)](
-      (0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (1, 2, 1.0), (2, 3, 1.0))
+    val similarities =
+      Seq[(Long, Long, Double)]((0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (1, 2, 1.0), (2, 3, 1.0))
     // scalastyle:off
-    val expected = Array(
-      Array(0.0,     1.0/3.0, 1.0/3.0, 1.0/3.0),
-      Array(1.0/2.0,     0.0, 1.0/2.0,     0.0),
-      Array(1.0/3.0, 1.0/3.0,     0.0, 1.0/3.0),
-      Array(1.0/2.0,     0.0, 1.0/2.0,     0.0))
+    val expected = Array(Array(0.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0),
+                         Array(1.0 / 2.0, 0.0, 1.0 / 2.0, 0.0),
+                         Array(1.0 / 3.0, 1.0 / 3.0, 0.0, 1.0 / 3.0),
+                         Array(1.0 / 2.0, 0.0, 1.0 / 2.0, 0.0))
     // scalastyle:on
     val w = normalize(sc.parallelize(similarities, 2))
-    w.edges.collect().foreach { case Edge(i, j, x) =>
-      assert(x ~== expected(i.toInt)(j.toInt) absTol 1e-14)
+    w.edges.collect().foreach {
+      case Edge(i, j, x) =>
+        assert(x ~== expected(i.toInt)(j.toInt) absTol 1e-14)
     }
     val v0 = sc.parallelize(Seq[(Long, Double)]((0, 0.1), (1, 0.2), (2, 0.3), (3, 0.4)), 2)
     val w0 = Graph(v0, w.edges)
     val v1 = powerIter(w0, maxIterations = 1).collect()
-    val u = Array(0.3, 0.2, 0.7/3.0, 0.2)
+    val u = Array(0.3, 0.2, 0.7 / 3.0, 0.2)
     val norm = u.sum
     val u1 = u.map(x => x / norm)
-    v1.foreach { case (i, x) =>
-      assert(x ~== u1(i.toInt) absTol 1e-14)
+    v1.foreach {
+      case (i, x) =>
+        assert(x ~== u1(i.toInt) absTol 1e-14)
     }
   }
 
@@ -184,7 +183,7 @@ class PowerIterationClusteringSuite extends SparkFunSuite with MLlibTestSparkCon
 object PowerIterationClusteringSuite extends SparkFunSuite {
   def createModel(sc: SparkContext, k: Int, nPoints: Int): PowerIterationClusteringModel = {
     val assignments = sc.parallelize(
-      (0 until nPoints).map(p => PowerIterationClustering.Assignment(p, Random.nextInt(k))))
+        (0 until nPoints).map(p => PowerIterationClustering.Assignment(p, Random.nextInt(k))))
     new PowerIterationClusteringModel(k, assignments)
   }
 
@@ -193,8 +192,12 @@ object PowerIterationClusteringSuite extends SparkFunSuite {
 
     val aAssignments = a.assignments.map(x => (x.id, x.cluster))
     val bAssignments = b.assignments.map(x => (x.id, x.cluster))
-    val unequalElements = aAssignments.join(bAssignments).filter {
-      case (id, (c1, c2)) => c1 != c2 }.count()
+    val unequalElements = aAssignments
+      .join(bAssignments)
+      .filter {
+        case (id, (c1, c2)) => c1 != c2
+      }
+      .count()
     assert(unequalElements === 0L)
   }
 }

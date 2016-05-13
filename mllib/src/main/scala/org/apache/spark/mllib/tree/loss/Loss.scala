@@ -22,7 +22,6 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.model.TreeEnsembleModel
 import org.apache.spark.rdd.RDD
 
-
 /**
  * :: DeveloperApi ::
  * Trait for adding "pluggable" loss functions for the gradient boosting algorithm.

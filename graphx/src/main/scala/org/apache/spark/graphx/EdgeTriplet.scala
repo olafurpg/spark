@@ -24,6 +24,7 @@ package org.apache.spark.graphx
  * @tparam ED the type of the edge attribute
  */
 class EdgeTriplet[VD, ED] extends Edge[ED] {
+
   /**
    * The source vertex attribute
    */

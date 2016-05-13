@@ -41,18 +41,16 @@ private[regression] object GLMRegressionModel {
      * Helper method for saving GLM regression model metadata and data.
      * @param modelClass  String name for model class, to be saved with metadata
      */
-    def save(
-        sc: SparkContext,
-        path: String,
-        modelClass: String,
-        weights: Vector,
-        intercept: Double): Unit = {
+    def save(sc: SparkContext,
+             path: String,
+             modelClass: String,
+             weights: Vector,
+             intercept: Double): Unit = {
       val sqlContext = SQLContext.getOrCreate(sc)
 
       // Create JSON metadata.
-      val metadata = compact(render(
-        ("class" -> modelClass) ~ ("version" -> thisFormatVersion) ~
-          ("numFeatures" -> weights.size)))
+      val metadata = compact(render(("class" -> modelClass) ~ ("version" -> thisFormatVersion) ~
+              ("numFeatures" -> weights.size)))
       sc.parallelize(Seq(metadata), 1).saveAsTextFile(Loader.metadataPath(path))
 
       // Create Parquet data.
@@ -76,11 +74,12 @@ private[regression] object GLMRegressionModel {
       assert(data.size == 2, s"Unable to load $modelClass data from: $datapath")
       data match {
         case Row(weights: Vector, intercept: Double) =>
-          assert(weights.size == numFeatures, s"Expected $numFeatures features, but" +
-            s" found ${weights.size} features when loading $modelClass weights from $datapath")
+          assert(
+              weights.size == numFeatures,
+              s"Expected $numFeatures features, but" +
+              s" found ${weights.size} features when loading $modelClass weights from $datapath")
           Data(weights, intercept)
       }
     }
   }
-
 }

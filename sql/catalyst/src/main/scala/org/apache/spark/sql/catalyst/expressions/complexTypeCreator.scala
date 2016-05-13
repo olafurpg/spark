@@ -27,8 +27,7 @@ import org.apache.spark.unsafe.types.UTF8String
 /**
  * Returns an Array containing the evaluation of all children expressions.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(n0, ...) - Returns an array with the given elements.")
+@ExpressionDescription(usage = "_FUNC_(n0, ...) - Returns an array with the given elements.")
 case class CreateArray(children: Seq[Expression]) extends Expression {
 
   override def foldable: Boolean = children.forall(_.foldable)
@@ -37,9 +36,8 @@ case class CreateArray(children: Seq[Expression]) extends Expression {
     TypeUtils.checkForSameTypeInputExpr(children.map(_.dataType), "function array")
 
   override def dataType: DataType = {
-    ArrayType(
-      children.headOption.map(_.dataType).getOrElse(NullType),
-      containsNull = children.exists(_.nullable))
+    ArrayType(children.headOption.map(_.dataType).getOrElse(NullType),
+              containsNull = children.exists(_.nullable))
   }
 
   override def nullable: Boolean = false
@@ -53,22 +51,21 @@ case class CreateArray(children: Seq[Expression]) extends Expression {
     val values = ctx.freshName("values")
     ctx.addMutableState("Object[]", values, s"this.$values = null;")
 
-    ev.copy(code = s"""
+    ev.copy(
+        code = s"""
       final boolean ${ev.isNull} = false;
       this.$values = new Object[${children.size}];""" +
-      ctx.splitExpressions(
-        ctx.INPUT_ROW,
-        children.zipWithIndex.map { case (e, i) =>
-          val eval = e.genCode(ctx)
-          eval.code + s"""
+          ctx.splitExpressions(ctx.INPUT_ROW, children.zipWithIndex.map {
+      case (e, i) =>
+        val eval = e.genCode(ctx)
+        eval.code + s"""
             if (${eval.isNull}) {
               $values[$i] = null;
             } else {
               $values[$i] = ${eval.value};
             }
            """
-        }) +
-      s"""
+    }) + s"""
         final ArrayData ${ev.value} = new $arrayClass($values);
         this.$values = null;
       """)
@@ -82,7 +79,7 @@ case class CreateArray(children: Seq[Expression]) extends Expression {
  * The children are a flatted sequence of kv pairs, e.g. (key1, value1, key2, value2, ...)
  */
 @ExpressionDescription(
-  usage = "_FUNC_(key0, value0, key1, value1...) - Creates a map with the given key/value pairs.")
+    usage = "_FUNC_(key0, value0, key1, value1...) - Creates a map with the given key/value pairs.")
 case class CreateMap(children: Seq[Expression]) extends Expression {
   private[sql] lazy val keys = children.indices.filter(_ % 2 == 0).map(children)
   private[sql] lazy val values = children.indices.filter(_ % 2 != 0).map(children)
@@ -91,23 +88,23 @@ case class CreateMap(children: Seq[Expression]) extends Expression {
 
   override def checkInputDataTypes(): TypeCheckResult = {
     if (children.size % 2 != 0) {
-      TypeCheckResult.TypeCheckFailure(s"$prettyName expects an positive even number of arguments.")
+      TypeCheckResult.TypeCheckFailure(
+          s"$prettyName expects an positive even number of arguments.")
     } else if (keys.map(_.dataType).distinct.length > 1) {
       TypeCheckResult.TypeCheckFailure("The given keys of function map should all be the same " +
-        "type, but they are " + keys.map(_.dataType.simpleString).mkString("[", ", ", "]"))
+          "type, but they are " + keys.map(_.dataType.simpleString).mkString("[", ", ", "]"))
     } else if (values.map(_.dataType).distinct.length > 1) {
       TypeCheckResult.TypeCheckFailure("The given values of function map should all be the same " +
-        "type, but they are " + values.map(_.dataType.simpleString).mkString("[", ", ", "]"))
+          "type, but they are " + values.map(_.dataType.simpleString).mkString("[", ", ", "]"))
     } else {
       TypeCheckResult.TypeCheckSuccess
     }
   }
 
   override def dataType: DataType = {
-    MapType(
-      keyType = keys.headOption.map(_.dataType).getOrElse(NullType),
-      valueType = values.headOption.map(_.dataType).getOrElse(NullType),
-      valueContainsNull = values.exists(_.nullable))
+    MapType(keyType = keys.headOption.map(_.dataType).getOrElse(NullType),
+            valueType = values.headOption.map(_.dataType).getOrElse(NullType),
+            valueContainsNull = values.exists(_.nullable))
   }
 
   override def nullable: Boolean = false
@@ -131,15 +128,15 @@ case class CreateMap(children: Seq[Expression]) extends Expression {
 
     val keyData = s"new $arrayClass($keyArray)"
     val valueData = s"new $arrayClass($valueArray)"
-    ev.copy(code = s"""
+    ev.copy(
+        code = s"""
       final boolean ${ev.isNull} = false;
       $keyArray = new Object[${keys.size}];
       $valueArray = new Object[${values.size}];""" +
-      ctx.splitExpressions(
-        ctx.INPUT_ROW,
-        keys.zipWithIndex.map { case (key, i) =>
-          val eval = key.genCode(ctx)
-          s"""
+          ctx.splitExpressions(ctx.INPUT_ROW, keys.zipWithIndex.map {
+      case (key, i) =>
+        val eval = key.genCode(ctx)
+        s"""
             ${eval.code}
             if (${eval.isNull}) {
               throw new RuntimeException("Cannot use null as map key!");
@@ -147,12 +144,11 @@ case class CreateMap(children: Seq[Expression]) extends Expression {
               $keyArray[$i] = ${eval.value};
             }
           """
-        }) +
-      ctx.splitExpressions(
-        ctx.INPUT_ROW,
-        values.zipWithIndex.map { case (value, i) =>
-          val eval = value.genCode(ctx)
-          s"""
+    }) + ctx.splitExpressions(ctx.INPUT_ROW,
+                              values.zipWithIndex.map {
+                          case (value, i) =>
+                            val eval = value.genCode(ctx)
+                            s"""
             ${eval.code}
             if (${eval.isNull}) {
               $valueArray[$i] = null;
@@ -160,8 +156,7 @@ case class CreateMap(children: Seq[Expression]) extends Expression {
               $valueArray[$i] = ${eval.value};
             }
           """
-        }) +
-      s"""
+                        }) + s"""
         final MapData ${ev.value} = new $mapClass($keyData, $valueData);
         this.$keyArray = null;
         this.$valueArray = null;
@@ -175,19 +170,20 @@ case class CreateMap(children: Seq[Expression]) extends Expression {
  * Returns a Row containing the evaluation of all children expressions.
  */
 @ExpressionDescription(
-  usage = "_FUNC_(col1, col2, col3, ...) - Creates a struct with the given field values.")
+    usage = "_FUNC_(col1, col2, col3, ...) - Creates a struct with the given field values.")
 case class CreateStruct(children: Seq[Expression]) extends Expression {
 
   override def foldable: Boolean = children.forall(_.foldable)
 
   override lazy val dataType: StructType = {
-    val fields = children.zipWithIndex.map { case (child, idx) =>
-      child match {
-        case ne: NamedExpression =>
-          StructField(ne.name, ne.dataType, ne.nullable, ne.metadata)
-        case _ =>
-          StructField(s"col${idx + 1}", child.dataType, child.nullable, Metadata.empty)
-      }
+    val fields = children.zipWithIndex.map {
+      case (child, idx) =>
+        child match {
+          case ne: NamedExpression =>
+            StructField(ne.name, ne.dataType, ne.nullable, ne.metadata)
+          case _ =>
+            StructField(s"col${idx + 1}", child.dataType, child.nullable, Metadata.empty)
+        }
     }
     StructType(fields)
   }
@@ -203,21 +199,20 @@ case class CreateStruct(children: Seq[Expression]) extends Expression {
     val values = ctx.freshName("values")
     ctx.addMutableState("Object[]", values, s"this.$values = null;")
 
-    ev.copy(code = s"""
+    ev.copy(
+        code = s"""
       boolean ${ev.isNull} = false;
       this.$values = new Object[${children.size}];""" +
-      ctx.splitExpressions(
-        ctx.INPUT_ROW,
-        children.zipWithIndex.map { case (e, i) =>
-          val eval = e.genCode(ctx)
-          eval.code + s"""
+          ctx.splitExpressions(ctx.INPUT_ROW, children.zipWithIndex.map {
+      case (e, i) =>
+        val eval = e.genCode(ctx)
+        eval.code + s"""
             if (${eval.isNull}) {
               $values[$i] = null;
             } else {
               $values[$i] = ${eval.value};
             }"""
-        }) +
-      s"""
+    }) + s"""
         final InternalRow ${ev.value} = new $rowClass($values);
         this.$values = null;
       """)
@@ -226,7 +221,6 @@ case class CreateStruct(children: Seq[Expression]) extends Expression {
   override def prettyName: String = "struct"
 }
 
-
 /**
  * Creates a struct with the given field names and values
  *
@@ -234,7 +228,7 @@ case class CreateStruct(children: Seq[Expression]) extends Expression {
  */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
-  usage = "_FUNC_(name1, val1, name2, val2, ...) - Creates a struct with the given field names and values.")
+    usage = "_FUNC_(name1, val1, name2, val2, ...) - Creates a struct with the given field names and values.")
 // scalastyle:on line.size.limit
 case class CreateNamedStruct(children: Seq[Expression]) extends Expression {
 
@@ -252,9 +246,12 @@ case class CreateNamedStruct(children: Seq[Expression]) extends Expression {
   private lazy val names = nameExprs.map(_.eval(EmptyRow))
 
   override lazy val dataType: StructType = {
-    val fields = names.zip(valExprs).map { case (name, valExpr) =>
-      StructField(name.asInstanceOf[UTF8String].toString,
-        valExpr.dataType, valExpr.nullable, Metadata.empty)
+    val fields = names.zip(valExprs).map {
+      case (name, valExpr) =>
+        StructField(name.asInstanceOf[UTF8String].toString,
+                    valExpr.dataType,
+                    valExpr.nullable,
+                    Metadata.empty)
     }
     StructType(fields)
   }
@@ -270,7 +267,7 @@ case class CreateNamedStruct(children: Seq[Expression]) extends Expression {
       val invalidNames = nameExprs.filterNot(e => e.foldable && e.dataType == StringType)
       if (invalidNames.nonEmpty) {
         TypeCheckResult.TypeCheckFailure(
-          s"Only foldable StringType expressions are allowed to appear at odd position , got :" +
+            s"Only foldable StringType expressions are allowed to appear at odd position , got :" +
             s" ${invalidNames.mkString(",")}")
       } else if (!names.contains(null)) {
         TypeCheckResult.TypeCheckSuccess
@@ -289,21 +286,20 @@ case class CreateNamedStruct(children: Seq[Expression]) extends Expression {
     val values = ctx.freshName("values")
     ctx.addMutableState("Object[]", values, s"this.$values = null;")
 
-    ev.copy(code = s"""
+    ev.copy(
+        code = s"""
       boolean ${ev.isNull} = false;
       $values = new Object[${valExprs.size}];""" +
-      ctx.splitExpressions(
-        ctx.INPUT_ROW,
-        valExprs.zipWithIndex.map { case (e, i) =>
-          val eval = e.genCode(ctx)
-          eval.code + s"""
+          ctx.splitExpressions(ctx.INPUT_ROW, valExprs.zipWithIndex.map {
+      case (e, i) =>
+        val eval = e.genCode(ctx)
+        eval.code + s"""
           if (${eval.isNull}) {
             $values[$i] = null;
           } else {
             $values[$i] = ${eval.value};
           }"""
-        }) +
-      s"""
+    }) + s"""
         final InternalRow ${ev.value} = new $rowClass($values);
         this.$values = null;
       """)
@@ -324,13 +320,14 @@ case class CreateStructUnsafe(children: Seq[Expression]) extends Expression {
   override lazy val resolved: Boolean = childrenResolved
 
   override lazy val dataType: StructType = {
-    val fields = children.zipWithIndex.map { case (child, idx) =>
-      child match {
-        case ne: NamedExpression =>
-          StructField(ne.name, ne.dataType, ne.nullable, ne.metadata)
-        case _ =>
-          StructField(s"col${idx + 1}", child.dataType, child.nullable, Metadata.empty)
-      }
+    val fields = children.zipWithIndex.map {
+      case (child, idx) =>
+        child match {
+          case ne: NamedExpression =>
+            StructField(ne.name, ne.dataType, ne.nullable, ne.metadata)
+          case _ =>
+            StructField(s"col${idx + 1}", child.dataType, child.nullable, Metadata.empty)
+        }
     }
     StructType(fields)
   }
@@ -349,7 +346,6 @@ case class CreateStructUnsafe(children: Seq[Expression]) extends Expression {
   override def prettyName: String = "struct_unsafe"
 }
 
-
 /**
  * Creates a struct with the given field names and values. This is a variant that returns
  * UnsafeRow directly. The unsafe projection operator replaces [[CreateStruct]] with
@@ -365,8 +361,9 @@ case class CreateNamedStructUnsafe(children: Seq[Expression]) extends Expression
   private lazy val names = nameExprs.map(_.eval(EmptyRow).toString)
 
   override lazy val dataType: StructType = {
-    val fields = names.zip(valExprs).map { case (name, valExpr) =>
-      StructField(name, valExpr.dataType, valExpr.nullable, Metadata.empty)
+    val fields = names.zip(valExprs).map {
+      case (name, valExpr) =>
+        StructField(name, valExpr.dataType, valExpr.nullable, Metadata.empty)
     }
     StructType(fields)
   }

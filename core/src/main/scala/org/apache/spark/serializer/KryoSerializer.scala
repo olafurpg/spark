@@ -49,33 +49,33 @@ import org.apache.spark.util.collection.CompactBuffer
  * Spark application.
  */
 class KryoSerializer(conf: SparkConf)
-  extends org.apache.spark.serializer.Serializer
-  with Logging
-  with Serializable {
+    extends org.apache.spark.serializer.Serializer
+    with Logging
+    with Serializable {
 
   private val bufferSizeKb = conf.getSizeAsKb("spark.kryoserializer.buffer", "64k")
 
   if (bufferSizeKb >= ByteUnit.GiB.toKiB(2)) {
-    throw new IllegalArgumentException("spark.kryoserializer.buffer must be less than " +
-      s"2048 mb, got: + ${ByteUnit.KiB.toMiB(bufferSizeKb)} mb.")
+    throw new IllegalArgumentException(
+        "spark.kryoserializer.buffer must be less than " +
+        s"2048 mb, got: + ${ByteUnit.KiB.toMiB(bufferSizeKb)} mb.")
   }
   private val bufferSize = ByteUnit.KiB.toBytes(bufferSizeKb).toInt
 
   val maxBufferSizeMb = conf.getSizeAsMb("spark.kryoserializer.buffer.max", "64m").toInt
   if (maxBufferSizeMb >= ByteUnit.GiB.toMiB(2)) {
-    throw new IllegalArgumentException("spark.kryoserializer.buffer.max must be less than " +
-      s"2048 mb, got: + $maxBufferSizeMb mb.")
+    throw new IllegalArgumentException(
+        "spark.kryoserializer.buffer.max must be less than " +
+        s"2048 mb, got: + $maxBufferSizeMb mb.")
   }
   private val maxBufferSize = ByteUnit.MiB.toBytes(maxBufferSizeMb).toInt
 
   private val referenceTracking = conf.getBoolean("spark.kryo.referenceTracking", true)
   private val registrationRequired = conf.getBoolean("spark.kryo.registrationRequired", false)
-  private val userRegistrators = conf.get("spark.kryo.registrator", "")
-    .split(',').map(_.trim)
-    .filter(!_.isEmpty)
-  private val classesToRegister = conf.get("spark.kryo.classesToRegister", "")
-    .split(',').map(_.trim)
-    .filter(!_.isEmpty)
+  private val userRegistrators =
+    conf.get("spark.kryo.registrator", "").split(',').map(_.trim).filter(!_.isEmpty)
+  private val classesToRegister =
+    conf.get("spark.kryo.classesToRegister", "").split(',').map(_.trim).filter(!_.isEmpty)
 
   private val avroSchemas = conf.getAvroSchema
 
@@ -117,12 +117,15 @@ class KryoSerializer(conf: SparkConf)
       // Use the default classloader when calling the user registrator.
       Thread.currentThread.setContextClassLoader(classLoader)
       // Register classes given through spark.kryo.classesToRegister.
-      classesToRegister
-        .foreach { className => kryo.register(Class.forName(className, true, classLoader)) }
+      classesToRegister.foreach { className =>
+        kryo.register(Class.forName(className, true, classLoader))
+      }
       // Allow the user to register their own classes by setting spark.kryo.registrator.
       userRegistrators
         .map(Class.forName(_, true, classLoader).newInstance().asInstanceOf[KryoRegistrator])
-        .foreach { reg => reg.registerClasses(kryo) }
+        .foreach { reg =>
+          reg.registerClasses(kryo)
+        }
       // scalastyle:on classforname
     } catch {
       case e: Exception =>
@@ -148,17 +151,154 @@ class KryoSerializer(conf: SparkConf)
     kryo.register(classOf[Array[Tuple9[Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
     kryo.register(classOf[Array[Tuple10[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
     kryo.register(classOf[Array[Tuple11[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple12[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple13[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple14[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple15[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple16[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple17[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple18[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple19[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple20[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple21[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
-    kryo.register(classOf[Array[Tuple22[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
+    kryo.register(
+        classOf[Array[Tuple12[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
+    kryo.register(
+        classOf[Array[Tuple13[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
+    kryo.register(classOf[Array[Tuple14[
+                    Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
+    kryo.register(classOf[Array[Tuple15[
+                    Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]]])
+    kryo.register(
+        classOf[Array[Tuple16[Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any]]])
+    kryo.register(
+        classOf[Array[Tuple17[Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any]]])
+    kryo.register(
+        classOf[Array[Tuple18[Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any]]])
+    kryo.register(
+        classOf[Array[Tuple19[Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any]]])
+    kryo.register(
+        classOf[Array[Tuple20[Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any]]])
+    kryo.register(
+        classOf[Array[Tuple21[Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any]]])
+    kryo.register(
+        classOf[Array[Tuple22[Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any,
+                              Any]]])
 
     // scalastyle:on
 
@@ -183,10 +323,9 @@ class KryoSerializer(conf: SparkConf)
   }
 }
 
-private[spark]
-class KryoSerializationStream(
-    serInstance: KryoSerializerInstance,
-    outStream: OutputStream) extends SerializationStream {
+private[spark] class KryoSerializationStream(
+    serInstance: KryoSerializerInstance, outStream: OutputStream)
+    extends SerializationStream {
 
   private[this] var output: KryoOutput = new KryoOutput(outStream)
   private[this] var kryo: Kryo = serInstance.borrowKryo()
@@ -216,10 +355,9 @@ class KryoSerializationStream(
   }
 }
 
-private[spark]
-class KryoDeserializationStream(
-    serInstance: KryoSerializerInstance,
-    inStream: InputStream) extends DeserializationStream {
+private[spark] class KryoDeserializationStream(
+    serInstance: KryoSerializerInstance, inStream: InputStream)
+    extends DeserializationStream {
 
   private[this] var input: KryoInput = new KryoInput(inStream)
   private[this] var kryo: Kryo = serInstance.borrowKryo()
@@ -298,7 +436,7 @@ private[spark] class KryoSerializerInstance(ks: KryoSerializer) extends Serializ
     } catch {
       case e: KryoException if e.getMessage.startsWith("Buffer overflow") =>
         throw new SparkException(s"Kryo serialization failed: ${e.getMessage}. To avoid this, " +
-          "increase spark.kryoserializer.buffer.max value.")
+            "increase spark.kryoserializer.buffer.max value.")
     } finally {
       releaseKryo(kryo)
     }
@@ -363,31 +501,33 @@ trait KryoRegistrator {
 private[serializer] object KryoSerializer {
   // Commonly used classes.
   private val toRegister: Seq[Class[_]] = Seq(
-    ByteBuffer.allocate(1).getClass,
-    classOf[StorageLevel],
-    classOf[CompressedMapStatus],
-    classOf[HighlyCompressedMapStatus],
-    classOf[CompactBuffer[_]],
-    classOf[BlockManagerId],
-    classOf[Array[Byte]],
-    classOf[Array[Short]],
-    classOf[Array[Long]],
-    classOf[BoundedPriorityQueue[_]],
-    classOf[SparkConf]
+      ByteBuffer.allocate(1).getClass,
+      classOf[StorageLevel],
+      classOf[CompressedMapStatus],
+      classOf[HighlyCompressedMapStatus],
+      classOf[CompactBuffer[_]],
+      classOf[BlockManagerId],
+      classOf[Array[Byte]],
+      classOf[Array[Short]],
+      classOf[Array[Long]],
+      classOf[BoundedPriorityQueue[_]],
+      classOf[SparkConf]
   )
 
-  private val toRegisterSerializer = Map[Class[_], KryoClassSerializer[_]](
-    classOf[RoaringBitmap] -> new KryoClassSerializer[RoaringBitmap]() {
-      override def write(kryo: Kryo, output: KryoOutput, bitmap: RoaringBitmap): Unit = {
-        bitmap.serialize(new KryoOutputObjectOutputBridge(kryo, output))
-      }
-      override def read(kryo: Kryo, input: KryoInput, cls: Class[RoaringBitmap]): RoaringBitmap = {
-        val ret = new RoaringBitmap
-        ret.deserialize(new KryoInputObjectInputBridge(kryo, input))
-        ret
-      }
-    }
-  )
+  private val toRegisterSerializer =
+    Map[Class[_], KryoClassSerializer[_]](
+        classOf[RoaringBitmap] -> new KryoClassSerializer[RoaringBitmap]() {
+          override def write(kryo: Kryo, output: KryoOutput, bitmap: RoaringBitmap): Unit = {
+            bitmap.serialize(new KryoOutputObjectOutputBridge(kryo, output))
+          }
+          override def read(
+              kryo: Kryo, input: KryoInput, cls: Class[RoaringBitmap]): RoaringBitmap = {
+            val ret = new RoaringBitmap
+            ret.deserialize(new KryoInputObjectInputBridge(kryo, input))
+            ret
+          }
+        }
+    )
 }
 
 /**
@@ -395,8 +535,9 @@ private[serializer] object KryoSerializer {
  * methods of InputStream and ObjectInput to KryoInput. It's usually helpful when an API expects
  * an InputStream or ObjectInput but you want to use Kryo.
  */
-private[spark] class KryoInputObjectInputBridge(
-    kryo: Kryo, input: KryoInput) extends FilterInputStream(input) with ObjectInput {
+private[spark] class KryoInputObjectInputBridge(kryo: Kryo, input: KryoInput)
+    extends FilterInputStream(input)
+    with ObjectInput {
   override def readLong(): Long = input.readLong()
   override def readChar(): Char = input.readChar()
   override def readFloat(): Float = input.readFloat()
@@ -423,8 +564,9 @@ private[spark] class KryoInputObjectInputBridge(
  * methods of OutputStream and ObjectOutput to KryoOutput. It's usually helpful when an API expects
  * an OutputStream or ObjectOutput but you want to use Kryo.
  */
-private[spark] class KryoOutputObjectOutputBridge(
-    kryo: Kryo, output: KryoOutput) extends FilterOutputStream(output) with ObjectOutput  {
+private[spark] class KryoOutputObjectOutputBridge(kryo: Kryo, output: KryoOutput)
+    extends FilterOutputStream(output)
+    with ObjectOutput {
   override def writeFloat(v: Float): Unit = output.writeFloat(v)
   // There is no "readChars" counterpart, except maybe "readLine", which is not supported
   override def writeChars(s: String): Unit = throw new UnsupportedOperationException("writeChars")
@@ -450,7 +592,7 @@ private[spark] class KryoOutputObjectOutputBridge(
  * Kryo deserializes this into an AbstractCollection, which unfortunately doesn't work.
  */
 private class JavaIterableWrapperSerializer
-  extends com.esotericsoftware.kryo.Serializer[java.lang.Iterable[_]] {
+    extends com.esotericsoftware.kryo.Serializer[java.lang.Iterable[_]] {
 
   import JavaIterableWrapperSerializer._
 
@@ -464,8 +606,8 @@ private class JavaIterableWrapperSerializer
     }
   }
 
-  override def read(kryo: Kryo, in: KryoInput, clz: Class[java.lang.Iterable[_]])
-    : java.lang.Iterable[_] = {
+  override def read(
+      kryo: Kryo, in: KryoInput, clz: Class[java.lang.Iterable[_]]): java.lang.Iterable[_] = {
     kryo.readClassAndObject(in) match {
       case scalaIterable: Iterable[_] => scalaIterable.asJava
       case javaIterable: java.lang.Iterable[_] => javaIterable
@@ -476,8 +618,7 @@ private class JavaIterableWrapperSerializer
 private object JavaIterableWrapperSerializer extends Logging {
   // The class returned by JavaConverters.asJava
   // (scala.collection.convert.Wrappers$IterableWrapper).
-  val wrapperClass =
-    scala.collection.convert.WrapAsJava.asJavaIterable(Seq(1)).getClass
+  val wrapperClass = scala.collection.convert.WrapAsJava.asJavaIterable(Seq(1)).getClass
 
   // Get the underlying method so we can use it to get the Scala collection for serialization.
   private val underlyingMethodOpt = {

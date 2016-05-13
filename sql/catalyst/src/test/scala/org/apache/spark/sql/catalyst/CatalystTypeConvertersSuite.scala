@@ -23,18 +23,17 @@ import org.apache.spark.sql.types._
 
 class CatalystTypeConvertersSuite extends SparkFunSuite {
 
-  private val simpleTypes: Seq[DataType] = Seq(
-    StringType,
-    DateType,
-    BooleanType,
-    ByteType,
-    ShortType,
-    IntegerType,
-    LongType,
-    FloatType,
-    DoubleType,
-    DecimalType.SYSTEM_DEFAULT,
-    DecimalType.USER_DEFAULT)
+  private val simpleTypes: Seq[DataType] = Seq(StringType,
+                                               DateType,
+                                               BooleanType,
+                                               ByteType,
+                                               ShortType,
+                                               IntegerType,
+                                               LongType,
+                                               FloatType,
+                                               DoubleType,
+                                               DecimalType.SYSTEM_DEFAULT,
+                                               DecimalType.USER_DEFAULT)
 
   test("null handling in rows") {
     val schema = StructType(simpleTypes.map(t => StructField(t.getClass.getName, t)))

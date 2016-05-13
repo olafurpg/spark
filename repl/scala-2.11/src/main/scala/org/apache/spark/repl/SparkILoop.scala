@@ -28,8 +28,7 @@ import scala.util.Properties.{javaVersion, javaVmName, versionString}
 /**
  *  A Spark-specific interactive shell.
  */
-class SparkILoop(in0: Option[BufferedReader], out: JPrintWriter)
-    extends ILoop(in0, out) {
+class SparkILoop(in0: Option[BufferedReader], out: JPrintWriter) extends ILoop(in0, out) {
   def this(in0: BufferedReader, out: JPrintWriter) = this(Some(in0), out)
   def this() = this(None, new JPrintWriter(Console.out, true))
 
@@ -63,8 +62,7 @@ class SparkILoop(in0: Option[BufferedReader], out: JPrintWriter)
    /___/ .__/\_,_/_/ /_/\_\   version %s
       /_/
          """.format(SPARK_VERSION))
-    val welcomeMsg = "Using Scala %s (%s, Java %s)".format(
-      versionString, javaVmName, javaVersion)
+    val welcomeMsg = "Using Scala %s (%s, Java %s)".format(versionString, javaVmName, javaVersion)
     echo(welcomeMsg)
     echo("Type in expressions to have them evaluated.")
     echo("Type :help for more information.")
@@ -97,7 +95,7 @@ object SparkILoop {
    * the given code to it as input.
    */
   def run(code: String, sets: Settings = new Settings): String = {
-    import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
+    import java.io.{BufferedReader, StringReader, OutputStreamWriter}
 
     stringFromStream { ostream =>
       Console.withOut(ostream) {

@@ -34,8 +34,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 
-private[streaming]
-object MasterFailureTest extends Logging {
+private[streaming] object MasterFailureTest extends Logging {
 
   @volatile var killed = false
   @volatile var killCount = 0
@@ -44,8 +43,7 @@ object MasterFailureTest extends Logging {
   def main(args: Array[String]) {
     // scalastyle:off println
     if (args.size < 2) {
-      println(
-        "Usage: MasterFailureTest <local/HDFS directory> <# batches> " +
+      println("Usage: MasterFailureTest <local/HDFS directory> <# batches> " +
           "[<batch size in milliseconds>]")
       System.exit(1)
     }
@@ -84,7 +82,6 @@ object MasterFailureTest extends Logging {
     assert(output.distinct.toSet == expectedOutput.toSet)
   }
 
-
   def testUpdateStateByKey(directory: String, numBatches: Int, batchDuration: Duration) {
     // Input: time=1 ==> [ a ] , time=2 ==> [ a, a ] , time=3 ==> [ a, a, a ] , ...
     val input = (1 to numBatches).map(i => (1 to i).map(_ => "a").mkString(" ")).toSeq
@@ -108,9 +105,7 @@ object MasterFailureTest extends Logging {
     logInfo("Output, size = " + output.size + "\n" + output)
 
     // Verify whether all the values in the output are among the expected output values
-    output.foreach(o =>
-      assert(expectedOutput.contains(o), "Expected value " + o + " not found")
-    )
+    output.foreach(o => assert(expectedOutput.contains(o), "Expected value " + o + " not found"))
 
     // Verify whether the last expected output value has been generated, there by
     // confirming that none of the inputs have been missed
@@ -122,11 +117,11 @@ object MasterFailureTest extends Logging {
    * final set of output values is as expected or not.
    */
   def testOperation[T: ClassTag](
-    directory: String,
-    batchDuration: Duration,
-    input: Seq[String],
-    operation: DStream[String] => DStream[T],
-    expectedOutput: Seq[T]
+      directory: String,
+      batchDuration: Duration,
+      input: Seq[String],
+      operation: DStream[String] => DStream[T],
+      expectedOutput: Seq[T]
   ): Seq[T] = {
 
     // Just making sure that the expected output does not have duplicates
@@ -180,13 +175,13 @@ object MasterFailureTest extends Logging {
       operation: DStream[String] => DStream[T],
       checkpointDir: Path,
       testDir: Path
-    ): StreamingContext = {
+  ): StreamingContext = {
     // Mark that setup was called
     setupCalled = true
 
     // Setup the streaming computation with the given operation
-    val ssc = new StreamingContext("local[4]", "MasterFailureTest", batchDuration, null, Nil,
-      Map())
+    val ssc = new StreamingContext(
+        "local[4]", "MasterFailureTest", batchDuration, null, Nil, Map())
     ssc.checkpoint(checkpointDir.toString)
     val inputStream = ssc.textFileStream(testDir.toString)
     val operatedStream = operation(inputStream)
@@ -194,7 +189,6 @@ object MasterFailureTest extends Logging {
     outputStream.register()
     ssc
   }
-
 
   /**
    * Repeatedly starts and kills the streaming context until timed out or
@@ -204,7 +198,7 @@ object MasterFailureTest extends Logging {
       _ssc: StreamingContext,
       lastExpectedOutput: T,
       maxTimeToRun: Long
-   ): Seq[T] = {
+  ): Seq[T] = {
 
     var ssc = _ssc
     var totalTimeRan = 0L
@@ -214,7 +208,7 @@ object MasterFailureTest extends Logging {
     val checkpointDir = ssc.checkpointDir
     val batchDuration = ssc.graph.batchDuration
 
-    while(!isLastOutputGenerated && !isTimedOut) {
+    while (!isLastOutputGenerated && !isTimedOut) {
       // Get the output buffer
       val outputQueue = ssc.graph.getOutputStreams().head.asInstanceOf[TestOutputStream[T]].output
       def output = outputQueue.asScala.flatten
@@ -269,15 +263,15 @@ object MasterFailureTest extends Logging {
       if (!isLastOutputGenerated && !isTimedOut) {
         val sleepTime = Random.nextInt(batchDuration.milliseconds.toInt * 10)
         logInfo(
-          "\n-------------------------------------------\n" +
+            "\n-------------------------------------------\n" +
             "   Restarting stream computation in " + sleepTime + " ms   " +
             "\n-------------------------------------------\n"
         )
         Thread.sleep(sleepTime)
         // Recreate the streaming context from checkpoint
         ssc = StreamingContext.getOrCreate(checkpointDir, () => {
-          throw new Exception("Trying to create new context when it " +
-            "should be reading from checkpoint file")
+          throw new Exception(
+              "Trying to create new context when it " + "should be reading from checkpoint file")
         })
       }
     }
@@ -295,7 +289,7 @@ object MasterFailureTest extends Logging {
     // Verify whether expected outputs do not consecutive batches with same output
     for (i <- 0 until expectedOutput.size - 1) {
       assert(expectedOutput(i) != expectedOutput(i + 1),
-        "Expected output has consecutive duplicate sequence of values")
+             "Expected output has consecutive duplicate sequence of values")
     }
 
     // Log the output
@@ -307,9 +301,7 @@ object MasterFailureTest extends Logging {
     // scalastyle:on println
 
     // Match the output with the expected output
-    output.foreach(o =>
-      assert(expectedOutput.contains(o), "Expected value " + o + " not found")
-    )
+    output.foreach(o => assert(expectedOutput.contains(o), "Expected value " + o + " not found"))
   }
 
   /** Resets counter to prepare for the test */
@@ -323,8 +315,9 @@ object MasterFailureTest extends Logging {
 /**
  * Thread to kill streaming context after a random period of time.
  */
-private[streaming]
-class KillingThread(ssc: StreamingContext, maxKillWaitTime: Long) extends Thread with Logging {
+private[streaming] class KillingThread(ssc: StreamingContext, maxKillWaitTime: Long)
+    extends Thread
+    with Logging {
 
   override def run() {
     try {
@@ -334,9 +327,8 @@ class KillingThread(ssc: StreamingContext, maxKillWaitTime: Long) extends Thread
       logInfo("Kill wait time = " + killWaitTime)
       Thread.sleep(killWaitTime)
       logInfo(
-        "\n---------------------------------------\n" +
-          "Killing streaming context after " + killWaitTime + " ms" +
-          "\n---------------------------------------\n"
+          "\n---------------------------------------\n" + "Killing streaming context after " +
+          killWaitTime + " ms" + "\n---------------------------------------\n"
       )
       if (ssc != null) {
         ssc.stop()
@@ -348,17 +340,15 @@ class KillingThread(ssc: StreamingContext, maxKillWaitTime: Long) extends Thread
       case ie: InterruptedException => logInfo("Killing thread interrupted")
       case e: Exception => logWarning("Exception in killing thread", e)
     }
-
   }
 }
-
 
 /**
  * Thread to generate input files periodically with the desired text.
  */
-private[streaming]
-class FileGeneratingThread(input: Seq[String], testDir: Path, interval: Long)
-  extends Thread with Logging {
+private[streaming] class FileGeneratingThread(input: Seq[String], testDir: Path, interval: Long)
+    extends Thread
+    with Logging {
 
   override def run() {
     val localTestDir = Utils.createTempDir()
@@ -374,18 +364,18 @@ class FileGeneratingThread(input: Seq[String], testDir: Path, interval: Long)
         Files.write(input(i) + "\n", localFile, StandardCharsets.UTF_8)
         var tries = 0
         var done = false
-            while (!done && tries < maxTries) {
-              tries += 1
-              try {
-                // fs.copyFromLocalFile(new Path(localFile.toString), hadoopFile)
-                fs.copyFromLocalFile(new Path(localFile.toString), tempHadoopFile)
-                fs.rename(tempHadoopFile, hadoopFile)
+        while (!done && tries < maxTries) {
+          tries += 1
+          try {
+            // fs.copyFromLocalFile(new Path(localFile.toString), hadoopFile)
+            fs.copyFromLocalFile(new Path(localFile.toString), tempHadoopFile)
+            fs.rename(tempHadoopFile, hadoopFile)
             done = true
           } catch {
             case ioe: IOException =>
-                  fs = testDir.getFileSystem(new Configuration())
-                  logWarning("Attempt " + tries + " at generating file " + hadoopFile + " failed.",
-                    ioe)
+              fs = testDir.getFileSystem(new Configuration())
+              logWarning(
+                  "Attempt " + tries + " at generating file " + hadoopFile + " failed.", ioe)
           }
         }
         if (!done) {

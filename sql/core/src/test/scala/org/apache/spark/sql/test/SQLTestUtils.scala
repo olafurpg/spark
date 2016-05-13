@@ -45,10 +45,8 @@ import org.apache.spark.util.Utils
  * Subclasses should *not* create [[SQLContext]]s in the test suite constructor, which is
  * prone to leaving multiple overlapping [[org.apache.spark.SparkContext]]s in the same JVM.
  */
-private[sql] trait SQLTestUtils
-  extends SparkFunSuite
-  with BeforeAndAfterAll
-  with SQLTestData { self =>
+private[sql] trait SQLTestUtils extends SparkFunSuite with BeforeAndAfterAll with SQLTestData {
+  self =>
 
   protected def sparkContext = spark.sparkContext
 
@@ -136,12 +134,12 @@ private[sql] trait SQLTestUtils
     } finally {
       // If the test failed part way, we don't want to mask the failure by failing to remove
       // temp tables that never got created.
-      functions.foreach { case (functionName, isTemporary) =>
-        val withTemporary = if (isTemporary) "TEMPORARY" else ""
-        spark.sql(s"DROP $withTemporary FUNCTION IF EXISTS $functionName")
-        assert(
-          !spark.sessionState.catalog.functionExists(FunctionIdentifier(functionName)),
-          s"Function $functionName should have been dropped. But, it still exists.")
+      functions.foreach {
+        case (functionName, isTemporary) =>
+          val withTemporary = if (isTemporary) "TEMPORARY" else ""
+          spark.sql(s"DROP $withTemporary FUNCTION IF EXISTS $functionName")
+          assert(!spark.sessionState.catalog.functionExists(FunctionIdentifier(functionName)),
+                 s"Function $functionName should have been dropped. But, it still exists.")
       }
     }
   }
@@ -192,8 +190,9 @@ private[sql] trait SQLTestUtils
 
     try {
       spark.sql(s"CREATE DATABASE $dbName")
-    } catch { case cause: Throwable =>
-      fail("Failed to create temporary database", cause)
+    } catch {
+      case cause: Throwable =>
+        fail("Failed to create temporary database", cause)
     }
 
     try f(dbName) finally spark.sql(s"DROP DATABASE $dbName CASCADE")
@@ -217,9 +216,7 @@ private[sql] trait SQLTestUtils
       case FilterExec(_, child) => child
     }
 
-    val childRDD = withoutFilters
-      .execute()
-      .map(row => Row.fromSeq(row.copy().toSeq(schema)))
+    val childRDD = withoutFilters.execute().map(row => Row.fromSeq(row.copy().toSeq(schema)))
 
     spark.createDataFrame(childRDD, schema)
   }
@@ -250,9 +247,7 @@ private[sql] trait SQLTestUtils
 private[sql] object SQLTestUtils {
 
   def compareAnswers(
-      sparkAnswer: Seq[Row],
-      expectedAnswer: Seq[Row],
-      sort: Boolean): Option[String] = {
+      sparkAnswer: Seq[Row], expectedAnswer: Seq[Row], sort: Boolean): Option[String] = {
     def prepareAnswer(answer: Seq[Row]): Seq[Row] = {
       // Converts data to types that we can do equality comparison using Scala collections.
       // For BigDecimal type, the Scala type has a better definition of equality test (similar to
@@ -261,7 +256,8 @@ private[sql] object SQLTestUtils {
       // equality test.
       // This function is copied from Catalyst's QueryTest
       val converted: Seq[Row] = answer.map { s =>
-        Row.fromSeq(s.toSeq.map {
+        Row.fromSeq(
+            s.toSeq.map {
           case d: java.math.BigDecimal => BigDecimal(d)
           case b: Array[Byte] => b.toSeq
           case o => o
@@ -274,14 +270,12 @@ private[sql] object SQLTestUtils {
       }
     }
     if (prepareAnswer(expectedAnswer) != prepareAnswer(sparkAnswer)) {
-      val errorMessage =
-        s"""
+      val errorMessage = s"""
            | == Results ==
-           | ${sideBySide(
-          s"== Expected Answer - ${expectedAnswer.size} ==" +:
-            prepareAnswer(expectedAnswer).map(_.toString()),
-          s"== Actual Answer - ${sparkAnswer.size} ==" +:
-            prepareAnswer(sparkAnswer).map(_.toString())).mkString("\n")}
+           | ${sideBySide(s"== Expected Answer - ${expectedAnswer.size} ==" +:
+                          prepareAnswer(expectedAnswer).map(_.toString()),
+                          s"== Actual Answer - ${sparkAnswer.size} ==" +:
+                          prepareAnswer(sparkAnswer).map(_.toString())).mkString("\n")}
       """.stripMargin
       Some(errorMessage)
     } else {

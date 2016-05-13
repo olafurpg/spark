@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.types._
 
 private[sql] object JacksonGenerator {
+
   /** Transforms a single InternalRow to JSON using Jackson
    *
    * TODO: make the code shared with the other apply method.
@@ -82,7 +83,7 @@ private[sql] object JacksonGenerator {
 
       case (dt, v) =>
         sys.error(
-          s"Failed to convert value $v (class of ${v.getClass}}) with the type of $dt to JSON.")
+            s"Failed to convert value $v (class of ${v.getClass}}) with the type of $dt to JSON.")
     }
 
     valWriter(rowSchema, row)

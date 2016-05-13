@@ -31,8 +31,8 @@ class DB2IntegrationSuite extends DockerJDBCIntegrationSuite {
   override val db = new DatabaseOnDocker {
     override val imageName = "lresende/db2express-c:10.5.0.5-3.10.0"
     override val env = Map(
-      "DB2INST1_PASSWORD" -> "rootpass",
-      "LICENSE" -> "accept"
+        "DB2INST1_PASSWORD" -> "rootpass",
+        "LICENSE" -> "accept"
     )
     override val usesIpc = false
     override val jdbcPort: Int = 50000
@@ -46,19 +46,27 @@ class DB2IntegrationSuite extends DockerJDBCIntegrationSuite {
     conn.prepareStatement("INSERT INTO tbl VALUES (42,'fred')").executeUpdate()
     conn.prepareStatement("INSERT INTO tbl VALUES (17,'dave')").executeUpdate()
 
-    conn.prepareStatement("CREATE TABLE numbers ( small SMALLINT, med INTEGER, big BIGINT, "
-      + "deci DECIMAL(31,20), flt FLOAT, dbl DOUBLE)").executeUpdate()
-    conn.prepareStatement("INSERT INTO numbers VALUES (17, 77777, 922337203685477580, "
-      + "123456745.56789012345000000000, 42.75, 5.4E-70)").executeUpdate()
+    conn
+      .prepareStatement("CREATE TABLE numbers ( small SMALLINT, med INTEGER, big BIGINT, " +
+          "deci DECIMAL(31,20), flt FLOAT, dbl DOUBLE)")
+      .executeUpdate()
+    conn
+      .prepareStatement("INSERT INTO numbers VALUES (17, 77777, 922337203685477580, " +
+          "123456745.56789012345000000000, 42.75, 5.4E-70)")
+      .executeUpdate()
 
     conn.prepareStatement("CREATE TABLE dates (d DATE, t TIME, ts TIMESTAMP )").executeUpdate()
-    conn.prepareStatement("INSERT INTO dates VALUES ('1991-11-09', '13:31:24', "
-      + "'2009-02-13 23:31:30')").executeUpdate()
+    conn
+      .prepareStatement(
+          "INSERT INTO dates VALUES ('1991-11-09', '13:31:24', " + "'2009-02-13 23:31:30')")
+      .executeUpdate()
 
     // TODO: Test locale conversion for strings.
-    conn.prepareStatement("CREATE TABLE strings (a CHAR(10), b VARCHAR(10), c CLOB, d BLOB)")
+    conn
+      .prepareStatement("CREATE TABLE strings (a CHAR(10), b VARCHAR(10), c CLOB, d BLOB)")
       .executeUpdate()
-    conn.prepareStatement("INSERT INTO strings VALUES ('the', 'quick', 'brown', BLOB('fox'))")
+    conn
+      .prepareStatement("INSERT INTO strings VALUES ('the', 'quick', 'brown', BLOB('fox'))")
       .executeUpdate()
   }
 

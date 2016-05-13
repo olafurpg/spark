@@ -50,11 +50,14 @@ object RawNetworkGrep {
     // Create the context
     val ssc = new StreamingContext(sparkConf, Duration(batchMillis))
 
-    val rawStreams = (1 to numStreams).map(_ =>
-      ssc.rawSocketStream[String](host, port, StorageLevel.MEMORY_ONLY_SER_2)).toArray
+    val rawStreams = (1 to numStreams)
+      .map(_ => ssc.rawSocketStream[String](host, port, StorageLevel.MEMORY_ONLY_SER_2))
+      .toArray
     val union = ssc.union(rawStreams)
-    union.filter(_.contains("the")).count().foreachRDD(r =>
-      println("Grep count: " + r.collect().mkString))
+    union
+      .filter(_.contains("the"))
+      .count()
+      .foreachRDD(r => println("Grep count: " + r.collect().mkString))
     ssc.start()
     ssc.awaitTermination()
   }

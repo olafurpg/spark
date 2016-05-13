@@ -42,7 +42,9 @@ import org.apache.spark.internal.Logging
 private[memory] class ExecutionMemoryPool(
     lock: Object,
     memoryMode: MemoryMode
-  ) extends MemoryPool(lock) with Logging {
+)
+    extends MemoryPool(lock)
+    with Logging {
 
   private[this] val poolName: String = memoryMode match {
     case MemoryMode.ON_HEAP => "on-heap execution"
@@ -143,7 +145,7 @@ private[memory] class ExecutionMemoryPool(
         return toGrant
       }
     }
-    0L  // Never reached
+    0L // Never reached
   }
 
   /**
@@ -151,14 +153,15 @@ private[memory] class ExecutionMemoryPool(
    */
   def releaseMemory(numBytes: Long, taskAttemptId: Long): Unit = lock.synchronized {
     val curMem = memoryForTask.getOrElse(taskAttemptId, 0L)
-    var memoryToFree = if (curMem < numBytes) {
-      logWarning(
-        s"Internal error: release called on $numBytes bytes but task only has $curMem bytes " +
-          s"of memory from the $poolName pool")
-      curMem
-    } else {
-      numBytes
-    }
+    var memoryToFree =
+      if (curMem < numBytes) {
+        logWarning(
+            s"Internal error: release called on $numBytes bytes but task only has $curMem bytes " +
+            s"of memory from the $poolName pool")
+        curMem
+      } else {
+        numBytes
+      }
     if (memoryForTask.contains(taskAttemptId)) {
       memoryForTask(taskAttemptId) -= memoryToFree
       if (memoryForTask(taskAttemptId) <= 0) {
@@ -177,5 +180,4 @@ private[memory] class ExecutionMemoryPool(
     releaseMemory(numBytesToFree, taskAttemptId)
     numBytesToFree
   }
-
 }

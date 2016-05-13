@@ -76,8 +76,9 @@ final class DataFrameWriter private[sql](df: DataFrame) {
       case "append" => SaveMode.Append
       case "ignore" => SaveMode.Ignore
       case "error" | "default" => SaveMode.ErrorIfExists
-      case _ => throw new IllegalArgumentException(s"Unknown save mode: $saveMode. " +
-        "Accepted modes are 'overwrite', 'append', 'ignore', 'error'.")
+      case _ =>
+        throw new IllegalArgumentException(s"Unknown save mode: $saveMode. " +
+            "Accepted modes are 'overwrite', 'append', 'ignore', 'error'.")
     }
     this
   }
@@ -242,12 +243,11 @@ final class DataFrameWriter private[sql](df: DataFrame) {
   def save(): Unit = {
     assertNotBucketed()
     assertNotStreaming("save() can only be called on non-continuous queries")
-    val dataSource = DataSource(
-      df.sparkSession,
-      className = source,
-      partitionColumns = partitioningColumns.getOrElse(Nil),
-      bucketSpec = getBucketSpec,
-      options = extraOptions.toMap)
+    val dataSource = DataSource(df.sparkSession,
+                                className = source,
+                                partitionColumns = partitioningColumns.getOrElse(Nil),
+                                bucketSpec = getBucketSpec,
+                                options = extraOptions.toMap)
 
     dataSource.write(mode, df)
   }
@@ -293,28 +293,31 @@ final class DataFrameWriter private[sql](df: DataFrame) {
     assertStreaming("startStream() can only be called on continuous queries")
 
     if (source == "memory") {
-      val queryName =
-        extraOptions.getOrElse(
+      val queryName = extraOptions.getOrElse(
           "queryName", throw new AnalysisException("queryName must be specified for memory sink"))
-      val checkpointLocation = extraOptions.get("checkpointLocation").map { userSpecified =>
-        new Path(userSpecified).toUri.toString
-      }.orElse {
-        val checkpointConfig: Option[String] =
-          df.sparkSession.conf.get(SQLConf.CHECKPOINT_LOCATION)
-
-        checkpointConfig.map { location =>
-          new Path(location, queryName).toUri.toString
+      val checkpointLocation = extraOptions
+        .get("checkpointLocation")
+        .map { userSpecified =>
+          new Path(userSpecified).toUri.toString
         }
-      }.getOrElse {
-        Utils.createTempDir(namePrefix = "memory.stream").getCanonicalPath
-      }
+        .orElse {
+          val checkpointConfig: Option[String] =
+            df.sparkSession.conf.get(SQLConf.CHECKPOINT_LOCATION)
+
+          checkpointConfig.map { location =>
+            new Path(location, queryName).toUri.toString
+          }
+        }
+        .getOrElse {
+          Utils.createTempDir(namePrefix = "memory.stream").getCanonicalPath
+        }
 
       // If offsets have already been created, we trying to resume a query.
       val checkpointPath = new Path(checkpointLocation, "offsets")
       val fs = checkpointPath.getFileSystem(df.sparkSession.sessionState.newHadoopConf())
       if (fs.exists(checkpointPath)) {
         throw new AnalysisException(
-          s"Unable to resume query written to memory sink. Delete $checkpointPath to start over.")
+            s"Unable to resume query written to memory sink. Delete $checkpointPath to start over.")
       } else {
         checkpointPath.toUri.toString
       }
@@ -322,38 +325,33 @@ final class DataFrameWriter private[sql](df: DataFrame) {
       val sink = new MemorySink(df.schema)
       val resultDf = Dataset.ofRows(df.sparkSession, new MemoryPlan(sink))
       resultDf.createOrReplaceTempView(queryName)
-      val continuousQuery = df.sparkSession.sessionState.continuousQueryManager.startQuery(
-        queryName,
-        checkpointLocation,
-        df,
-        sink,
-        trigger)
+      val continuousQuery = df.sparkSession.sessionState.continuousQueryManager
+        .startQuery(queryName, checkpointLocation, df, sink, trigger)
       continuousQuery
     } else {
-      val dataSource =
-        DataSource(
-          df.sparkSession,
-          className = source,
-          options = extraOptions.toMap,
-          partitionColumns = normalizedParCols.getOrElse(Nil))
+      val dataSource = DataSource(df.sparkSession,
+                                  className = source,
+                                  options = extraOptions.toMap,
+                                  partitionColumns = normalizedParCols.getOrElse(Nil))
 
       val queryName = extraOptions.getOrElse("queryName", StreamExecution.nextName)
-      val checkpointLocation = extraOptions.get("checkpointLocation")
+      val checkpointLocation = extraOptions
+        .get("checkpointLocation")
         .orElse {
           df.sparkSession.sessionState.conf.checkpointLocation.map { l =>
             new Path(l, queryName).toUri.toString
           }
-        }.getOrElse {
-          throw new AnalysisException("checkpointLocation must be specified either " +
-            "through option() or SQLConf")
+        }
+        .getOrElse {
+          throw new AnalysisException(
+              "checkpointLocation must be specified either " + "through option() or SQLConf")
         }
 
-      df.sparkSession.sessionState.continuousQueryManager.startQuery(
-        queryName,
-        checkpointLocation,
-        df,
-        dataSource.createSink(),
-        trigger)
+      df.sparkSession.sessionState.continuousQueryManager.startQuery(queryName,
+                                                                     checkpointLocation,
+                                                                     df,
+                                                                     dataSource.createSink(),
+                                                                     trigger)
     }
   }
 
@@ -402,13 +400,13 @@ final class DataFrameWriter private[sql](df: DataFrame) {
       Project(inputDataCols ++ inputPartCols, df.logicalPlan)
     }.getOrElse(df.logicalPlan)
 
-    df.sparkSession.executePlan(
-      InsertIntoTable(
-        UnresolvedRelation(tableIdent),
-        partitions.getOrElse(Map.empty[String, Option[String]]),
-        input,
-        overwrite,
-        ifNotExists = false)).toRdd
+    df.sparkSession
+      .executePlan(InsertIntoTable(UnresolvedRelation(tableIdent),
+                                   partitions.getOrElse(Map.empty[String, Option[String]]),
+                                   input,
+                                   overwrite,
+                                   ifNotExists = false))
+      .toRdd
   }
 
   private def normalizedParCols: Option[Seq[String]] = partitioningColumns.map { cols =>
@@ -435,8 +433,8 @@ final class DataFrameWriter private[sql](df: DataFrame) {
 
       // partitionBy columns cannot be used in bucketBy
       if (normalizedParCols.nonEmpty &&
-        normalizedBucketColNames.get.toSet.intersect(normalizedParCols.get.toSet).nonEmpty) {
-          throw new AnalysisException(
+          normalizedBucketColNames.get.toSet.intersect(normalizedParCols.get.toSet).nonEmpty) {
+        throw new AnalysisException(
             s"bucketBy columns '${bucketColumnNames.get.mkString(", ")}' should not be part of " +
             s"partitionBy columns '${partitioningColumns.get.mkString(", ")}'")
       }
@@ -452,15 +450,16 @@ final class DataFrameWriter private[sql](df: DataFrame) {
    */
   private def normalize(columnName: String, columnType: String): String = {
     val validColumnNames = df.logicalPlan.output.map(_.name)
-    validColumnNames.find(df.sparkSession.sessionState.analyzer.resolver(_, columnName))
+    validColumnNames
+      .find(df.sparkSession.sessionState.analyzer.resolver(_, columnName))
       .getOrElse(throw new AnalysisException(s"$columnType column $columnName not found in " +
-        s"existing columns (${validColumnNames.mkString(", ")})"))
+              s"existing columns (${validColumnNames.mkString(", ")})"))
   }
 
   private def assertNotBucketed(): Unit = {
     if (numBuckets.isDefined || sortColumnNames.isDefined) {
       throw new IllegalArgumentException(
-        "Currently we don't support writing bucketed data to this data source.")
+          "Currently we don't support writing bucketed data to this data source.")
     }
   }
 
@@ -508,14 +507,13 @@ final class DataFrameWriter private[sql](df: DataFrame) {
 
     (tableExists, mode) match {
       case (true, SaveMode.Ignore) =>
-        // Do nothing
+      // Do nothing
 
       case (true, SaveMode.ErrorIfExists) =>
         throw new AnalysisException(s"Table $tableIdent already exists.")
 
       case _ =>
-        val cmd =
-          CreateTableUsingAsSelect(
+        val cmd = CreateTableUsingAsSelect(
             tableIdent,
             source,
             temporary = false,
@@ -547,8 +545,9 @@ final class DataFrameWriter private[sql](df: DataFrame) {
     assertNotStreaming("jdbc() can only be called on non-continuous queries")
 
     val props = new Properties()
-    extraOptions.foreach { case (key, value) =>
-      props.put(key, value)
+    extraOptions.foreach {
+      case (key, value) =>
+        props.put(key, value)
     }
     // connectionProperties should override settings in extraOptions
     props.putAll(connectionProperties)
@@ -732,5 +731,4 @@ final class DataFrameWriter private[sql](df: DataFrame) {
       throw new AnalysisException(errMsg)
     }
   }
-
 }

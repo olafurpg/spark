@@ -23,14 +23,13 @@ import scala.reflect.runtime.universe.typeTag
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.ScalaReflectionLock
 
-
 /**
  * :: DeveloperApi ::
  * The data type representing `java.sql.Timestamp` values.
  * Please use the singleton [[DataTypes.TimestampType]].
  */
 @DeveloperApi
-class TimestampType private() extends AtomicType {
+class TimestampType private () extends AtomicType {
   // The companion object and this class is separated so the companion object also subclasses
   // this type. Otherwise, the companion object would be of type "TimestampType$" in byte code.
   // Defined with a private constructor so the companion object is the only possible instantiation.

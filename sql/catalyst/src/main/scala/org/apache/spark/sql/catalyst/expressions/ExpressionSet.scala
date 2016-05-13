@@ -21,6 +21,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object ExpressionSet {
+
   /** Constructs a new [[ExpressionSet]] by applying [[Canonicalize]] to `expressions`. */
   def apply(expressions: TraversableOnce[Expression]): ExpressionSet = {
     val set = new ExpressionSet()
@@ -47,10 +48,10 @@ object ExpressionSet {
  *   set.contains(a + 2) => false
  * }}}
  */
-class ExpressionSet protected(
+class ExpressionSet protected (
     protected val baseSet: mutable.Set[Expression] = new mutable.HashSet,
     protected val originals: mutable.Buffer[Expression] = new ArrayBuffer)
-  extends Set[Expression] {
+    extends Set[Expression] {
 
   protected def add(e: Expression): Unit = {
     if (!baseSet.contains(e.canonicalized)) {

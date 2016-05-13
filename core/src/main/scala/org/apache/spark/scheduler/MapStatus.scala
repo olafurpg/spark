@@ -29,6 +29,7 @@ import org.apache.spark.util.Utils
  * task ran on as well as the sizes of outputs for each reducer, for passing on to the reduce tasks.
  */
 private[spark] sealed trait MapStatus {
+
   /** Location where this task was run. */
   def location: BlockManagerId
 
@@ -40,7 +41,6 @@ private[spark] sealed trait MapStatus {
    */
   def getSizeForBlock(reduceId: Int): Long
 }
-
 
 private[spark] object MapStatus {
 
@@ -81,7 +81,6 @@ private[spark] object MapStatus {
   }
 }
 
-
 /**
  * A [[MapStatus]] implementation that tracks the size of each block. Size for each block is
  * represented using a single byte.
@@ -90,11 +89,11 @@ private[spark] object MapStatus {
  * @param compressedSizes size of the blocks, indexed by reduce partition id.
  */
 private[spark] class CompressedMapStatus(
-    private[this] var loc: BlockManagerId,
-    private[this] var compressedSizes: Array[Byte])
-  extends MapStatus with Externalizable {
+    private[this] var loc: BlockManagerId, private[this] var compressedSizes: Array[Byte])
+    extends MapStatus
+    with Externalizable {
 
-  protected def this() = this(null, null.asInstanceOf[Array[Byte]])  // For deserialization only
+  protected def this() = this(null, null.asInstanceOf[Array[Byte]]) // For deserialization only
 
   def this(loc: BlockManagerId, uncompressedSizes: Array[Long]) {
     this(loc, uncompressedSizes.map(MapStatus.compressSize))
@@ -134,13 +133,14 @@ private[spark] class HighlyCompressedMapStatus private (
     private[this] var numNonEmptyBlocks: Int,
     private[this] var emptyBlocks: RoaringBitmap,
     private[this] var avgSize: Long)
-  extends MapStatus with Externalizable {
+    extends MapStatus
+    with Externalizable {
 
   // loc could be null when the default constructor is called during deserialization
   require(loc == null || avgSize > 0 || numNonEmptyBlocks == 0,
-    "Average size can only be zero for map stages that produced no output")
+          "Average size can only be zero for map stages that produced no output")
 
-  protected def this() = this(null, -1, null, -1)  // For deserialization only
+  protected def this() = this(null, -1, null, -1) // For deserialization only
 
   override def location: BlockManagerId = loc
 
@@ -188,11 +188,12 @@ private[spark] object HighlyCompressedMapStatus {
       }
       i += 1
     }
-    val avgSize = if (numNonEmptyBlocks > 0) {
-      totalSize / numNonEmptyBlocks
-    } else {
-      0
-    }
+    val avgSize =
+      if (numNonEmptyBlocks > 0) {
+        totalSize / numNonEmptyBlocks
+      } else {
+        0
+      }
     emptyBlocks.trim()
     emptyBlocks.runOptimize()
     new HighlyCompressedMapStatus(loc, numNonEmptyBlocks, emptyBlocks, avgSize)

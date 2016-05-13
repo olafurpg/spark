@@ -32,16 +32,15 @@ import org.apache.spark.util.Utils
 /**
  * A helper class to run R UDFs in Spark.
  */
-private[spark] class RRunner[U](
-    func: Array[Byte],
-    deserializer: String,
-    serializer: String,
-    packageNames: Array[Byte],
-    broadcastVars: Array[Broadcast[Object]],
-    numPartitions: Int = -1,
-    isDataFrame: Boolean = false,
-    colNames: Array[String] = null)
-  extends Logging {
+private[spark] class RRunner[U](func: Array[Byte],
+                                deserializer: String,
+                                serializer: String,
+                                packageNames: Array[Byte],
+                                broadcastVars: Array[Broadcast[Object]],
+                                numPartitions: Int = -1,
+                                isDataFrame: Boolean = false,
+                                colNames: Array[String] = null)
+    extends Logging {
   private var bootTime: Double = _
   private var dataStream: DataInputStream = _
   val readData = numPartitions match {
@@ -53,9 +52,7 @@ private[spark] class RRunner[U](
     case _ => readShuffledData _
   }
 
-  def compute(
-      inputIterator: Iterator[_],
-      partitionIndex: Int): Iterator[U] = {
+  def compute(inputIterator: Iterator[_], partitionIndex: Int): Iterator[U] = {
     // Timing start
     bootTime = System.currentTimeMillis / 1000.0
 
@@ -112,9 +109,7 @@ private[spark] class RRunner[U](
    * Start a thread to write RDD data to the R process.
    */
   private def startStdinThread(
-      output: OutputStream,
-      iter: Iterator[_],
-      partitionIndex: Int): Unit = {
+      output: OutputStream, iter: Iterator[_], partitionIndex: Int): Unit = {
     val env = SparkEnv.get
     val taskContext = TaskContext.get()
     val bufferSize = System.getProperty("spark.buffer.size", "65536").toInt
@@ -213,16 +208,15 @@ private[spark] class RRunner[U](
           val compute = dataStream.readDouble
           val output = dataStream.readDouble
           logInfo(
-            ("Times: boot = %.3f s, init = %.3f s, broadcast = %.3f s, " +
-              "read-input = %.3f s, compute = %.3f s, write-output = %.3f s, " +
-              "total = %.3f s").format(
-                boot,
-                init,
-                broadcast,
-                input,
-                compute,
-                output,
-                boot + init + broadcast + input + compute + output))
+              ("Times: boot = %.3f s, init = %.3f s, broadcast = %.3f s, " +
+                  "read-input = %.3f s, compute = %.3f s, write-output = %.3f s, " +
+                  "total = %.3f s").format(boot,
+                                           init,
+                                           broadcast,
+                                           input,
+                                           compute,
+                                           output,
+                                           boot + init + broadcast + input + compute + output))
           read()
         case length if length >= 0 =>
           readData(length).asInstanceOf[U]
@@ -268,10 +262,9 @@ private object SpecialLengths {
   val TIMING_DATA = -1
 }
 
-private[r] class BufferedStreamThread(
-    in: InputStream,
-    name: String,
-    errBufferSize: Int) extends Thread(name) with Logging {
+private[r] class BufferedStreamThread(in: InputStream, name: String, errBufferSize: Int)
+    extends Thread(name)
+    with Logging {
   val lines = new Array[String](errBufferSize)
   var lineIdx = 0
   override def run() {
@@ -330,7 +323,7 @@ private[r] object RRunner {
     pb.environment().put("R_TESTS", "")
     pb.environment().put("SPARKR_RLIBDIR", rLibDir.mkString(","))
     pb.environment().put("SPARKR_WORKER_PORT", port.toString)
-    pb.redirectErrorStream(true)  // redirect stderr into stdout
+    pb.redirectErrorStream(true) // redirect stderr into stdout
     val proc = pb.start()
     val errThread = startStdoutThread(proc)
     errThread

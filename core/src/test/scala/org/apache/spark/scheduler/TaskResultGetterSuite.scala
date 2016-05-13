@@ -38,7 +38,6 @@ import org.apache.spark.storage.TaskResultBlockId
 import org.apache.spark.TestUtils.JavaSourceFromString
 import org.apache.spark.util.{MutableURLClassLoader, RpcUtils, Utils}
 
-
 /**
  * Removes the TaskResult from the BlockManager before delegating to a normal TaskResultGetter.
  *
@@ -46,13 +45,13 @@ import org.apache.spark.util.{MutableURLClassLoader, RpcUtils, Utils}
  * TaskResult is retrieved.
  */
 private class ResultDeletingTaskResultGetter(sparkEnv: SparkEnv, scheduler: TaskSchedulerImpl)
-  extends TaskResultGetter(sparkEnv, scheduler) {
+    extends TaskResultGetter(sparkEnv, scheduler) {
   var removedResult = false
 
   @volatile var removeBlockSuccessfully = false
 
   override def enqueueSuccessfulTask(
-    taskSetManager: TaskSetManager, tid: Long, serializedData: ByteBuffer) {
+      taskSetManager: TaskSetManager, tid: Long, serializedData: ByteBuffer) {
     if (!removedResult) {
       // Only remove the result once, since we'd like to test the case where the task eventually
       // succeeds.
@@ -78,13 +77,12 @@ private class ResultDeletingTaskResultGetter(sparkEnv: SparkEnv, scheduler: Task
   }
 }
 
-
 /**
  * A [[TaskResultGetter]] that stores the [[DirectTaskResult]]s it receives from executors
  * _before_ modifying the results in any way.
  */
 private class MyTaskResultGetter(env: SparkEnv, scheduler: TaskSchedulerImpl)
-  extends TaskResultGetter(env, scheduler) {
+    extends TaskResultGetter(env, scheduler) {
 
   // Use the current thread so we can access its results synchronously
   protected override val getTaskResultExecutor = MoreExecutors.sameThreadExecutor()
@@ -101,7 +99,6 @@ private class MyTaskResultGetter(env: SparkEnv, scheduler: TaskSchedulerImpl)
     super.enqueueSuccessfulTask(tsm, tid, data)
   }
 }
-
 
 /**
  * Tests related to handling task results (both direct and indirect).
@@ -127,7 +124,7 @@ class TaskResultGetterSuite extends SparkFunSuite with BeforeAndAfter with Local
 
     val RESULT_BLOCK_ID = TaskResultBlockId(0)
     assert(sc.env.blockManager.master.getLocations(RESULT_BLOCK_ID).size === 0,
-      "Expect result to be removed from the block manager.")
+           "Expect result to be removed from the block manager.")
   }
 
   test("task retried if result missing from block manager") {
@@ -172,7 +169,7 @@ class TaskResultGetterSuite extends SparkFunSuite with BeforeAndAfter with Local
     val srcDir = new File(tempDir, "repro/")
     srcDir.mkdirs()
     val excSource = new JavaSourceFromString(new File(srcDir, "MyException").getAbsolutePath,
-      """package repro;
+                                             """package repro;
         |
         |public class MyException extends Exception {
         |}
@@ -246,6 +243,4 @@ class TaskResultGetterSuite extends SparkFunSuite with BeforeAndAfter with Local
     assert(resSizeBefore.exists(_ == 0L))
     assert(resSizeAfter.exists(_.toString.toLong > 0L))
   }
-
 }
-

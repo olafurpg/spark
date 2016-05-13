@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql.execution.metric
 
@@ -32,7 +32,6 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.SharedSQLContext
 import org.apache.spark.util.{JsonProtocol, Utils}
-
 
 class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
   import testImplicits._
@@ -86,8 +85,8 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     if (jobs.size == expectedNumOfJobs) {
       // If we can track all jobs, check the metric values
       val metricValues = spark.listener.getExecutionMetrics(executionId)
-      val actualMetrics = SparkPlanGraph(SparkPlanInfo.fromSparkPlan(
-        df.queryExecution.executedPlan)).allNodes.filter { node =>
+      val actualMetrics = SparkPlanGraph(
+          SparkPlanInfo.fromSparkPlan(df.queryExecution.executedPlan)).allNodes.filter { node =>
         expectedMetrics.contains(node.id)
       }.map { node =>
         val nodeMetrics = node.metrics.map { metric =>
@@ -118,10 +117,7 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     // Assume the execution plan is
     // PhysicalRDD(nodeId = 1) -> Filter(nodeId = 0)
     val df = person.filter('age < 25)
-    testSparkPlanMetrics(df, 1, Map(
-      0L -> ("Filter", Map(
-        "number of output rows" -> 1L)))
-    )
+    testSparkPlanMetrics(df, 1, Map(0L -> ("Filter", Map("number of output rows" -> 1L))))
   }
 
   test("WholeStageCodegen metrics") {
@@ -137,21 +133,17 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     // ... -> TungstenAggregate(nodeId = 2) -> Exchange(nodeId = 1)
     // -> TungstenAggregate(nodeId = 0)
     val df = testData2.groupBy().count() // 2 partitions
-    testSparkPlanMetrics(df, 1, Map(
-      2L -> ("TungstenAggregate", Map(
-        "number of output rows" -> 2L)),
-      0L -> ("TungstenAggregate", Map(
-        "number of output rows" -> 1L)))
-    )
+    testSparkPlanMetrics(df,
+                         1,
+                         Map(2L -> ("TungstenAggregate", Map("number of output rows" -> 2L)),
+                             0L -> ("TungstenAggregate", Map("number of output rows" -> 1L))))
 
     // 2 partitions and each partition contains 2 keys
     val df2 = testData2.groupBy('a).count()
-    testSparkPlanMetrics(df2, 1, Map(
-      2L -> ("TungstenAggregate", Map(
-        "number of output rows" -> 4L)),
-      0L -> ("TungstenAggregate", Map(
-        "number of output rows" -> 3L)))
-    )
+    testSparkPlanMetrics(df2,
+                         1,
+                         Map(2L -> ("TungstenAggregate", Map("number of output rows" -> 4L)),
+                             0L -> ("TungstenAggregate", Map("number of output rows" -> 3L))))
   }
 
   test("Sort metrics") {
@@ -170,12 +162,12 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
       // Assume the execution plan is
       // ... -> SortMergeJoin(nodeId = 1) -> TungstenProject(nodeId = 0)
       val df = spark.sql(
-        "SELECT * FROM testData2 JOIN testDataForJoin ON testData2.a = testDataForJoin.a")
-      testSparkPlanMetrics(df, 1, Map(
-        0L -> ("SortMergeJoin", Map(
-          // It's 4 because we only read 3 rows in the first partition and 1 row in the second one
-          "number of output rows" -> 4L)))
-      )
+          "SELECT * FROM testData2 JOIN testDataForJoin ON testData2.a = testDataForJoin.a")
+      testSparkPlanMetrics(df,
+                           1,
+                           Map(0L -> ("SortMergeJoin", Map(
+                                       // It's 4 because we only read 3 rows in the first partition and 1 row in the second one
+                                       "number of output rows" -> 4L))))
     }
   }
 
@@ -188,20 +180,20 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
       // Assume the execution plan is
       // ... -> SortMergeJoin(nodeId = 1) -> TungstenProject(nodeId = 0)
       val df = spark.sql(
-        "SELECT * FROM testData2 left JOIN testDataForJoin ON testData2.a = testDataForJoin.a")
-      testSparkPlanMetrics(df, 1, Map(
-        0L -> ("SortMergeJoin", Map(
-          // It's 4 because we only read 3 rows in the first partition and 1 row in the second one
-          "number of output rows" -> 8L)))
-      )
+          "SELECT * FROM testData2 left JOIN testDataForJoin ON testData2.a = testDataForJoin.a")
+      testSparkPlanMetrics(df,
+                           1,
+                           Map(0L -> ("SortMergeJoin", Map(
+                                       // It's 4 because we only read 3 rows in the first partition and 1 row in the second one
+                                       "number of output rows" -> 8L))))
 
       val df2 = spark.sql(
-        "SELECT * FROM testDataForJoin right JOIN testData2 ON testData2.a = testDataForJoin.a")
-      testSparkPlanMetrics(df2, 1, Map(
-        0L -> ("SortMergeJoin", Map(
-          // It's 4 because we only read 3 rows in the first partition and 1 row in the second one
-          "number of output rows" -> 8L)))
-      )
+          "SELECT * FROM testDataForJoin right JOIN testData2 ON testData2.a = testDataForJoin.a")
+      testSparkPlanMetrics(df2,
+                           1,
+                           Map(0L -> ("SortMergeJoin", Map(
+                                       // It's 4 because we only read 3 rows in the first partition and 1 row in the second one
+                                       "number of output rows" -> 8L))))
     }
   }
 
@@ -211,10 +203,8 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     // Assume the execution plan is
     // ... -> BroadcastHashJoin(nodeId = 1) -> TungstenProject(nodeId = 0)
     val df = df1.join(broadcast(df2), "key")
-    testSparkPlanMetrics(df, 2, Map(
-      1L -> ("BroadcastHashJoin", Map(
-        "number of output rows" -> 2L)))
-    )
+    testSparkPlanMetrics(
+        df, 2, Map(1L -> ("BroadcastHashJoin", Map("number of output rows" -> 2L))))
   }
 
   test("BroadcastHashJoin(outer) metrics") {
@@ -223,16 +213,12 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     // Assume the execution plan is
     // ... -> BroadcastHashJoin(nodeId = 0)
     val df = df1.join(broadcast(df2), $"key" === $"key2", "left_outer")
-    testSparkPlanMetrics(df, 2, Map(
-      0L -> ("BroadcastHashJoin", Map(
-        "number of output rows" -> 5L)))
-    )
+    testSparkPlanMetrics(
+        df, 2, Map(0L -> ("BroadcastHashJoin", Map("number of output rows" -> 5L))))
 
     val df3 = df1.join(broadcast(df2), $"key" === $"key2", "right_outer")
-    testSparkPlanMetrics(df3, 2, Map(
-      0L -> ("BroadcastHashJoin", Map(
-        "number of output rows" -> 6L)))
-    )
+    testSparkPlanMetrics(
+        df3, 2, Map(0L -> ("BroadcastHashJoin", Map("number of output rows" -> 6L))))
   }
 
   test("BroadcastNestedLoopJoin metrics") {
@@ -241,13 +227,12 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     withTempTable("testDataForJoin") {
       // Assume the execution plan is
       // ... -> BroadcastNestedLoopJoin(nodeId = 1) -> TungstenProject(nodeId = 0)
-      val df = spark.sql(
-        "SELECT * FROM testData2 left JOIN testDataForJoin ON " +
+      val df = spark.sql("SELECT * FROM testData2 left JOIN testDataForJoin ON " +
           "testData2.a * testDataForJoin.a != testData2.a + testDataForJoin.a")
-      testSparkPlanMetrics(df, 3, Map(
-        1L -> ("BroadcastNestedLoopJoin", Map(
-          "number of output rows" -> 12L)))
-      )
+      testSparkPlanMetrics(
+          df,
+          3,
+          Map(1L -> ("BroadcastNestedLoopJoin", Map("number of output rows" -> 12L))))
     }
   }
 
@@ -257,10 +242,8 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     // Assume the execution plan is
     // ... -> BroadcastHashJoin(nodeId = 0)
     val df = df1.join(broadcast(df2), $"key" === $"key2", "leftsemi")
-    testSparkPlanMetrics(df, 2, Map(
-      0L -> ("BroadcastHashJoin", Map(
-        "number of output rows" -> 2L)))
-    )
+    testSparkPlanMetrics(
+        df, 2, Map(0L -> ("BroadcastHashJoin", Map("number of output rows" -> 2L))))
   }
 
   test("CartesianProduct metrics") {
@@ -269,12 +252,9 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     withTempTable("testDataForJoin") {
       // Assume the execution plan is
       // ... -> CartesianProduct(nodeId = 1) -> TungstenProject(nodeId = 0)
-      val df = spark.sql(
-        "SELECT * FROM testData2 JOIN testDataForJoin")
-      testSparkPlanMetrics(df, 1, Map(
-        0L -> ("CartesianProduct", Map(
-          "number of output rows" -> 12L)))
-      )
+      val df = spark.sql("SELECT * FROM testData2 JOIN testDataForJoin")
+      testSparkPlanMetrics(
+          df, 1, Map(0L -> ("CartesianProduct", Map("number of output rows" -> 12L))))
     }
   }
 
@@ -320,7 +300,6 @@ class SQLMetricsSuite extends SparkFunSuite with SharedSQLContext {
     }
     assert(metricInfoDeser.metadata === Some(SQLMetrics.ACCUM_IDENTIFIER))
   }
-
 }
 
 private case class MethodIdentifier[T](cls: Class[T], name: String, desc: String)
@@ -331,25 +310,25 @@ private case class MethodIdentifier[T](cls: Class[T], name: String, desc: String
  *
  * This method will skip the methods in `visitedMethods` to avoid potential infinite cycles.
  */
-private class BoxingFinder(
-    method: MethodIdentifier[_] = null,
-    val boxingInvokes: mutable.Set[String] = mutable.Set.empty,
-    visitedMethods: mutable.Set[MethodIdentifier[_]] = mutable.Set.empty)
-  extends ClassVisitor(ASM5) {
+private class BoxingFinder(method: MethodIdentifier[_] = null,
+                           val boxingInvokes: mutable.Set[String] = mutable.Set.empty,
+                           visitedMethods: mutable.Set[MethodIdentifier[_]] = mutable.Set.empty)
+    extends ClassVisitor(ASM5) {
 
-  private val primitiveBoxingClassName =
-    Set("java/lang/Long",
-      "java/lang/Double",
-      "java/lang/Integer",
-      "java/lang/Float",
-      "java/lang/Short",
-      "java/lang/Character",
-      "java/lang/Byte",
-      "java/lang/Boolean")
+  private val primitiveBoxingClassName = Set("java/lang/Long",
+                                             "java/lang/Double",
+                                             "java/lang/Integer",
+                                             "java/lang/Float",
+                                             "java/lang/Short",
+                                             "java/lang/Character",
+                                             "java/lang/Byte",
+                                             "java/lang/Boolean")
 
-  override def visitMethod(
-      access: Int, name: String, desc: String, sig: String, exceptions: Array[String]):
-    MethodVisitor = {
+  override def visitMethod(access: Int,
+                           name: String,
+                           desc: String,
+                           sig: String,
+                           exceptions: Array[String]): MethodVisitor = {
     if (method != null && (method.name != name || method.desc != desc)) {
       // If method is specified, skip other methods.
       return new MethodVisitor(ASM5) {}
@@ -365,8 +344,8 @@ private class BoxingFinder(
           }
         } else {
           // scalastyle:off classforname
-          val classOfMethodOwner = Class.forName(owner.replace('/', '.'), false,
-            Thread.currentThread.getContextClassLoader)
+          val classOfMethodOwner = Class.forName(
+              owner.replace('/', '.'), false, Thread.currentThread.getContextClassLoader)
           // scalastyle:on classforname
           val m = MethodIdentifier(classOfMethodOwner, name, desc)
           if (!visitedMethods.contains(m)) {
@@ -393,5 +372,4 @@ private object BoxingFinder {
     Utils.copyStream(resourceStream, baos, true)
     new ClassReader(new ByteArrayInputStream(baos.toByteArray))
   }
-
 }

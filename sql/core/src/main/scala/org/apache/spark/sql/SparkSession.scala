@@ -45,7 +45,6 @@ import org.apache.spark.sql.types.{DataType, LongType, StructType}
 import org.apache.spark.sql.util.ExecutionListenerManager
 import org.apache.spark.util.Utils
 
-
 /**
  * The entry point to programming Spark with the Dataset and DataFrame API.
  *
@@ -59,15 +58,15 @@ import org.apache.spark.util.Utils
  *     .getOrCreate()
  * }}}
  */
-class SparkSession private(
-    @transient val sparkContext: SparkContext,
-    @transient private val existingSharedState: Option[SharedState])
-  extends Serializable with Logging { self =>
+class SparkSession private (@transient val sparkContext: SparkContext,
+                            @transient private val existingSharedState: Option[SharedState])
+    extends Serializable
+    with Logging {
+  self =>
 
   private[sql] def this(sc: SparkContext) {
     this(sc, None)
   }
-
 
   /* ----------------------- *
    |  Session-related state  |
@@ -79,10 +78,8 @@ class SparkSession private(
    */
   @transient
   protected[sql] lazy val sharedState: SharedState = {
-    existingSharedState.getOrElse(
-      SparkSession.reflect[SharedState, SparkContext](
-        SparkSession.sharedStateClassName(sparkContext.conf),
-        sparkContext))
+    existingSharedState.getOrElse(SparkSession.reflect[SharedState, SparkContext](
+            SparkSession.sharedStateClassName(sparkContext.conf), sparkContext))
   }
 
   /**
@@ -92,8 +89,7 @@ class SparkSession private(
   @transient
   protected[sql] lazy val sessionState: SessionState = {
     SparkSession.reflect[SessionState, SparkSession](
-      SparkSession.sessionStateClassName(sparkContext.conf),
-      self)
+        SparkSession.sessionStateClassName(sparkContext.conf), self)
   }
 
   /**
@@ -210,7 +206,6 @@ class SparkSession private(
     new SparkSession(sparkContext, Some(sharedState))
   }
 
-
   /* --------------------------------- *
    |  Methods for creating DataFrames  |
    * --------------------------------- */
@@ -236,7 +231,7 @@ class SparkSession private(
    * @since 2.0.0
    */
   @Experimental
-  def createDataFrame[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+  def createDataFrame[A <: Product: TypeTag](rdd: RDD[A]): DataFrame = {
     SQLContext.setActive(wrapped)
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
@@ -252,7 +247,7 @@ class SparkSession private(
    * @since 2.0.0
    */
   @Experimental
-  def createDataFrame[A <: Product : TypeTag](data: Seq[A]): DataFrame = {
+  def createDataFrame[A <: Product: TypeTag](data: Seq[A]): DataFrame = {
     SQLContext.setActive(wrapped)
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
@@ -337,7 +332,7 @@ class SparkSession private(
     val attributeSeq: Seq[AttributeReference] = getSchema(beanClass)
     val className = beanClass.getName
     val rowRdd = rdd.mapPartitions { iter =>
-    // BeanInfo is not serializable so we must rediscover it remotely for each partition.
+      // BeanInfo is not serializable so we must rediscover it remotely for each partition.
       val localBeanInfo = Introspector.getBeanInfo(Utils.classForName(className))
       SQLContext.beansToRows(iter, localBeanInfo, attributeSeq)
     }
@@ -382,7 +377,7 @@ class SparkSession private(
     Dataset.ofRows(self, LogicalRelation(baseRelation))
   }
 
-  def createDataset[T : Encoder](data: Seq[T]): Dataset[T] = {
+  def createDataset[T: Encoder](data: Seq[T]): Dataset[T] = {
     val enc = encoderFor[T]
     val attributes = enc.schema.toAttributes
     val encoded = data.map(d => enc.toRow(d).copy())
@@ -390,7 +385,7 @@ class SparkSession private(
     Dataset[T](self, plan)
   }
 
-  def createDataset[T : Encoder](data: RDD[T]): Dataset[T] = {
+  def createDataset[T: Encoder](data: RDD[T]): Dataset[T] = {
     val enc = encoderFor[T]
     val attributes = enc.schema.toAttributes
     val encoded = data.map(d => enc.toRow(d))
@@ -398,7 +393,7 @@ class SparkSession private(
     Dataset[T](self, plan)
   }
 
-  def createDataset[T : Encoder](data: java.util.List[T]): Dataset[T] = {
+  def createDataset[T: Encoder](data: java.util.List[T]): Dataset[T] = {
     createDataset(data.asScala)
   }
 
@@ -458,8 +453,7 @@ class SparkSession private(
    * User can specify whether the input rows should be converted to Catalyst rows.
    */
   protected[sql] def internalCreateDataFrame(
-      catalystRows: RDD[InternalRow],
-      schema: StructType): DataFrame = {
+      catalystRows: RDD[InternalRow], schema: StructType): DataFrame = {
     // TODO: use MutableProjection when rowRDD is another DataFrame and the applied
     // schema differs from the existing schema on any field data type.
     val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
@@ -471,21 +465,21 @@ class SparkSession private(
    * User can specify whether the input rows should be converted to Catalyst rows.
    */
   protected[sql] def createDataFrame(
-      rowRDD: RDD[Row],
-      schema: StructType,
-      needsConversion: Boolean) = {
+      rowRDD: RDD[Row], schema: StructType, needsConversion: Boolean) = {
     // TODO: use MutableProjection when rowRDD is another DataFrame and the applied
     // schema differs from the existing schema on any field data type.
-    val catalystRows = if (needsConversion) {
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-      rowRDD.map(converter(_).asInstanceOf[InternalRow])
-    } else {
-      rowRDD.map{r: Row => InternalRow.fromSeq(r.toSeq)}
-    }
+    val catalystRows =
+      if (needsConversion) {
+        val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+        rowRDD.map(converter(_).asInstanceOf[InternalRow])
+      } else {
+        rowRDD.map { r: Row =>
+          InternalRow.fromSeq(r.toSeq)
+        }
+      }
     val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
     Dataset.ofRows(self, logicalPlan)
   }
-
 
   /* ------------------------ *
    |  Catalog-related methods |
@@ -518,11 +512,11 @@ class SparkSession private(
    * Creates a temporary view with a DataFrame. The lifetime of this temporary view is tied to
    * this [[SparkSession]].
    */
-  protected[sql] def createTempView(
-      viewName: String, df: DataFrame, replaceIfExists: Boolean) = {
+  protected[sql] def createTempView(viewName: String, df: DataFrame, replaceIfExists: Boolean) = {
     sessionState.catalog.createTempView(
-      sessionState.sqlParser.parseTableIdentifier(viewName).table,
-      df.logicalPlan, replaceIfExists)
+        sessionState.sqlParser.parseTableIdentifier(viewName).table,
+        df.logicalPlan,
+        replaceIfExists)
   }
 
   /* ----------------- *
@@ -553,7 +547,6 @@ class SparkSession private(
    */
   @Experimental
   def read: DataFrameReader = new DataFrameReader(self)
-
 
   // scalastyle:off
   // Disable style checker so "implicits" object can start with lowercase i
@@ -610,8 +603,7 @@ class SparkSession private(
    * Apply a schema defined by the schemaString to an RDD. It is only used by PySpark.
    */
   protected[sql] def applySchemaToPythonRDD(
-      rdd: RDD[Array[Any]],
-      schemaString: String): DataFrame = {
+      rdd: RDD[Array[Any]], schemaString: String): DataFrame = {
     val schema = parseDataType(schemaString).asInstanceOf[StructType]
     applySchemaToPythonRDD(rdd, schema)
   }
@@ -619,9 +611,7 @@ class SparkSession private(
   /**
    * Apply a schema defined by the schema to an RDD. It is only used by PySpark.
    */
-  protected[sql] def applySchemaToPythonRDD(
-      rdd: RDD[Array[Any]],
-      schema: StructType): DataFrame = {
+  protected[sql] def applySchemaToPythonRDD(rdd: RDD[Array[Any]], schema: StructType): DataFrame = {
     val rowRdd = rdd.map(r => python.EvaluatePython.fromJava(r, schema).asInstanceOf[InternalRow])
     Dataset.ofRows(self, LogicalRDD(schema.toAttributes, rowRdd)(self))
   }
@@ -635,9 +625,7 @@ class SparkSession private(
       AttributeReference(f.name, f.dataType, f.nullable)()
     }
   }
-
 }
-
 
 object SparkSession {
 
@@ -728,7 +716,7 @@ object SparkSession {
         config(CATALOG_IMPLEMENTATION.key, "hive")
       } else {
         throw new IllegalArgumentException(
-          "Unable to instantiate SparkSession with Hive support because " +
+            "Unable to instantiate SparkSession with Hive support because " +
             "Hive classes are not found.")
       }
     }
@@ -778,9 +766,8 @@ object SparkSession {
    * Helper method to create an instance of [[T]] using a single-arg constructor that
    * accepts an [[Arg]].
    */
-  private def reflect[T, Arg <: AnyRef](
-      className: String,
-      ctorArg: Arg)(implicit ctorArgTag: ClassTag[Arg]): T = {
+  private def reflect[T, Arg <: AnyRef](className: String, ctorArg: Arg)(
+      implicit ctorArgTag: ClassTag[Arg]): T = {
     try {
       val clazz = Utils.classForName(className)
       val ctor = clazz.getDeclaredConstructor(ctorArgTag.runtimeClass)
@@ -804,5 +791,4 @@ object SparkSession {
       case _: ClassNotFoundException | _: NoClassDefFoundError => false
     }
   }
-
 }

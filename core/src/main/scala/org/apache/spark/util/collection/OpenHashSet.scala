@@ -41,13 +41,11 @@ import org.apache.spark.annotation.Private
  * to explore all spaces for each key (see http://en.wikipedia.org/wiki/Quadratic_probing).
  */
 @Private
-class OpenHashSet[@specialized(Long, Int) T: ClassTag](
-    initialCapacity: Int,
-    loadFactor: Double)
-  extends Serializable {
+class OpenHashSet[@specialized(Long, Int) T: ClassTag](initialCapacity: Int, loadFactor: Double)
+    extends Serializable {
 
   require(initialCapacity <= OpenHashSet.MAX_CAPACITY,
-    s"Can't make capacity bigger than ${OpenHashSet.MAX_CAPACITY} elements")
+          s"Can't make capacity bigger than ${OpenHashSet.MAX_CAPACITY} elements")
   require(initialCapacity >= 1, "Invalid initial capacity")
   require(loadFactor < 1.0, "Load factor must be less than 1.0")
   require(loadFactor > 0.0, "Load factor must be greater than 0.0")
@@ -226,7 +224,7 @@ class OpenHashSet[@specialized(Long, Int) T: ClassTag](
   private def rehash(k: T, allocateFunc: (Int) => Unit, moveFunc: (Int, Int) => Unit) {
     val newCapacity = _capacity * 2
     require(newCapacity > 0 && newCapacity <= OpenHashSet.MAX_CAPACITY,
-      s"Can't contain more than ${(loadFactor * OpenHashSet.MAX_CAPACITY).toInt} elements")
+            s"Can't contain more than ${(loadFactor * OpenHashSet.MAX_CAPACITY).toInt} elements")
     allocateFunc(newCapacity)
     val newBitset = new BitSet(newCapacity)
     val newData = new Array[T](newCapacity)
@@ -276,9 +274,7 @@ class OpenHashSet[@specialized(Long, Int) T: ClassTag](
   }
 }
 
-
-private[spark]
-object OpenHashSet {
+private[spark] object OpenHashSet {
 
   val MAX_CAPACITY = 1 << 30
   val INVALID_POS = -1
@@ -302,7 +298,7 @@ object OpenHashSet {
   }
 
   private def grow1(newSize: Int) {}
-  private def move1(oldPos: Int, newPos: Int) { }
+  private def move1(oldPos: Int, newPos: Int) {}
 
   private val grow = grow1 _
   private val move = move1 _

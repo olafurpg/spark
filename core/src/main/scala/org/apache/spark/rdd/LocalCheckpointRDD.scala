@@ -35,17 +35,17 @@ import org.apache.spark.storage.RDDBlockId
  * @param numPartitions the number of partitions in the checkpointed RDD
  */
 private[spark] class LocalCheckpointRDD[T: ClassTag](
-    sc: SparkContext,
-    rddId: Int,
-    numPartitions: Int)
-  extends CheckpointRDD[T](sc) {
+    sc: SparkContext, rddId: Int, numPartitions: Int)
+    extends CheckpointRDD[T](sc) {
 
   def this(rdd: RDD[T]) {
     this(rdd.context, rdd.id, rdd.partitions.length)
   }
 
   protected override def getPartitions: Array[Partition] = {
-    (0 until numPartitions).toArray.map { i => new CheckpointRDDPartition(i) }
+    (0 until numPartitions).toArray.map { i =>
+      new CheckpointRDDPartition(i)
+    }
   }
 
   /**
@@ -58,10 +58,9 @@ private[spark] class LocalCheckpointRDD[T: ClassTag](
    */
   override def compute(partition: Partition, context: TaskContext): Iterator[T] = {
     throw new SparkException(
-      s"Checkpoint block ${RDDBlockId(rddId, partition.index)} not found! Either the executor " +
-      s"that originally checkpointed this partition is no longer alive, or the original RDD is " +
-      s"unpersisted. If this problem persists, you may consider using `rdd.checkpoint()` " +
-      s"instead, which is slower than local checkpointing but more fault-tolerant.")
+        s"Checkpoint block ${RDDBlockId(rddId, partition.index)} not found! Either the executor " +
+        s"that originally checkpointed this partition is no longer alive, or the original RDD is " +
+        s"unpersisted. If this problem persists, you may consider using `rdd.checkpoint()` " +
+        s"instead, which is slower than local checkpointing but more fault-tolerant.")
   }
-
 }

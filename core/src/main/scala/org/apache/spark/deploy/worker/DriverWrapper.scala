@@ -38,8 +38,8 @@ object DriverWrapper {
        */
       case workerUrl :: userJar :: mainClass :: extraArgs =>
         val conf = new SparkConf()
-        val rpcEnv = RpcEnv.create("Driver",
-          Utils.localHostName(), 0, conf, new SecurityManager(conf))
+        val rpcEnv =
+          RpcEnv.create("Driver", Utils.localHostName(), 0, conf, new SecurityManager(conf))
         rpcEnv.setupEndpoint("workerWatcher", new WorkerWatcher(rpcEnv, workerUrl))
 
         val currentLoader = Thread.currentThread.getContextClassLoader
@@ -61,7 +61,8 @@ object DriverWrapper {
 
       case _ =>
         // scalastyle:off println
-        System.err.println("Usage: DriverWrapper <workerUrl> <userJar> <driverMainClass> [options]")
+        System.err.println(
+            "Usage: DriverWrapper <workerUrl> <userJar> <driverMainClass> [options]")
         // scalastyle:on println
         System.exit(-1)
     }

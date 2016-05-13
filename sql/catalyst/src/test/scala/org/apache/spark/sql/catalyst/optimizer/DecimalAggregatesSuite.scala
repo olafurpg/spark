@@ -28,8 +28,7 @@ import org.apache.spark.sql.types.DecimalType
 class DecimalAggregatesSuite extends PlanTest {
 
   object Optimize extends RuleExecutor[LogicalPlan] {
-    val batches = Batch("Decimal Optimizations", FixedPoint(100),
-      DecimalAggregates) :: Nil
+    val batches = Batch("Decimal Optimizations", FixedPoint(100), DecimalAggregates) :: Nil
   }
 
   val testRelation = LocalRelation('a.decimal(2, 1), 'b.decimal(12, 1))
@@ -37,8 +36,8 @@ class DecimalAggregatesSuite extends PlanTest {
   test("Decimal Sum Aggregation: Optimized") {
     val originalQuery = testRelation.select(sum('a))
     val optimized = Optimize.execute(originalQuery.analyze)
-    val correctAnswer = testRelation
-      .select(MakeDecimal(sum(UnscaledValue('a)), 12, 1).as("sum(a)")).analyze
+    val correctAnswer =
+      testRelation.select(MakeDecimal(sum(UnscaledValue('a)), 12, 1).as("sum(a)")).analyze
 
     comparePlans(optimized, correctAnswer)
   }
@@ -55,7 +54,8 @@ class DecimalAggregatesSuite extends PlanTest {
     val originalQuery = testRelation.select(avg('a))
     val optimized = Optimize.execute(originalQuery.analyze)
     val correctAnswer = testRelation
-      .select((avg(UnscaledValue('a)) / 10.0).cast(DecimalType(6, 5)).as("avg(a)")).analyze
+      .select((avg(UnscaledValue('a)) / 10.0).cast(DecimalType(6, 5)).as("avg(a)"))
+      .analyze
 
     comparePlans(optimized, correctAnswer)
   }
@@ -74,10 +74,9 @@ class DecimalAggregatesSuite extends PlanTest {
     val optimized = Optimize.execute(originalQuery.analyze)
     val correctAnswer = testRelation
       .select('a)
-      .window(
-        Seq(MakeDecimal(windowExpr(sum(UnscaledValue('a)), spec), 12, 1).as('sum_a)),
-        Seq('a),
-        Nil)
+      .window(Seq(MakeDecimal(windowExpr(sum(UnscaledValue('a)), spec), 12, 1).as('sum_a)),
+              Seq('a),
+              Nil)
       .select('a, 'sum_a, 'sum_a)
       .select('sum_a)
       .analyze
@@ -100,10 +99,11 @@ class DecimalAggregatesSuite extends PlanTest {
     val optimized = Optimize.execute(originalQuery.analyze)
     val correctAnswer = testRelation
       .select('a)
-      .window(
-        Seq((windowExpr(avg(UnscaledValue('a)), spec) / 10.0).cast(DecimalType(6, 5)).as('avg_a)),
-        Seq('a),
-        Nil)
+      .window(Seq((windowExpr(avg(UnscaledValue('a)), spec) / 10.0)
+                    .cast(DecimalType(6, 5))
+                    .as('avg_a)),
+              Seq('a),
+              Nil)
       .select('a, 'avg_a, 'avg_a)
       .select('avg_a)
       .analyze

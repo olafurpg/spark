@@ -35,7 +35,9 @@ import org.apache.spark.sql.{DataFrame, Row}
  * Test suite for [[RandomForestClassifier]].
  */
 class RandomForestClassifierSuite
-  extends SparkFunSuite with MLlibTestSparkContext with DefaultReadWriteTest {
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   import RandomForestClassifierSuite.compareAPIs
 
@@ -68,30 +70,32 @@ class RandomForestClassifierSuite
 
   test("params") {
     ParamsSuite.checkParams(new RandomForestClassifier)
-    val model = new RandomForestClassificationModel("rfc",
-      Array(new DecisionTreeClassificationModel("dtc", new LeafNode(0.0, 0.0, null), 1, 2)), 2, 2)
+    val model = new RandomForestClassificationModel(
+        "rfc",
+        Array(new DecisionTreeClassificationModel("dtc", new LeafNode(0.0, 0.0, null), 1, 2)),
+        2,
+        2)
     ParamsSuite.checkParams(model)
   }
 
   test("Binary classification with continuous features:" +
-    " comparing DecisionTree vs. RandomForest(numTrees = 1)") {
+      " comparing DecisionTree vs. RandomForest(numTrees = 1)") {
     val rf = new RandomForestClassifier()
     binaryClassificationTestWithContinuousFeatures(rf)
   }
 
   test("Binary classification with continuous features and node Id cache:" +
-    " comparing DecisionTree vs. RandomForest(numTrees = 1)") {
-    val rf = new RandomForestClassifier()
-      .setCacheNodeIds(true)
+      " comparing DecisionTree vs. RandomForest(numTrees = 1)") {
+    val rf = new RandomForestClassifier().setCacheNodeIds(true)
     binaryClassificationTestWithContinuousFeatures(rf)
   }
 
   test("alternating categorical and continuous features with multiclass labels to test indexing") {
     val arr = Array(
-      LabeledPoint(0.0, Vectors.dense(1.0, 0.0, 0.0, 3.0, 1.0)),
-      LabeledPoint(1.0, Vectors.dense(0.0, 1.0, 1.0, 1.0, 2.0)),
-      LabeledPoint(0.0, Vectors.dense(2.0, 0.0, 0.0, 6.0, 3.0)),
-      LabeledPoint(2.0, Vectors.dense(0.0, 2.0, 1.0, 3.0, 2.0))
+        LabeledPoint(0.0, Vectors.dense(1.0, 0.0, 0.0, 3.0, 1.0)),
+        LabeledPoint(1.0, Vectors.dense(0.0, 1.0, 1.0, 1.0, 2.0)),
+        LabeledPoint(0.0, Vectors.dense(2.0, 0.0, 0.0, 6.0, 3.0)),
+        LabeledPoint(2.0, Vectors.dense(0.0, 2.0, 1.0, 3.0, 2.0))
     )
     val rdd = sc.parallelize(arr)
     val categoricalFeatures = Map(0 -> 3, 2 -> 2, 4 -> 4)
@@ -126,11 +130,8 @@ class RandomForestClassifierSuite
 
   test("predictRaw and predictProbability") {
     val rdd = orderedLabeledPoints5_20
-    val rf = new RandomForestClassifier()
-      .setImpurity("Gini")
-      .setMaxDepth(3)
-      .setNumTrees(3)
-      .setSeed(123)
+    val rf =
+      new RandomForestClassifier().setImpurity("Gini").setMaxDepth(3).setNumTrees(3).setSeed(123)
     val categoricalFeatures = Map.empty[Int, Int]
     val numClasses = 2
 
@@ -140,17 +141,19 @@ class RandomForestClassifierSuite
     // copied model must have the same parent.
     MLTestingUtils.checkCopy(model)
 
-    val predictions = model.transform(df)
+    val predictions = model
+      .transform(df)
       .select(rf.getPredictionCol, rf.getRawPredictionCol, rf.getProbabilityCol)
       .collect()
 
-    predictions.foreach { case Row(pred: Double, rawPred: Vector, probPred: Vector) =>
-      assert(pred === rawPred.argmax,
-        s"Expected prediction $pred but calculated ${rawPred.argmax} from rawPrediction.")
-      val sum = rawPred.toArray.sum
-      assert(Vectors.dense(rawPred.toArray.map(_ / sum)) === probPred,
-        "probability prediction mismatch")
-      assert(probPred.toArray.sum ~== 1.0 relTol 1E-5)
+    predictions.foreach {
+      case Row(pred: Double, rawPred: Vector, probPred: Vector) =>
+        assert(pred === rawPred.argmax,
+               s"Expected prediction $pred but calculated ${rawPred.argmax} from rawPrediction.")
+        val sum = rawPred.toArray.sum
+        assert(Vectors.dense(rawPred.toArray.map(_ / sum)) === probPred,
+               "probability prediction mismatch")
+        assert(probPred.toArray.sum ~== 1.0 relTol 1E-5)
     }
   }
 
@@ -189,9 +192,9 @@ class RandomForestClassifierSuite
   test("should support all NumericType labels and not support other types") {
     val rf = new RandomForestClassifier().setMaxDepth(1)
     MLTestingUtils.checkNumericTypes[RandomForestClassificationModel, RandomForestClassifier](
-      rf, spark) { (expected, actual) =>
-        TreeTests.checkEqual(expected, actual)
-      }
+        rf, spark) { (expected, actual) =>
+      TreeTests.checkEqual(expected, actual)
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -200,8 +203,7 @@ class RandomForestClassifierSuite
 
   test("read/write") {
     def checkModelData(
-        model: RandomForestClassificationModel,
-        model2: RandomForestClassificationModel): Unit = {
+        model: RandomForestClassificationModel, model2: RandomForestClassificationModel): Unit = {
       TreeTests.checkEqual(model, model2)
       assert(model.numFeatures === model2.numFeatures)
       assert(model.numClasses === model2.numClasses)
@@ -212,8 +214,7 @@ class RandomForestClassifierSuite
 
     val allParamSettings = TreeTests.allParamSettings ++ Map("impurity" -> "entropy")
 
-    val continuousData: DataFrame =
-      TreeTests.setMetadata(rdd, Map.empty[Int, Int], numClasses = 2)
+    val continuousData: DataFrame = TreeTests.setMetadata(rdd, Map.empty[Int, Int], numClasses = 2)
     testEstimatorAndModelReadWrite(rf, continuousData, allParamSettings, checkModelData)
   }
 }
@@ -224,22 +225,23 @@ private object RandomForestClassifierSuite extends SparkFunSuite {
    * Train 2 models on the given dataset, one using the old API and one using the new API.
    * Convert the old model to the new format, compare them, and fail if they are not exactly equal.
    */
-  def compareAPIs(
-      data: RDD[LabeledPoint],
-      rf: RandomForestClassifier,
-      categoricalFeatures: Map[Int, Int],
-      numClasses: Int): Unit = {
+  def compareAPIs(data: RDD[LabeledPoint],
+                  rf: RandomForestClassifier,
+                  categoricalFeatures: Map[Int, Int],
+                  numClasses: Int): Unit = {
     val numFeatures = data.first().features.size
     val oldStrategy =
       rf.getOldStrategy(categoricalFeatures, numClasses, OldAlgo.Classification, rf.getOldImpurity)
     val oldModel = OldRandomForest.trainClassifier(
-      data, oldStrategy, rf.getNumTrees, rf.getFeatureSubsetStrategy, rf.getSeed.toInt)
+        data, oldStrategy, rf.getNumTrees, rf.getFeatureSubsetStrategy, rf.getSeed.toInt)
     val newData: DataFrame = TreeTests.setMetadata(data, categoricalFeatures, numClasses)
     val newModel = rf.fit(newData)
     // Use parent from newTree since this is not checked anyways.
     val oldModelAsNew = RandomForestClassificationModel.fromOld(
-      oldModel, newModel.parent.asInstanceOf[RandomForestClassifier], categoricalFeatures,
-      numClasses)
+        oldModel,
+        newModel.parent.asInstanceOf[RandomForestClassifier],
+        categoricalFeatures,
+        numClasses)
     TreeTests.checkEqual(oldModelAsNew, newModel)
     assert(newModel.hasParent)
     assert(!newModel.trees.head.asInstanceOf[DecisionTreeClassificationModel].hasParent)

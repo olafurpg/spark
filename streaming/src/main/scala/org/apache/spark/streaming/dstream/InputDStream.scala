@@ -39,8 +39,7 @@ import org.apache.spark.util.Utils
  *
  * @param _ssc Streaming context that will execute this input stream
  */
-abstract class InputDStream[T: ClassTag](_ssc: StreamingContext)
-  extends DStream[T](_ssc) {
+abstract class InputDStream[T: ClassTag](_ssc: StreamingContext) extends DStream[T](_ssc) {
 
   private[streaming] var lastValidTime: Time = null
 
@@ -55,7 +54,8 @@ abstract class InputDStream[T: ClassTag](_ssc: StreamingContext)
   /** A human-readable name of this InputDStream */
   private[streaming] def name: String = {
     // e.g. FlumePollingDStream -> "Flume polling stream"
-    val newName = Utils.getFormattedClassName(this)
+    val newName = Utils
+      .getFormattedClassName(this)
       .replaceAll("InputDStream", "Stream")
       .split("(?=[A-Z])")
       .filter(_.nonEmpty)
@@ -72,9 +72,9 @@ abstract class InputDStream[T: ClassTag](_ssc: StreamingContext)
    * If an outer scope is given, we assume that it includes an alternative name for this stream.
    */
   protected[streaming] override val baseScope: Option[String] = {
-    val scopeName = Option(ssc.sc.getLocalProperty(SparkContext.RDD_SCOPE_KEY))
-      .map { json => RDDOperationScope.fromJson(json).name + s" [$id]" }
-      .getOrElse(name.toLowerCase)
+    val scopeName = Option(ssc.sc.getLocalProperty(SparkContext.RDD_SCOPE_KEY)).map { json =>
+      RDDOperationScope.fromJson(json).name + s" [$id]"
+    }.getOrElse(name.toLowerCase)
     Some(new RDDOperationScope(scopeName).toJson)
   }
 
@@ -90,8 +90,8 @@ abstract class InputDStream[T: ClassTag](_ssc: StreamingContext)
     } else {
       // Time is valid, but check it it is more than lastValidTime
       if (lastValidTime != null && time < lastValidTime) {
-        logWarning(s"isTimeValid called with $time whereas the last valid time " +
-          s"is $lastValidTime")
+        logWarning(
+            s"isTimeValid called with $time whereas the last valid time " + s"is $lastValidTime")
       }
       lastValidTime = time
       true

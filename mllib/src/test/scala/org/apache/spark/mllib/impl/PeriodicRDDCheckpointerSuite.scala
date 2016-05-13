@@ -25,7 +25,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
 
-
 class PeriodicRDDCheckpointerSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   import PeriodicRDDCheckpointerSuite._
@@ -109,10 +108,10 @@ private object PeriodicRDDCheckpointerSuite {
       }
     } catch {
       case _: AssertionError =>
-        throw new Exception(s"PeriodicRDDCheckpointerSuite.checkPersistence failed with:\n" +
-          s"\t gIndex = $gIndex\n" +
-          s"\t iteration = $iteration\n" +
-          s"\t rdd.getStorageLevel = ${rdd.getStorageLevel}\n")
+        throw new Exception(
+            s"PeriodicRDDCheckpointerSuite.checkPersistence failed with:\n" +
+            s"\t gIndex = $gIndex\n" + s"\t iteration = $iteration\n" +
+            s"\t rdd.getStorageLevel = ${rdd.getStorageLevel}\n")
     }
   }
 
@@ -138,11 +137,7 @@ private object PeriodicRDDCheckpointerSuite {
    * @param gIndex  Index of rdd in order inserted into checkpointer (from 1).
    * @param iteration  Total number of rdds inserted into checkpointer.
    */
-  def checkCheckpoint(
-      rdd: RDD[_],
-      gIndex: Int,
-      iteration: Int,
-      checkpointInterval: Int): Unit = {
+  def checkCheckpoint(rdd: RDD[_], gIndex: Int, iteration: Int, checkpointInterval: Int): Unit = {
     try {
       if (gIndex % checkpointInterval == 0) {
         // We allow 2 checkpoint intervals since we perform an action (checkpointing a second rdd)
@@ -160,14 +155,13 @@ private object PeriodicRDDCheckpointerSuite {
       }
     } catch {
       case e: AssertionError =>
-        throw new Exception(s"PeriodicRDDCheckpointerSuite.checkCheckpoint failed with:\n" +
-          s"\t gIndex = $gIndex\n" +
-          s"\t iteration = $iteration\n" +
-          s"\t checkpointInterval = $checkpointInterval\n" +
-          s"\t rdd.isCheckpointed = ${rdd.isCheckpointed}\n" +
-          s"\t rdd.getCheckpointFile = ${rdd.getCheckpointFile.mkString(", ")}\n" +
-          s"  AssertionError message: ${e.getMessage}")
+        throw new Exception(
+            s"PeriodicRDDCheckpointerSuite.checkCheckpoint failed with:\n" +
+            s"\t gIndex = $gIndex\n" +
+            s"\t iteration = $iteration\n" + s"\t checkpointInterval = $checkpointInterval\n" +
+            s"\t rdd.isCheckpointed = ${rdd.isCheckpointed}\n" +
+            s"\t rdd.getCheckpointFile = ${rdd.getCheckpointFile.mkString(", ")}\n" +
+            s"  AssertionError message: ${e.getMessage}")
     }
   }
-
 }

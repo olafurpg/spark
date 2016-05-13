@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.spark.deploy.worker
 
 import org.apache.spark.{SparkConf, SparkFunSuite}
@@ -30,7 +29,6 @@ class WorkerArgumentsTest extends SparkFunSuite {
       new WorkerArguments(args, conf)
     }
   }
-
 
   test("Memory can't be set to 0 when SPARK_WORKER_MEMORY env property leaves off M or G") {
     val args = Array("spark://localhost:0000  ")
@@ -53,7 +51,5 @@ class WorkerArgumentsTest extends SparkFunSuite {
 
     val workerArgs = new WorkerArguments(args, conf)
     assert(workerArgs.memory === 10000)
-
   }
-
 }

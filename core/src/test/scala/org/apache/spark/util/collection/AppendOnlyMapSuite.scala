@@ -55,7 +55,8 @@ class AppendOnlyMapSuite extends SparkFunSuite {
     assert(map("101") === null)
     assert(map(null) === null)
     val set = new HashSet[(String, String)]
-    for ((k, v) <- map) {   // Test the foreach method
+    for ((k, v) <- map) {
+      // Test the foreach method
       set += ((k, v))
     }
     assert(set === (1 to 100).map(_.toString).map(x => (x, x)).toSet)
@@ -73,7 +74,8 @@ class AppendOnlyMapSuite extends SparkFunSuite {
     assert(map(0) === null)
     assert(map(101) === null)
     val set = new HashSet[(Int, Int)]
-    for ((k, v) <- map) {   // Test the foreach method
+    for ((k, v) <- map) {
+      // Test the foreach method
       set += ((k, v))
     }
     assert(set === (1 to 100).map(x => (x, x)).toSet)
@@ -170,7 +172,8 @@ class AppendOnlyMapSuite extends SparkFunSuite {
       case e: IllegalStateException => fail()
     }
 
-    val it = map.destructiveSortedIterator(new Comparator[String] {
+    val it = map.destructiveSortedIterator(
+        new Comparator[String] {
       def compare(key1: String, key2: String): Int = {
         val x = if (key1 != null) key1.toInt else Int.MinValue
         val y = if (key2 != null) key2.toInt else Int.MinValue

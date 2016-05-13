@@ -29,11 +29,11 @@ import org.apache.spark.rdd.RDD
  * @param diagInvAtWA diagonal of matrix (A^T * W * A)^-1 in the last iteration
  * @param numIterations number of iterations
  */
-private[ml] class IterativelyReweightedLeastSquaresModel(
-    val coefficients: DenseVector,
-    val intercept: Double,
-    val diagInvAtWA: DenseVector,
-    val numIterations: Int) extends Serializable
+private[ml] class IterativelyReweightedLeastSquaresModel(val coefficients: DenseVector,
+                                                         val intercept: Double,
+                                                         val diagInvAtWA: DenseVector,
+                                                         val numIterations: Int)
+    extends Serializable
 
 /**
  * Implements the method of iteratively reweighted least squares (IRLS) which is used to solve
@@ -60,7 +60,9 @@ private[ml] class IterativelyReweightedLeastSquares(
     val fitIntercept: Boolean,
     val regParam: Double,
     val maxIter: Int,
-    val tol: Double) extends Logging with Serializable {
+    val tol: Double)
+    extends Logging
+    with Serializable {
 
   def fit(instances: RDD[Instance]): IterativelyReweightedLeastSquaresModel = {
 
@@ -81,8 +83,9 @@ private[ml] class IterativelyReweightedLeastSquares(
       }
 
       // Estimate new model
-      model = new WeightedLeastSquares(fitIntercept, regParam, standardizeFeatures = false,
-        standardizeLabel = false).fit(newInstances)
+      model = new WeightedLeastSquares(
+          fitIntercept, regParam, standardizeFeatures = false, standardizeLabel = false)
+        .fit(newInstances)
 
       // Check convergence
       val oldCoefficients = oldModel.coefficients
@@ -104,10 +107,9 @@ private[ml] class IterativelyReweightedLeastSquares(
       if (iter == maxIter) {
         logInfo(s"IRLS reached the max number of iterations: $maxIter.")
       }
-
     }
 
     new IterativelyReweightedLeastSquaresModel(
-      model.coefficients, model.intercept, model.diagInvAtWA, iter)
+        model.coefficients, model.intercept, model.diagInvAtWA, iter)
   }
 }

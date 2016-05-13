@@ -61,14 +61,13 @@ trait QueryExecutionListener {
   def onFailure(funcName: String, qe: QueryExecution, exception: Exception): Unit
 }
 
-
 /**
  * :: Experimental ::
  *
  * Manager for [[QueryExecutionListener]]. See [[org.apache.spark.sql.SQLContext.listenerManager]].
  */
 @Experimental
-class ExecutionListenerManager private[sql] () extends Logging {
+class ExecutionListenerManager private[sql]() extends Logging {
 
   /**
    * Registers the specified [[QueryExecutionListener]].

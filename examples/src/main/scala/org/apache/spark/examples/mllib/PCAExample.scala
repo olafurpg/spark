@@ -34,10 +34,13 @@ object PCAExample {
     val sc = new SparkContext(conf)
 
     // $example on$
-    val data = sc.textFile("data/mllib/ridge-data/lpsa.data").map { line =>
-      val parts = line.split(',')
-      LabeledPoint(parts(0).toDouble, Vectors.dense(parts(1).split(' ').map(_.toDouble)))
-    }.cache()
+    val data = sc
+      .textFile("data/mllib/ridge-data/lpsa.data")
+      .map { line =>
+        val parts = line.split(',')
+        LabeledPoint(parts(0).toDouble, Vectors.dense(parts(1).split(' ').map(_.toDouble)))
+      }
+      .cache()
 
     val splits = data.randomSplit(Array(0.6, 0.4), seed = 11L)
     val training = splits(0).cache()

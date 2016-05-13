@@ -21,7 +21,10 @@ import org.apache.spark.ml.param.shared.{HasHandleInvalid, HasInputCol, HasMaxIt
 import org.apache.spark.ml.util.Identifiable
 
 /** A subclass of Params for testing. */
-class TestParams(override val uid: String) extends Params with HasHandleInvalid with HasMaxIter
+class TestParams(override val uid: String)
+    extends Params
+    with HasHandleInvalid
+    with HasMaxIter
     with HasInputCol {
 
   def this() = this(Identifiable.randomUID("testParams"))

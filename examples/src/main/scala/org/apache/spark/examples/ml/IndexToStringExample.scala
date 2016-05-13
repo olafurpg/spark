@@ -25,30 +25,26 @@ import org.apache.spark.sql.SparkSession
 
 object IndexToStringExample {
   def main(args: Array[String]) {
-    val spark = SparkSession
-      .builder
-      .appName("IndexToStringExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("IndexToStringExample").getOrCreate()
 
     // $example on$
-    val df = spark.createDataFrame(Seq(
-      (0, "a"),
-      (1, "b"),
-      (2, "c"),
-      (3, "a"),
-      (4, "a"),
-      (5, "c")
-    )).toDF("id", "category")
+    val df = spark
+      .createDataFrame(
+          Seq(
+              (0, "a"),
+              (1, "b"),
+              (2, "c"),
+              (3, "a"),
+              (4, "a"),
+              (5, "c")
+          ))
+      .toDF("id", "category")
 
-    val indexer = new StringIndexer()
-      .setInputCol("category")
-      .setOutputCol("categoryIndex")
-      .fit(df)
+    val indexer = new StringIndexer().setInputCol("category").setOutputCol("categoryIndex").fit(df)
     val indexed = indexer.transform(df)
 
-    val converter = new IndexToString()
-      .setInputCol("categoryIndex")
-      .setOutputCol("originalCategory")
+    val converter =
+      new IndexToString().setInputCol("categoryIndex").setOutputCol("originalCategory")
 
     val converted = converter.transform(indexed)
     converted.select("id", "originalCategory").show()

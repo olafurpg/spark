@@ -26,25 +26,22 @@ import org.apache.spark.{SecurityManager, SparkConf}
 import org.apache.spark.rpc.netty.NettyRpcEnvFactory
 import org.apache.spark.util.RpcUtils
 
-
 /**
  * A RpcEnv implementation must have a [[RpcEnvFactory]] implementation with an empty constructor
  * so that it can be created via Reflection.
  */
 private[spark] object RpcEnv {
 
-  def create(
-      name: String,
-      host: String,
-      port: Int,
-      conf: SparkConf,
-      securityManager: SecurityManager,
-      clientMode: Boolean = false): RpcEnv = {
+  def create(name: String,
+             host: String,
+             port: Int,
+             conf: SparkConf,
+             securityManager: SecurityManager,
+             clientMode: Boolean = false): RpcEnv = {
     val config = RpcEnvConfig(conf, name, host, port, securityManager, clientMode)
     new NettyRpcEnvFactory().create(config)
   }
 }
-
 
 /**
  * An RPC environment. [[RpcEndpoint]]s need to register itself with a name to [[RpcEnv]] to
@@ -134,7 +131,6 @@ private[spark] abstract class RpcEnv(conf: SparkConf) {
    * @param uri URI with location of the file.
    */
   def openChannel(uri: String): ReadableByteChannel
-
 }
 
 /**
@@ -177,16 +173,14 @@ private[spark] trait RpcEnvFileServer {
   protected def validateDirectoryUri(baseUri: String): String = {
     val fixedBaseUri = "/" + baseUri.stripPrefix("/").stripSuffix("/")
     require(fixedBaseUri != "/files" && fixedBaseUri != "/jars",
-      "Directory URI cannot be /files nor /jars.")
+            "Directory URI cannot be /files nor /jars.")
     fixedBaseUri
   }
-
 }
 
-private[spark] case class RpcEnvConfig(
-    conf: SparkConf,
-    name: String,
-    host: String,
-    port: Int,
-    securityManager: SecurityManager,
-    clientMode: Boolean)
+private[spark] case class RpcEnvConfig(conf: SparkConf,
+                                       name: String,
+                                       host: String,
+                                       port: Int,
+                                       securityManager: SecurityManager,
+                                       clientMode: Boolean)

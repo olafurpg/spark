@@ -33,15 +33,11 @@ import org.apache.spark.sql.SparkSession
 object LDAExample {
   def main(args: Array[String]): Unit = {
     // Creates a SparkSession
-    val spark = SparkSession
-      .builder
-      .appName(s"${this.getClass.getSimpleName}")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName(s"${this.getClass.getSimpleName}").getOrCreate()
 
     // $example on$
     // Loads data.
-    val dataset = spark.read.format("libsvm")
-      .load("data/mllib/sample_lda_libsvm_data.txt")
+    val dataset = spark.read.format("libsvm").load("data/mllib/sample_lda_libsvm_data.txt")
 
     // Trains a LDA model.
     val lda = new LDA().setK(10).setMaxIter(10)

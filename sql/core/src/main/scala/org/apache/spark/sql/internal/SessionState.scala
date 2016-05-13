@@ -33,7 +33,6 @@ import org.apache.spark.sql.execution.command.AnalyzeTable
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, PreInsertCastAndRename, ResolveDataSource}
 import org.apache.spark.sql.util.ExecutionListenerManager
 
-
 /**
  * A class that holds all session-specific state in a given [[SparkSession]].
  */
@@ -55,10 +54,11 @@ private[sql] class SessionState(sparkSession: SparkSession) {
 
   def newHadoopConfWithOptions(options: Map[String, String]): Configuration = {
     val hadoopConf = newHadoopConf()
-    options.foreach { case (k, v) =>
-      if ((v ne null) && k != "path" && k != "paths") {
-        hadoopConf.set(k, v)
-      }
+    options.foreach {
+      case (k, v) =>
+        if ((v ne null) && k != "path" && k != "paths") {
+          hadoopConf.set(k, v)
+        }
     }
     hadoopConf
   }
@@ -81,7 +81,7 @@ private[sql] class SessionState(sparkSession: SparkSession) {
           case FileResource => sparkSession.sparkContext.addFile(resource.uri)
           case ArchiveResource =>
             throw new AnalysisException(
-              "Archive is not allowed to be loaded. If YARN mode is used, " +
+                "Archive is not allowed to be loaded. If YARN mode is used, " +
                 "please use --archives options while calling spark-submit.")
         }
       }
@@ -91,12 +91,11 @@ private[sql] class SessionState(sparkSession: SparkSession) {
   /**
    * Internal catalog for managing table and database states.
    */
-  lazy val catalog = new SessionCatalog(
-    sparkSession.externalCatalog,
-    functionResourceLoader,
-    functionRegistry,
-    conf,
-    newHadoopConf())
+  lazy val catalog = new SessionCatalog(sparkSession.externalCatalog,
+                                        functionResourceLoader,
+                                        functionRegistry,
+                                        conf,
+                                        newHadoopConf())
 
   /**
    * Interface exposed to the user for registering user-defined functions.
@@ -152,8 +151,9 @@ private[sql] class SessionState(sparkSession: SparkSession) {
 
   // Automatically extract all entries and put it in our SQLConf
   // We need to call it after all of vals have been initialized.
-  sparkSession.sparkContext.getConf.getAll.foreach { case (k, v) =>
-    conf.setConfString(k, v)
+  sparkSession.sparkContext.getConf.getAll.foreach {
+    case (k, v) =>
+      conf.setConfString(k, v)
   }
 
   // ------------------------------------------------------
@@ -174,13 +174,14 @@ private[sql] class SessionState(sparkSession: SparkSession) {
     sparkSession.sparkContext.addJar(path)
 
     val uri = new Path(path).toUri
-    val jarURL = if (uri.getScheme == null) {
-      // `path` is a local file path without a URL scheme
-      new File(path).toURI.toURL
-    } else {
-      // `path` is a URL with a scheme
-      uri.toURL
-    }
+    val jarURL =
+      if (uri.getScheme == null) {
+        // `path` is a local file path without a URL scheme
+        new File(path).toURI.toURL
+      } else {
+        // `path` is a URL with a scheme
+        uri.toURL
+      }
     jarClassLoader.addURL(jarURL)
     Thread.currentThread().setContextClassLoader(jarClassLoader)
   }

@@ -33,7 +33,7 @@ object CorrelationsExample {
     val sc = new SparkContext(conf)
 
     // $example on$
-    val seriesX: RDD[Double] = sc.parallelize(Array(1, 2, 3, 3, 5))  // a series
+    val seriesX: RDD[Double] = sc.parallelize(Array(1, 2, 3, 3, 5)) // a series
     // must have the same number of partitions and cardinality as seriesX
     val seriesY: RDD[Double] = sc.parallelize(Array(11, 22, 33, 33, 555))
 
@@ -43,11 +43,10 @@ object CorrelationsExample {
     println(s"Correlation is: $correlation")
 
     val data: RDD[Vector] = sc.parallelize(
-      Seq(
-        Vectors.dense(1.0, 10.0, 100.0),
-        Vectors.dense(2.0, 20.0, 200.0),
-        Vectors.dense(5.0, 33.0, 366.0))
-    )  // note that each Vector is a row and not a column
+        Seq(Vectors.dense(1.0, 10.0, 100.0),
+            Vectors.dense(2.0, 20.0, 200.0),
+            Vectors.dense(5.0, 33.0, 366.0))
+    ) // note that each Vector is a row and not a column
 
     // calculate the correlation matrix using Pearson's method. Use "spearman" for Spearman's method
     // If a method is not specified, Pearson's method will be used by default.
@@ -59,4 +58,3 @@ object CorrelationsExample {
   }
 }
 // scalastyle:on println
-

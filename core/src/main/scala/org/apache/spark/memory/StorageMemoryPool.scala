@@ -33,7 +33,9 @@ import org.apache.spark.storage.memory.MemoryStore
 private[memory] class StorageMemoryPool(
     lock: Object,
     memoryMode: MemoryMode
-  ) extends MemoryPool(lock) with Logging {
+)
+    extends MemoryPool(lock)
+    with Logging {
 
   private[this] val poolName: String = memoryMode match {
     case MemoryMode.ON_HEAP => "on-heap storage"
@@ -81,30 +83,28 @@ private[memory] class StorageMemoryPool(
    * @param numBytesToFree the amount of space to be freed through evicting blocks
    * @return whether all N bytes were successfully granted.
    */
-  def acquireMemory(
-      blockId: BlockId,
-      numBytesToAcquire: Long,
-      numBytesToFree: Long): Boolean = lock.synchronized {
-    assert(numBytesToAcquire >= 0)
-    assert(numBytesToFree >= 0)
-    assert(memoryUsed <= poolSize)
-    if (numBytesToFree > 0) {
-      memoryStore.evictBlocksToFreeSpace(Some(blockId), numBytesToFree, memoryMode)
+  def acquireMemory(blockId: BlockId, numBytesToAcquire: Long, numBytesToFree: Long): Boolean =
+    lock.synchronized {
+      assert(numBytesToAcquire >= 0)
+      assert(numBytesToFree >= 0)
+      assert(memoryUsed <= poolSize)
+      if (numBytesToFree > 0) {
+        memoryStore.evictBlocksToFreeSpace(Some(blockId), numBytesToFree, memoryMode)
+      }
+      // NOTE: If the memory store evicts blocks, then those evictions will synchronously call
+      // back into this StorageMemoryPool in order to free memory. Therefore, these variables
+      // should have been updated.
+      val enoughMemory = numBytesToAcquire <= memoryFree
+      if (enoughMemory) {
+        _memoryUsed += numBytesToAcquire
+      }
+      enoughMemory
     }
-    // NOTE: If the memory store evicts blocks, then those evictions will synchronously call
-    // back into this StorageMemoryPool in order to free memory. Therefore, these variables
-    // should have been updated.
-    val enoughMemory = numBytesToAcquire <= memoryFree
-    if (enoughMemory) {
-      _memoryUsed += numBytesToAcquire
-    }
-    enoughMemory
-  }
 
   def releaseMemory(size: Long): Unit = lock.synchronized {
     if (size > _memoryUsed) {
       logWarning(s"Attempted to release $size bytes of storage " +
-        s"memory when we only have ${_memoryUsed} bytes")
+          s"memory when we only have ${_memoryUsed} bytes")
       _memoryUsed = 0
     } else {
       _memoryUsed -= size

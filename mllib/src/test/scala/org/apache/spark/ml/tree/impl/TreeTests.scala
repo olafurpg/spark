@@ -39,13 +39,8 @@ private[ml] object TreeTests extends SparkFunSuite {
    * @return DataFrame with metadata
    */
   def setMetadata(
-      data: RDD[LabeledPoint],
-      categoricalFeatures: Map[Int, Int],
-      numClasses: Int): DataFrame = {
-    val spark = SparkSession.builder
-      .master("local[2]")
-      .appName("TreeTests")
-      .getOrCreate()
+      data: RDD[LabeledPoint], categoricalFeatures: Map[Int, Int], numClasses: Int): DataFrame = {
+    val spark = SparkSession.builder.master("local[2]").appName("TreeTests").getOrCreate()
     import spark.implicits._
 
     val df = data.toDF()
@@ -58,23 +53,24 @@ private[ml] object TreeTests extends SparkFunSuite {
       }
     }.toArray
     val featuresMetadata = new AttributeGroup("features", featuresAttributes).toMetadata()
-    val labelAttribute = if (numClasses == 0) {
-      NumericAttribute.defaultAttr.withName("label")
-    } else {
-      NominalAttribute.defaultAttr.withName("label").withNumValues(numClasses)
-    }
+    val labelAttribute =
+      if (numClasses == 0) {
+        NumericAttribute.defaultAttr.withName("label")
+      } else {
+        NominalAttribute.defaultAttr.withName("label").withNumValues(numClasses)
+      }
     val labelMetadata = labelAttribute.toMetadata()
-    df.select(df("features").as("features", featuresMetadata),
-      df("label").as("label", labelMetadata))
+    df.select(
+        df("features").as("features", featuresMetadata), df("label").as("label", labelMetadata))
   }
 
   /** Java-friendly version of [[setMetadata()]] */
-  def setMetadata(
-      data: JavaRDD[LabeledPoint],
-      categoricalFeatures: java.util.Map[java.lang.Integer, java.lang.Integer],
-      numClasses: Int): DataFrame = {
-    setMetadata(data.rdd, categoricalFeatures.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap,
-      numClasses)
+  def setMetadata(data: JavaRDD[LabeledPoint],
+                  categoricalFeatures: java.util.Map[java.lang.Integer, java.lang.Integer],
+                  numClasses: Int): DataFrame = {
+    setMetadata(data.rdd,
+                categoricalFeatures.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap,
+                numClasses)
   }
 
   /**
@@ -86,16 +82,16 @@ private[ml] object TreeTests extends SparkFunSuite {
    * @param featuresColName  Name of the features column
    * @return DataFrame with metadata
    */
-  def setMetadata(
-      data: DataFrame,
-      numClasses: Int,
-      labelColName: String,
-      featuresColName: String): DataFrame = {
-    val labelAttribute = if (numClasses == 0) {
-      NumericAttribute.defaultAttr.withName(labelColName)
-    } else {
-      NominalAttribute.defaultAttr.withName(labelColName).withNumValues(numClasses)
-    }
+  def setMetadata(data: DataFrame,
+                  numClasses: Int,
+                  labelColName: String,
+                  featuresColName: String): DataFrame = {
+    val labelAttribute =
+      if (numClasses == 0) {
+        NumericAttribute.defaultAttr.withName(labelColName)
+      } else {
+        NominalAttribute.defaultAttr.withName(labelColName).withNumValues(numClasses)
+      }
     val labelMetadata = labelAttribute.toMetadata()
     data.select(data(featuresColName), data(labelColName).as(labelColName, labelMetadata))
   }
@@ -111,9 +107,10 @@ private[ml] object TreeTests extends SparkFunSuite {
       checkEqual(a.rootNode, b.rootNode)
     } catch {
       case ex: Exception =>
-        throw new AssertionError("checkEqual failed since the two trees were not identical.\n" +
-          "TREE A:\n" + a.toDebugString + "\n" +
-          "TREE B:\n" + b.toDebugString + "\n", ex)
+        throw new AssertionError(
+            "checkEqual failed since the two trees were not identical.\n" + "TREE A:\n" +
+            a.toDebugString + "\n" + "TREE B:\n" + b.toDebugString + "\n",
+            ex)
     }
   }
 
@@ -142,13 +139,15 @@ private[ml] object TreeTests extends SparkFunSuite {
    */
   def checkEqual[M <: DecisionTreeModel](a: TreeEnsembleModel[M], b: TreeEnsembleModel[M]): Unit = {
     try {
-      a.trees.zip(b.trees).foreach { case (treeA, treeB) =>
-        TreeTests.checkEqual(treeA, treeB)
+      a.trees.zip(b.trees).foreach {
+        case (treeA, treeB) =>
+          TreeTests.checkEqual(treeA, treeB)
       }
       assert(a.treeWeights === b.treeWeights)
     } catch {
-      case ex: Exception => throw new AssertionError(
-        "checkEqual failed since the two tree ensembles were not identical")
+      case ex: Exception =>
+        throw new AssertionError(
+            "checkEqual failed since the two tree ensembles were not identical")
     }
   }
 
@@ -164,7 +163,8 @@ private[ml] object TreeTests extends SparkFunSuite {
     val parentImp = leftImp.copy.add(rightImp)
     val leftWeight = leftImp.count / parentImp.count.toDouble
     val rightWeight = rightImp.count / parentImp.count.toDouble
-    val gain = parentImp.calculate() -
+    val gain =
+      parentImp.calculate() -
       (leftWeight * leftImp.calculate() + rightWeight * rightImp.calculate())
     val pred = parentImp.predict
     new InternalNode(pred, parentImp.calculate(), gain, left, right, split, parentImp)
@@ -173,13 +173,15 @@ private[ml] object TreeTests extends SparkFunSuite {
   /**
    * Create some toy data for testing feature importances.
    */
-  def featureImportanceData(sc: SparkContext): RDD[LabeledPoint] = sc.parallelize(Seq(
-    new LabeledPoint(0, Vectors.dense(1, 0, 0, 0, 1)),
-    new LabeledPoint(1, Vectors.dense(1, 1, 0, 1, 0)),
-    new LabeledPoint(1, Vectors.dense(1, 1, 0, 0, 0)),
-    new LabeledPoint(0, Vectors.dense(1, 0, 0, 0, 0)),
-    new LabeledPoint(1, Vectors.dense(1, 1, 0, 0, 0))
-  ))
+  def featureImportanceData(sc: SparkContext): RDD[LabeledPoint] =
+    sc.parallelize(
+        Seq(
+            new LabeledPoint(0, Vectors.dense(1, 0, 0, 0, 1)),
+            new LabeledPoint(1, Vectors.dense(1, 1, 0, 1, 0)),
+            new LabeledPoint(1, Vectors.dense(1, 1, 0, 0, 0)),
+            new LabeledPoint(0, Vectors.dense(1, 0, 0, 0, 0)),
+            new LabeledPoint(1, Vectors.dense(1, 1, 0, 0, 0))
+        ))
 
   /**
    * Mapping from all Params to valid settings which differ from the defaults.
@@ -189,27 +191,26 @@ private[ml] object TreeTests extends SparkFunSuite {
    * This set of Params is for all Decision Tree-based models.
    */
   val allParamSettings: Map[String, Any] = Map(
-    "checkpointInterval" -> 7,
-    "seed" -> 543L,
-    "maxDepth" -> 2,
-    "maxBins" -> 20,
-    "minInstancesPerNode" -> 2,
-    "minInfoGain" -> 1e-14,
-    "maxMemoryInMB" -> 257,
-    "cacheNodeIds" -> true
+      "checkpointInterval" -> 7,
+      "seed" -> 543L,
+      "maxDepth" -> 2,
+      "maxBins" -> 20,
+      "minInstancesPerNode" -> 2,
+      "minInfoGain" -> 1e-14,
+      "maxMemoryInMB" -> 257,
+      "cacheNodeIds" -> true
   )
 
   /** Data for tree read/write tests which produces a non-trivial tree. */
   def getTreeReadWriteData(sc: SparkContext): RDD[LabeledPoint] = {
-    val arr = Array(
-      LabeledPoint(0.0, Vectors.dense(0.0, 0.0)),
-      LabeledPoint(1.0, Vectors.dense(0.0, 1.0)),
-      LabeledPoint(0.0, Vectors.dense(0.0, 0.0)),
-      LabeledPoint(0.0, Vectors.dense(0.0, 2.0)),
-      LabeledPoint(0.0, Vectors.dense(1.0, 0.0)),
-      LabeledPoint(1.0, Vectors.dense(1.0, 1.0)),
-      LabeledPoint(1.0, Vectors.dense(1.0, 0.0)),
-      LabeledPoint(1.0, Vectors.dense(1.0, 2.0)))
+    val arr = Array(LabeledPoint(0.0, Vectors.dense(0.0, 0.0)),
+                    LabeledPoint(1.0, Vectors.dense(0.0, 1.0)),
+                    LabeledPoint(0.0, Vectors.dense(0.0, 0.0)),
+                    LabeledPoint(0.0, Vectors.dense(0.0, 2.0)),
+                    LabeledPoint(0.0, Vectors.dense(1.0, 0.0)),
+                    LabeledPoint(1.0, Vectors.dense(1.0, 1.0)),
+                    LabeledPoint(1.0, Vectors.dense(1.0, 0.0)),
+                    LabeledPoint(1.0, Vectors.dense(1.0, 2.0)))
     sc.parallelize(arr)
   }
 }

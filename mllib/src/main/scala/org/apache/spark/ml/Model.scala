@@ -28,6 +28,7 @@ import org.apache.spark.ml.param.ParamMap
  */
 @DeveloperApi
 abstract class Model[M <: Model[M]] extends Transformer {
+
   /**
    * The parent estimator that produced this model.
    * Note: For ensembles' component Models, this value can be null.

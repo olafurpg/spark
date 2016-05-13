@@ -32,20 +32,26 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.Dataset
 
 /** Params for Multilayer Perceptron. */
-private[ml] trait MultilayerPerceptronParams extends PredictorParams
-  with HasSeed with HasMaxIter with HasTol with HasStepSize {
+private[ml] trait MultilayerPerceptronParams
+    extends PredictorParams
+    with HasSeed
+    with HasMaxIter
+    with HasTol
+    with HasStepSize {
+
   /**
    * Layer sizes including input size and output size.
    * Default: Array(1, 1)
    *
    * @group param
    */
-  final val layers: IntArrayParam = new IntArrayParam(this, "layers",
-    "Sizes of layers from input layer to output layer" +
+  final val layers: IntArrayParam = new IntArrayParam(
+      this,
+      "layers",
+      "Sizes of layers from input layer to output layer" +
       " E.g., Array(780, 100, 10) means 780 inputs, " +
       "one hidden layer with 100 neurons and output layer of 10 neurons.",
-    (t: Array[Int]) => t.forall(ParamValidators.gt(0)) && t.length > 1
-  )
+      (t: Array[Int]) => t.forall(ParamValidators.gt(0)) && t.length > 1)
 
   /** @group getParam */
   final def getLayers: Array[Int] = $(layers)
@@ -59,11 +65,13 @@ private[ml] trait MultilayerPerceptronParams extends PredictorParams
    *
    * @group expertParam
    */
-  final val blockSize: IntParam = new IntParam(this, "blockSize",
-    "Block size for stacking input data in matrices. Data is stacked within partitions." +
+  final val blockSize: IntParam = new IntParam(
+      this,
+      "blockSize",
+      "Block size for stacking input data in matrices. Data is stacked within partitions." +
       " If block size is more than remaining data in a partition then " +
       "it is adjusted to the size of this data. Recommended size is between 10 and 1000",
-    ParamValidators.gt(0))
+      ParamValidators.gt(0))
 
   /** @group getParam */
   final def getBlockSize: Int = $(blockSize)
@@ -74,10 +82,12 @@ private[ml] trait MultilayerPerceptronParams extends PredictorParams
    *
    * @group expertParam
    */
-  final val solver: Param[String] = new Param[String](this, "solver",
-    " Allows setting the solver: minibatch gradient descent (gd) or l-bfgs. " +
+  final val solver: Param[String] = new Param[String](
+      this,
+      "solver",
+      " Allows setting the solver: minibatch gradient descent (gd) or l-bfgs. " +
       " l-bfgs is the default one.",
-    ParamValidators.inArray[String](Array("gd", "l-bfgs")))
+      ParamValidators.inArray[String](Array("gd", "l-bfgs")))
 
   /** @group getParam */
   final def getOptimizer: String = $(solver)
@@ -87,12 +97,11 @@ private[ml] trait MultilayerPerceptronParams extends PredictorParams
    *
    * @group expertParam
    */
-  final val weights: Param[Vector] = new Param[Vector](this, "weights",
-    " Sets the weights of the model ")
+  final val weights: Param[Vector] =
+    new Param[Vector](this, "weights", " Sets the weights of the model ")
 
   /** @group getParam */
   final def getWeights: Vector = $(weights)
-
 
   setDefault(maxIter -> 100, tol -> 1e-4, blockSize -> 128, solver -> "l-bfgs", stepSize -> 0.03)
 }
@@ -137,10 +146,11 @@ private object LabelConverter {
  */
 @Since("1.5.0")
 @Experimental
-class MultilayerPerceptronClassifier @Since("1.5.0") (
-    @Since("1.5.0") override val uid: String)
-  extends Predictor[Vector, MultilayerPerceptronClassifier, MultilayerPerceptronClassificationModel]
-  with MultilayerPerceptronParams with DefaultParamsWritable {
+class MultilayerPerceptronClassifier @Since("1.5.0")(@Since("1.5.0") override val uid: String)
+    extends Predictor[
+        Vector, MultilayerPerceptronClassifier, MultilayerPerceptronClassificationModel]
+    with MultilayerPerceptronParams
+    with DefaultParamsWritable {
 
   @Since("1.5.0")
   def this() = this(Identifiable.randomUID("mlpc"))
@@ -211,9 +221,7 @@ class MultilayerPerceptronClassifier @Since("1.5.0") (
     } else {
       trainer.setSeed($(seed))
     }
-    trainer.LBFGSOptimizer
-      .setConvergenceTol($(tol))
-      .setNumIterations($(maxIter))
+    trainer.LBFGSOptimizer.setConvergenceTol($(tol)).setNumIterations($(maxIter))
     trainer.setStackSize($(blockSize))
     val mlpModel = trainer.train(data)
     new MultilayerPerceptronClassificationModel(uid, myLayers, mlpModel.weights)
@@ -222,7 +230,7 @@ class MultilayerPerceptronClassifier @Since("1.5.0") (
 
 @Since("2.0.0")
 object MultilayerPerceptronClassifier
-  extends DefaultParamsReadable[MultilayerPerceptronClassifier] {
+    extends DefaultParamsReadable[MultilayerPerceptronClassifier] {
 
   @Since("2.0.0")
   override def load(path: String): MultilayerPerceptronClassifier = super.load(path)
@@ -240,12 +248,12 @@ object MultilayerPerceptronClassifier
  */
 @Since("1.5.0")
 @Experimental
-class MultilayerPerceptronClassificationModel private[ml] (
-    @Since("1.5.0") override val uid: String,
-    @Since("1.5.0") val layers: Array[Int],
-    @Since("1.5.0") val weights: Vector)
-  extends PredictionModel[Vector, MultilayerPerceptronClassificationModel]
-  with Serializable with MLWritable {
+class MultilayerPerceptronClassificationModel private[ml](@Since("1.5.0") override val uid: String,
+                                                          @Since("1.5.0") val layers: Array[Int],
+                                                          @Since("1.5.0") val weights: Vector)
+    extends PredictionModel[Vector, MultilayerPerceptronClassificationModel]
+    with Serializable
+    with MLWritable {
 
   @Since("1.6.0")
   override val numFeatures: Int = layers.head
@@ -279,7 +287,7 @@ class MultilayerPerceptronClassificationModel private[ml] (
 
 @Since("2.0.0")
 object MultilayerPerceptronClassificationModel
-  extends MLReadable[MultilayerPerceptronClassificationModel] {
+    extends MLReadable[MultilayerPerceptronClassificationModel] {
 
   @Since("2.0.0")
   override def read: MLReader[MultilayerPerceptronClassificationModel] =
@@ -289,9 +297,9 @@ object MultilayerPerceptronClassificationModel
   override def load(path: String): MultilayerPerceptronClassificationModel = super.load(path)
 
   /** [[MLWriter]] instance for [[MultilayerPerceptronClassificationModel]] */
-  private[MultilayerPerceptronClassificationModel]
-  class MultilayerPerceptronClassificationModelWriter(
-      instance: MultilayerPerceptronClassificationModel) extends MLWriter {
+  private[MultilayerPerceptronClassificationModel] class MultilayerPerceptronClassificationModelWriter(
+      instance: MultilayerPerceptronClassificationModel)
+      extends MLWriter {
 
     private case class Data(layers: Array[Int], weights: Vector)
 
@@ -306,7 +314,7 @@ object MultilayerPerceptronClassificationModel
   }
 
   private class MultilayerPerceptronClassificationModelReader
-    extends MLReader[MultilayerPerceptronClassificationModel] {
+      extends MLReader[MultilayerPerceptronClassificationModel] {
 
     /** Checked against metadata when loading model */
     private val className = classOf[MultilayerPerceptronClassificationModel].getName

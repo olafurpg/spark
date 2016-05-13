@@ -27,11 +27,9 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.launcher.SparkAppHandle
 import org.apache.spark.scheduler.TaskSchedulerImpl
 
-private[spark] class YarnClientSchedulerBackend(
-    scheduler: TaskSchedulerImpl,
-    sc: SparkContext)
-  extends YarnSchedulerBackend(scheduler, sc)
-  with Logging {
+private[spark] class YarnClientSchedulerBackend(scheduler: TaskSchedulerImpl, sc: SparkContext)
+    extends YarnSchedulerBackend(scheduler, sc)
+    with Logging {
 
   private var client: Client = null
   private var monitorThread: MonitorThread = null
@@ -44,7 +42,9 @@ private[spark] class YarnClientSchedulerBackend(
     val driverHost = conf.get("spark.driver.host")
     val driverPort = conf.get("spark.driver.port")
     val hostport = driverHost + ":" + driverPort
-    sc.ui.foreach { ui => conf.set("spark.driver.appUIAddress", ui.appUIAddress) }
+    sc.ui.foreach { ui =>
+      conf.set("spark.driver.appUIAddress", ui.appUIAddress)
+    }
 
     val argsArrayBuf = new ArrayBuffer[String]()
     argsArrayBuf += ("--arg", hostport)
@@ -79,11 +79,10 @@ private[spark] class YarnClientSchedulerBackend(
   private def waitForApplication(): Unit = {
     assert(client != null && appId.isDefined, "Application has not been submitted yet!")
     val (state, _) = client.monitorApplication(appId.get, returnOnRunning = true) // blocking
-    if (state == YarnApplicationState.FINISHED ||
-      state == YarnApplicationState.FAILED ||
-      state == YarnApplicationState.KILLED) {
+    if (state == YarnApplicationState.FINISHED || state == YarnApplicationState.FAILED ||
+        state == YarnApplicationState.KILLED) {
       throw new SparkException("Yarn application has already ended! " +
-        "It might have been killed or unable to launch application master.")
+          "It might have been killed or unable to launch application master.")
     }
     if (state == YarnApplicationState.RUNNING) {
       logInfo(s"Application ${appId.get} has started running.")
@@ -153,5 +152,4 @@ private[spark] class YarnClientSchedulerBackend(
     client.stop()
     logInfo("Stopped")
   }
-
 }

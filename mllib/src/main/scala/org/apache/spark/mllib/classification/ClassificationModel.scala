@@ -30,6 +30,7 @@ import org.apache.spark.rdd.RDD
  */
 @Since("0.8.0")
 trait ClassificationModel extends Serializable {
+
   /**
    * Predict values for the given data set using the model trained.
    *

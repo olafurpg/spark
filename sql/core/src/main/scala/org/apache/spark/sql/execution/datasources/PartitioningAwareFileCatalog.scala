@@ -27,7 +27,6 @@ import org.apache.spark.sql.catalyst.{expressions, InternalRow}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.types.{StringType, StructType}
 
-
 /**
  * An abstract class that represents [[FileCatalog]]s that are aware of partitioned tables.
  * It provides the necessary methods to parse partition data based on a set of files.
@@ -35,12 +34,12 @@ import org.apache.spark.sql.types.{StringType, StructType}
  * @param parameters as set of options to control partition discovery
  * @param partitionSchema an optional partition schema that will be use to provide types for the
  *                        discovered partitions
-*/
-abstract class PartitioningAwareFileCatalog(
-    sparkSession: SparkSession,
-    parameters: Map[String, String],
-    partitionSchema: Option[StructType])
-  extends FileCatalog with Logging {
+ */
+abstract class PartitioningAwareFileCatalog(sparkSession: SparkSession,
+                                            parameters: Map[String, String],
+                                            partitionSchema: Option[StructType])
+    extends FileCatalog
+    with Logging {
 
   protected val hadoopConf = sparkSession.sessionState.newHadoopConfWithOptions(parameters)
 
@@ -49,23 +48,24 @@ abstract class PartitioningAwareFileCatalog(
   protected def leafDirToChildrenFiles: Map[Path, Array[FileStatus]]
 
   override def listFiles(filters: Seq[Expression]): Seq[Partition] = {
-    val selectedPartitions = if (partitionSpec().partitionColumns.isEmpty) {
-      Partition(InternalRow.empty, allFiles().filterNot(_.getPath.getName startsWith "_")) :: Nil
-    } else {
-      prunePartitions(filters, partitionSpec()).map {
-        case PartitionDirectory(values, path) =>
-          val files: Seq[FileStatus] = leafDirToChildrenFiles.get(path) match {
-            case Some(existingDir) =>
-              // Directory has children files in it, return them
-              existingDir.filterNot(_.getPath.getName.startsWith("_"))
+    val selectedPartitions =
+      if (partitionSpec().partitionColumns.isEmpty) {
+        Partition(InternalRow.empty, allFiles().filterNot(_.getPath.getName startsWith "_")) :: Nil
+      } else {
+        prunePartitions(filters, partitionSpec()).map {
+          case PartitionDirectory(values, path) =>
+            val files: Seq[FileStatus] = leafDirToChildrenFiles.get(path) match {
+              case Some(existingDir) =>
+                // Directory has children files in it, return them
+                existingDir.filterNot(_.getPath.getName.startsWith("_"))
 
-            case None =>
-              // Directory does not exist, or has no children files
-              Nil
-          }
-          Partition(values, files)
+              case None =>
+                // Directory does not exist, or has no children files
+                Nil
+            }
+            Partition(values, files)
+        }
       }
-    }
     logTrace("Selected files after partition pruning:\n\t" + selectedPartitions.mkString("\n\t"))
     selectedPartitions
   }
@@ -85,7 +85,8 @@ abstract class PartitioningAwareFileCatalog(
         // 2. The path is a file, then it will be present in leafFiles. Include this path.
         // 3. The path is a directory, but has no children files. Do not include this path.
 
-        leafDirToChildrenFiles.get(qualifiedPath)
+        leafDirToChildrenFiles
+          .get(qualifiedPath)
           .orElse { leafFiles.get(qualifiedPath).map(Array(_)) }
           .getOrElse(Array.empty)
       }
@@ -99,19 +100,18 @@ abstract class PartitioningAwareFileCatalog(
     val leafDirs = leafDirToChildrenFiles.keys.toSeq
     partitionSchema match {
       case Some(userProvidedSchema) if userProvidedSchema.nonEmpty =>
-        val spec = PartitioningUtils.parsePartitions(
-          leafDirs,
-          PartitioningUtils.DEFAULT_PARTITION_NAME,
-          typeInference = false,
-          basePaths = basePaths)
+        val spec = PartitioningUtils.parsePartitions(leafDirs,
+                                                     PartitioningUtils.DEFAULT_PARTITION_NAME,
+                                                     typeInference = false,
+                                                     basePaths = basePaths)
 
         // Without auto inference, all of value in the `row` should be null or in StringType,
         // we need to cast into the data type that user specified.
         def castPartitionValuesToUserSchema(row: InternalRow) = {
-          InternalRow((0 until row.numFields).map { i =>
-            Cast(
-              Literal.create(row.getUTF8String(i), StringType),
-              userProvidedSchema.fields(i).dataType).eval()
+          InternalRow(
+              (0 until row.numFields).map { i =>
+            Cast(Literal.create(row.getUTF8String(i), StringType),
+                 userProvidedSchema.fields(i).dataType).eval()
           }: _*)
         }
 
@@ -120,16 +120,15 @@ abstract class PartitioningAwareFileCatalog(
         })
       case _ =>
         PartitioningUtils.parsePartitions(
-          leafDirs,
-          PartitioningUtils.DEFAULT_PARTITION_NAME,
-          typeInference = sparkSession.sessionState.conf.partitionColumnTypeInferenceEnabled(),
-          basePaths = basePaths)
+            leafDirs,
+            PartitioningUtils.DEFAULT_PARTITION_NAME,
+            typeInference = sparkSession.sessionState.conf.partitionColumnTypeInferenceEnabled(),
+            basePaths = basePaths)
     }
   }
 
   private def prunePartitions(
-      predicates: Seq[Expression],
-      partitionSpec: PartitionSpec): Seq[PartitionDirectory] = {
+      predicates: Seq[Expression], partitionSpec: PartitionSpec): Seq[PartitionDirectory] = {
     val PartitionSpec(partitionColumns, partitions) = partitionSpec
     val partitionColumnNames = partitionColumns.map(_.name).toSet
     val partitionPruningPredicates = predicates.filter {
@@ -139,7 +138,8 @@ abstract class PartitioningAwareFileCatalog(
     if (partitionPruningPredicates.nonEmpty) {
       val predicate = partitionPruningPredicates.reduce(expressions.And)
 
-      val boundPredicate = InterpretedPredicate.create(predicate.transform {
+      val boundPredicate = InterpretedPredicate.create(
+          predicate.transform {
         case a: AttributeReference =>
           val index = partitionColumns.indexWhere(a.name == _.name)
           BoundReference(index, partitionColumns(index).dataType, nullable = true)
@@ -194,7 +194,8 @@ abstract class PartitioningAwareFileCatalog(
         paths.map { path =>
           // Make the path qualified (consistent with listLeafFiles and listLeafFilesInParallel).
           val qualifiedPath = path.getFileSystem(hadoopConf).makeQualified(path)
-          if (leafFiles.contains(qualifiedPath)) qualifiedPath.getParent else qualifiedPath }.toSet
+          if (leafFiles.contains(qualifiedPath)) qualifiedPath.getParent else qualifiedPath
+        }.toSet
     }
   }
 }

@@ -71,7 +71,7 @@ private[rest] class CreateSubmissionRequest extends SubmitRestProtocolRequest {
     sparkProperties.get(key).foreach { value =>
       Try(convert(value)).getOrElse {
         throw new SubmitRestProtocolException(
-          s"Property '$key' expected $valueType value: actual was '$value'.")
+            s"Property '$key' expected $valueType value: actual was '$value'.")
       }
     }
   }

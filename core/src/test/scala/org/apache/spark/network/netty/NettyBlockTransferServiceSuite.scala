@@ -26,9 +26,9 @@ import org.apache.spark.{SecurityManager, SparkConf, SparkFunSuite}
 import org.apache.spark.network.BlockDataManager
 
 class NettyBlockTransferServiceSuite
-  extends SparkFunSuite
-  with BeforeAndAfterEach
-  with ShouldMatchers {
+    extends SparkFunSuite
+    with BeforeAndAfterEach
+    with ShouldMatchers {
 
   private var service0: NettyBlockTransferService = _
   private var service1: NettyBlockTransferService = _

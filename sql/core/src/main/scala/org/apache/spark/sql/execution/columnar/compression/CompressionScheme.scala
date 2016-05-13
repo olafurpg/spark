@@ -63,14 +63,15 @@ private[columnar] trait AllCompressionSchemes extends WithCompressionSchemes {
 }
 
 private[columnar] object CompressionScheme {
-  val all: Seq[CompressionScheme] =
-    Seq(PassThrough, RunLengthEncoding, DictionaryEncoding, BooleanBitSet, IntDelta, LongDelta)
+  val all: Seq[CompressionScheme] = Seq(
+      PassThrough, RunLengthEncoding, DictionaryEncoding, BooleanBitSet, IntDelta, LongDelta)
 
   private val typeIdToScheme = all.map(scheme => scheme.typeId -> scheme).toMap
 
   def apply(typeId: Int): CompressionScheme = {
-    typeIdToScheme.getOrElse(typeId, throw new UnsupportedOperationException(
-      s"Unrecognized compression scheme type ID: $typeId"))
+    typeIdToScheme.getOrElse(typeId,
+                             throw new UnsupportedOperationException(
+                                 s"Unrecognized compression scheme type ID: $typeId"))
   }
 
   def columnHeaderSize(columnBuffer: ByteBuffer): Int = {

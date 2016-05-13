@@ -31,8 +31,7 @@ class TypeCoercionSuite extends PlanTest {
   test("eligible implicit type cast") {
     def shouldCast(from: DataType, to: AbstractDataType, expected: DataType): Unit = {
       val got = TypeCoercion.ImplicitTypeCasts.implicitCast(Literal.create(null, from), to)
-      assert(got.map(_.dataType) == Option(expected),
-        s"Failed to cast $from to $to")
+      assert(got.map(_.dataType) == Option(expected), s"Failed to cast $from to $to")
     }
 
     shouldCast(NullType, NullType, NullType)
@@ -74,7 +73,8 @@ class TypeCoercionSuite extends PlanTest {
     shouldCast(IntegerType, TypeCollection(BinaryType, StringType), StringType)
 
     shouldCast(DecimalType.SYSTEM_DEFAULT,
-      TypeCollection(IntegerType, DecimalType), DecimalType.SYSTEM_DEFAULT)
+               TypeCollection(IntegerType, DecimalType),
+               DecimalType.SYSTEM_DEFAULT)
     shouldCast(DecimalType(10, 2), TypeCollection(IntegerType, DecimalType), DecimalType(10, 2))
     shouldCast(DecimalType(10, 2), TypeCollection(DecimalType, IntegerType), DecimalType(10, 2))
     shouldCast(IntegerType, TypeCollection(DecimalType(10, 2), StringType), DecimalType(10, 2))
@@ -83,20 +83,24 @@ class TypeCoercionSuite extends PlanTest {
     shouldCast(StringType, TypeCollection(NumericType, BinaryType), DoubleType)
 
     // NumericType should not be changed when function accepts any of them.
-    Seq(ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType,
-      DecimalType.SYSTEM_DEFAULT, DecimalType(10, 2)).foreach { tpe =>
+    Seq(ByteType,
+        ShortType,
+        IntegerType,
+        LongType,
+        FloatType,
+        DoubleType,
+        DecimalType.SYSTEM_DEFAULT,
+        DecimalType(10, 2)).foreach { tpe =>
       shouldCast(tpe, NumericType, tpe)
     }
 
-    shouldCast(
-      ArrayType(StringType, false),
-      TypeCollection(ArrayType(StringType), StringType),
-      ArrayType(StringType, false))
+    shouldCast(ArrayType(StringType, false),
+               TypeCollection(ArrayType(StringType), StringType),
+               ArrayType(StringType, false))
 
-    shouldCast(
-      ArrayType(StringType, true),
-      TypeCollection(ArrayType(StringType), StringType),
-      ArrayType(StringType, true))
+    shouldCast(ArrayType(StringType, true),
+               TypeCollection(ArrayType(StringType), StringType),
+               ArrayType(StringType, true))
   }
 
   test("ineligible implicit type cast") {
@@ -131,11 +135,11 @@ class TypeCoercionSuite extends PlanTest {
     def widenTest(t1: DataType, t2: DataType, tightestCommon: Option[DataType]) {
       var found = TypeCoercion.findTightestCommonTypeOfTwo(t1, t2)
       assert(found == tightestCommon,
-        s"Expected $tightestCommon as tightest common type for $t1 and $t2, found $found")
+             s"Expected $tightestCommon as tightest common type for $t1 and $t2, found $found")
       // Test both directions to make sure the widening is symmetric.
       found = TypeCoercion.findTightestCommonTypeOfTwo(t2, t1)
       assert(found == tightestCommon,
-        s"Expected $tightestCommon as tightest common type for $t2 and $t1, found $found")
+             s"Expected $tightestCommon as tightest common type for $t2 and $t1, found $found")
     }
 
     // Null
@@ -191,8 +195,8 @@ class TypeCoercionSuite extends PlanTest {
 
     // ComplexType
     widenTest(NullType,
-      MapType(IntegerType, StringType, false),
-      Some(MapType(IntegerType, StringType, false)))
+              MapType(IntegerType, StringType, false),
+              Some(MapType(IntegerType, StringType, false)))
     widenTest(NullType, StructType(Seq()), Some(StructType(Seq())))
     widenTest(StringType, MapType(IntegerType, StringType, true), None)
     widenTest(ArrayType(IntegerType), StructType(Seq()), None)
@@ -200,191 +204,156 @@ class TypeCoercionSuite extends PlanTest {
 
   private def ruleTest(rule: Rule[LogicalPlan], initial: Expression, transformed: Expression) {
     val testRelation = LocalRelation(AttributeReference("a", IntegerType)())
-    comparePlans(
-      rule(Project(Seq(Alias(initial, "a")()), testRelation)),
-      Project(Seq(Alias(transformed, "a")()), testRelation))
+    comparePlans(rule(Project(Seq(Alias(initial, "a")()), testRelation)),
+                 Project(Seq(Alias(transformed, "a")()), testRelation))
   }
 
   test("cast NullType for expressions that implement ExpectsInputTypes") {
     import TypeCoercionSuite._
 
     ruleTest(TypeCoercion.ImplicitTypeCasts,
-      AnyTypeUnaryExpression(Literal.create(null, NullType)),
-      AnyTypeUnaryExpression(Literal.create(null, NullType)))
+             AnyTypeUnaryExpression(Literal.create(null, NullType)),
+             AnyTypeUnaryExpression(Literal.create(null, NullType)))
 
     ruleTest(TypeCoercion.ImplicitTypeCasts,
-      NumericTypeUnaryExpression(Literal.create(null, NullType)),
-      NumericTypeUnaryExpression(Literal.create(null, DoubleType)))
+             NumericTypeUnaryExpression(Literal.create(null, NullType)),
+             NumericTypeUnaryExpression(Literal.create(null, DoubleType)))
   }
 
   test("cast NullType for binary operators") {
     import TypeCoercionSuite._
 
     ruleTest(TypeCoercion.ImplicitTypeCasts,
-      AnyTypeBinaryOperator(Literal.create(null, NullType), Literal.create(null, NullType)),
-      AnyTypeBinaryOperator(Literal.create(null, NullType), Literal.create(null, NullType)))
+             AnyTypeBinaryOperator(Literal.create(null, NullType), Literal.create(null, NullType)),
+             AnyTypeBinaryOperator(Literal.create(null, NullType), Literal.create(null, NullType)))
 
-    ruleTest(TypeCoercion.ImplicitTypeCasts,
-      NumericTypeBinaryOperator(Literal.create(null, NullType), Literal.create(null, NullType)),
-      NumericTypeBinaryOperator(Literal.create(null, DoubleType), Literal.create(null, DoubleType)))
+    ruleTest(
+        TypeCoercion.ImplicitTypeCasts,
+        NumericTypeBinaryOperator(Literal.create(null, NullType), Literal.create(null, NullType)),
+        NumericTypeBinaryOperator(Literal.create(null, DoubleType),
+                                  Literal.create(null, DoubleType)))
   }
 
   test("coalesce casts") {
     ruleTest(TypeCoercion.FunctionArgumentConversion,
-      Coalesce(Literal(1.0)
-        :: Literal(1)
-        :: Literal.create(1.0, FloatType)
-        :: Nil),
-      Coalesce(Cast(Literal(1.0), DoubleType)
-        :: Cast(Literal(1), DoubleType)
-        :: Cast(Literal.create(1.0, FloatType), DoubleType)
-        :: Nil))
-    ruleTest(TypeCoercion.FunctionArgumentConversion,
-      Coalesce(Literal(1L)
-        :: Literal(1)
-        :: Literal(new java.math.BigDecimal("1000000000000000000000"))
-        :: Nil),
-      Coalesce(Cast(Literal(1L), DecimalType(22, 0))
-        :: Cast(Literal(1), DecimalType(22, 0))
-        :: Cast(Literal(new java.math.BigDecimal("1000000000000000000000")), DecimalType(22, 0))
-        :: Nil))
+             Coalesce(Literal(1.0) :: Literal(1) :: Literal.create(1.0, FloatType) :: Nil),
+             Coalesce(Cast(Literal(1.0), DoubleType) :: Cast(Literal(1), DoubleType) :: Cast(
+                     Literal.create(1.0, FloatType), DoubleType) :: Nil))
+    ruleTest(
+        TypeCoercion.FunctionArgumentConversion,
+        Coalesce(Literal(1L) :: Literal(1) :: Literal(
+                new java.math.BigDecimal("1000000000000000000000")) :: Nil),
+        Coalesce(
+            Cast(Literal(1L), DecimalType(22, 0)) :: Cast(Literal(1), DecimalType(22, 0)) :: Cast(
+                Literal(new java.math.BigDecimal("1000000000000000000000")),
+                DecimalType(22, 0)) :: Nil))
   }
 
   test("CreateArray casts") {
     ruleTest(TypeCoercion.FunctionArgumentConversion,
-      CreateArray(Literal(1.0)
-        :: Literal(1)
-        :: Literal.create(1.0, FloatType)
-        :: Nil),
-      CreateArray(Cast(Literal(1.0), DoubleType)
-        :: Cast(Literal(1), DoubleType)
-        :: Cast(Literal.create(1.0, FloatType), DoubleType)
-        :: Nil))
+             CreateArray(Literal(1.0) :: Literal(1) :: Literal.create(1.0, FloatType) :: Nil),
+             CreateArray(Cast(Literal(1.0), DoubleType) :: Cast(Literal(1), DoubleType) :: Cast(
+                     Literal.create(1.0, FloatType), DoubleType) :: Nil))
 
     ruleTest(TypeCoercion.FunctionArgumentConversion,
-      CreateArray(Literal(1.0)
-        :: Literal(1)
-        :: Literal("a")
-        :: Nil),
-      CreateArray(Cast(Literal(1.0), StringType)
-        :: Cast(Literal(1), StringType)
-        :: Cast(Literal("a"), StringType)
-        :: Nil))
+             CreateArray(Literal(1.0) :: Literal(1) :: Literal("a") :: Nil),
+             CreateArray(Cast(Literal(1.0), StringType) :: Cast(Literal(1), StringType) :: Cast(
+                     Literal("a"),
+                     StringType) :: Nil))
   }
 
   test("CreateMap casts") {
     // type coercion for map keys
-    ruleTest(TypeCoercion.FunctionArgumentConversion,
-      CreateMap(Literal(1)
-        :: Literal("a")
-        :: Literal.create(2.0, FloatType)
-        :: Literal("b")
-        :: Nil),
-      CreateMap(Cast(Literal(1), FloatType)
-        :: Literal("a")
-        :: Cast(Literal.create(2.0, FloatType), FloatType)
-        :: Literal("b")
-        :: Nil))
+    ruleTest(
+        TypeCoercion.FunctionArgumentConversion,
+        CreateMap(
+            Literal(1) :: Literal("a") :: Literal.create(2.0, FloatType) :: Literal("b") :: Nil),
+        CreateMap(
+            Cast(Literal(1), FloatType) :: Literal("a") :: Cast(Literal.create(2.0, FloatType),
+                                                                FloatType) :: Literal("b") :: Nil))
     // type coercion for map values
-    ruleTest(TypeCoercion.FunctionArgumentConversion,
-      CreateMap(Literal(1)
-        :: Literal("a")
-        :: Literal(2)
-        :: Literal(3.0)
-        :: Nil),
-      CreateMap(Literal(1)
-        :: Cast(Literal("a"), StringType)
-        :: Literal(2)
-        :: Cast(Literal(3.0), StringType)
-        :: Nil))
+    ruleTest(
+        TypeCoercion.FunctionArgumentConversion,
+        CreateMap(Literal(1) :: Literal("a") :: Literal(2) :: Literal(3.0) :: Nil),
+        CreateMap(
+            Literal(1) :: Cast(Literal("a"), StringType) :: Literal(2) :: Cast(Literal(3.0),
+                                                                               StringType) :: Nil))
     // type coercion for both map keys and values
     ruleTest(TypeCoercion.FunctionArgumentConversion,
-      CreateMap(Literal(1)
-        :: Literal("a")
-        :: Literal(2.0)
-        :: Literal(3.0)
-        :: Nil),
-      CreateMap(Cast(Literal(1), DoubleType)
-        :: Cast(Literal("a"), StringType)
-        :: Cast(Literal(2.0), DoubleType)
-        :: Cast(Literal(3.0), StringType)
-        :: Nil))
+             CreateMap(Literal(1) :: Literal("a") :: Literal(2.0) :: Literal(3.0) :: Nil),
+             CreateMap(Cast(Literal(1), DoubleType) :: Cast(Literal("a"), StringType) :: Cast(
+                     Literal(2.0), DoubleType) :: Cast(Literal(3.0), StringType) :: Nil))
   }
 
   test("greatest/least cast") {
     for (operator <- Seq[(Seq[Expression] => Expression)](Greatest, Least)) {
       ruleTest(TypeCoercion.FunctionArgumentConversion,
-        operator(Literal(1.0)
-          :: Literal(1)
-          :: Literal.create(1.0, FloatType)
-          :: Nil),
-        operator(Cast(Literal(1.0), DoubleType)
-          :: Cast(Literal(1), DoubleType)
-          :: Cast(Literal.create(1.0, FloatType), DoubleType)
-          :: Nil))
+               operator(Literal(1.0) :: Literal(1) :: Literal.create(1.0, FloatType) :: Nil),
+               operator(Cast(Literal(1.0), DoubleType) :: Cast(Literal(1), DoubleType) :: Cast(
+                       Literal.create(1.0, FloatType), DoubleType) :: Nil))
       ruleTest(TypeCoercion.FunctionArgumentConversion,
-        operator(Literal(1L)
-          :: Literal(1)
-          :: Literal(new java.math.BigDecimal("1000000000000000000000"))
-          :: Nil),
-        operator(Cast(Literal(1L), DecimalType(22, 0))
-          :: Cast(Literal(1), DecimalType(22, 0))
-          :: Cast(Literal(new java.math.BigDecimal("1000000000000000000000")), DecimalType(22, 0))
-          :: Nil))
+               operator(Literal(1L) :: Literal(1) :: Literal(
+                       new java.math.BigDecimal("1000000000000000000000")) :: Nil),
+               operator(Cast(Literal(1L), DecimalType(22, 0)) :: Cast(Literal(1),
+                                                                      DecimalType(22, 0)) :: Cast(
+                       Literal(new java.math.BigDecimal("1000000000000000000000")),
+                       DecimalType(22, 0)) :: Nil))
     }
   }
 
   test("nanvl casts") {
+    ruleTest(
+        TypeCoercion.FunctionArgumentConversion,
+        NaNvl(Literal.create(1.0, FloatType), Literal.create(1.0, DoubleType)),
+        NaNvl(Cast(Literal.create(1.0, FloatType), DoubleType), Literal.create(1.0, DoubleType)))
+    ruleTest(
+        TypeCoercion.FunctionArgumentConversion,
+        NaNvl(Literal.create(1.0, DoubleType), Literal.create(1.0, FloatType)),
+        NaNvl(Literal.create(1.0, DoubleType), Cast(Literal.create(1.0, FloatType), DoubleType)))
     ruleTest(TypeCoercion.FunctionArgumentConversion,
-      NaNvl(Literal.create(1.0, FloatType), Literal.create(1.0, DoubleType)),
-      NaNvl(Cast(Literal.create(1.0, FloatType), DoubleType), Literal.create(1.0, DoubleType)))
-    ruleTest(TypeCoercion.FunctionArgumentConversion,
-      NaNvl(Literal.create(1.0, DoubleType), Literal.create(1.0, FloatType)),
-      NaNvl(Literal.create(1.0, DoubleType), Cast(Literal.create(1.0, FloatType), DoubleType)))
-    ruleTest(TypeCoercion.FunctionArgumentConversion,
-      NaNvl(Literal.create(1.0, DoubleType), Literal.create(1.0, DoubleType)),
-      NaNvl(Literal.create(1.0, DoubleType), Literal.create(1.0, DoubleType)))
+             NaNvl(Literal.create(1.0, DoubleType), Literal.create(1.0, DoubleType)),
+             NaNvl(Literal.create(1.0, DoubleType), Literal.create(1.0, DoubleType)))
   }
 
   test("type coercion for If") {
     val rule = TypeCoercion.IfCoercion
 
     ruleTest(rule,
-      If(Literal(true), Literal(1), Literal(1L)),
-      If(Literal(true), Cast(Literal(1), LongType), Literal(1L)))
+             If(Literal(true), Literal(1), Literal(1L)),
+             If(Literal(true), Cast(Literal(1), LongType), Literal(1L)))
 
     ruleTest(rule,
-      If(Literal.create(null, NullType), Literal(1), Literal(1)),
-      If(Literal.create(null, BooleanType), Literal(1), Literal(1)))
+             If(Literal.create(null, NullType), Literal(1), Literal(1)),
+             If(Literal.create(null, BooleanType), Literal(1), Literal(1)))
 
     ruleTest(rule,
-      If(AssertTrue(Literal.create(true, BooleanType)), Literal(1), Literal(2)),
-      If(Cast(AssertTrue(Literal.create(true, BooleanType)), BooleanType), Literal(1), Literal(2)))
+             If(AssertTrue(Literal.create(true, BooleanType)), Literal(1), Literal(2)),
+             If(Cast(AssertTrue(Literal.create(true, BooleanType)), BooleanType),
+                Literal(1),
+                Literal(2)))
 
     ruleTest(rule,
-      If(AssertTrue(Literal.create(false, BooleanType)), Literal(1), Literal(2)),
-      If(Cast(AssertTrue(Literal.create(false, BooleanType)), BooleanType), Literal(1), Literal(2)))
+             If(AssertTrue(Literal.create(false, BooleanType)), Literal(1), Literal(2)),
+             If(Cast(AssertTrue(Literal.create(false, BooleanType)), BooleanType),
+                Literal(1),
+                Literal(2)))
   }
 
   test("type coercion for CaseKeyWhen") {
     ruleTest(TypeCoercion.ImplicitTypeCasts,
-      CaseKeyWhen(Literal(1.toShort), Seq(Literal(1), Literal("a"))),
-      CaseKeyWhen(Cast(Literal(1.toShort), IntegerType), Seq(Literal(1), Literal("a")))
-    )
+             CaseKeyWhen(Literal(1.toShort), Seq(Literal(1), Literal("a"))),
+             CaseKeyWhen(Cast(Literal(1.toShort), IntegerType), Seq(Literal(1), Literal("a"))))
     ruleTest(TypeCoercion.CaseWhenCoercion,
-      CaseKeyWhen(Literal(true), Seq(Literal(1), Literal("a"))),
-      CaseKeyWhen(Literal(true), Seq(Literal(1), Literal("a")))
-    )
+             CaseKeyWhen(Literal(true), Seq(Literal(1), Literal("a"))),
+             CaseKeyWhen(Literal(true), Seq(Literal(1), Literal("a"))))
     ruleTest(TypeCoercion.CaseWhenCoercion,
-      CaseWhen(Seq((Literal(true), Literal(1.2))), Literal.create(1, DecimalType(7, 2))),
-      CaseWhen(Seq((Literal(true), Literal(1.2))),
-        Cast(Literal.create(1, DecimalType(7, 2)), DoubleType))
-    )
+             CaseWhen(Seq((Literal(true), Literal(1.2))), Literal.create(1, DecimalType(7, 2))),
+             CaseWhen(Seq((Literal(true), Literal(1.2))),
+                      Cast(Literal.create(1, DecimalType(7, 2)), DoubleType)))
     ruleTest(TypeCoercion.CaseWhenCoercion,
-      CaseWhen(Seq((Literal(true), Literal(100L))), Literal.create(1, DecimalType(7, 2))),
-      CaseWhen(Seq((Literal(true), Cast(Literal(100L), DecimalType(22, 2)))),
-        Cast(Literal.create(1, DecimalType(7, 2)), DecimalType(22, 2)))
-    )
+             CaseWhen(Seq((Literal(true), Literal(100L))), Literal.create(1, DecimalType(7, 2))),
+             CaseWhen(Seq((Literal(true), Cast(Literal(100L), DecimalType(22, 2)))),
+                      Cast(Literal.create(1, DecimalType(7, 2)), DecimalType(22, 2))))
   }
 
   test("BooleanEquality type cast") {
@@ -392,86 +361,56 @@ class TypeCoercionSuite extends PlanTest {
     // Use something more than a literal to avoid triggering the simplification rules.
     val one = Add(Literal(Decimal(1)), Literal(Decimal(0)))
 
-    ruleTest(be,
-      EqualTo(Literal(true), one),
-      EqualTo(Cast(Literal(true), one.dataType), one)
-    )
+    ruleTest(be, EqualTo(Literal(true), one), EqualTo(Cast(Literal(true), one.dataType), one))
+
+    ruleTest(be, EqualTo(one, Literal(true)), EqualTo(one, Cast(Literal(true), one.dataType)))
 
     ruleTest(be,
-      EqualTo(one, Literal(true)),
-      EqualTo(one, Cast(Literal(true), one.dataType))
-    )
+             EqualNullSafe(Literal(true), one),
+             EqualNullSafe(Cast(Literal(true), one.dataType), one))
 
     ruleTest(be,
-      EqualNullSafe(Literal(true), one),
-      EqualNullSafe(Cast(Literal(true), one.dataType), one)
-    )
-
-    ruleTest(be,
-      EqualNullSafe(one, Literal(true)),
-      EqualNullSafe(one, Cast(Literal(true), one.dataType))
-    )
+             EqualNullSafe(one, Literal(true)),
+             EqualNullSafe(one, Cast(Literal(true), one.dataType)))
   }
 
   test("BooleanEquality simplification") {
     val be = TypeCoercion.BooleanEquality
 
+    ruleTest(be, EqualTo(Literal(true), Literal(1)), Literal(true))
+    ruleTest(be, EqualTo(Literal(true), Literal(0)), Not(Literal(true)))
     ruleTest(be,
-      EqualTo(Literal(true), Literal(1)),
-      Literal(true)
-    )
+             EqualNullSafe(Literal(true), Literal(1)),
+             And(IsNotNull(Literal(true)), Literal(true)))
     ruleTest(be,
-      EqualTo(Literal(true), Literal(0)),
-      Not(Literal(true))
-    )
-    ruleTest(be,
-      EqualNullSafe(Literal(true), Literal(1)),
-      And(IsNotNull(Literal(true)), Literal(true))
-    )
-    ruleTest(be,
-      EqualNullSafe(Literal(true), Literal(0)),
-      And(IsNotNull(Literal(true)), Not(Literal(true)))
-    )
+             EqualNullSafe(Literal(true), Literal(0)),
+             And(IsNotNull(Literal(true)), Not(Literal(true))))
 
+    ruleTest(be, EqualTo(Literal(true), Literal(1L)), Literal(true))
+    ruleTest(be, EqualTo(Literal(new java.math.BigDecimal(1)), Literal(true)), Literal(true))
+    ruleTest(be, EqualTo(Literal(BigDecimal(0)), Literal(true)), Not(Literal(true)))
+    ruleTest(be, EqualTo(Literal(Decimal(1)), Literal(true)), Literal(true))
     ruleTest(be,
-      EqualTo(Literal(true), Literal(1L)),
-      Literal(true)
-    )
-    ruleTest(be,
-      EqualTo(Literal(new java.math.BigDecimal(1)), Literal(true)),
-      Literal(true)
-    )
-    ruleTest(be,
-      EqualTo(Literal(BigDecimal(0)), Literal(true)),
-      Not(Literal(true))
-    )
-    ruleTest(be,
-      EqualTo(Literal(Decimal(1)), Literal(true)),
-      Literal(true)
-    )
-    ruleTest(be,
-      EqualTo(Literal.create(Decimal(1), DecimalType(8, 0)), Literal(true)),
-      Literal(true)
-    )
+             EqualTo(Literal.create(Decimal(1), DecimalType(8, 0)), Literal(true)),
+             Literal(true))
   }
 
   private def checkOutput(logical: LogicalPlan, expectTypes: Seq[DataType]): Unit = {
-    logical.output.zip(expectTypes).foreach { case (attr, dt) =>
-      assert(attr.dataType === dt)
+    logical.output.zip(expectTypes).foreach {
+      case (attr, dt) =>
+        assert(attr.dataType === dt)
     }
   }
 
   test("WidenSetOperationTypes for except and intersect") {
-    val firstTable = LocalRelation(
-      AttributeReference("i", IntegerType)(),
-      AttributeReference("u", DecimalType.SYSTEM_DEFAULT)(),
-      AttributeReference("b", ByteType)(),
-      AttributeReference("d", DoubleType)())
-    val secondTable = LocalRelation(
-      AttributeReference("s", StringType)(),
-      AttributeReference("d", DecimalType(2, 1))(),
-      AttributeReference("f", FloatType)(),
-      AttributeReference("l", LongType)())
+    val firstTable = LocalRelation(AttributeReference("i", IntegerType)(),
+                                   AttributeReference("u", DecimalType.SYSTEM_DEFAULT)(),
+                                   AttributeReference("b", ByteType)(),
+                                   AttributeReference("d", DoubleType)())
+    val secondTable = LocalRelation(AttributeReference("s", StringType)(),
+                                    AttributeReference("d", DecimalType(2, 1))(),
+                                    AttributeReference("f", FloatType)(),
+                                    AttributeReference("l", LongType)())
 
     val wt = TypeCoercion.WidenSetOperationTypes
     val expectedTypes = Seq(StringType, DecimalType.SYSTEM_DEFAULT, FloatType, DoubleType)
@@ -491,32 +430,28 @@ class TypeCoercionSuite extends PlanTest {
   }
 
   test("WidenSetOperationTypes for union") {
-    val firstTable = LocalRelation(
-      AttributeReference("i", IntegerType)(),
-      AttributeReference("u", DecimalType.SYSTEM_DEFAULT)(),
-      AttributeReference("b", ByteType)(),
-      AttributeReference("d", DoubleType)())
-    val secondTable = LocalRelation(
-      AttributeReference("s", StringType)(),
-      AttributeReference("d", DecimalType(2, 1))(),
-      AttributeReference("f", FloatType)(),
-      AttributeReference("l", LongType)())
-    val thirdTable = LocalRelation(
-      AttributeReference("m", StringType)(),
-      AttributeReference("n", DecimalType.SYSTEM_DEFAULT)(),
-      AttributeReference("p", FloatType)(),
-      AttributeReference("q", DoubleType)())
-    val forthTable = LocalRelation(
-      AttributeReference("m", StringType)(),
-      AttributeReference("n", DecimalType.SYSTEM_DEFAULT)(),
-      AttributeReference("p", ByteType)(),
-      AttributeReference("q", DoubleType)())
+    val firstTable = LocalRelation(AttributeReference("i", IntegerType)(),
+                                   AttributeReference("u", DecimalType.SYSTEM_DEFAULT)(),
+                                   AttributeReference("b", ByteType)(),
+                                   AttributeReference("d", DoubleType)())
+    val secondTable = LocalRelation(AttributeReference("s", StringType)(),
+                                    AttributeReference("d", DecimalType(2, 1))(),
+                                    AttributeReference("f", FloatType)(),
+                                    AttributeReference("l", LongType)())
+    val thirdTable = LocalRelation(AttributeReference("m", StringType)(),
+                                   AttributeReference("n", DecimalType.SYSTEM_DEFAULT)(),
+                                   AttributeReference("p", FloatType)(),
+                                   AttributeReference("q", DoubleType)())
+    val forthTable = LocalRelation(AttributeReference("m", StringType)(),
+                                   AttributeReference("n", DecimalType.SYSTEM_DEFAULT)(),
+                                   AttributeReference("p", ByteType)(),
+                                   AttributeReference("q", DoubleType)())
 
     val wt = TypeCoercion.WidenSetOperationTypes
     val expectedTypes = Seq(StringType, DecimalType.SYSTEM_DEFAULT, FloatType, DoubleType)
 
-    val unionRelation = wt(
-      Union(firstTable :: secondTable :: thirdTable :: forthTable :: Nil)).asInstanceOf[Union]
+    val unionRelation =
+      wt(Union(firstTable :: secondTable :: thirdTable :: forthTable :: Nil)).asInstanceOf[Union]
     assert(unionRelation.children.length == 4)
     checkOutput(unionRelation.children.head, expectedTypes)
     checkOutput(unionRelation.children(1), expectedTypes)
@@ -531,17 +466,16 @@ class TypeCoercionSuite extends PlanTest {
 
   test("Transform Decimal precision/scale for union except and intersect") {
     def checkOutput(logical: LogicalPlan, expectTypes: Seq[DataType]): Unit = {
-      logical.output.zip(expectTypes).foreach { case (attr, dt) =>
-        assert(attr.dataType === dt)
+      logical.output.zip(expectTypes).foreach {
+        case (attr, dt) =>
+          assert(attr.dataType === dt)
       }
     }
 
     val dp = TypeCoercion.WidenSetOperationTypes
 
-    val left1 = LocalRelation(
-      AttributeReference("l", DecimalType(10, 8))())
-    val right1 = LocalRelation(
-      AttributeReference("r", DecimalType(5, 5))())
+    val left1 = LocalRelation(AttributeReference("l", DecimalType(10, 8))())
+    val right1 = LocalRelation(AttributeReference("r", DecimalType(5, 5))())
     val expectedType1 = Seq(DecimalType(10, 8))
 
     val r1 = dp(Union(left1, right1)).asInstanceOf[Union]
@@ -558,28 +492,32 @@ class TypeCoercionSuite extends PlanTest {
     val plan1 = LocalRelation(AttributeReference("l", DecimalType(10, 5))())
 
     val rightTypes = Seq(ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType)
-    val expectedTypes = Seq(DecimalType(10, 5), DecimalType(10, 5), DecimalType(15, 5),
-      DecimalType(25, 5), DoubleType, DoubleType)
+    val expectedTypes = Seq(DecimalType(10, 5),
+                            DecimalType(10, 5),
+                            DecimalType(15, 5),
+                            DecimalType(25, 5),
+                            DoubleType,
+                            DoubleType)
 
-    rightTypes.zip(expectedTypes).foreach { case (rType, expectedType) =>
-      val plan2 = LocalRelation(
-        AttributeReference("r", rType)())
+    rightTypes.zip(expectedTypes).foreach {
+      case (rType, expectedType) =>
+        val plan2 = LocalRelation(AttributeReference("r", rType)())
 
-      val r1 = dp(Union(plan1, plan2)).asInstanceOf[Union]
-      val r2 = dp(Except(plan1, plan2)).asInstanceOf[Except]
-      val r3 = dp(Intersect(plan1, plan2)).asInstanceOf[Intersect]
+        val r1 = dp(Union(plan1, plan2)).asInstanceOf[Union]
+        val r2 = dp(Except(plan1, plan2)).asInstanceOf[Except]
+        val r3 = dp(Intersect(plan1, plan2)).asInstanceOf[Intersect]
 
-      checkOutput(r1.children.last, Seq(expectedType))
-      checkOutput(r2.right, Seq(expectedType))
-      checkOutput(r3.right, Seq(expectedType))
+        checkOutput(r1.children.last, Seq(expectedType))
+        checkOutput(r2.right, Seq(expectedType))
+        checkOutput(r3.right, Seq(expectedType))
 
-      val r4 = dp(Union(plan2, plan1)).asInstanceOf[Union]
-      val r5 = dp(Except(plan2, plan1)).asInstanceOf[Except]
-      val r6 = dp(Intersect(plan2, plan1)).asInstanceOf[Intersect]
+        val r4 = dp(Union(plan2, plan1)).asInstanceOf[Union]
+        val r5 = dp(Except(plan2, plan1)).asInstanceOf[Except]
+        val r6 = dp(Intersect(plan2, plan1)).asInstanceOf[Intersect]
 
-      checkOutput(r4.children.last, Seq(expectedType))
-      checkOutput(r5.left, Seq(expectedType))
-      checkOutput(r6.left, Seq(expectedType))
+        checkOutput(r4.children.last, Seq(expectedType))
+        checkOutput(r5.left, Seq(expectedType))
+        checkOutput(r6.left, Seq(expectedType))
     }
   }
 
@@ -592,16 +530,19 @@ class TypeCoercionSuite extends PlanTest {
 
     ruleTest(dateTimeOperations, Add(date, interval), Cast(TimeAdd(date, interval), DateType))
     ruleTest(dateTimeOperations, Add(interval, date), Cast(TimeAdd(date, interval), DateType))
-    ruleTest(dateTimeOperations, Add(timestamp, interval),
-      Cast(TimeAdd(timestamp, interval), TimestampType))
-    ruleTest(dateTimeOperations, Add(interval, timestamp),
-      Cast(TimeAdd(timestamp, interval), TimestampType))
+    ruleTest(dateTimeOperations,
+             Add(timestamp, interval),
+             Cast(TimeAdd(timestamp, interval), TimestampType))
+    ruleTest(dateTimeOperations,
+             Add(interval, timestamp),
+             Cast(TimeAdd(timestamp, interval), TimestampType))
     ruleTest(dateTimeOperations, Add(str, interval), Cast(TimeAdd(str, interval), StringType))
     ruleTest(dateTimeOperations, Add(interval, str), Cast(TimeAdd(str, interval), StringType))
 
     ruleTest(dateTimeOperations, Subtract(date, interval), Cast(TimeSub(date, interval), DateType))
-    ruleTest(dateTimeOperations, Subtract(timestamp, interval),
-      Cast(TimeSub(timestamp, interval), TimestampType))
+    ruleTest(dateTimeOperations,
+             Subtract(timestamp, interval),
+             Cast(TimeSub(timestamp, interval), TimestampType))
     ruleTest(dateTimeOperations, Subtract(str, interval), Cast(TimeSub(str, interval), StringType))
 
     // interval operations should not be effected
@@ -617,45 +558,47 @@ class TypeCoercionSuite extends PlanTest {
     // InConversion
     val inConversion = TypeCoercion.InConversion
     ruleTest(inConversion,
-      In(UnresolvedAttribute("a"), Seq(Literal(1))),
-      In(UnresolvedAttribute("a"), Seq(Literal(1)))
-    )
+             In(UnresolvedAttribute("a"), Seq(Literal(1))),
+             In(UnresolvedAttribute("a"), Seq(Literal(1))))
     ruleTest(inConversion,
-      In(Literal("test"), Seq(UnresolvedAttribute("a"), Literal(1))),
-      In(Literal("test"), Seq(UnresolvedAttribute("a"), Literal(1)))
-    )
+             In(Literal("test"), Seq(UnresolvedAttribute("a"), Literal(1))),
+             In(Literal("test"), Seq(UnresolvedAttribute("a"), Literal(1))))
     ruleTest(inConversion,
-      In(Literal("a"), Seq(Literal(1), Literal("b"))),
-      In(Cast(Literal("a"), StringType),
-        Seq(Cast(Literal(1), StringType), Cast(Literal("b"), StringType)))
-    )
+             In(Literal("a"), Seq(Literal(1), Literal("b"))),
+             In(Cast(Literal("a"), StringType),
+                Seq(Cast(Literal(1), StringType), Cast(Literal("b"), StringType))))
   }
 }
-
 
 object TypeCoercionSuite {
 
   case class AnyTypeUnaryExpression(child: Expression)
-    extends UnaryExpression with ExpectsInputTypes with Unevaluable {
+      extends UnaryExpression
+      with ExpectsInputTypes
+      with Unevaluable {
     override def inputTypes: Seq[AbstractDataType] = Seq(AnyDataType)
     override def dataType: DataType = NullType
   }
 
   case class NumericTypeUnaryExpression(child: Expression)
-    extends UnaryExpression with ExpectsInputTypes with Unevaluable {
+      extends UnaryExpression
+      with ExpectsInputTypes
+      with Unevaluable {
     override def inputTypes: Seq[AbstractDataType] = Seq(NumericType)
     override def dataType: DataType = NullType
   }
 
   case class AnyTypeBinaryOperator(left: Expression, right: Expression)
-    extends BinaryOperator with Unevaluable {
+      extends BinaryOperator
+      with Unevaluable {
     override def dataType: DataType = NullType
     override def inputType: AbstractDataType = AnyDataType
     override def symbol: String = "anytype"
   }
 
   case class NumericTypeBinaryOperator(left: Expression, right: Expression)
-    extends BinaryOperator with Unevaluable {
+      extends BinaryOperator
+      with Unevaluable {
     override def dataType: DataType = NullType
     override def inputType: AbstractDataType = NumericType
     override def symbol: String = "numerictype"

@@ -28,8 +28,8 @@ class ColumnStatsSuite extends SparkFunSuite {
   testColumnStats(classOf[IntColumnStats], INT, createRow(Int.MaxValue, Int.MinValue, 0))
   testColumnStats(classOf[LongColumnStats], LONG, createRow(Long.MaxValue, Long.MinValue, 0))
   testColumnStats(classOf[FloatColumnStats], FLOAT, createRow(Float.MaxValue, Float.MinValue, 0))
-  testColumnStats(classOf[DoubleColumnStats], DOUBLE,
-    createRow(Double.MaxValue, Double.MinValue, 0))
+  testColumnStats(
+      classOf[DoubleColumnStats], DOUBLE, createRow(Double.MaxValue, Double.MinValue, 0))
   testColumnStats(classOf[StringColumnStats], STRING, createRow(null, null, 0))
   testDecimalColumnStats(createRow(null, null, 0))
 

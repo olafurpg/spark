@@ -24,7 +24,6 @@ import org.apache.spark.graphx.impl._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
-
 /**
  * The Graph abstractly represents a graph with arbitrary objects
  * associated with vertices and edges.  The graph provides basic
@@ -166,8 +165,8 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected () extends Serializab
    * }}}
    *
    */
-  def mapVertices[VD2: ClassTag](map: (VertexId, VD) => VD2)
-    (implicit eq: VD =:= VD2 = null): Graph[VD2, ED]
+  def mapVertices[VD2: ClassTag](map: (VertexId, VD) => VD2)(
+      implicit eq: VD =:= VD2 = null): Graph[VD2, ED]
 
   /**
    * Transforms each edge attribute in the graph using the map function.  The map function is not
@@ -208,8 +207,8 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected () extends Serializab
    * @tparam ED2 the new edge data type
    *
    */
-  def mapEdges[ED2: ClassTag](map: (PartitionID, Iterator[Edge[ED]]) => Iterator[ED2])
-    : Graph[VD, ED2]
+  def mapEdges[ED2: ClassTag](
+      map: (PartitionID, Iterator[Edge[ED]]) => Iterator[ED2]): Graph[VD, ED2]
 
   /**
    * Transforms each edge attribute using the map function, passing it the adjacent vertex
@@ -262,8 +261,7 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected () extends Serializab
    *
    */
   def mapTriplets[ED2: ClassTag](
-      map: EdgeTriplet[VD, ED] => ED2,
-      tripletFields: TripletFields): Graph[VD, ED2] = {
+      map: EdgeTriplet[VD, ED] => ED2, tripletFields: TripletFields): Graph[VD, ED2] = {
     mapTriplets((pid, iter) => iter.map(map), tripletFields)
   }
 
@@ -315,10 +313,8 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected () extends Serializab
    * @return the subgraph containing only the vertices and edges that
    * satisfy the predicates
    */
-  def subgraph(
-      epred: EdgeTriplet[VD, ED] => Boolean = (x => true),
-      vpred: (VertexId, VD) => Boolean = ((v, d) => true))
-    : Graph[VD, ED]
+  def subgraph(epred: EdgeTriplet[VD, ED] => Boolean = (x => true),
+               vpred: (VertexId, VD) => Boolean = ((v, d) => true)): Graph[VD, ED]
 
   /**
    * Restricts the graph to only the vertices and edges that are also in `other`, but keeps the
@@ -373,8 +369,7 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected () extends Serializab
   def aggregateMessages[A: ClassTag](
       sendMsg: EdgeContext[VD, ED, A] => Unit,
       mergeMsg: (A, A) => A,
-      tripletFields: TripletFields = TripletFields.All)
-    : VertexRDD[A] = {
+      tripletFields: TripletFields = TripletFields.All): VertexRDD[A] = {
     aggregateMessagesWithActiveSet(sendMsg, mergeMsg, tripletFields, None)
   }
 
@@ -409,8 +404,7 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected () extends Serializab
       sendMsg: EdgeContext[VD, ED, A] => Unit,
       mergeMsg: (A, A) => A,
       tripletFields: TripletFields,
-      activeSetOpt: Option[(VertexRDD[_], EdgeDirection)])
-    : VertexRDD[A]
+      activeSetOpt: Option[(VertexRDD[_], EdgeDirection)]): VertexRDD[A]
 
   /**
    * Joins the vertices with entries in the `table` RDD and merges the results using `mapFunc`.
@@ -437,9 +431,8 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected () extends Serializab
    * }
    * }}}
    */
-  def outerJoinVertices[U: ClassTag, VD2: ClassTag](other: RDD[(VertexId, U)])
-      (mapFunc: (VertexId, VD, Option[U]) => VD2)(implicit eq: VD =:= VD2 = null)
-    : Graph[VD2, ED]
+  def outerJoinVertices[U: ClassTag, VD2: ClassTag](other: RDD[(VertexId, U)])(
+      mapFunc: (VertexId, VD, Option[U]) => VD2)(implicit eq: VD =:= VD2 = null): Graph[VD2, ED]
 
   /**
    * The associated [[GraphOps]] object.
@@ -448,7 +441,6 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected () extends Serializab
   // for a given Graph object, and thus the lazy vals in GraphOps would work as intended.
   val ops = new GraphOps(this)
 } // end of Graph
-
 
 /**
  * The Graph object contains a collection of routines used to construct graphs from RDDs.
@@ -474,8 +466,7 @@ object Graph {
       defaultValue: VD,
       uniqueEdges: Option[PartitionStrategy] = None,
       edgeStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY,
-      vertexStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY): Graph[VD, Int] =
-  {
+      vertexStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY): Graph[VD, Int] = {
     val edges = rawEdges.map(p => Edge(p._1, p._2, 1))
     val graph = GraphImpl(edges, defaultValue, edgeStorageLevel, vertexStorageLevel)
     uniqueEdges match {
@@ -534,6 +525,6 @@ object Graph {
    * All the convenience operations are defined in the [[GraphOps]] class which may be
    * shared across multiple graph implementations.
    */
-  implicit def graphToGraphOps[VD: ClassTag, ED: ClassTag]
-      (g: Graph[VD, ED]): GraphOps[VD, ED] = g.ops
+  implicit def graphToGraphOps[VD: ClassTag, ED: ClassTag](g: Graph[VD, ED]): GraphOps[VD, ED] =
+    g.ops
 } // end of Graph object

@@ -43,37 +43,33 @@ class DefaultSource extends FileFormat with DataSourceRegister {
 
   override def shortName(): String = "json"
 
-  override def inferSchema(
-      sparkSession: SparkSession,
-      options: Map[String, String],
-      files: Seq[FileStatus]): Option[StructType] = {
+  override def inferSchema(sparkSession: SparkSession,
+                           options: Map[String, String],
+                           files: Seq[FileStatus]): Option[StructType] = {
     if (files.isEmpty) {
       None
     } else {
       val parsedOptions: JSONOptions = new JSONOptions(options)
-      val columnNameOfCorruptRecord =
-        parsedOptions.columnNameOfCorruptRecord
-          .getOrElse(sparkSession.sessionState.conf.columnNameOfCorruptRecord)
+      val columnNameOfCorruptRecord = parsedOptions.columnNameOfCorruptRecord.getOrElse(
+          sparkSession.sessionState.conf.columnNameOfCorruptRecord)
       val jsonFiles = files.filterNot { status =>
         val name = status.getPath.getName
         name.startsWith("_") || name.startsWith(".")
       }.toArray
 
-      val jsonSchema = InferSchema.infer(
-        createBaseRdd(sparkSession, jsonFiles),
-        columnNameOfCorruptRecord,
-        parsedOptions)
+      val jsonSchema = InferSchema.infer(createBaseRdd(sparkSession, jsonFiles),
+                                         columnNameOfCorruptRecord,
+                                         parsedOptions)
       checkConstraints(jsonSchema)
 
       Some(jsonSchema)
     }
   }
 
-  override def prepareWrite(
-      sparkSession: SparkSession,
-      job: Job,
-      options: Map[String, String],
-      dataSchema: StructType): OutputWriterFactory = {
+  override def prepareWrite(sparkSession: SparkSession,
+                            job: Job,
+                            options: Map[String, String],
+                            dataSchema: StructType): OutputWriterFactory = {
     val conf = job.getConfiguration
     val parsedOptions: JSONOptions = new JSONOptions(options)
     parsedOptions.compressionCodec.foreach { codec =>
@@ -81,45 +77,39 @@ class DefaultSource extends FileFormat with DataSourceRegister {
     }
 
     new OutputWriterFactory {
-      override def newInstance(
-          path: String,
-          bucketId: Option[Int],
-          dataSchema: StructType,
-          context: TaskAttemptContext): OutputWriter = {
+      override def newInstance(path: String,
+                               bucketId: Option[Int],
+                               dataSchema: StructType,
+                               context: TaskAttemptContext): OutputWriter = {
         new JsonOutputWriter(path, bucketId, dataSchema, context)
       }
     }
   }
 
-  override def buildReader(
-      sparkSession: SparkSession,
-      dataSchema: StructType,
-      partitionSchema: StructType,
-      requiredSchema: StructType,
-      filters: Seq[Filter],
-      options: Map[String, String],
-      hadoopConf: Configuration): PartitionedFile => Iterator[InternalRow] = {
+  override def buildReader(sparkSession: SparkSession,
+                           dataSchema: StructType,
+                           partitionSchema: StructType,
+                           requiredSchema: StructType,
+                           filters: Seq[Filter],
+                           options: Map[String, String],
+                           hadoopConf: Configuration): PartitionedFile => Iterator[InternalRow] = {
     val broadcastedHadoopConf =
       sparkSession.sparkContext.broadcast(new SerializableConfiguration(hadoopConf))
 
     val parsedOptions: JSONOptions = new JSONOptions(options)
-    val columnNameOfCorruptRecord = parsedOptions.columnNameOfCorruptRecord
-      .getOrElse(sparkSession.sessionState.conf.columnNameOfCorruptRecord)
+    val columnNameOfCorruptRecord = parsedOptions.columnNameOfCorruptRecord.getOrElse(
+        sparkSession.sessionState.conf.columnNameOfCorruptRecord)
 
-    (file: PartitionedFile) => {
-      val lines = new HadoopFileLinesReader(file, broadcastedHadoopConf.value.value).map(_.toString)
+    (file: PartitionedFile) =>
+      {
+        val lines =
+          new HadoopFileLinesReader(file, broadcastedHadoopConf.value.value).map(_.toString)
 
-      JacksonParser.parseJson(
-        lines,
-        requiredSchema,
-        columnNameOfCorruptRecord,
-        parsedOptions)
-    }
+        JacksonParser.parseJson(lines, requiredSchema, columnNameOfCorruptRecord, parsedOptions)
+      }
   }
 
-  private def createBaseRdd(
-      sparkSession: SparkSession,
-      inputPaths: Seq[FileStatus]): RDD[String] = {
+  private def createBaseRdd(sparkSession: SparkSession, inputPaths: Seq[FileStatus]): RDD[String] = {
     val job = Job.getInstance(sparkSession.sessionState.newHadoopConf())
     val conf = job.getConfiguration
 
@@ -129,21 +119,25 @@ class DefaultSource extends FileFormat with DataSourceRegister {
       FileInputFormat.setInputPaths(job, paths: _*)
     }
 
-    sparkSession.sparkContext.hadoopRDD(
-      conf.asInstanceOf[JobConf],
-      classOf[TextInputFormat],
-      classOf[LongWritable],
-      classOf[Text]).map(_._2.toString) // get the text line
+    sparkSession.sparkContext
+      .hadoopRDD(conf.asInstanceOf[JobConf],
+                 classOf[TextInputFormat],
+                 classOf[LongWritable],
+                 classOf[Text])
+      .map(_._2.toString) // get the text line
   }
 
   /** Constraints to be imposed on schema to be stored. */
   private def checkConstraints(schema: StructType): Unit = {
     if (schema.fieldNames.length != schema.fieldNames.distinct.length) {
-      val duplicateColumns = schema.fieldNames.groupBy(identity).collect {
-        case (x, ys) if ys.length > 1 => "\"" + x + "\""
-      }.mkString(", ")
-      throw new AnalysisException(s"Duplicate column(s) : $duplicateColumns found, " +
-          s"cannot save to JSON format")
+      val duplicateColumns = schema.fieldNames
+        .groupBy(identity)
+        .collect {
+          case (x, ys) if ys.length > 1 => "\"" + x + "\""
+        }
+        .mkString(", ")
+      throw new AnalysisException(
+          s"Duplicate column(s) : $duplicateColumns found, " + s"cannot save to JSON format")
     }
   }
 
@@ -154,12 +148,12 @@ class DefaultSource extends FileFormat with DataSourceRegister {
   override def equals(other: Any): Boolean = other.isInstanceOf[DefaultSource]
 }
 
-private[json] class JsonOutputWriter(
-    path: String,
-    bucketId: Option[Int],
-    dataSchema: StructType,
-    context: TaskAttemptContext)
-  extends OutputWriter with Logging {
+private[json] class JsonOutputWriter(path: String,
+                                     bucketId: Option[Int],
+                                     dataSchema: StructType,
+                                     context: TaskAttemptContext)
+    extends OutputWriter
+    with Logging {
 
   private[this] val writer = new CharArrayWriter()
   // create the Generator without separator inserted between 2 records
@@ -179,7 +173,8 @@ private[json] class JsonOutputWriter(
     }.getRecordWriter(context)
   }
 
-  override def write(row: Row): Unit = throw new UnsupportedOperationException("call writeInternal")
+  override def write(row: Row): Unit =
+    throw new UnsupportedOperationException("call writeInternal")
 
   override protected[sql] def writeInternal(row: InternalRow): Unit = {
     JacksonGenerator(dataSchema, gen)(row)

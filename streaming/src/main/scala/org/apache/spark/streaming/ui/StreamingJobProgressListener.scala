@@ -28,7 +28,8 @@ import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.streaming.scheduler._
 
 private[streaming] class StreamingJobProgressListener(ssc: StreamingContext)
-  extends SparkListener with StreamingListener {
+    extends SparkListener
+    with StreamingListener {
 
   private val waitingBatchUIData = new HashMap[Time, BatchUIData]
   private val runningBatchUIData = new HashMap[Time, BatchUIData]
@@ -59,10 +60,9 @@ private[streaming] class StreamingJobProgressListener(ssc: StreamingContext)
         // batches temporarily, so here we use "10" to handle such case. This is not a perfect
         // solution, but at least it can handle most of cases.
         size() >
-          waitingBatchUIData.size + runningBatchUIData.size + completedBatchUIData.size + 10
+        waitingBatchUIData.size + runningBatchUIData.size + completedBatchUIData.size + 10
       }
     }
-
 
   val batchDuration = ssc.graph.batchDuration.milliseconds
 
@@ -118,25 +118,26 @@ private[streaming] class StreamingJobProgressListener(ssc: StreamingContext)
   override def onOutputOperationStarted(
       outputOperationStarted: StreamingListenerOutputOperationStarted): Unit = synchronized {
     // This method is called after onBatchStarted
-    runningBatchUIData(outputOperationStarted.outputOperationInfo.batchTime).
-      updateOutputOperationInfo(outputOperationStarted.outputOperationInfo)
+    runningBatchUIData(outputOperationStarted.outputOperationInfo.batchTime)
+      .updateOutputOperationInfo(outputOperationStarted.outputOperationInfo)
   }
 
   override def onOutputOperationCompleted(
       outputOperationCompleted: StreamingListenerOutputOperationCompleted): Unit = synchronized {
     // This method is called before onBatchCompleted
-    runningBatchUIData(outputOperationCompleted.outputOperationInfo.batchTime).
-      updateOutputOperationInfo(outputOperationCompleted.outputOperationInfo)
+    runningBatchUIData(outputOperationCompleted.outputOperationInfo.batchTime)
+      .updateOutputOperationInfo(outputOperationCompleted.outputOperationInfo)
   }
 
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = synchronized {
-    getBatchTimeAndOutputOpId(jobStart.properties).foreach { case (batchTime, outputOpId) =>
-      var outputOpIdToSparkJobIds = batchTimeToOutputOpIdSparkJobIdPair.get(batchTime)
-      if (outputOpIdToSparkJobIds == null) {
-        outputOpIdToSparkJobIds = new ConcurrentLinkedQueue[OutputOpIdAndSparkJobId]()
-        batchTimeToOutputOpIdSparkJobIdPair.put(batchTime, outputOpIdToSparkJobIds)
-      }
-      outputOpIdToSparkJobIds.add(OutputOpIdAndSparkJobId(outputOpId, jobStart.jobId))
+    getBatchTimeAndOutputOpId(jobStart.properties).foreach {
+      case (batchTime, outputOpId) =>
+        var outputOpIdToSparkJobIds = batchTimeToOutputOpIdSparkJobIdPair.get(batchTime)
+        if (outputOpIdToSparkJobIds == null) {
+          outputOpIdToSparkJobIds = new ConcurrentLinkedQueue[OutputOpIdAndSparkJobId]()
+          batchTimeToOutputOpIdSparkJobIdPair.put(batchTime, outputOpIdToSparkJobIds)
+        }
+        outputOpIdToSparkJobIds.add(OutputOpIdAndSparkJobId(outputOpId, jobStart.jobId))
     }
   }
 
@@ -246,7 +247,7 @@ private[streaming] class StreamingJobProgressListener(ssc: StreamingContext)
 
   def retainedBatches: Seq[BatchUIData] = synchronized {
     (waitingBatchUIData.values.toSeq ++
-      runningBatchUIData.values.toSeq ++ completedBatchUIData).sortBy(_.batchTime)(Time.ordering)
+        runningBatchUIData.values.toSeq ++ completedBatchUIData).sortBy(_.batchTime)(Time.ordering)
   }
 
   def getBatchUIData(batchTime: Time): Option[BatchUIData] = synchronized {
@@ -259,8 +260,7 @@ private[streaming] class StreamingJobProgressListener(ssc: StreamingContext)
       // We use an Iterable rather than explicitly converting to a seq so that updates
       // will propagate
       val outputOpIdToSparkJobIds: Iterable[OutputOpIdAndSparkJobId] =
-        Option(batchTimeToOutputOpIdSparkJobIdPair.get(batchTime).asScala)
-          .getOrElse(Seq.empty)
+        Option(batchTimeToOutputOpIdSparkJobIdPair.get(batchTime).asScala).getOrElse(Seq.empty)
       _batchUIData.outputOpIdSparkJobIdPairs = outputOpIdToSparkJobIds
     }
     batchUIData

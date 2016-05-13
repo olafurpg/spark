@@ -93,16 +93,15 @@ class QueryExecution(val sparkSession: SparkSession, val logical: LogicalPlan) {
   }
 
   /** A sequence of rules that will be applied in order to the physical plan before execution. */
-  protected def preparations: Seq[Rule[SparkPlan]] = Seq(
-    python.ExtractPythonUDFs,
-    PlanSubqueries(sparkSession),
-    EnsureRequirements(sparkSession.sessionState.conf),
-    CollapseCodegenStages(sparkSession.sessionState.conf),
-    ReuseExchange(sparkSession.sessionState.conf))
+  protected def preparations: Seq[Rule[SparkPlan]] =
+    Seq(python.ExtractPythonUDFs,
+        PlanSubqueries(sparkSession),
+        EnsureRequirements(sparkSession.sessionState.conf),
+        CollapseCodegenStages(sparkSession.sessionState.conf),
+        ReuseExchange(sparkSession.sessionState.conf))
 
   protected def stringOrError[A](f: => A): String =
     try f.toString catch { case e: Throwable => e.toString }
-
 
   /**
    * Returns the result as a hive compatible sequence of strings.  For native commands, the
@@ -114,8 +113,7 @@ class QueryExecution(val sparkSession: SparkSession, val logical: LogicalPlan) {
       // be similar with Hive.
       desc.run(sparkSession).map {
         case Row(name: String, dataType: String, comment) =>
-          Seq(name, dataType,
-            Option(comment.asInstanceOf[String]).getOrElse(""))
+          Seq(name, dataType, Option(comment.asInstanceOf[String]).getOrElse(""))
             .map(s => String.format(s"%-20s", s))
             .mkString("\t")
       }
@@ -132,8 +130,17 @@ class QueryExecution(val sparkSession: SparkSession, val logical: LogicalPlan) {
 
   /** Formats a datum (based on the given data type) and returns the string representation. */
   private def toHiveString(a: (Any, DataType)): String = {
-    val primitiveTypes = Seq(StringType, IntegerType, LongType, DoubleType, FloatType,
-      BooleanType, ByteType, ShortType, DateType, TimestampType, BinaryType)
+    val primitiveTypes = Seq(StringType,
+                             IntegerType,
+                             LongType,
+                             DoubleType,
+                             FloatType,
+                             BooleanType,
+                             ByteType,
+                             ShortType,
+                             DateType,
+                             TimestampType,
+                             BinaryType)
 
     /** Implementation following Hive's TimestampWritable.toString */
     def formatTimestamp(timestamp: Timestamp): String = {
@@ -145,7 +152,7 @@ class QueryExecution(val sparkSession: SparkSession, val logical: LogicalPlan) {
           }
         }
         return DateTimeUtils.threadLocalTimestampFormat.get().format(timestamp) +
-          timestampString.substring(19)
+        timestampString.substring(19)
       }
 
       return DateTimeUtils.threadLocalTimestampFormat.get().format(timestamp)
@@ -162,9 +169,12 @@ class QueryExecution(val sparkSession: SparkSession, val logical: LogicalPlan) {
     /** Hive outputs fields of structs slightly differently than top level attributes. */
     def toHiveStructString(a: (Any, DataType)): String = a match {
       case (struct: Row, StructType(fields)) =>
-        struct.toSeq.zip(fields).map {
-          case (v, t) => s""""${t.name}":${toHiveStructString(v, t.dataType)}"""
-        }.mkString("{", ",", "}")
+        struct.toSeq
+          .zip(fields)
+          .map {
+            case (v, t) => s""""${t.name}":${toHiveStructString(v, t.dataType)}"""
+          }
+          .mkString("{", ",", "}")
       case (seq: Seq[_], ArrayType(typ, _)) =>
         seq.map(v => (v, typ)).map(toHiveStructString).mkString("[", ",", "]")
       case (map: Map[_, _], MapType(kType, vType, _)) =>
@@ -180,9 +190,12 @@ class QueryExecution(val sparkSession: SparkSession, val logical: LogicalPlan) {
 
     a match {
       case (struct: Row, StructType(fields)) =>
-        struct.toSeq.zip(fields).map {
-          case (v, t) => s""""${t.name}":${toHiveStructString(v, t.dataType)}"""
-        }.mkString("{", ",", "}")
+        struct.toSeq
+          .zip(fields)
+          .map {
+            case (v, t) => s""""${t.name}":${toHiveStructString(v, t.dataType)}"""
+          }
+          .mkString("{", ",", "}")
       case (seq: Seq[_], ArrayType(typ, _)) =>
         seq.map(v => (v, typ)).map(toHiveStructString).mkString("[", ",", "]")
       case (map: Map[_, _], MapType(kType, vType, _)) =>
@@ -225,7 +238,7 @@ class QueryExecution(val sparkSession: SparkSession, val logical: LogicalPlan) {
   /** A special namespace for commands that can be used to debug query execution. */
   // scalastyle:off
   object debug {
-  // scalastyle:on
+    // scalastyle:on
 
     /**
      * Prints to stdout all the generated code found in this plan (i.e. the output of each

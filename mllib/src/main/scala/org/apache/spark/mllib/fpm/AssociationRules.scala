@@ -36,8 +36,9 @@ import org.apache.spark.rdd.RDD
  */
 @Since("1.5.0")
 @Experimental
-class AssociationRules private[fpm] (
-    private var minConfidence: Double) extends Logging with Serializable {
+class AssociationRules private[fpm](private var minConfidence: Double)
+    extends Logging
+    with Serializable {
 
   /**
    * Constructs a default instance with default parameters {minConfidence = 0.8}.
@@ -51,7 +52,7 @@ class AssociationRules private[fpm] (
   @Since("1.5.0")
   def setMinConfidence(minConfidence: Double): this.type = {
     require(minConfidence >= 0.0 && minConfidence <= 1.0,
-      s"Minimal confidence must be in range [0, 1] but got ${minConfidence}")
+            s"Minimal confidence must be in range [0, 1] but got ${minConfidence}")
     this.minConfidence = minConfidence
     this
   }
@@ -77,10 +78,13 @@ class AssociationRules private[fpm] (
     }
 
     // Join to get (X, ((Y, freq(X union Y)), freq(X))), generate rules, and filter by confidence
-    candidates.join(freqItemsets.map(x => (x.items.toSeq, x.freq)))
-      .map { case (antecendent, ((consequent, freqUnion), freqAntecedent)) =>
-      new Rule(antecendent.toArray, consequent.toArray, freqUnion, freqAntecedent)
-    }.filter(_.confidence >= minConfidence)
+    candidates
+      .join(freqItemsets.map(x => (x.items.toSeq, x.freq)))
+      .map {
+        case (antecendent, ((consequent, freqUnion), freqAntecedent)) =>
+          new Rule(antecendent.toArray, consequent.toArray, freqUnion, freqAntecedent)
+      }
+      .filter(_.confidence >= minConfidence)
   }
 
   /** Java-friendly version of [[run]]. */
@@ -107,11 +111,11 @@ object AssociationRules {
    */
   @Since("1.5.0")
   @Experimental
-  class Rule[Item] private[fpm] (
-      @Since("1.5.0") val antecedent: Array[Item],
-      @Since("1.5.0") val consequent: Array[Item],
-      freqUnion: Double,
-      freqAntecedent: Double) extends Serializable {
+  class Rule[Item] private[fpm](@Since("1.5.0") val antecedent: Array[Item],
+                                @Since("1.5.0") val consequent: Array[Item],
+                                freqUnion: Double,
+                                freqAntecedent: Double)
+      extends Serializable {
 
     /**
      * Returns the confidence of the rule.
@@ -123,7 +127,7 @@ object AssociationRules {
     require(antecedent.toSet.intersect(consequent.toSet).isEmpty, {
       val sharedItems = antecedent.toSet.intersect(consequent.toSet)
       s"A valid association rule must have disjoint antecedent and " +
-        s"consequent but ${sharedItems} is present in both."
+      s"consequent but ${sharedItems} is present in both."
     })
 
     /**
@@ -146,7 +150,7 @@ object AssociationRules {
 
     override def toString: String = {
       s"${antecedent.mkString("{", ",", "}")} => " +
-        s"${consequent.mkString("{", ",", "}")}: ${confidence}"
+      s"${consequent.mkString("{", ",", "}")}: ${confidence}"
     }
   }
 }

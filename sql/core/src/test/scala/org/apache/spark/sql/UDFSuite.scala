@@ -93,7 +93,7 @@ class UDFSuite extends QueryTest with SharedSQLContext {
   }
 
   test("ZeroArgument UDF") {
-    spark.udf.register("random0", () => { Math.random()})
+    spark.udf.register("random0", () => { Math.random() })
     assert(sql("SELECT random0()").head().getDouble(0) >= 0.0)
   }
 
@@ -105,25 +105,21 @@ class UDFSuite extends QueryTest with SharedSQLContext {
   test("UDF in a WHERE") {
     spark.udf.register("oneArgFilter", (n: Int) => { n > 80 })
 
-    val df = sparkContext.parallelize(
-      (1 to 100).map(i => TestData(i, i.toString))).toDF()
+    val df = sparkContext.parallelize((1 to 100).map(i => TestData(i, i.toString))).toDF()
     df.registerTempTable("integerData")
 
-    val result =
-      sql("SELECT * FROM integerData WHERE oneArgFilter(key)")
+    val result = sql("SELECT * FROM integerData WHERE oneArgFilter(key)")
     assert(result.count() === 20)
   }
 
   test("UDF in a HAVING") {
     spark.udf.register("havingFilter", (n: Long) => { n > 5 })
 
-    val df = Seq(("red", 1), ("red", 2), ("blue", 10),
-      ("green", 100), ("green", 200)).toDF("g", "v")
+    val df =
+      Seq(("red", 1), ("red", 2), ("blue", 10), ("green", 100), ("green", 200)).toDF("g", "v")
     df.registerTempTable("groupData")
 
-    val result =
-      sql(
-        """
+    val result = sql("""
          | SELECT g, SUM(v) as s
          | FROM groupData
          | GROUP BY g
@@ -136,13 +132,11 @@ class UDFSuite extends QueryTest with SharedSQLContext {
   test("UDF in a GROUP BY") {
     spark.udf.register("groupFunction", (n: Int) => { n > 10 })
 
-    val df = Seq(("red", 1), ("red", 2), ("blue", 10),
-      ("green", 100), ("green", 200)).toDF("g", "v")
+    val df =
+      Seq(("red", 1), ("red", 2), ("blue", 10), ("green", 100), ("green", 200)).toDF("g", "v")
     df.registerTempTable("groupData")
 
-    val result =
-      sql(
-        """
+    val result = sql("""
          | SELECT SUM(v)
          | FROM groupData
          | GROUP BY groupFunction(v)
@@ -156,13 +150,11 @@ class UDFSuite extends QueryTest with SharedSQLContext {
     spark.udf.register("whereFilter", (n: Int) => { n < 150 })
     spark.udf.register("timesHundred", (n: Long) => { n * 100 })
 
-    val df = Seq(("red", 1), ("red", 2), ("blue", 10),
-      ("green", 100), ("green", 200)).toDF("g", "v")
+    val df =
+      Seq(("red", 1), ("red", 2), ("blue", 10), ("green", 100), ("green", 200)).toDF("g", "v")
     df.registerTempTable("groupData")
 
-    val result =
-      sql(
-        """
+    val result = sql("""
          | SELECT timesHundred(SUM(v)) as v100
          | FROM groupData
          | WHERE whereFilter(v)
@@ -176,8 +168,7 @@ class UDFSuite extends QueryTest with SharedSQLContext {
     spark.udf.register("returnStruct", (f1: String, f2: String) => FunctionResult(f1, f2))
 
     val result =
-      sql("SELECT returnStruct('test', 'test2') as ret")
-        .select($"ret.f1").head().getString(0)
+      sql("SELECT returnStruct('test', 'test2') as ret").select($"ret.f1").head().getString(0)
     assert(result === "test")
   }
 
@@ -195,43 +186,45 @@ class UDFSuite extends QueryTest with SharedSQLContext {
 
   test("udf in different types") {
     spark.udf.register("testDataFunc", (n: Int, s: String) => { (n, s) })
-    spark.udf.register("decimalDataFunc",
-      (a: java.math.BigDecimal, b: java.math.BigDecimal) => { (a, b) })
+    spark.udf.register("decimalDataFunc", (a: java.math.BigDecimal, b: java.math.BigDecimal) => {
+      (a, b)
+    })
     spark.udf.register("binaryDataFunc", (a: Array[Byte], b: Int) => { (a, b) })
-    spark.udf.register("arrayDataFunc",
-      (data: Seq[Int], nestedData: Seq[Seq[Int]]) => { (data, nestedData) })
-    spark.udf.register("mapDataFunc",
-      (data: scala.collection.Map[Int, String]) => { data })
-    spark.udf.register("complexDataFunc",
-      (m: Map[String, Int], a: Seq[Int], b: Boolean) => { (m, a, b) } )
+    spark.udf.register("arrayDataFunc", (data: Seq[Int], nestedData: Seq[Seq[Int]]) => {
+      (data, nestedData)
+    })
+    spark.udf.register("mapDataFunc", (data: scala.collection.Map[Int, String]) => { data })
+    spark.udf.register("complexDataFunc", (m: Map[String, Int], a: Seq[Int], b: Boolean) => {
+      (m, a, b)
+    })
 
     checkAnswer(
-      sql("SELECT tmp.t.* FROM (SELECT testDataFunc(key, value) AS t from testData) tmp").toDF(),
-      testData)
-    checkAnswer(
-      sql("""
+        sql("SELECT tmp.t.* FROM (SELECT testDataFunc(key, value) AS t from testData) tmp").toDF(),
+        testData)
+    checkAnswer(sql("""
            | SELECT tmp.t.* FROM
            | (SELECT decimalDataFunc(a, b) AS t FROM decimalData) tmp
-          """.stripMargin).toDF(), decimalData)
-    checkAnswer(
-      sql("""
+          """.stripMargin).toDF(),
+                decimalData)
+    checkAnswer(sql("""
            | SELECT tmp.t.* FROM
            | (SELECT binaryDataFunc(a, b) AS t FROM binaryData) tmp
-          """.stripMargin).toDF(), binaryData)
-    checkAnswer(
-      sql("""
+          """.stripMargin).toDF(),
+                binaryData)
+    checkAnswer(sql("""
            | SELECT tmp.t.* FROM
            | (SELECT arrayDataFunc(data, nestedData) AS t FROM arrayData) tmp
-          """.stripMargin).toDF(), arrayData.toDF())
-    checkAnswer(
-      sql("""
+          """.stripMargin).toDF(),
+                arrayData.toDF())
+    checkAnswer(sql("""
            | SELECT mapDataFunc(data) AS t FROM mapData
-          """.stripMargin).toDF(), mapData.toDF())
-    checkAnswer(
-      sql("""
+          """.stripMargin).toDF(),
+                mapData.toDF())
+    checkAnswer(sql("""
            | SELECT tmp.t.* FROM
            | (SELECT complexDataFunc(m, a, b) AS t FROM complexData) tmp
-          """.stripMargin).toDF(), complexData.select("m", "a", "b"))
+          """.stripMargin).toDF(),
+                complexData.select("m", "a", "b"))
   }
 
   test("SPARK-11716 UDFRegistration does not include the input data type in returned UDF") {
@@ -240,12 +233,10 @@ class UDFSuite extends QueryTest with SharedSQLContext {
     // Without the fix, this will fail because we fail to cast data type of b to string
     // because myUDF does not know its input data type. With the fix, this query should not
     // fail.
-    checkAnswer(
-      testData2.select(myUDF($"a", $"b").as("t")),
-      testData2.selectExpr("struct(a, b)"))
+    checkAnswer(testData2.select(myUDF($"a", $"b").as("t")), testData2.selectExpr("struct(a, b)"))
 
     checkAnswer(
-      sql("SELECT tmp.t.* FROM (SELECT testDataFunc(a, b) AS t from testData2) tmp").toDF(),
-      testData2)
+        sql("SELECT tmp.t.* FROM (SELECT testDataFunc(a, b) AS t from testData2) tmp").toDF(),
+        testData2)
   }
 }

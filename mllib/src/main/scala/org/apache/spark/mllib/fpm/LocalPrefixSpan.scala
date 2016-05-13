@@ -27,9 +27,9 @@ import org.apache.spark.internal.Logging
  * @param minCount minimal count for a frequent pattern
  * @param maxPatternLength max pattern length for a frequent pattern
  */
-private[fpm] class LocalPrefixSpan(
-    val minCount: Long,
-    val maxPatternLength: Int) extends Logging with Serializable {
+private[fpm] class LocalPrefixSpan(val minCount: Long, val maxPatternLength: Int)
+    extends Logging
+    with Serializable {
   import PrefixSpan.Postfix
   import LocalPrefixSpan.ReversedPrefix
 
@@ -39,8 +39,9 @@ private[fpm] class LocalPrefixSpan(
    * @return an iterator of (frequent pattern, count)
    */
   def run(postfixes: Array[Postfix]): Iterator[(Array[Int], Long)] = {
-    genFreqPatterns(ReversedPrefix.empty, postfixes).map { case (prefix, count) =>
-      (prefix.toSequence, count)
+    genFreqPatterns(ReversedPrefix.empty, postfixes).map {
+      case (prefix, count) =>
+        (prefix.toSequence, count)
     }
   }
 
@@ -51,28 +52,30 @@ private[fpm] class LocalPrefixSpan(
    * @return an iterator of (prefix, count)
    */
   private def genFreqPatterns(
-      prefix: ReversedPrefix,
-      postfixes: Array[Postfix]): Iterator[(ReversedPrefix, Long)] = {
+      prefix: ReversedPrefix, postfixes: Array[Postfix]): Iterator[(ReversedPrefix, Long)] = {
     if (maxPatternLength == prefix.length || postfixes.length < minCount) {
       return Iterator.empty
     }
     // find frequent items
     val counts = mutable.Map.empty[Int, Long].withDefaultValue(0)
     postfixes.foreach { postfix =>
-      postfix.genPrefixItems.foreach { case (x, _) =>
-        counts(x) += 1L
+      postfix.genPrefixItems.foreach {
+        case (x, _) =>
+          counts(x) += 1L
       }
     }
-    val freqItems = counts.toSeq.filter { case (_, count) =>
-      count >= minCount
+    val freqItems = counts.toSeq.filter {
+      case (_, count) =>
+        count >= minCount
     }.sorted
     // project and recursively call genFreqPatterns
-    freqItems.toIterator.flatMap { case (item, count) =>
-      val newPrefix = prefix :+ item
-      Iterator.single((newPrefix, count)) ++ {
-        val projected = postfixes.map(_.project(item)).filter(_.nonEmpty)
-        genFreqPatterns(newPrefix, projected)
-      }
+    freqItems.toIterator.flatMap {
+      case (item, count) =>
+        val newPrefix = prefix :+ item
+        Iterator.single((newPrefix, count)) ++ {
+          val projected = postfixes.map(_.project(item)).filter(_.nonEmpty)
+          genFreqPatterns(newPrefix, projected)
+        }
     }
   }
 }
@@ -85,6 +88,7 @@ private object LocalPrefixSpan {
    * @param length length of the prefix, not counting delimiters
    */
   class ReversedPrefix private (val items: List[Int], val length: Int) extends Serializable {
+
     /**
      * Expands the prefix by one item.
      */
@@ -104,6 +108,7 @@ private object LocalPrefixSpan {
   }
 
   object ReversedPrefix {
+
     /** An empty prefix. */
     val empty: ReversedPrefix = new ReversedPrefix(List.empty, 0)
   }

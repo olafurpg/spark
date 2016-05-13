@@ -25,17 +25,16 @@ import org.apache.spark.sql.SparkSession
 
 object NGramExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("NGramExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("NGramExample").getOrCreate()
 
     // $example on$
-    val wordDataFrame = spark.createDataFrame(Seq(
-      (0, Array("Hi", "I", "heard", "about", "Spark")),
-      (1, Array("I", "wish", "Java", "could", "use", "case", "classes")),
-      (2, Array("Logistic", "regression", "models", "are", "neat"))
-    )).toDF("label", "words")
+    val wordDataFrame = spark
+      .createDataFrame(Seq(
+              (0, Array("Hi", "I", "heard", "about", "Spark")),
+              (1, Array("I", "wish", "Java", "could", "use", "case", "classes")),
+              (2, Array("Logistic", "regression", "models", "are", "neat"))
+          ))
+      .toDF("label", "words")
 
     val ngram = new NGram().setInputCol("words").setOutputCol("ngrams")
     val ngramDataFrame = ngram.transform(wordDataFrame)

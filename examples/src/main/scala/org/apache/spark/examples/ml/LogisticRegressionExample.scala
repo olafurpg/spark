@@ -45,16 +45,16 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
  */
 object LogisticRegressionExample {
 
-  case class Params(
-      input: String = null,
-      testInput: String = "",
-      dataFormat: String = "libsvm",
-      regParam: Double = 0.0,
-      elasticNetParam: Double = 0.0,
-      maxIter: Int = 100,
-      fitIntercept: Boolean = true,
-      tol: Double = 1E-6,
-      fracTest: Double = 0.2) extends AbstractParams[Params]
+  case class Params(input: String = null,
+                    testInput: String = "",
+                    dataFormat: String = "libsvm",
+                    regParam: Double = 0.0,
+                    elasticNetParam: Double = 0.0,
+                    maxIter: Int = 100,
+                    fitIntercept: Boolean = true,
+                    tol: Double = 1E-6,
+                    fracTest: Double = 0.2)
+      extends AbstractParams[Params]
 
   def main(args: Array[String]) {
     val defaultParams = Params()
@@ -66,8 +66,8 @@ object LogisticRegressionExample {
         .action((x, c) => c.copy(regParam = x))
       opt[Double]("elasticNetParam")
         .text(s"ElasticNet mixing parameter. For alpha = 0, the penalty is an L2 penalty. " +
-        s"For alpha = 1, it is an L1 penalty. For 0 < alpha < 1, the penalty is a combination of " +
-        s"L1 and L2, default: ${defaultParams.elasticNetParam}")
+            s"For alpha = 1, it is an L1 penalty. For 0 < alpha < 1, the penalty is a combination of " +
+            s"L1 and L2, default: ${defaultParams.elasticNetParam}")
         .action((x, c) => c.copy(elasticNetParam = x))
       opt[Int]("maxIter")
         .text(s"maximum number of iterations, default: ${defaultParams.maxIter}")
@@ -77,15 +77,15 @@ object LogisticRegressionExample {
         .action((x, c) => c.copy(fitIntercept = x))
       opt[Double]("tol")
         .text(s"the convergence tolerance of iterations, Smaller value will lead " +
-        s"to higher accuracy with the cost of more iterations, default: ${defaultParams.tol}")
+            s"to higher accuracy with the cost of more iterations, default: ${defaultParams.tol}")
         .action((x, c) => c.copy(tol = x))
       opt[Double]("fracTest")
         .text(s"fraction of data to hold out for testing. If given option testInput, " +
-        s"this option is ignored. default: ${defaultParams.fracTest}")
+            s"this option is ignored. default: ${defaultParams.fracTest}")
         .action((x, c) => c.copy(fracTest = x))
       opt[String]("testInput")
         .text(s"input path to test dataset. If given, option fracTest is ignored." +
-        s" default: ${defaultParams.testInput}")
+            s" default: ${defaultParams.testInput}")
         .action((x, c) => c.copy(testInput = x))
       opt[String]("dataFormat")
         .text("data format: libsvm (default), dense (deprecated in Spark v1.1)")
@@ -103,31 +103,30 @@ object LogisticRegressionExample {
       }
     }
 
-    parser.parse(args, defaultParams).map { params =>
-      run(params)
-    }.getOrElse {
-      sys.exit(1)
-    }
+    parser
+      .parse(args, defaultParams)
+      .map { params =>
+        run(params)
+      }
+      .getOrElse {
+        sys.exit(1)
+      }
   }
 
   def run(params: Params) {
-    val spark = SparkSession
-      .builder
-      .appName(s"LogisticRegressionExample with $params")
-      .getOrCreate()
+    val spark =
+      SparkSession.builder.appName(s"LogisticRegressionExample with $params").getOrCreate()
 
     println(s"LogisticRegressionExample with parameters:\n$params")
 
     // Load training and test data and cache it.
-    val (training: DataFrame, test: DataFrame) = DecisionTreeExample.loadDatasets(params.input,
-      params.dataFormat, params.testInput, "classification", params.fracTest)
+    val (training: DataFrame, test: DataFrame) = DecisionTreeExample.loadDatasets(
+        params.input, params.dataFormat, params.testInput, "classification", params.fracTest)
 
     // Set up Pipeline.
     val stages = new mutable.ArrayBuffer[PipelineStage]()
 
-    val labelIndexer = new StringIndexer()
-      .setInputCol("label")
-      .setOutputCol("indexedLabel")
+    val labelIndexer = new StringIndexer().setInputCol("label").setOutputCol("indexedLabel")
     stages += labelIndexer
 
     val lor = new LogisticRegression()

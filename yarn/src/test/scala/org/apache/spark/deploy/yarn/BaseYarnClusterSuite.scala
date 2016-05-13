@@ -40,11 +40,15 @@ import org.apache.spark.launcher._
 import org.apache.spark.util.Utils
 
 abstract class BaseYarnClusterSuite
-  extends SparkFunSuite with BeforeAndAfterAll with Matchers with Logging {
+    extends SparkFunSuite
+    with BeforeAndAfterAll
+    with Matchers
+    with Logging {
 
   // log4j configuration for the YARN containers, so that their output is collected
   // by YARN instead of trying to overwrite unit-tests.log.
-  protected val LOG4J_CONF = """
+  protected val LOG4J_CONF =
+    """
     |log4j.rootCategory=DEBUG, console
     |log4j.appender.console=org.apache.log4j.ConsoleAppender
     |log4j.appender.console.target=System.err
@@ -81,8 +85,8 @@ abstract class BaseYarnClusterSuite
     // Disable the disk utilization check to avoid the test hanging when people's disks are
     // getting full.
     val yarnConf = newYarnConfig()
-    yarnConf.set("yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage",
-      "100.0")
+    yarnConf.set(
+        "yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage", "100.0")
 
     yarnCluster = new MiniYARNCluster(getClass().getName(), 1, 1, 1)
     yarnCluster.init(yarnConf)
@@ -129,15 +133,14 @@ abstract class BaseYarnClusterSuite
     }
   }
 
-  protected def runSpark(
-      clientMode: Boolean,
-      klass: String,
-      appArgs: Seq[String] = Nil,
-      sparkArgs: Seq[(String, String)] = Nil,
-      extraClassPath: Seq[String] = Nil,
-      extraJars: Seq[String] = Nil,
-      extraConf: Map[String, String] = Map(),
-      extraEnv: Map[String, String] = Map()): SparkAppHandle.State = {
+  protected def runSpark(clientMode: Boolean,
+                         klass: String,
+                         appArgs: Seq[String] = Nil,
+                         sparkArgs: Seq[(String, String)] = Nil,
+                         extraClassPath: Seq[String] = Nil,
+                         extraJars: Seq[String] = Nil,
+                         extraConf: Map[String, String] = Map(),
+                         extraEnv: Map[String, String] = Map()): SparkAppHandle.State = {
     val deployMode = if (clientMode) "client" else "cluster"
     val propsFile = createConfFile(extraClassPath = extraClassPath, extraConf = extraConf)
     val env = Map("YARN_CONF_DIR" -> hadoopConfDir.getAbsolutePath()) ++ extraEnv
@@ -149,19 +152,21 @@ abstract class BaseYarnClusterSuite
       launcher.setMainClass(klass)
       launcher.setAppResource(fakeSparkJar.getAbsolutePath())
     }
-    launcher.setSparkHome(sys.props("spark.test.home"))
+    launcher
+      .setSparkHome(sys.props("spark.test.home"))
       .setMaster("yarn")
       .setDeployMode(deployMode)
       .setConf("spark.executor.instances", "1")
       .setPropertiesFile(propsFile)
       .addAppArgs(appArgs.toArray: _*)
 
-    sparkArgs.foreach { case (name, value) =>
-      if (value != null) {
-        launcher.addSparkArg(name, value)
-      } else {
-        launcher.addSparkArg(name)
-      }
+    sparkArgs.foreach {
+      case (name, value) =>
+        if (value != null) {
+          launcher.addSparkArg(name, value)
+        } else {
+          launcher.addSparkArg(name)
+        }
     }
     extraJars.foreach(launcher.addJar)
 
@@ -188,12 +193,10 @@ abstract class BaseYarnClusterSuite
   }
 
   protected def checkResult(
-      finalState: SparkAppHandle.State,
-      result: File,
-      expected: String): Unit = {
-    finalState should be (SparkAppHandle.State.FINISHED)
+      finalState: SparkAppHandle.State, result: File, expected: String): Unit = {
+    finalState should be(SparkAppHandle.State.FINISHED)
     val resultString = Files.toString(result, StandardCharsets.UTF_8)
-    resultString should be (expected)
+    resultString should be(expected)
   }
 
   protected def mainClassName(klass: Class[_]): String = {
@@ -201,16 +204,13 @@ abstract class BaseYarnClusterSuite
   }
 
   protected def createConfFile(
-      extraClassPath: Seq[String] = Nil,
-      extraConf: Map[String, String] = Map()): String = {
+      extraClassPath: Seq[String] = Nil, extraConf: Map[String, String] = Map()): String = {
     val props = new Properties()
     props.put(SPARK_JARS.key, "local:" + fakeSparkJar.getAbsolutePath())
 
     val testClasspath = new TestClasspathBuilder()
-      .buildClassPath(
-        logConfDir.getAbsolutePath() +
-        File.pathSeparator +
-        extraClassPath.mkString(File.pathSeparator))
+      .buildClassPath(logConfDir.getAbsolutePath() + File.pathSeparator +
+          extraClassPath.mkString(File.pathSeparator))
       .asScala
       .mkString(File.pathSeparator)
 
@@ -224,10 +224,11 @@ abstract class BaseYarnClusterSuite
     yarnCluster.getConfig().asScala.foreach { e =>
       props.setProperty("spark.hadoop." + e.getKey(), e.getValue())
     }
-    sys.props.foreach { case (k, v) =>
-      if (k.startsWith("spark.")) {
-        props.setProperty(k, v)
-      }
+    sys.props.foreach {
+      case (k, v) =>
+        if (k.startsWith("spark.")) {
+          props.setProperty(k, v)
+        }
     }
     extraConf.foreach { case (k, v) => props.setProperty(k, v) }
 
@@ -237,5 +238,4 @@ abstract class BaseYarnClusterSuite
     writer.close()
     propsFile.getAbsolutePath()
   }
-
 }

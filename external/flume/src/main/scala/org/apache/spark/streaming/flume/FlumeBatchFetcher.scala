@@ -30,9 +30,9 @@ import org.apache.spark.streaming.flume.sink._
  *
  * @param receiver The receiver that owns this instance.
  */
-
-private[flume] class FlumeBatchFetcher(receiver: FlumePollingReceiver) extends Runnable with
-  Logging {
+private[flume] class FlumeBatchFetcher(receiver: FlumePollingReceiver)
+    extends Runnable
+    with Logging {
 
   def run(): Unit = {
     while (!receiver.isStopped()) {
@@ -85,12 +85,14 @@ private[flume] class FlumeBatchFetcher(receiver: FlumePollingReceiver) extends R
     val eventBatch = client.getEventBatch(receiver.getMaxBatchSize)
     if (!SparkSinkUtils.isErrorBatch(eventBatch)) {
       // No error, proceed with processing data
-      logDebug(s"Received batch of ${eventBatch.getEvents.size} events with sequence " +
-        s"number: ${eventBatch.getSequenceNumber}")
+      logDebug(
+          s"Received batch of ${eventBatch.getEvents.size} events with sequence " +
+          s"number: ${eventBatch.getSequenceNumber}")
       Some(eventBatch)
     } else {
-      logWarning("Did not receive events from Flume agent due to error on the Flume agent: " +
-        eventBatch.getErrorMsg)
+      logWarning(
+          "Did not receive events from Flume agent due to error on the Flume agent: " +
+          eventBatch.getErrorMsg)
       None
     }
   }
@@ -133,8 +135,8 @@ private[flume] class FlumeBatchFetcher(receiver: FlumePollingReceiver) extends R
    * @param client The client to which the nack should be sent
    * @param seq The sequence number of the batch that is being nack-ed.
    */
-  private def sendNack(batchReceived: Boolean, client: SparkFlumeProtocol.Callback,
-    seq: CharSequence): Unit = {
+  private def sendNack(
+      batchReceived: Boolean, client: SparkFlumeProtocol.Callback, seq: CharSequence): Unit = {
     if (batchReceived) {
       // Let Flume know that the events need to be pushed back into the channel.
       logDebug("Sending nack for sequence number: " + seq)
@@ -148,8 +150,8 @@ private[flume] class FlumeBatchFetcher(receiver: FlumePollingReceiver) extends R
    * @param events - Events to convert to SparkFlumeEvents
    * @return - The SparkFlumeEvent generated from SparkSinkEvent
    */
-  private def toSparkFlumeEvents(events: java.util.List[SparkSinkEvent]):
-    ArrayBuffer[SparkFlumeEvent] = {
+  private def toSparkFlumeEvents(
+      events: java.util.List[SparkSinkEvent]): ArrayBuffer[SparkFlumeEvent] = {
     // Convert each Flume event to a serializable SparkFlumeEvent
     val buffer = new ArrayBuffer[SparkFlumeEvent](events.size())
     var j = 0

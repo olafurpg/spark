@@ -27,6 +27,7 @@ import org.apache.spark.annotation.DeveloperApi
  */
 @DeveloperApi
 object SparkHelper {
+
   /**
    * Retrieves the explicit parent loader for the provided settings.
    *

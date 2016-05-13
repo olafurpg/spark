@@ -28,5 +28,4 @@ private[mllib] object Impurities {
     case "variance" => Variance
     case _ => throw new IllegalArgumentException(s"Did not recognize Impurity name: $name")
   }
-
 }

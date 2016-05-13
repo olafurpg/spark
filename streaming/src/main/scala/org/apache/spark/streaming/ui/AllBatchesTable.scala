@@ -45,7 +45,7 @@ private[ui] abstract class BatchTableBase(tableId: String, batchInterval: Long) 
     firstFailureReason.map { failureReason =>
       val failureReasonForUI = UIUtils.createOutputOperationFailureForUI(failureReason)
       UIUtils.failureReasonCell(
-        failureReasonForUI, rowspan = 1, includeFirstLineInExpandDetails = false)
+          failureReasonForUI, rowspan = 1, includeFirstLineInExpandDetails = false)
     }.getOrElse(<td>-</td>)
   }
 
@@ -109,9 +109,8 @@ private[ui] abstract class BatchTableBase(tableId: String, batchInterval: Long) 
 }
 
 private[ui] class ActiveBatchTable(
-    runningBatches: Seq[BatchUIData],
-    waitingBatches: Seq[BatchUIData],
-    batchInterval: Long) extends BatchTableBase("active-batches-table", batchInterval) {
+    runningBatches: Seq[BatchUIData], waitingBatches: Seq[BatchUIData], batchInterval: Long)
+    extends BatchTableBase("active-batches-table", batchInterval) {
 
   private val firstFailureReason = getFirstFailureReason(runningBatches)
 
@@ -130,7 +129,7 @@ private[ui] class ActiveBatchTable(
     // The "batchTime"s of "waitingBatches" must be greater than "runningBatches"'s, so display
     // waiting batches before running batches
     waitingBatches.flatMap(batch => <tr>{waitingBatchRow(batch)}</tr>) ++
-      runningBatches.flatMap(batch => <tr>{runningBatchRow(batch)}</tr>)
+    runningBatches.flatMap(batch => <tr>{runningBatchRow(batch)}</tr>)
   }
 
   private def runningBatchRow(batch: BatchUIData): Seq[Node] = {
@@ -144,7 +143,7 @@ private[ui] class ActiveBatchTable(
   }
 
   private def waitingBatchRow(batch: BatchUIData): Seq[Node] = {
-    baseRow(batch) ++ createOutputOperationProgressBar(batch) ++ <td>queued</td>++ {
+    baseRow(batch) ++ createOutputOperationProgressBar(batch) ++ <td>queued</td> ++ {
       if (firstFailureReason.nonEmpty) {
         // Waiting batches have not run yet, so must have no failure reasons.
         <td>-</td>
@@ -156,7 +155,7 @@ private[ui] class ActiveBatchTable(
 }
 
 private[ui] class CompletedBatchTable(batches: Seq[BatchUIData], batchInterval: Long)
-  extends BatchTableBase("completed-batches-table", batchInterval) {
+    extends BatchTableBase("completed-batches-table", batchInterval) {
 
   private val firstFailureReason = getFirstFailureReason(batches)
 
@@ -183,7 +182,7 @@ private[ui] class CompletedBatchTable(batches: Seq[BatchUIData], batchInterval: 
       <td sorttable_customkey={totalDelay.getOrElse(Long.MaxValue).toString}>
         {formattedTotalDelay}
       </td>
-    } ++ createOutputOperationProgressBar(batch)++ {
+    } ++ createOutputOperationProgressBar(batch) ++ {
       if (firstFailureReason.nonEmpty) {
         getFirstFailureTableCell(batch)
       } else {

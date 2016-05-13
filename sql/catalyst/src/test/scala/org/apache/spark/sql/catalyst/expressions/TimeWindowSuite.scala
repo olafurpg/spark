@@ -51,29 +51,28 @@ class TimeWindowSuite extends SparkFunSuite with ExpressionEvalHelper with Priva
   test("blank intervals throw exception") {
     for (blank <- Seq(null, " ", "\n", "\t")) {
       checkErrorMessage(
-        "The window duration, slide duration and start time cannot be null or blank.", blank)
+          "The window duration, slide duration and start time cannot be null or blank.", blank)
     }
   }
 
   test("invalid intervals throw exception") {
-    checkErrorMessage(
-      "did not correspond to a valid interval string.", "2 apples")
+    checkErrorMessage("did not correspond to a valid interval string.", "2 apples")
   }
 
   test("intervals greater than a month throws exception") {
     checkErrorMessage(
-      "Intervals greater than or equal to a month is not supported (1 month).", "1 month")
+        "Intervals greater than or equal to a month is not supported (1 month).", "1 month")
   }
 
   test("interval strings work with and without 'interval' prefix and return microseconds") {
     val validDuration = "10 second"
-    for ((text, seconds) <- Seq(
-      ("1 second", 1000000), // 1e6
-      ("1 minute", 60000000), // 6e7
-      ("2 hours", 7200000000L))) { // 72e9
+    for ((text, seconds) <- Seq(("1 second", 1000000), // 1e6
+                                ("1 minute", 60000000), // 6e7
+                                ("2 hours", 7200000000L))) {
+      // 72e9
       assert(TimeWindow(Literal(10L), text, validDuration, "0 seconds").windowDuration === seconds)
-      assert(TimeWindow(Literal(10L), "interval " + text, validDuration, "0 seconds").windowDuration
-        === seconds)
+      assert(
+          TimeWindow(Literal(10L), "interval " + text, validDuration, "0 seconds").windowDuration === seconds)
     }
   }
 

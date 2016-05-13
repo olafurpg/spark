@@ -25,9 +25,8 @@ import org.apache.spark.sql.types.{DataType, IntegerType}
 /**
  * Expression that returns the current partition id of the Spark task.
  */
-@ExpressionDescription(
-  usage = "_FUNC_() - Returns the current partition id of the Spark task",
-  extended = "> SELECT _FUNC_();\n 0")
+@ExpressionDescription(usage = "_FUNC_() - Returns the current partition id of the Spark task",
+                       extended = "> SELECT _FUNC_();\n 0")
 private[sql] case class SparkPartitionID() extends LeafExpression with Nondeterministic {
 
   override def nullable: Boolean = false
@@ -46,8 +45,8 @@ private[sql] case class SparkPartitionID() extends LeafExpression with Nondeterm
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val idTerm = ctx.freshName("partitionId")
-    ctx.addMutableState(ctx.JAVA_INT, idTerm,
-      s"$idTerm = org.apache.spark.TaskContext.getPartitionId();")
+    ctx.addMutableState(
+        ctx.JAVA_INT, idTerm, s"$idTerm = org.apache.spark.TaskContext.getPartitionId();")
     ev.copy(code = s"final ${ctx.javaType(dataType)} ${ev.value} = $idTerm;", isNull = "false")
   }
 }

@@ -22,18 +22,17 @@ import scala.collection.mutable
 import org.apache.spark.rpc.RpcEndpointRef
 import org.apache.spark.util.Utils
 
-private[spark] class WorkerInfo(
-    val id: String,
-    val host: String,
-    val port: Int,
-    val cores: Int,
-    val memory: Int,
-    val endpoint: RpcEndpointRef,
-    val webUiAddress: String)
-  extends Serializable {
+private[spark] class WorkerInfo(val id: String,
+                                val host: String,
+                                val port: Int,
+                                val cores: Int,
+                                val memory: Int,
+                                val endpoint: RpcEndpointRef,
+                                val webUiAddress: String)
+    extends Serializable {
 
   Utils.checkHost(host, "Expected hostname")
-  assert (port > 0)
+  assert(port > 0)
 
   @transient var executors: mutable.HashMap[String, ExecutorDesc] = _ // executorId => info
   @transient var drivers: mutable.HashMap[String, DriverInfo] = _ // driverId => info
@@ -63,7 +62,7 @@ private[spark] class WorkerInfo(
   }
 
   def hostPort: String = {
-    assert (port > 0)
+    assert(port > 0)
     host + ":" + port
   }
 

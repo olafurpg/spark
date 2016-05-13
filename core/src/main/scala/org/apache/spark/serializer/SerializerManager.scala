@@ -38,15 +38,15 @@ private[spark] class SerializerManager(defaultSerializer: Serializer, conf: Spar
   private[this] val stringClassTag: ClassTag[String] = implicitly[ClassTag[String]]
   private[this] val primitiveAndPrimitiveArrayClassTags: Set[ClassTag[_]] = {
     val primitiveClassTags = Set[ClassTag[_]](
-      ClassTag.Boolean,
-      ClassTag.Byte,
-      ClassTag.Char,
-      ClassTag.Double,
-      ClassTag.Float,
-      ClassTag.Int,
-      ClassTag.Long,
-      ClassTag.Null,
-      ClassTag.Short
+        ClassTag.Boolean,
+        ClassTag.Byte,
+        ClassTag.Char,
+        ClassTag.Double,
+        ClassTag.Float,
+        ClassTag.Int,
+        ClassTag.Long,
+        ClassTag.Null,
+        ClassTag.Short
     )
     val arrayClassTags = primitiveClassTags.map(_.wrap)
     primitiveClassTags ++ arrayClassTags
@@ -118,9 +118,7 @@ private[spark] class SerializerManager(defaultSerializer: Serializer, conf: Spar
 
   /** Serializes into a stream. */
   def dataSerializeStream[T: ClassTag](
-      blockId: BlockId,
-      outputStream: OutputStream,
-      values: Iterator[T]): Unit = {
+      blockId: BlockId, outputStream: OutputStream, values: Iterator[T]): Unit = {
     val byteStream = new BufferedOutputStream(outputStream)
     val ser = getSerializer(implicitly[ClassTag[T]]).newInstance()
     ser.serializeStream(wrapForCompression(blockId, byteStream)).writeAll(values).close()
@@ -137,13 +135,12 @@ private[spark] class SerializerManager(defaultSerializer: Serializer, conf: Spar
    * Deserializes a InputStream into an iterator of values and disposes of it when the end of
    * the iterator is reached.
    */
-  def dataDeserializeStream[T: ClassTag](
-      blockId: BlockId,
-      inputStream: InputStream): Iterator[T] = {
+  def dataDeserializeStream[T: ClassTag](blockId: BlockId, inputStream: InputStream): Iterator[T] = {
     val stream = new BufferedInputStream(inputStream)
     getSerializer(implicitly[ClassTag[T]])
       .newInstance()
       .deserializeStream(wrapForCompression(blockId, stream))
-      .asIterator.asInstanceOf[Iterator[T]]
+      .asIterator
+      .asInstanceOf[Iterator[T]]
   }
 }

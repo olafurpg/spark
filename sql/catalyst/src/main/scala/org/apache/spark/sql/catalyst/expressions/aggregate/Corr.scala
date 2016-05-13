@@ -29,7 +29,7 @@ import org.apache.spark.sql.types._
  * http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient
  */
 @ExpressionDescription(
-  usage = "_FUNC_(x,y) - Returns Pearson coefficient of correlation between a set of number pairs.")
+    usage = "_FUNC_(x,y) - Returns Pearson coefficient of correlation between a set of number pairs.")
 case class Corr(x: Expression, y: Expression) extends DeclarativeAggregate {
 
   override def children: Seq[Expression] = Seq(x, y)
@@ -62,12 +62,12 @@ case class Corr(x: Expression, y: Expression) extends DeclarativeAggregate {
 
     val isNull = IsNull(x) || IsNull(y)
     Seq(
-      If(isNull, n, newN),
-      If(isNull, xAvg, newXAvg),
-      If(isNull, yAvg, newYAvg),
-      If(isNull, ck, newCk),
-      If(isNull, xMk, newXMk),
-      If(isNull, yMk, newYMk)
+        If(isNull, n, newN),
+        If(isNull, xAvg, newXAvg),
+        If(isNull, yAvg, newYAvg),
+        If(isNull, ck, newCk),
+        If(isNull, xMk, newXMk),
+        If(isNull, yMk, newYMk)
     )
   }
 
@@ -90,9 +90,9 @@ case class Corr(x: Expression, y: Expression) extends DeclarativeAggregate {
   }
 
   override val evaluateExpression: Expression = {
-    If(n === Literal(0.0), Literal.create(null, DoubleType),
-      If(n === Literal(1.0), Literal(Double.NaN),
-        ck / Sqrt(xMk * yMk)))
+    If(n === Literal(0.0),
+       Literal.create(null, DoubleType),
+       If(n === Literal(1.0), Literal(Double.NaN), ck / Sqrt(xMk * yMk)))
   }
 
   override def prettyName: String = "corr"

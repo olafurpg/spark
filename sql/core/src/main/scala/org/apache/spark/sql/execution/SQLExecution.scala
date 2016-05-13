@@ -21,8 +21,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd,
-  SparkListenerSQLExecutionStart}
+import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
 
 private[sql] object SQLExecution {
 
@@ -36,9 +35,8 @@ private[sql] object SQLExecution {
    * Wrap an action that will execute "queryExecution" to track all Spark jobs in the body so that
    * we can connect them with an execution.
    */
-  def withNewExecutionId[T](
-      sparkSession: SparkSession,
-      queryExecution: QueryExecution)(body: => T): T = {
+  def withNewExecutionId[T](sparkSession: SparkSession, queryExecution: QueryExecution)(
+      body: => T): T = {
     val sc = sparkSession.sparkContext
     val oldExecutionId = sc.getLocalProperty(EXECUTION_ID_KEY)
     if (oldExecutionId == null) {
@@ -50,14 +48,19 @@ private[sql] object SQLExecution {
         // continuous queries would give us call site like "run at <unknown>:0"
         val callSite = sparkSession.sparkContext.getCallSite()
 
-        sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionStart(
-          executionId, callSite.shortForm, callSite.longForm, queryExecution.toString,
-          SparkPlanInfo.fromSparkPlan(queryExecution.executedPlan), System.currentTimeMillis()))
+        sparkSession.sparkContext.listenerBus.post(
+            SparkListenerSQLExecutionStart(
+                executionId,
+                callSite.shortForm,
+                callSite.longForm,
+                queryExecution.toString,
+                SparkPlanInfo.fromSparkPlan(queryExecution.executedPlan),
+                System.currentTimeMillis()))
         try {
           body
         } finally {
-          sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionEnd(
-            executionId, System.currentTimeMillis()))
+          sparkSession.sparkContext.listenerBus
+            .post(SparkListenerSQLExecutionEnd(executionId, System.currentTimeMillis()))
         }
       } finally {
         sc.setLocalProperty(EXECUTION_ID_KEY, null)

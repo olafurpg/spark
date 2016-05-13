@@ -36,11 +36,14 @@ class HiveDDLCommandSuite extends PlanTest {
   val parser = TestHive.sessionState.sqlParser
 
   private def extractTableDesc(sql: String): (CatalogTable, Boolean) = {
-    parser.parsePlan(sql).collect {
-      case CreateTable(desc, allowExisting) => (desc, allowExisting)
-      case CreateTableAsSelectLogicalPlan(desc, _, allowExisting) => (desc, allowExisting)
-      case CreateViewCommand(desc, _, allowExisting, _, _, _) => (desc, allowExisting)
-    }.head
+    parser
+      .parsePlan(sql)
+      .collect {
+        case CreateTable(desc, allowExisting) => (desc, allowExisting)
+        case CreateTableAsSelectLogicalPlan(desc, _, allowExisting) => (desc, allowExisting)
+        case CreateViewCommand(desc, _, allowExisting, _, _, _) => (desc, allowExisting)
+      }
+      .head
   }
 
   private def assertUnsupported(sql: String): Unit = {
@@ -51,8 +54,7 @@ class HiveDDLCommandSuite extends PlanTest {
   }
 
   test("Test CTAS #1") {
-    val s1 =
-      """CREATE EXTERNAL TABLE IF NOT EXISTS mydb.page_view
+    val s1 = """CREATE EXTERNAL TABLE IF NOT EXISTS mydb.page_view
         |(viewTime INT,
         |userid BIGINT,
         |page_url STRING,
@@ -72,34 +74,35 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(desc.identifier.table == "page_view")
     assert(desc.tableType == CatalogTableType.EXTERNAL)
     assert(desc.storage.locationUri == Some("/user/external/page_view"))
-    assert(desc.schema ==
-      CatalogColumn("viewtime", "int") ::
-      CatalogColumn("userid", "bigint") ::
-      CatalogColumn("page_url", "string") ::
-      CatalogColumn("referrer_url", "string") ::
-      CatalogColumn("ip", "string", comment = Some("IP Address of the User")) ::
-      CatalogColumn("country", "string", comment = Some("country of origination")) ::
-      CatalogColumn("dt", "string", comment = Some("date type")) ::
-      CatalogColumn("hour", "string", comment = Some("hour of the day")) :: Nil)
+    assert(
+        desc.schema ==
+        CatalogColumn("viewtime", "int") ::
+        CatalogColumn("userid", "bigint") ::
+        CatalogColumn("page_url", "string") ::
+        CatalogColumn("referrer_url", "string") ::
+        CatalogColumn("ip", "string", comment = Some("IP Address of the User")) ::
+        CatalogColumn("country", "string", comment = Some("country of origination")) ::
+        CatalogColumn("dt", "string", comment = Some("date type")) ::
+        CatalogColumn("hour", "string", comment = Some("hour of the day")) :: Nil)
     assert(desc.comment == Some("This is the staging page view table"))
     // TODO will be SQLText
     assert(desc.viewText.isEmpty)
     assert(desc.viewOriginalText.isEmpty)
     assert(desc.partitionColumns ==
-      CatalogColumn("dt", "string", comment = Some("date type")) ::
-      CatalogColumn("hour", "string", comment = Some("hour of the day")) :: Nil)
+        CatalogColumn("dt", "string", comment = Some("date type")) ::
+        CatalogColumn("hour", "string", comment = Some("hour of the day")) :: Nil)
     assert(desc.storage.serdeProperties ==
-      Map((serdeConstants.SERIALIZATION_FORMAT, "\u002C"), (serdeConstants.FIELD_DELIM, "\u002C")))
+        Map((serdeConstants.SERIALIZATION_FORMAT, "\u002C"),
+            (serdeConstants.FIELD_DELIM, "\u002C")))
     assert(desc.storage.inputFormat == Some("org.apache.hadoop.hive.ql.io.RCFileInputFormat"))
     assert(desc.storage.outputFormat == Some("org.apache.hadoop.hive.ql.io.RCFileOutputFormat"))
     assert(desc.storage.serde ==
-      Some("org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe"))
+        Some("org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe"))
     assert(desc.properties == Map(("p1", "v1"), ("p2", "v2")))
   }
 
   test("Test CTAS #2") {
-    val s2 =
-      """CREATE EXTERNAL TABLE IF NOT EXISTS mydb.page_view
+    val s2 = """CREATE EXTERNAL TABLE IF NOT EXISTS mydb.page_view
         |(viewTime INT,
         |userid BIGINT,
         |page_url STRING,
@@ -122,22 +125,23 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(desc.identifier.table == "page_view")
     assert(desc.tableType == CatalogTableType.EXTERNAL)
     assert(desc.storage.locationUri == Some("/user/external/page_view"))
-    assert(desc.schema ==
-      CatalogColumn("viewtime", "int") ::
-      CatalogColumn("userid", "bigint") ::
-      CatalogColumn("page_url", "string") ::
-      CatalogColumn("referrer_url", "string") ::
-      CatalogColumn("ip", "string", comment = Some("IP Address of the User")) ::
-      CatalogColumn("country", "string", comment = Some("country of origination")) ::
-      CatalogColumn("dt", "string", comment = Some("date type")) ::
-      CatalogColumn("hour", "string", comment = Some("hour of the day")) :: Nil)
+    assert(
+        desc.schema ==
+        CatalogColumn("viewtime", "int") ::
+        CatalogColumn("userid", "bigint") ::
+        CatalogColumn("page_url", "string") ::
+        CatalogColumn("referrer_url", "string") ::
+        CatalogColumn("ip", "string", comment = Some("IP Address of the User")) ::
+        CatalogColumn("country", "string", comment = Some("country of origination")) ::
+        CatalogColumn("dt", "string", comment = Some("date type")) ::
+        CatalogColumn("hour", "string", comment = Some("hour of the day")) :: Nil)
     // TODO will be SQLText
     assert(desc.comment == Some("This is the staging page view table"))
     assert(desc.viewText.isEmpty)
     assert(desc.viewOriginalText.isEmpty)
     assert(desc.partitionColumns ==
-      CatalogColumn("dt", "string", comment = Some("date type")) ::
-      CatalogColumn("hour", "string", comment = Some("hour of the day")) :: Nil)
+        CatalogColumn("dt", "string", comment = Some("date type")) ::
+        CatalogColumn("hour", "string", comment = Some("hour of the day")) :: Nil)
     assert(desc.storage.serdeProperties == Map())
     assert(desc.storage.inputFormat == Some("parquet.hive.DeprecatedParquetInputFormat"))
     assert(desc.storage.outputFormat == Some("parquet.hive.DeprecatedParquetOutputFormat"))
@@ -159,14 +163,13 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(desc.storage.serdeProperties == Map())
     assert(desc.storage.inputFormat == Some("org.apache.hadoop.mapred.TextInputFormat"))
     assert(desc.storage.outputFormat ==
-      Some("org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"))
+        Some("org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"))
     assert(desc.storage.serde.isEmpty)
     assert(desc.properties == Map())
   }
 
   test("Test CTAS #4") {
-    val s4 =
-      """CREATE TABLE page_view
+    val s4 = """CREATE TABLE page_view
         |STORED BY 'storage.handler.class.name' AS SELECT * FROM src""".stripMargin
     intercept[AnalysisException] {
       extractTableDesc(s4)
@@ -201,8 +204,7 @@ class HiveDDLCommandSuite extends PlanTest {
 
   test("unsupported operations") {
     intercept[ParseException] {
-      parser.parsePlan(
-        """
+      parser.parsePlan("""
           |CREATE TEMPORARY TABLE ctas2
           |ROW FORMAT SERDE "org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe"
           |WITH SERDEPROPERTIES("serde_p1"="p1","serde_p2"="p2")
@@ -212,24 +214,21 @@ class HiveDDLCommandSuite extends PlanTest {
         """.stripMargin)
     }
     intercept[ParseException] {
-      parser.parsePlan(
-        """
+      parser.parsePlan("""
           |CREATE TABLE user_info_bucketed(user_id BIGINT, firstname STRING, lastname STRING)
           |CLUSTERED BY(user_id) INTO 256 BUCKETS
           |AS SELECT key, value FROM src ORDER BY key, value
         """.stripMargin)
     }
     intercept[ParseException] {
-      parser.parsePlan(
-        """
+      parser.parsePlan("""
           |CREATE TABLE user_info_bucketed(user_id BIGINT, firstname STRING, lastname STRING)
           |SKEWED BY (key) ON (1,5,6)
           |AS SELECT key, value FROM src ORDER BY key, value
         """.stripMargin)
     }
     intercept[ParseException] {
-      parser.parsePlan(
-        """
+      parser.parsePlan("""
           |SELECT TRANSFORM (key, value) USING 'cat' AS (tKey, tValue)
           |ROW FORMAT SERDE 'org.apache.hadoop.hive.contrib.serde2.TypedBytesSerDe'
           |RECORDREADER 'org.apache.hadoop.hive.contrib.util.typedbytes.TypedBytesRecordReader'
@@ -245,18 +244,15 @@ class HiveDDLCommandSuite extends PlanTest {
       }
       assert(e.getMessage.contains(errorMessage))
     }
-    assertError("select interval '42-32' year to month",
-      "month 32 outside range [0, 11]")
-    assertError("select interval '5 49:12:15' day to second",
-      "hour 49 outside range [0, 23]")
-    assertError("select interval '.1111111111' second",
-      "nanosecond 1111111111 outside range")
+    assertError("select interval '42-32' year to month", "month 32 outside range [0, 11]")
+    assertError("select interval '5 49:12:15' day to second", "hour 49 outside range [0, 23]")
+    assertError("select interval '.1111111111' second", "nanosecond 1111111111 outside range")
   }
 
   test("use native json_tuple instead of hive's UDTF in LATERAL VIEW") {
     val analyzer = TestHive.sparkSession.sessionState.analyzer
-    val plan = analyzer.execute(parser.parsePlan(
-      """
+    val plan =
+      analyzer.execute(parser.parsePlan("""
         |SELECT *
         |FROM (SELECT '{"f1": "value1", "f2": 12}' json) test
         |LATERAL VIEW json_tuple(json, 'f1', 'f2') jt AS a, b
@@ -266,36 +262,40 @@ class HiveDDLCommandSuite extends PlanTest {
   }
 
   test("transform query spec") {
-    val plan1 = parser.parsePlan("select transform(a, b) using 'func' from e where f < 10")
-      .asInstanceOf[ScriptTransformation].copy(ioschema = null)
-    val plan2 = parser.parsePlan("map a, b using 'func' as c, d from e")
-      .asInstanceOf[ScriptTransformation].copy(ioschema = null)
-    val plan3 = parser.parsePlan("reduce a, b using 'func' as (c: int, d decimal(10, 0)) from e")
-      .asInstanceOf[ScriptTransformation].copy(ioschema = null)
+    val plan1 = parser
+      .parsePlan("select transform(a, b) using 'func' from e where f < 10")
+      .asInstanceOf[ScriptTransformation]
+      .copy(ioschema = null)
+    val plan2 = parser
+      .parsePlan("map a, b using 'func' as c, d from e")
+      .asInstanceOf[ScriptTransformation]
+      .copy(ioschema = null)
+    val plan3 = parser
+      .parsePlan("reduce a, b using 'func' as (c: int, d decimal(10, 0)) from e")
+      .asInstanceOf[ScriptTransformation]
+      .copy(ioschema = null)
 
-    val p = ScriptTransformation(
-      Seq(UnresolvedAttribute("a"), UnresolvedAttribute("b")),
-      "func", Seq.empty, plans.table("e"), null)
+    val p = ScriptTransformation(Seq(UnresolvedAttribute("a"), UnresolvedAttribute("b")),
+                                 "func",
+                                 Seq.empty,
+                                 plans.table("e"),
+                                 null)
 
-    comparePlans(plan1,
-      p.copy(child = p.child.where('f < 10), output = Seq('key.string, 'value.string)))
-    comparePlans(plan2,
-      p.copy(output = Seq('c.string, 'd.string)))
-    comparePlans(plan3,
-      p.copy(output = Seq('c.int, 'd.decimal(10, 0))))
+    comparePlans(
+        plan1, p.copy(child = p.child.where('f < 10), output = Seq('key.string, 'value.string)))
+    comparePlans(plan2, p.copy(output = Seq('c.string, 'd.string)))
+    comparePlans(plan3, p.copy(output = Seq('c.int, 'd.decimal(10, 0))))
   }
 
   test("use backticks in output of Script Transform") {
-    parser.parsePlan(
-      """SELECT `t`.`thing1`
+    parser.parsePlan("""SELECT `t`.`thing1`
         |FROM (SELECT TRANSFORM (`parquet_t1`.`key`, `parquet_t1`.`value`)
         |USING 'cat' AS (`thing1` int, `thing2` string) FROM `default`.`parquet_t1`) AS t
       """.stripMargin)
   }
 
   test("use backticks in output of Generator") {
-    parser.parsePlan(
-      """
+    parser.parsePlan("""
         |SELECT `gentab2`.`gencol2`
         |FROM `default`.`src`
         |LATERAL VIEW explode(array(array(1, 2, 3))) `gentab1` AS `gencol1`
@@ -304,8 +304,7 @@ class HiveDDLCommandSuite extends PlanTest {
   }
 
   test("use escaped backticks in output of Generator") {
-    parser.parsePlan(
-      """
+    parser.parsePlan("""
         |SELECT `gen``tab2`.`gen``col2`
         |FROM `default`.`src`
         |LATERAL VIEW explode(array(array(1, 2,  3))) `gen``tab1` AS `gen``col1`
@@ -329,9 +328,9 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(desc.viewOriginalText.isEmpty)
     assert(desc.storage.locationUri.isEmpty)
     assert(desc.storage.inputFormat ==
-      Some("org.apache.hadoop.mapred.TextInputFormat"))
+        Some("org.apache.hadoop.mapred.TextInputFormat"))
     assert(desc.storage.outputFormat ==
-      Some("org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"))
+        Some("org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"))
     assert(desc.storage.serde.isEmpty)
     assert(desc.storage.serdeProperties.isEmpty)
     assert(desc.properties.isEmpty)
@@ -373,10 +372,10 @@ class HiveDDLCommandSuite extends PlanTest {
   test("create table - partitioned columns") {
     val query = "CREATE TABLE my_table (id int, name string) PARTITIONED BY (month int)"
     val (desc, _) = extractTableDesc(query)
-    assert(desc.schema == Seq(
-      CatalogColumn("id", "int"),
-      CatalogColumn("name", "string"),
-      CatalogColumn("month", "int")))
+    assert(
+        desc.schema == Seq(CatalogColumn("id", "int"),
+                           CatalogColumn("name", "string"),
+                           CatalogColumn("month", "int")))
     assert(desc.partitionColumnNames == Seq("month"))
   }
 
@@ -407,8 +406,7 @@ class HiveDDLCommandSuite extends PlanTest {
     val baseQuery = "CREATE TABLE my_table (id int, name string) ROW FORMAT"
     val query1 = s"$baseQuery SERDE 'org.apache.poof.serde.Baff'"
     val query2 = s"$baseQuery SERDE 'org.apache.poof.serde.Baff' WITH SERDEPROPERTIES ('k1'='v1')"
-    val query3 =
-      s"""
+    val query3 = s"""
         |$baseQuery DELIMITED FIELDS TERMINATED BY 'x' ESCAPED BY 'y'
         |COLLECTION ITEMS TERMINATED BY 'a'
         |MAP KEYS TERMINATED BY 'b'
@@ -422,13 +420,14 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(desc1.storage.serdeProperties.isEmpty)
     assert(desc2.storage.serde == Some("org.apache.poof.serde.Baff"))
     assert(desc2.storage.serdeProperties == Map("k1" -> "v1"))
-    assert(desc3.storage.serdeProperties == Map(
-      "field.delim" -> "x",
-      "escape.delim" -> "y",
-      "serialization.format" -> "x",
-      "line.delim" -> "\n",
-      "colelction.delim" -> "a", // yes, it's a typo from Hive :)
-      "mapkey.delim" -> "b"))
+    assert(
+        desc3.storage.serdeProperties == Map(
+            "field.delim" -> "x",
+            "escape.delim" -> "y",
+            "serialization.format" -> "x",
+            "line.delim" -> "\n",
+            "colelction.delim" -> "a", // yes, it's a typo from Hive :)
+            "mapkey.delim" -> "b"))
   }
 
   test("create table - file format") {
@@ -462,8 +461,7 @@ class HiveDDLCommandSuite extends PlanTest {
   }
 
   test("create table - everything!") {
-    val query =
-      """
+    val query = """
         |CREATE EXTERNAL TABLE IF NOT EXISTS dbx.my_table (id int, name string)
         |COMMENT 'no comment'
         |PARTITIONED BY (month int)
@@ -477,10 +475,10 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(desc.identifier.database == Some("dbx"))
     assert(desc.identifier.table == "my_table")
     assert(desc.tableType == CatalogTableType.EXTERNAL)
-    assert(desc.schema == Seq(
-      CatalogColumn("id", "int"),
-      CatalogColumn("name", "string"),
-      CatalogColumn("month", "int")))
+    assert(
+        desc.schema == Seq(CatalogColumn("id", "int"),
+                           CatalogColumn("name", "string"),
+                           CatalogColumn("month", "int")))
     assert(desc.partitionColumnNames == Seq("month"))
     assert(desc.sortColumnNames.isEmpty)
     assert(desc.bucketColumnNames.isEmpty)
@@ -515,8 +513,7 @@ class HiveDDLCommandSuite extends PlanTest {
   }
 
   test("create view - full") {
-    val v1 =
-      """
+    val v1 = """
         |CREATE OR REPLACE VIEW view1
         |(col1, col3)
         |COMMENT 'BLABLA'
@@ -529,7 +526,7 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(desc.tableType == CatalogTableType.VIEW)
     assert(desc.storage.locationUri.isEmpty)
     assert(desc.schema ==
-      CatalogColumn("col1", null, nullable = true, None) ::
+        CatalogColumn("col1", null, nullable = true, None) ::
         CatalogColumn("col3", null, nullable = true, None) :: Nil)
     assert(desc.viewText == Option("SELECT * FROM tab1"))
     assert(desc.viewOriginalText == Option("SELECT * FROM tab1"))
@@ -554,9 +551,12 @@ class HiveDDLCommandSuite extends PlanTest {
 
   test("create table like") {
     val v1 = "CREATE TABLE table1 LIKE table2"
-    val (target, source, exists) = parser.parsePlan(v1).collect {
-      case CreateTableLike(t, s, allowExisting) => (t, s, allowExisting)
-    }.head
+    val (target, source, exists) = parser
+      .parsePlan(v1)
+      .collect {
+        case CreateTableLike(t, s, allowExisting) => (t, s, allowExisting)
+      }
+      .head
     assert(exists == false)
     assert(target.database.isEmpty)
     assert(target.table == "table1")
@@ -564,9 +564,12 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(source.table == "table2")
 
     val v2 = "CREATE TABLE IF NOT EXISTS table1 LIKE table2"
-    val (target2, source2, exists2) = parser.parsePlan(v2).collect {
-      case CreateTableLike(t, s, allowExisting) => (t, s, allowExisting)
-    }.head
+    val (target2, source2, exists2) = parser
+      .parsePlan(v2)
+      .collect {
+        case CreateTableLike(t, s, allowExisting) => (t, s, allowExisting)
+      }
+      .head
     assert(exists2)
     assert(target2.database.isEmpty)
     assert(target2.table == "table1")
@@ -576,9 +579,12 @@ class HiveDDLCommandSuite extends PlanTest {
 
   test("load data") {
     val v1 = "LOAD DATA INPATH 'path' INTO TABLE table1"
-    val (table, path, isLocal, isOverwrite, partition) = parser.parsePlan(v1).collect {
-      case LoadData(t, path, l, o, partition) => (t, path, l, o, partition)
-    }.head
+    val (table, path, isLocal, isOverwrite, partition) = parser
+      .parsePlan(v1)
+      .collect {
+        case LoadData(t, path, l, o, partition) => (t, path, l, o, partition)
+      }
+      .head
     assert(table.database.isEmpty)
     assert(table.table == "table1")
     assert(path == "path")
@@ -587,9 +593,12 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(partition.isEmpty)
 
     val v2 = "LOAD DATA LOCAL INPATH 'path' OVERWRITE INTO TABLE table1 PARTITION(c='1', d='2')"
-    val (table2, path2, isLocal2, isOverwrite2, partition2) = parser.parsePlan(v2).collect {
-      case LoadData(t, path, l, o, partition) => (t, path, l, o, partition)
-    }.head
+    val (table2, path2, isLocal2, isOverwrite2, partition2) = parser
+      .parsePlan(v2)
+      .collect {
+        case LoadData(t, path, l, o, partition) => (t, path, l, o, partition)
+      }
+      .head
     assert(table2.database.isEmpty)
     assert(table2.table == "table1")
     assert(path2 == "path")
@@ -598,5 +607,4 @@ class HiveDDLCommandSuite extends PlanTest {
     assert(partition2.nonEmpty)
     assert(partition2.get.apply("c") == "1" && partition2.get.apply("d") == "2")
   }
-
 }

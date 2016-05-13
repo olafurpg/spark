@@ -74,11 +74,10 @@ private[parquet] class CatalystReadSupport extends ReadSupport[InternalRow] with
    * Responsible for instantiating [[RecordMaterializer]], which is used for converting Parquet
    * records to Catalyst [[InternalRow]]s.
    */
-  override def prepareForRead(
-      conf: Configuration,
-      keyValueMetaData: JMap[String, String],
-      fileSchema: MessageType,
-      readContext: ReadContext): RecordMaterializer[InternalRow] = {
+  override def prepareForRead(conf: Configuration,
+                              keyValueMetaData: JMap[String, String],
+                              fileSchema: MessageType,
+                              readContext: ReadContext): RecordMaterializer[InternalRow] = {
     log.debug(s"Preparing for read Parquet file with message type: $fileSchema")
     val parquetRequestedSchema = readContext.getRequestedSchema
 
@@ -93,8 +92,7 @@ private[parquet] class CatalystReadSupport extends ReadSupport[InternalRow] with
     }
 
     new CatalystRecordMaterializer(
-      parquetRequestedSchema,
-      CatalystReadSupport.expandUDT(catalystRequestedSchema))
+        parquetRequestedSchema, CatalystReadSupport.expandUDT(catalystRequestedSchema))
   }
 }
 
@@ -122,8 +120,7 @@ private[parquet] object CatalystReadSupport {
         clipParquetListType(parquetType.asGroupType(), t.elementType)
 
       case t: MapType
-        if !isPrimitiveCatalystType(t.keyType) ||
-           !isPrimitiveCatalystType(t.valueType) =>
+          if !isPrimitiveCatalystType(t.keyType) || !isPrimitiveCatalystType(t.valueType) =>
         // Only clips map types with nested key type or value type
         clipParquetMapType(parquetType.asGroupType(), t.keyType, t.valueType)
 
@@ -163,17 +160,14 @@ private[parquet] object CatalystReadSupport {
     if (parquetList.getOriginalType == null && parquetList.isRepetition(Repetition.REPEATED)) {
       clipParquetType(parquetList, elementType)
     } else {
-      assert(
-        parquetList.getOriginalType == OriginalType.LIST,
-        "Invalid Parquet schema. " +
-          "Original type of annotated Parquet lists must be LIST: " +
-          parquetList.toString)
+      assert(parquetList.getOriginalType == OriginalType.LIST,
+             "Invalid Parquet schema. " +
+             "Original type of annotated Parquet lists must be LIST: " + parquetList.toString)
 
-      assert(
-        parquetList.getFieldCount == 1 && parquetList.getType(0).isRepetition(Repetition.REPEATED),
-        "Invalid Parquet schema. " +
-          "LIST-annotated group should only have exactly one repeated field: " +
-          parquetList)
+      assert(parquetList.getFieldCount == 1 &&
+             parquetList.getType(0).isRepetition(Repetition.REPEATED),
+             "Invalid Parquet schema. " +
+             "LIST-annotated group should only have exactly one repeated field: " + parquetList)
 
       // Precondition of this method, should only be called for lists with nested element types.
       assert(!parquetList.getType(0).isPrimitive)
@@ -185,11 +179,8 @@ private[parquet] object CatalystReadSupport {
       // "_tuple" appended then the repeated type is the element type and elements are required.
       // Build a new LIST-annotated group with clipped `repeatedGroup` as element type and the
       // only field.
-      if (
-        repeatedGroup.getFieldCount > 1 ||
-        repeatedGroup.getName == "array" ||
-        repeatedGroup.getName == parquetList.getName + "_tuple"
-      ) {
+      if (repeatedGroup.getFieldCount > 1 || repeatedGroup.getName == "array" ||
+          repeatedGroup.getName == parquetList.getName + "_tuple") {
         Types
           .buildGroup(parquetList.getRepetition)
           .as(OriginalType.LIST)
@@ -201,11 +192,10 @@ private[parquet] object CatalystReadSupport {
         Types
           .buildGroup(parquetList.getRepetition)
           .as(OriginalType.LIST)
-          .addField(
-            Types
-              .repeatedGroup()
-              .addField(clipParquetType(repeatedGroup.getType(0), elementType))
-              .named(repeatedGroup.getName))
+          .addField(Types
+                .repeatedGroup()
+                .addField(clipParquetType(repeatedGroup.getType(0), elementType))
+                .named(repeatedGroup.getName))
           .named(parquetList.getName)
       }
     }
@@ -225,13 +215,12 @@ private[parquet] object CatalystReadSupport {
     val parquetKeyType = repeatedGroup.getType(0)
     val parquetValueType = repeatedGroup.getType(1)
 
-    val clippedRepeatedGroup =
-      Types
-        .repeatedGroup()
-        .as(repeatedGroup.getOriginalType)
-        .addField(clipParquetType(parquetKeyType, keyType))
-        .addField(clipParquetType(parquetValueType, valueType))
-        .named(repeatedGroup.getName)
+    val clippedRepeatedGroup = Types
+      .repeatedGroup()
+      .as(repeatedGroup.getOriginalType)
+      .addField(clipParquetType(parquetKeyType, keyType))
+      .addField(clipParquetType(parquetValueType, valueType))
+      .named(repeatedGroup.getName)
 
     Types
       .buildGroup(parquetMap.getRepetition)
@@ -262,8 +251,7 @@ private[parquet] object CatalystReadSupport {
    *
    * @return A list of clipped [[GroupType]] fields, which can be empty.
    */
-  private def clipParquetGroupFields(
-      parquetRecord: GroupType, structType: StructType): Seq[Type] = {
+  private def clipParquetGroupFields(parquetRecord: GroupType, structType: StructType): Seq[Type] = {
     val parquetFieldMap = parquetRecord.getFields.asScala.map(f => f.getName -> f).toMap
     val toParquet = new CatalystSchemaConverter(writeLegacyParquetFormat = false)
     structType.map { f =>
@@ -281,9 +269,7 @@ private[parquet] object CatalystReadSupport {
           t.copy(elementType = expand(t.elementType))
 
         case t: MapType =>
-          t.copy(
-            keyType = expand(t.keyType),
-            valueType = expand(t.valueType))
+          t.copy(keyType = expand(t.keyType), valueType = expand(t.valueType))
 
         case t: StructType =>
           val expandedFields = t.fields.map(f => f.copy(dataType = expand(f.dataType)))

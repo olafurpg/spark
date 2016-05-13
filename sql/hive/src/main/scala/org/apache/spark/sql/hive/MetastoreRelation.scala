@@ -35,22 +35,20 @@ import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, LogicalPlan, Stati
 import org.apache.spark.sql.execution.FileRelation
 import org.apache.spark.sql.hive.client.HiveClient
 
-
 private[hive] case class MetastoreRelation(
-    databaseName: String,
-    tableName: String,
-    alias: Option[String])
-    (val catalogTable: CatalogTable,
-     @transient private val client: HiveClient,
-     @transient private val sparkSession: SparkSession)
-  extends LeafNode with MultiInstanceRelation with FileRelation with CatalogRelation {
+    databaseName: String, tableName: String, alias: Option[String])(
+    val catalogTable: CatalogTable,
+    @transient private val client: HiveClient,
+    @transient private val sparkSession: SparkSession)
+    extends LeafNode
+    with MultiInstanceRelation
+    with FileRelation
+    with CatalogRelation {
 
   override def equals(other: Any): Boolean = other match {
     case relation: MetastoreRelation =>
-      databaseName == relation.databaseName &&
-        tableName == relation.tableName &&
-        alias == relation.alias &&
-        output == relation.output
+      databaseName == relation.databaseName && tableName == relation.tableName &&
+      alias == relation.alias && output == relation.output
     case _ => false
   }
 
@@ -76,7 +74,8 @@ private[hive] case class MetastoreRelation(
     tTable.setParameters(tableParameters)
     catalogTable.properties.foreach { case (k, v) => tableParameters.put(k, v) }
 
-    tTable.setTableType(catalogTable.tableType match {
+    tTable.setTableType(
+        catalogTable.tableType match {
       case CatalogTableType.EXTERNAL => HiveTableType.EXTERNAL_TABLE.toString
       case CatalogTableType.MANAGED => HiveTableType.MANAGED_TABLE.toString
       case CatalogTableType.INDEX => HiveTableType.INDEX_TABLE.toString
@@ -109,23 +108,27 @@ private[hive] case class MetastoreRelation(
   }
 
   @transient override lazy val statistics: Statistics = Statistics(
-    sizeInBytes = {
-      val totalSize = hiveQlTable.getParameters.get(StatsSetupConst.TOTAL_SIZE)
-      val rawDataSize = hiveQlTable.getParameters.get(StatsSetupConst.RAW_DATA_SIZE)
-      // TODO: check if this estimate is valid for tables after partition pruning.
-      // NOTE: getting `totalSize` directly from params is kind of hacky, but this should be
-      // relatively cheap if parameters for the table are populated into the metastore.  An
-      // alternative would be going through Hadoop's FileSystem API, which can be expensive if a lot
-      // of RPCs are involved.  Besides `totalSize`, there are also `numFiles`, `numRows`,
-      // `rawDataSize` keys (see StatsSetupConst in Hive) that we can look at in the future.
-      BigInt(
-        // When table is external,`totalSize` is always zero, which will influence join strategy
-        // so when `totalSize` is zero, use `rawDataSize` instead
-        // if the size is still less than zero, we use default size
-        Option(totalSize).map(_.toLong).filter(_ > 0)
-          .getOrElse(Option(rawDataSize).map(_.toLong).filter(_ > 0)
-            .getOrElse(sparkSession.sessionState.conf.defaultSizeInBytes)))
-    }
+      sizeInBytes = {
+        val totalSize = hiveQlTable.getParameters.get(StatsSetupConst.TOTAL_SIZE)
+        val rawDataSize = hiveQlTable.getParameters.get(StatsSetupConst.RAW_DATA_SIZE)
+        // TODO: check if this estimate is valid for tables after partition pruning.
+        // NOTE: getting `totalSize` directly from params is kind of hacky, but this should be
+        // relatively cheap if parameters for the table are populated into the metastore.  An
+        // alternative would be going through Hadoop's FileSystem API, which can be expensive if a lot
+        // of RPCs are involved.  Besides `totalSize`, there are also `numFiles`, `numRows`,
+        // `rawDataSize` keys (see StatsSetupConst in Hive) that we can look at in the future.
+        BigInt(
+            // When table is external,`totalSize` is always zero, which will influence join strategy
+            // so when `totalSize` is zero, use `rawDataSize` instead
+            // if the size is still less than zero, we use default size
+            Option(totalSize)
+              .map(_.toLong)
+              .filter(_ > 0)
+              .getOrElse(Option(rawDataSize)
+                    .map(_.toLong)
+                    .filter(_ > 0)
+                    .getOrElse(sparkSession.sessionState.conf.defaultSizeInBytes)))
+      }
   )
 
   // When metastore partition pruning is turned off, we cache the list of all partitions to
@@ -133,11 +136,12 @@ private[hive] case class MetastoreRelation(
   private lazy val allPartitions: Seq[CatalogTablePartition] = client.getPartitions(catalogTable)
 
   def getHiveQlPartitions(predicates: Seq[Expression] = Nil): Seq[Partition] = {
-    val rawPartitions = if (sparkSession.sessionState.conf.metastorePartitionPruning) {
-      client.getPartitionsByFilter(catalogTable, predicates)
-    } else {
-      allPartitions
-    }
+    val rawPartitions =
+      if (sparkSession.sessionState.conf.metastorePartitionPruning) {
+        client.getPartitionsByFilter(catalogTable, predicates)
+      } else {
+        allPartitions
+      }
 
     rawPartitions.map { p =>
       val tPartition = new org.apache.hadoop.hive.metastore.api.Partition
@@ -176,22 +180,23 @@ private[hive] case class MetastoreRelation(
   }
 
   val tableDesc = new TableDesc(
-    hiveQlTable.getInputFormatClass,
-    // The class of table should be org.apache.hadoop.hive.ql.metadata.Table because
-    // getOutputFormatClass will use HiveFileFormatUtils.getOutputFormatSubstitute to
-    // substitute some output formats, e.g. substituting SequenceFileOutputFormat to
-    // HiveSequenceFileOutputFormat.
-    hiveQlTable.getOutputFormatClass,
-    hiveQlTable.getMetadata
+      hiveQlTable.getInputFormatClass,
+      // The class of table should be org.apache.hadoop.hive.ql.metadata.Table because
+      // getOutputFormatClass will use HiveFileFormatUtils.getOutputFormatSubstitute to
+      // substitute some output formats, e.g. substituting SequenceFileOutputFormat to
+      // HiveSequenceFileOutputFormat.
+      hiveQlTable.getOutputFormatClass,
+      hiveQlTable.getMetadata
   )
 
   implicit class SchemaAttribute(f: CatalogColumn) {
-    def toAttribute: AttributeReference = AttributeReference(
-      f.name,
-      CatalystSqlParser.parseDataType(f.dataType),
-      // Since data can be dumped in randomly with no validation, everything is nullable.
-      nullable = true
-    )(qualifier = Some(alias.getOrElse(tableName)))
+    def toAttribute: AttributeReference =
+      AttributeReference(
+          f.name,
+          CatalystSqlParser.parseDataType(f.dataType),
+          // Since data can be dumped in randomly with no validation, everything is nullable.
+          nullable = true
+      )(qualifier = Some(alias.getOrElse(tableName)))
   }
 
   /** PartitionKey attributes */
@@ -199,9 +204,9 @@ private[hive] case class MetastoreRelation(
 
   /** Non-partitionKey attributes */
   // TODO: just make this hold the schema itself, not just non-partition columns
-  val attributes = catalogTable.schema
-    .filter { c => !catalogTable.partitionColumnNames.contains(c.name) }
-    .map(_.toAttribute)
+  val attributes = catalogTable.schema.filter { c =>
+    !catalogTable.partitionColumnNames.contains(c.name)
+  }.map(_.toAttribute)
 
   val output = attributes ++ partitionKeys
 
@@ -212,16 +217,14 @@ private[hive] case class MetastoreRelation(
   val columnOrdinals = AttributeMap(attributes.zipWithIndex)
 
   override def inputFiles: Array[String] = {
-    val partLocations = client
-      .getPartitionsByFilter(catalogTable, Nil)
-      .flatMap(_.storage.locationUri)
-      .toArray
+    val partLocations =
+      client.getPartitionsByFilter(catalogTable, Nil).flatMap(_.storage.locationUri).toArray
     if (partLocations.nonEmpty) {
       partLocations
     } else {
       Array(
-        catalogTable.storage.locationUri.getOrElse(
-          sys.error(s"Could not get the location of ${catalogTable.qualifiedName}.")))
+          catalogTable.storage.locationUri
+            .getOrElse(sys.error(s"Could not get the location of ${catalogTable.qualifiedName}.")))
     }
   }
 

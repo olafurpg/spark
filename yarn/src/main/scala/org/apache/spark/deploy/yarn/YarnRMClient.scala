@@ -63,7 +63,7 @@ private[spark] class YarnRMClient extends Logging {
       uiHistoryAddress: String,
       securityMgr: SecurityManager,
       localResources: Map[String, LocalResource]
-    ): YarnAllocator = {
+  ): YarnAllocator = {
     amClient = AMRMClient.createAMRMClient()
     amClient.init(conf)
     amClient.start()
@@ -74,8 +74,14 @@ private[spark] class YarnRMClient extends Logging {
       amClient.registerApplicationMaster(Utils.localHostName(), 0, uiAddress)
       registered = true
     }
-    new YarnAllocator(driverUrl, driverRef, conf, sparkConf, amClient, getAttemptId(), securityMgr,
-      localResources)
+    new YarnAllocator(driverUrl,
+                      driverRef,
+                      conf,
+                      sparkConf,
+                      amClient,
+                      getAttemptId(),
+                      securityMgr,
+                      localResources)
   }
 
   /**
@@ -99,16 +105,23 @@ private[spark] class YarnRMClient extends Logging {
   def getAmIpFilterParams(conf: YarnConfiguration, proxyBase: String): Map[String, String] = {
     // Figure out which scheme Yarn is using. Note the method seems to have been added after 2.2,
     // so not all stable releases have it.
-    val prefix = Try(classOf[WebAppUtils].getMethod("getHttpSchemePrefix", classOf[Configuration])
-      .invoke(null, conf).asInstanceOf[String]).getOrElse("http://")
+    val prefix = Try(
+        classOf[WebAppUtils]
+          .getMethod("getHttpSchemePrefix", classOf[Configuration])
+          .invoke(null, conf)
+          .asInstanceOf[String]).getOrElse("http://")
 
     // If running a new enough Yarn, use the HA-aware API for retrieving the RM addresses.
     try {
-      val method = classOf[WebAppUtils].getMethod("getProxyHostsAndPortsForAmFilter",
-        classOf[Configuration])
+      val method =
+        classOf[WebAppUtils].getMethod("getProxyHostsAndPortsForAmFilter", classOf[Configuration])
       val proxies = method.invoke(null, conf).asInstanceOf[JList[String]]
-      val hosts = proxies.asScala.map { proxy => proxy.split(":")(0) }
-      val uriBases = proxies.asScala.map { proxy => prefix + proxy + proxyBase }
+      val hosts = proxies.asScala.map { proxy =>
+        proxy.split(":")(0)
+      }
+      val uriBases = proxies.asScala.map { proxy =>
+        prefix + proxy + proxyBase
+      }
       Map("PROXY_HOSTS" -> hosts.mkString(","), "PROXY_URI_BASES" -> uriBases.mkString(","))
     } catch {
       case e: NoSuchMethodException =>
@@ -123,7 +136,7 @@ private[spark] class YarnRMClient extends Logging {
   def getMaxRegAttempts(sparkConf: SparkConf, yarnConf: YarnConfiguration): Int = {
     val sparkMaxAttempts = sparkConf.get(MAX_APP_ATTEMPTS).map(_.toInt)
     val yarnMaxAttempts = yarnConf.getInt(
-      YarnConfiguration.RM_AM_MAX_ATTEMPTS, YarnConfiguration.DEFAULT_RM_AM_MAX_ATTEMPTS)
+        YarnConfiguration.RM_AM_MAX_ATTEMPTS, YarnConfiguration.DEFAULT_RM_AM_MAX_ATTEMPTS)
     val retval: Int = sparkMaxAttempts match {
       case Some(x) => if (x <= yarnMaxAttempts) x else yarnMaxAttempts
       case None => yarnMaxAttempts
@@ -131,5 +144,4 @@ private[spark] class YarnRMClient extends Logging {
 
     retval
   }
-
 }

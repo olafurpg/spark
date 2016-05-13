@@ -30,27 +30,28 @@ import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.receiver.Receiver
 import org.apache.spark.util.NextIterator
 
-private[streaming]
-class SocketInputDStream[T: ClassTag](
+private[streaming] class SocketInputDStream[T: ClassTag](
     _ssc: StreamingContext,
     host: String,
     port: Int,
     bytesToObjects: InputStream => Iterator[T],
     storageLevel: StorageLevel
-  ) extends ReceiverInputDStream[T](_ssc) {
+)
+    extends ReceiverInputDStream[T](_ssc) {
 
   def getReceiver(): Receiver[T] = {
     new SocketReceiver(host, port, bytesToObjects, storageLevel)
   }
 }
 
-private[streaming]
-class SocketReceiver[T: ClassTag](
+private[streaming] class SocketReceiver[T: ClassTag](
     host: String,
     port: Int,
     bytesToObjects: InputStream => Iterator[T],
     storageLevel: StorageLevel
-  ) extends Receiver[T](storageLevel) with Logging {
+)
+    extends Receiver[T](storageLevel)
+    with Logging {
 
   private var socket: Socket = _
 
@@ -88,7 +89,7 @@ class SocketReceiver[T: ClassTag](
   def receive() {
     try {
       val iterator = bytesToObjects(socket.getInputStream())
-      while(!isStopped && iterator.hasNext) {
+      while (!isStopped && iterator.hasNext) {
         store(iterator.next())
       }
       if (!isStopped()) {
@@ -106,8 +107,7 @@ class SocketReceiver[T: ClassTag](
   }
 }
 
-private[streaming]
-object SocketReceiver  {
+private[streaming] object SocketReceiver {
 
   /**
    * This methods translates the data from an inputstream (say, from a socket)
@@ -115,7 +115,7 @@ object SocketReceiver  {
    */
   def bytesToLines(inputStream: InputStream): Iterator[String] = {
     val dataInputStream = new BufferedReader(
-      new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+        new InputStreamReader(inputStream, StandardCharsets.UTF_8))
     new NextIterator[String] {
       protected override def getNext() = {
         val nextValue = dataInputStream.readLine()

@@ -47,13 +47,12 @@ import org.apache.spark.util.io.ChunkedByteBuffer
  * An internal RPC interface is used for communication with the driver,
  * except in the case of Mesos fine-grained mode.
  */
-private[spark] class Executor(
-    executorId: String,
-    executorHostname: String,
-    env: SparkEnv,
-    userClassPath: Seq[URL] = Nil,
-    isLocal: Boolean = false)
-  extends Logging {
+private[spark] class Executor(executorId: String,
+                              executorHostname: String,
+                              env: SparkEnv,
+                              userClassPath: Seq[URL] = Nil,
+                              isLocal: Boolean = false)
+    extends Logging {
 
   logInfo(s"Starting executor ID $executorId on host $executorHostname")
 
@@ -69,7 +68,7 @@ private[spark] class Executor(
   // No ip or host:port - just hostname
   Utils.checkHost(executorHostname, "Expected executed slave to be a hostname")
   // must not have port specified.
-  assert (0 == Utils.parseHostPort(executorHostname)._2)
+  assert(0 == Utils.parseHostPort(executorHostname)._2)
 
   // Make sure the local hostname we report matches the cluster scheduler's name for this host
   Utils.setCustomHostname(executorHostname)
@@ -104,8 +103,8 @@ private[spark] class Executor(
   // Max size of direct result. If task result is bigger than this, we use the block manager
   // to send the result back.
   private val maxDirectResultSize = Math.min(
-    conf.getSizeAsBytes("spark.task.maxDirectResultSize", 1L << 20),
-    RpcUtils.maxMessageSizeBytes(conf))
+      conf.getSizeAsBytes("spark.task.maxDirectResultSize", 1L << 20),
+      RpcUtils.maxMessageSizeBytes(conf))
 
   // Limit of bytes for total size of results (default is 1GB)
   private val maxResultSize = Utils.getMaxResultSize(conf)
@@ -114,7 +113,8 @@ private[spark] class Executor(
   private val runningTasks = new ConcurrentHashMap[Long, TaskRunner]
 
   // Executor for the heartbeat task.
-  private val heartbeater = ThreadUtils.newDaemonSingleThreadScheduledExecutor("driver-heartbeater")
+  private val heartbeater =
+    ThreadUtils.newDaemonSingleThreadScheduledExecutor("driver-heartbeater")
 
   // must be initialized before running startDriverHeartbeat()
   private val heartbeatReceiverRef =
@@ -135,14 +135,13 @@ private[spark] class Executor(
 
   startDriverHeartbeater()
 
-  def launchTask(
-      context: ExecutorBackend,
-      taskId: Long,
-      attemptNumber: Int,
-      taskName: String,
-      serializedTask: ByteBuffer): Unit = {
-    val tr = new TaskRunner(context, taskId = taskId, attemptNumber = attemptNumber, taskName,
-      serializedTask)
+  def launchTask(context: ExecutorBackend,
+                 taskId: Long,
+                 attemptNumber: Int,
+                 taskName: String,
+                 serializedTask: ByteBuffer): Unit = {
+    val tr = new TaskRunner(
+        context, taskId = taskId, attemptNumber = attemptNumber, taskName, serializedTask)
     runningTasks.put(taskId, tr)
     threadPool.execute(tr)
   }
@@ -160,7 +159,7 @@ private[spark] class Executor(
    * tasks instead of taking the JVM down.
    * @param interruptThread whether to interrupt the task thread
    */
-  def killAllTasks(interruptThread: Boolean) : Unit = {
+  def killAllTasks(interruptThread: Boolean): Unit = {
     // kill all the running tasks
     for (taskRunner <- runningTasks.values().asScala) {
       if (taskRunner != null) {
@@ -184,13 +183,12 @@ private[spark] class Executor(
     ManagementFactory.getGarbageCollectorMXBeans.asScala.map(_.getCollectionTime).sum
   }
 
-  class TaskRunner(
-      execBackend: ExecutorBackend,
-      val taskId: Long,
-      val attemptNumber: Int,
-      taskName: String,
-      serializedTask: ByteBuffer)
-    extends Runnable {
+  class TaskRunner(execBackend: ExecutorBackend,
+                   val taskId: Long,
+                   val attemptNumber: Int,
+                   taskName: String,
+                   serializedTask: ByteBuffer)
+      extends Runnable {
 
     /** Whether this task has been killed. */
     @volatile private var killed = false
@@ -271,10 +269,9 @@ private[spark] class Executor(
         taskStart = System.currentTimeMillis()
         var threwException = true
         val value = try {
-          val res = task.run(
-            taskAttemptId = taskId,
-            attemptNumber = attemptNumber,
-            metricsSystem = env.metricsSystem)
+          val res = task.run(taskAttemptId = taskId,
+                             attemptNumber = attemptNumber,
+                             metricsSystem = env.metricsSystem)
           threwException = false
           res
         } finally {
@@ -293,7 +290,7 @@ private[spark] class Executor(
           if (releasedLocks.nonEmpty) {
             val errMsg =
               s"${releasedLocks.size} block locks were not released by TID = $taskId:\n" +
-                releasedLocks.mkString("[", ", ", "]")
+              releasedLocks.mkString("[", ", ", "]")
             if (conf.getBoolean("spark.storage.exceptionOnPinLeak", false) && !threwException) {
               throw new SparkException(errMsg)
             } else {
@@ -316,7 +313,7 @@ private[spark] class Executor(
         // Deserialization happens in two parts: first, we deserialize a Task object, which
         // includes the Partition. Second, Task.run() deserializes the RDD and function to be run.
         task.metrics.setExecutorDeserializeTime(
-          (taskStart - deserializeStartTime) + task.executorDeserializeTime)
+            (taskStart - deserializeStartTime) + task.executorDeserializeTime)
         // We need to subtract Task.run()'s deserialization time to avoid double-counting
         task.metrics.setExecutorRunTime((taskFinish - taskStart) - task.executorDeserializeTime)
         task.metrics.setJvmGCTime(computeTotalGcTime() - startGCTime)
@@ -332,18 +329,18 @@ private[spark] class Executor(
         // directSend = sending directly back to the driver
         val serializedResult: ByteBuffer = {
           if (maxResultSize > 0 && resultSize > maxResultSize) {
-            logWarning(s"Finished $taskName (TID $taskId). Result is larger than maxResultSize " +
-              s"(${Utils.bytesToString(resultSize)} > ${Utils.bytesToString(maxResultSize)}), " +
-              s"dropping it.")
+            logWarning(
+                s"Finished $taskName (TID $taskId). Result is larger than maxResultSize " +
+                s"(${Utils.bytesToString(resultSize)} > ${Utils.bytesToString(maxResultSize)}), " +
+                s"dropping it.")
             ser.serialize(new IndirectTaskResult[Any](TaskResultBlockId(taskId), resultSize))
           } else if (resultSize > maxDirectResultSize) {
             val blockId = TaskResultBlockId(taskId)
-            env.blockManager.putBytes(
-              blockId,
-              new ChunkedByteBuffer(serializedDirectResult.duplicate()),
-              StorageLevel.MEMORY_AND_DISK_SER)
+            env.blockManager.putBytes(blockId,
+                                      new ChunkedByteBuffer(serializedDirectResult.duplicate()),
+                                      StorageLevel.MEMORY_AND_DISK_SER)
             logInfo(
-              s"Finished $taskName (TID $taskId). $resultSize bytes result sent via BlockManager)")
+                s"Finished $taskName (TID $taskId). $resultSize bytes result sent via BlockManager)")
             ser.serialize(new IndirectTaskResult[Any](blockId, resultSize))
           } else {
             logInfo(s"Finished $taskName (TID $taskId). $resultSize bytes result sent to driver")
@@ -352,7 +349,6 @@ private[spark] class Executor(
         }
 
         execBackend.statusUpdate(taskId, TaskState.FINISHED, serializedResult)
-
       } catch {
         case ffe: FetchFailedException =>
           val reason = ffe.toTaskEndReason
@@ -404,7 +400,6 @@ private[spark] class Executor(
           if (Utils.isFatalError(t)) {
             SparkUncaughtExceptionHandler.uncaughtException(t)
           }
-
       } finally {
         runningTasks.remove(taskId)
       }
@@ -426,9 +421,10 @@ private[spark] class Executor(
 
     // For each of the jars in the jarSet, add them to the class loader.
     // We assume each of the files has already been fetched.
-    val urls = userClassPath.toArray ++ currentJars.keySet.map { uri =>
-      new File(uri.split("/").last).toURI.toURL
-    }
+    val urls =
+      userClassPath.toArray ++ currentJars.keySet.map { uri =>
+        new File(uri.split("/").last).toURI.toURL
+      }
     if (userClassPathFirst) {
       new ChildFirstURLClassLoader(urls, currentLoader)
     } else {
@@ -446,10 +442,14 @@ private[spark] class Executor(
       logInfo("Using REPL class URI: " + classUri)
       try {
         val _userClassPathFirst: java.lang.Boolean = userClassPathFirst
-        val klass = Utils.classForName("org.apache.spark.repl.ExecutorClassLoader")
+        val klass = Utils
+          .classForName("org.apache.spark.repl.ExecutorClassLoader")
           .asInstanceOf[Class[_ <: ClassLoader]]
-        val constructor = klass.getConstructor(classOf[SparkConf], classOf[SparkEnv],
-          classOf[String], classOf[ClassLoader], classOf[Boolean])
+        val constructor = klass.getConstructor(classOf[SparkConf],
+                                               classOf[SparkEnv],
+                                               classOf[String],
+                                               classOf[ClassLoader],
+                                               classOf[Boolean])
         constructor.newInstance(conf, env, classUri, parent, _userClassPathFirst)
       } catch {
         case _: ClassNotFoundException =>
@@ -473,20 +473,29 @@ private[spark] class Executor(
       for ((name, timestamp) <- newFiles if currentFiles.getOrElse(name, -1L) < timestamp) {
         logInfo("Fetching " + name + " with timestamp " + timestamp)
         // Fetch file with useCache mode, close cache for local mode.
-        Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
-          env.securityManager, hadoopConf, timestamp, useCache = !isLocal)
+        Utils.fetchFile(name,
+                        new File(SparkFiles.getRootDirectory()),
+                        conf,
+                        env.securityManager,
+                        hadoopConf,
+                        timestamp,
+                        useCache = !isLocal)
         currentFiles(name) = timestamp
       }
       for ((name, timestamp) <- newJars) {
         val localName = name.split("/").last
-        val currentTimeStamp = currentJars.get(name)
-          .orElse(currentJars.get(localName))
-          .getOrElse(-1L)
+        val currentTimeStamp =
+          currentJars.get(name).orElse(currentJars.get(localName)).getOrElse(-1L)
         if (currentTimeStamp < timestamp) {
           logInfo("Fetching " + name + " with timestamp " + timestamp)
           // Fetch file with useCache mode, close cache for local mode.
-          Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
-            env.securityManager, hadoopConf, timestamp, useCache = !isLocal)
+          Utils.fetchFile(name,
+                          new File(SparkFiles.getRootDirectory()),
+                          conf,
+                          env.securityManager,
+                          hadoopConf,
+                          timestamp,
+                          useCache = !isLocal)
           currentJars(name) = timestamp
           // Add it to our class loader
           val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
@@ -527,8 +536,9 @@ private[spark] class Executor(
         logWarning("Issue communicating with driver in heartbeater", e)
         heartbeatFailures += 1
         if (heartbeatFailures >= HEARTBEAT_MAX_FAILURES) {
-          logError(s"Exit as unable to send heartbeats to driver " +
-            s"more than $HEARTBEAT_MAX_FAILURES times")
+          logError(
+              s"Exit as unable to send heartbeats to driver " +
+              s"more than $HEARTBEAT_MAX_FAILURES times")
           System.exit(ExecutorExitCode.HEARTBEAT_FAILURE)
         }
     }

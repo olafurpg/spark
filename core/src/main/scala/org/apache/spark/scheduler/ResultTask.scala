@@ -43,17 +43,16 @@ import org.apache.spark.rdd.RDD
  * @param localProperties copy of thread-local properties set by the user on the driver side.
  * @param metrics a [[TaskMetrics]] that is created at driver side and sent to executor side.
  */
-private[spark] class ResultTask[T, U](
-    stageId: Int,
-    stageAttemptId: Int,
-    taskBinary: Broadcast[Array[Byte]],
-    partition: Partition,
-    locs: Seq[TaskLocation],
-    val outputId: Int,
-    localProperties: Properties,
-    metrics: TaskMetrics)
-  extends Task[U](stageId, stageAttemptId, partition.index, metrics, localProperties)
-  with Serializable {
+private[spark] class ResultTask[T, U](stageId: Int,
+                                      stageAttemptId: Int,
+                                      taskBinary: Broadcast[Array[Byte]],
+                                      partition: Partition,
+                                      locs: Seq[TaskLocation],
+                                      val outputId: Int,
+                                      localProperties: Properties,
+                                      metrics: TaskMetrics)
+    extends Task[U](stageId, stageAttemptId, partition.index, metrics, localProperties)
+    with Serializable {
 
   @transient private[this] val preferredLocs: Seq[TaskLocation] = {
     if (locs == null) Nil else locs.toSet.toSeq
@@ -64,7 +63,7 @@ private[spark] class ResultTask[T, U](
     val deserializeStartTime = System.currentTimeMillis()
     val ser = SparkEnv.get.closureSerializer.newInstance()
     val (rdd, func) = ser.deserialize[(RDD[T], (TaskContext, Iterator[T]) => U)](
-      ByteBuffer.wrap(taskBinary.value), Thread.currentThread.getContextClassLoader)
+        ByteBuffer.wrap(taskBinary.value), Thread.currentThread.getContextClassLoader)
     _executorDeserializeTime = System.currentTimeMillis() - deserializeStartTime
 
     func(context, rdd.iterator(partition, context))

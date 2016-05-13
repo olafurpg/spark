@@ -31,10 +31,7 @@ private[spark] object YarnCommandBuilderUtils {
   }
 
   def findJarsDir(sparkHome: String): String = {
-    val scalaVer = Properties.versionNumberString
-      .split("\\.")
-      .take(2)
-      .mkString(".")
+    val scalaVer = Properties.versionNumberString.split("\\.").take(2).mkString(".")
     CommandBuilderUtils.findJarsDir(sparkHome, scalaVer, true)
   }
 
@@ -49,5 +46,4 @@ private[spark] object YarnCommandBuilderUtils {
   def addPermGenSizeOpt(args: ListBuffer[String]): Unit = {
     CommandBuilderUtils.addPermGenSizeOpt(args.asJava)
   }
-
 }

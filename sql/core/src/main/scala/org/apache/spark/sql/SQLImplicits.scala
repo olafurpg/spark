@@ -44,7 +44,7 @@ abstract class SQLImplicits {
   }
 
   /** @since 1.6.0 */
-  implicit def newProductEncoder[T <: Product : TypeTag]: Encoder[T] = Encoders.product[T]
+  implicit def newProductEncoder[T <: Product: TypeTag]: Encoder[T] = Encoders.product[T]
 
   // Primitives
 
@@ -122,7 +122,7 @@ abstract class SQLImplicits {
   implicit def newStringSeqEncoder: Encoder[Seq[String]] = ExpressionEncoder()
 
   /** @since 1.6.1 */
-  implicit def newProductSeqEncoder[A <: Product : TypeTag]: Encoder[Seq[A]] = ExpressionEncoder()
+  implicit def newProductSeqEncoder[A <: Product: TypeTag]: Encoder[Seq[A]] = ExpressionEncoder()
 
   // Arrays
 
@@ -151,7 +151,7 @@ abstract class SQLImplicits {
   implicit def newStringArrayEncoder: Encoder[Array[String]] = ExpressionEncoder()
 
   /** @since 1.6.1 */
-  implicit def newProductArrayEncoder[A <: Product : TypeTag]: Encoder[Array[A]] =
+  implicit def newProductArrayEncoder[A <: Product: TypeTag]: Encoder[Array[A]] =
     ExpressionEncoder()
 
   /**
@@ -159,7 +159,7 @@ abstract class SQLImplicits {
    *
    * @since 1.6.0
    */
-  implicit def rddToDatasetHolder[T : Encoder](rdd: RDD[T]): DatasetHolder[T] = {
+  implicit def rddToDatasetHolder[T: Encoder](rdd: RDD[T]): DatasetHolder[T] = {
     DatasetHolder(_sqlContext.createDataset(rdd))
   }
 
@@ -167,7 +167,7 @@ abstract class SQLImplicits {
    * Creates a [[Dataset]] from a local Seq.
    * @since 1.6.0
    */
-  implicit def localSeqToDatasetHolder[T : Encoder](s: Seq[T]): DatasetHolder[T] = {
+  implicit def localSeqToDatasetHolder[T: Encoder](s: Seq[T]): DatasetHolder[T] = {
     DatasetHolder(_sqlContext.createDataset(s))
   }
 
@@ -176,5 +176,4 @@ abstract class SQLImplicits {
    * @since 1.3.0
    */
   implicit def symbolToColumn(s: Symbol): ColumnName = new ColumnName(s.name)
-
 }

@@ -30,8 +30,11 @@ import org.apache.spark.{SparkConf, SparkContext, SparkFunSuite}
 import org.apache.spark.streaming.dstream.{DStream, InternalMapWithStateDStream, MapWithStateDStream, MapWithStateDStreamImpl}
 import org.apache.spark.util.{ManualClock, Utils}
 
-class MapWithStateSuite extends SparkFunSuite
-  with DStreamCheckpointTester with BeforeAndAfterAll with BeforeAndAfter {
+class MapWithStateSuite
+    extends SparkFunSuite
+    with DStreamCheckpointTester
+    with BeforeAndAfterAll
+    with BeforeAndAfter {
 
   private var sc: SparkContext = null
   protected var checkpointDir: File = null
@@ -74,7 +77,7 @@ class MapWithStateSuite extends SparkFunSuite
         shouldBeUpdated: Boolean = false,
         shouldBeRemoved: Boolean = false,
         shouldBeTimingOut: Boolean = false
-      ): Unit = {
+    ): Unit = {
       if (expectedData.isDefined) {
         assert(state.exists)
         assert(state.get() === expectedData.get)
@@ -136,8 +139,7 @@ class MapWithStateSuite extends SparkFunSuite
   }
 
   test("mapWithState - basic operations with simple API") {
-    val inputData =
-      Seq(
+    val inputData = Seq(
         Seq(),
         Seq("a"),
         Seq("a", "b"),
@@ -145,10 +147,9 @@ class MapWithStateSuite extends SparkFunSuite
         Seq("a", "b"),
         Seq("a"),
         Seq()
-      )
+    )
 
-    val outputData =
-      Seq(
+    val outputData = Seq(
         Seq(),
         Seq(1),
         Seq(2, 1),
@@ -156,10 +157,9 @@ class MapWithStateSuite extends SparkFunSuite
         Seq(4, 3),
         Seq(5),
         Seq()
-      )
+    )
 
-    val stateData =
-      Seq(
+    val stateData = Seq(
         Seq(),
         Seq(("a", 1)),
         Seq(("a", 2), ("b", 1)),
@@ -167,7 +167,7 @@ class MapWithStateSuite extends SparkFunSuite
         Seq(("a", 4), ("b", 3), ("c", 1)),
         Seq(("a", 5), ("b", 3), ("c", 1)),
         Seq(("a", 5), ("b", 3), ("c", 1))
-      )
+    )
 
     // state maintains running count, and updated count is returned
     val mappingFunc = (key: String, value: Option[Int], state: State[Int]) => {
@@ -177,12 +177,11 @@ class MapWithStateSuite extends SparkFunSuite
     }
 
     testOperation[String, Int, Int](
-      inputData, StateSpec.function(mappingFunc), outputData, stateData)
+        inputData, StateSpec.function(mappingFunc), outputData, stateData)
   }
 
   test("mapWithState - basic operations with advanced API") {
-    val inputData =
-      Seq(
+    val inputData = Seq(
         Seq(),
         Seq("a"),
         Seq("a", "b"),
@@ -190,10 +189,9 @@ class MapWithStateSuite extends SparkFunSuite
         Seq("a", "b"),
         Seq("a"),
         Seq()
-      )
+    )
 
-    val outputData =
-      Seq(
+    val outputData = Seq(
         Seq(),
         Seq("aa"),
         Seq("aa", "bb"),
@@ -201,10 +199,9 @@ class MapWithStateSuite extends SparkFunSuite
         Seq("aa", "bb"),
         Seq("aa"),
         Seq()
-      )
+    )
 
-    val stateData =
-      Seq(
+    val stateData = Seq(
         Seq(),
         Seq(("a", 1)),
         Seq(("a", 2), ("b", 1)),
@@ -212,7 +209,7 @@ class MapWithStateSuite extends SparkFunSuite
         Seq(("a", 4), ("b", 3), ("c", 1)),
         Seq(("a", 5), ("b", 3), ("c", 1)),
         Seq(("a", 5), ("b", 3), ("c", 1))
-      )
+    )
 
     // state maintains running count, key string doubled and returned
     val mappingFunc = (batchTime: Time, key: String, value: Option[Int], state: State[Int]) => {
@@ -248,8 +245,8 @@ class MapWithStateSuite extends SparkFunSuite
     val inputStream = new TestInputStream[(String, Int)](ssc, Seq.empty, numPartitions = 2)
 
     // Defining StateSpec inline with mapWithState and simple function implicitly gets the types
-    val simpleFunctionStateStream1 = inputStream.mapWithState(
-      StateSpec.function(simpleFunc).numPartitions(1))
+    val simpleFunctionStateStream1 =
+      inputStream.mapWithState(StateSpec.function(simpleFunc).numPartitions(1))
     testTypes(simpleFunctionStateStream1)
 
     // Separately defining StateSpec with simple function requires explicitly specifying types
@@ -263,8 +260,8 @@ class MapWithStateSuite extends SparkFunSuite
     testTypes(advFunctionStateStream1)
 
     // Defining StateSpec inline with mapWithState and advanced func implicitly gets the types
-    val advFunctionStateStream2 = inputStream.mapWithState(
-      StateSpec.function(simpleFunc).numPartitions(1))
+    val advFunctionStateStream2 =
+      inputStream.mapWithState(StateSpec.function(simpleFunc).numPartitions(1))
     testTypes(advFunctionStateStream2)
 
     // Defining StateSpec inline with mapWithState and advanced func implicitly gets the types
@@ -274,8 +271,7 @@ class MapWithStateSuite extends SparkFunSuite
   }
 
   test("mapWithState - states as mapped data") {
-    val inputData =
-      Seq(
+    val inputData = Seq(
         Seq(),
         Seq("a"),
         Seq("a", "b"),
@@ -283,10 +279,9 @@ class MapWithStateSuite extends SparkFunSuite
         Seq("a", "b"),
         Seq("a"),
         Seq()
-      )
+    )
 
-    val outputData =
-      Seq(
+    val outputData = Seq(
         Seq(),
         Seq(("a", 1)),
         Seq(("a", 2), ("b", 1)),
@@ -294,10 +289,9 @@ class MapWithStateSuite extends SparkFunSuite
         Seq(("a", 4), ("b", 3)),
         Seq(("a", 5)),
         Seq()
-      )
+    )
 
-    val stateData =
-      Seq(
+    val stateData = Seq(
         Seq(),
         Seq(("a", 1)),
         Seq(("a", 2), ("b", 1)),
@@ -305,7 +299,7 @@ class MapWithStateSuite extends SparkFunSuite
         Seq(("a", 4), ("b", 3), ("c", 1)),
         Seq(("a", 5), ("b", 3), ("c", 1)),
         Seq(("a", 5), ("b", 3), ("c", 1))
-      )
+    )
 
     val mappingFunc = (time: Time, key: String, value: Option[Int], state: State[Int]) => {
       val sum = value.getOrElse(0) + state.getOption.getOrElse(0)
@@ -321,8 +315,7 @@ class MapWithStateSuite extends SparkFunSuite
 
     val initialState = Seq(("a", 5), ("b", 10), ("c", -20), ("d", 0))
 
-    val inputData =
-      Seq(
+    val inputData = Seq(
         Seq(),
         Seq("a"),
         Seq("a", "b"),
@@ -330,12 +323,11 @@ class MapWithStateSuite extends SparkFunSuite
         Seq("a", "b"),
         Seq("a"),
         Seq()
-      )
+    )
 
     val outputData = Seq.fill(inputData.size)(Seq.empty[Int])
 
-    val stateData =
-      Seq(
+    val stateData = Seq(
         Seq(("a", 5), ("b", 10), ("c", -20), ("d", 0)),
         Seq(("a", 6), ("b", 10), ("c", -20), ("d", 0)),
         Seq(("a", 7), ("b", 11), ("c", -20), ("d", 0)),
@@ -343,7 +335,7 @@ class MapWithStateSuite extends SparkFunSuite
         Seq(("a", 9), ("b", 13), ("c", -19), ("d", 0)),
         Seq(("a", 10), ("b", 13), ("c", -19), ("d", 0)),
         Seq(("a", 10), ("b", 13), ("c", -19), ("d", 0))
-      )
+    )
 
     val mappingFunc = (time: Time, key: String, value: Option[Int], state: State[Int]) => {
       val sum = value.getOrElse(0) + state.getOption.getOrElse(0)
@@ -357,8 +349,7 @@ class MapWithStateSuite extends SparkFunSuite
   }
 
   test("mapWithState - state removing") {
-    val inputData =
-      Seq(
+    val inputData = Seq(
         Seq(),
         Seq("a"),
         Seq("a", "b"), // a will be removed
@@ -367,11 +358,10 @@ class MapWithStateSuite extends SparkFunSuite
         Seq("a", "b"), // b will be removed
         Seq("a"), // a will be removed
         Seq()
-      )
+    )
 
     // States that were removed
-    val outputData =
-      Seq(
+    val outputData = Seq(
         Seq(),
         Seq(),
         Seq("a"),
@@ -380,10 +370,9 @@ class MapWithStateSuite extends SparkFunSuite
         Seq("b"),
         Seq("a"),
         Seq()
-      )
+    )
 
-    val stateData =
-      Seq(
+    val stateData = Seq(
         Seq(),
         Seq(("a", 1)),
         Seq(("b", 1)),
@@ -392,7 +381,7 @@ class MapWithStateSuite extends SparkFunSuite
         Seq(("a", 1)),
         Seq(),
         Seq()
-      )
+    )
 
     val mappingFunc = (time: Time, key: String, value: Option[Int], state: State[Int]) => {
       if (state.exists) {
@@ -405,18 +394,18 @@ class MapWithStateSuite extends SparkFunSuite
     }
 
     testOperation(
-      inputData, StateSpec.function(mappingFunc).numPartitions(1), outputData, stateData)
+        inputData, StateSpec.function(mappingFunc).numPartitions(1), outputData, stateData)
   }
 
   test("mapWithState - state timing out") {
     val inputData =
       Seq(
-        Seq("a", "b", "c"),
-        Seq("a", "b"),
-        Seq("a"),
-        Seq(), // c will time out
-        Seq(), // b will time out
-        Seq("a") // a will not time out
+          Seq("a", "b", "c"),
+          Seq("a", "b"),
+          Seq("a"),
+          Seq(), // c will time out
+          Seq(), // b will time out
+          Seq("a") // a will not time out
       ) ++ Seq.fill(20)(Seq("a")) // a will continue to stay active
 
     val mappingFunc = (time: Time, key: String, value: Option[Int], state: State[Int]) => {
@@ -430,8 +419,8 @@ class MapWithStateSuite extends SparkFunSuite
       }
     }
 
-    val (collectedOutputs, collectedStateSnapshots) = getOperationOutput(
-      inputData, StateSpec.function(mappingFunc).timeout(Seconds(3)), 20)
+    val (collectedOutputs, collectedStateSnapshots) =
+      getOperationOutput(inputData, StateSpec.function(mappingFunc).timeout(Seconds(3)), 20)
 
     // b and c should be returned once each, when they were marked as expired
     assert(collectedOutputs.flatten.sorted === Seq("b", "c"))
@@ -452,7 +441,7 @@ class MapWithStateSuite extends SparkFunSuite
         batchDuration: Duration,
         expectedCheckpointDuration: Duration,
         explicitCheckpointDuration: Option[Duration] = None
-      ): Unit = {
+    ): Unit = {
       val ssc = new StreamingContext(sc, batchDuration)
 
       try {
@@ -466,7 +455,7 @@ class MapWithStateSuite extends SparkFunSuite
         }
         mapWithStateStream.register()
         ssc.checkpoint(checkpointDir.toString)
-        ssc.start()  // should initialize all the checkpoint durations
+        ssc.start() // should initialize all the checkpoint durations
         assert(mapWithStateStream.checkpointDuration === null)
         assert(internalmapWithStateStream.checkpointDuration === expectedCheckpointDuration)
       } finally {
@@ -483,10 +472,8 @@ class MapWithStateSuite extends SparkFunSuite
     testCheckpointDuration(Seconds(10), Seconds(20), Some(Seconds(20)))
   }
 
-
   test("mapWithState - driver failure recovery") {
-    val inputData =
-      Seq(
+    val inputData = Seq(
         Seq(),
         Seq("a"),
         Seq("a", "b"),
@@ -494,10 +481,9 @@ class MapWithStateSuite extends SparkFunSuite
         Seq("a", "b"),
         Seq("a"),
         Seq()
-      )
+    )
 
-    val stateData =
-      Seq(
+    val stateData = Seq(
         Seq(),
         Seq(("a", 1)),
         Seq(("a", 2), ("b", 1)),
@@ -505,7 +491,7 @@ class MapWithStateSuite extends SparkFunSuite
         Seq(("a", 4), ("b", 3), ("c", 1)),
         Seq(("a", 5), ("b", 3), ("c", 1)),
         Seq(("a", 5), ("b", 3), ("c", 1))
-      )
+    )
 
     def operation(dstream: DStream[String]): DStream[(String, Int)] = {
 
@@ -516,15 +502,19 @@ class MapWithStateSuite extends SparkFunSuite
         state.get()
       }
 
-      val mapWithStateStream = dstream.map { _ -> 1 }.mapWithState(
-        StateSpec.function(runningCount))
+      val mapWithStateStream = dstream.map { _ -> 1 }
+        .mapWithState(StateSpec.function(runningCount))
       // Set interval make sure there is one RDD checkpointing
       mapWithStateStream.checkpoint(checkpointDuration)
       mapWithStateStream.stateSnapshots()
     }
 
-    testCheckpointedOperation(inputData, operation, stateData, inputData.size / 2,
-      batchDuration = batchDuration, stopSparkContextAfterTest = false)
+    testCheckpointedOperation(inputData,
+                              operation,
+                              stateData,
+                              inputData.size / 2,
+                              batchDuration = batchDuration,
+                              stopSparkContextAfterTest = false)
   }
 
   private def testOperation[K: ClassTag, S: ClassTag, T: ClassTag](
@@ -532,11 +522,11 @@ class MapWithStateSuite extends SparkFunSuite
       mapWithStateSpec: StateSpec[K, Int, S, T],
       expectedOutputs: Seq[Seq[T]],
       expectedStateSnapshots: Seq[Seq[(K, S)]]
-    ): Unit = {
+  ): Unit = {
     require(expectedOutputs.size == expectedStateSnapshots.size)
 
-    val (collectedOutputs, collectedStateSnapshots) =
-      getOperationOutput(input, mapWithStateSpec, expectedOutputs.size)
+    val (collectedOutputs, collectedStateSnapshots) = getOperationOutput(
+        input, mapWithStateSpec, expectedOutputs.size)
     assert(expectedOutputs, collectedOutputs, "outputs")
     assert(expectedStateSnapshots, collectedStateSnapshots, "state snapshots")
   }
@@ -545,7 +535,7 @@ class MapWithStateSuite extends SparkFunSuite
       input: Seq[Seq[K]],
       mapWithStateSpec: StateSpec[K, Int, S, T],
       numBatches: Int
-    ): (Seq[Seq[T]], Seq[Seq[(K, S)]]) = {
+  ): (Seq[Seq[T]], Seq[Seq[(K, S)]]) = {
 
     // Setup the stream computation
     val ssc = new StreamingContext(sc, Seconds(1))
@@ -555,7 +545,7 @@ class MapWithStateSuite extends SparkFunSuite
     val outputStream = new TestOutputStream(trackeStateStream, collectedOutputs)
     val collectedStateSnapshots = new ConcurrentLinkedQueue[Seq[(K, S)]]
     val stateSnapshotStream = new TestOutputStream(
-      trackeStateStream.stateSnapshots(), collectedStateSnapshots)
+        trackeStateStream.stateSnapshots(), collectedStateSnapshots)
     outputStream.register()
     stateSnapshotStream.register()
 
@@ -572,15 +562,15 @@ class MapWithStateSuite extends SparkFunSuite
   }
 
   private def assert[U](expected: Seq[Seq[U]], collected: Seq[Seq[U]], typ: String) {
-    val debugString = "\nExpected:\n" + expected.mkString("\n") +
-      "\nCollected:\n" + collected.mkString("\n")
-    assert(expected.size === collected.size,
-      s"number of collected $typ (${collected.size}) different from expected (${expected.size})" +
+    val debugString =
+      "\nExpected:\n" + expected.mkString("\n") + "\nCollected:\n" + collected.mkString("\n")
+    assert(
+        expected.size === collected.size,
+        s"number of collected $typ (${collected.size}) different from expected (${expected.size})" +
         debugString)
-    expected.zip(collected).foreach { case (c, e) =>
-      assert(c.toSet === e.toSet,
-        s"collected $typ is different from expected $debugString"
-      )
+    expected.zip(collected).foreach {
+      case (c, e) =>
+        assert(c.toSet === e.toSet, s"collected $typ is different from expected $debugString")
     }
   }
 }

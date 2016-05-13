@@ -40,13 +40,13 @@ class StateStoreRDD[T: ClassTag, U: ClassTag](
     valueSchema: StructType,
     sessionState: SessionState,
     @transient private val storeCoordinator: Option[StateStoreCoordinatorRef])
-  extends RDD[U](dataRDD) {
+    extends RDD[U](dataRDD) {
 
   private val storeConf = new StateStoreConf(sessionState.conf)
 
   // A Hadoop Configuration can be about 10 KB, which is pretty big, so broadcast it
-  private val confBroadcast = dataRDD.context.broadcast(
-    new SerializableConfiguration(sessionState.newHadoopConf()))
+  private val confBroadcast =
+    dataRDD.context.broadcast(new SerializableConfiguration(sessionState.newHadoopConf()))
 
   override protected def getPartitions: Array[Partition] = dataRDD.partitions
 
@@ -59,7 +59,7 @@ class StateStoreRDD[T: ClassTag, U: ClassTag](
     var store: StateStore = null
     val storeId = StateStoreId(checkpointLocation, operatorId, partition.index)
     store = StateStore.get(
-      storeId, keySchema, valueSchema, storeVersion, storeConf, confBroadcast.value.value)
+        storeId, keySchema, valueSchema, storeVersion, storeConf, confBroadcast.value.value)
     val inputIter = dataRDD.iterator(partition, ctxt)
     storeUpdateFunction(store, inputIter)
   }

@@ -29,16 +29,16 @@ import org.apache.spark.util.{ThreadUtils, Utils}
  * An RpcEndpoint to take commands from the master to execute options. For example,
  * this is used to remove blocks from the slave's BlockManager.
  */
-private[storage]
-class BlockManagerSlaveEndpoint(
-    override val rpcEnv: RpcEnv,
-    blockManager: BlockManager,
-    mapOutputTracker: MapOutputTracker)
-  extends ThreadSafeRpcEndpoint with Logging {
+private[storage] class BlockManagerSlaveEndpoint(override val rpcEnv: RpcEnv,
+                                                 blockManager: BlockManager,
+                                                 mapOutputTracker: MapOutputTracker)
+    extends ThreadSafeRpcEndpoint
+    with Logging {
 
   private val asyncThreadPool =
     ThreadUtils.newDaemonCachedThreadPool("block-manager-slave-async-thread-pool")
-  private implicit val asyncExecutionContext = ExecutionContext.fromExecutorService(asyncThreadPool)
+  private implicit val asyncExecutionContext =
+    ExecutionContext.fromExecutorService(asyncThreadPool)
 
   // Operations that involve removing blocks may be slow and should be done asynchronously
   override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
@@ -81,14 +81,16 @@ class BlockManagerSlaveEndpoint(
       logDebug(actionMessage)
       body
     }
-    future.onSuccess { case response =>
-      logDebug("Done " + actionMessage + ", response is " + response)
-      context.reply(response)
-      logDebug("Sent response: " + response + " to " + context.senderAddress)
+    future.onSuccess {
+      case response =>
+        logDebug("Done " + actionMessage + ", response is " + response)
+        context.reply(response)
+        logDebug("Sent response: " + response + " to " + context.senderAddress)
     }
-    future.onFailure { case t: Throwable =>
-      logError("Error in " + actionMessage, t)
-      context.sendFailure(t)
+    future.onFailure {
+      case t: Throwable =>
+        logError("Error in " + actionMessage, t)
+        context.sendFailure(t)
     }
   }
 

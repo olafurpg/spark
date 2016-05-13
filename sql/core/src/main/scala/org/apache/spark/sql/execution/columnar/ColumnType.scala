@@ -29,7 +29,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
-
 /**
  * A help class for fast reading Int/Long/Float/Double from ByteBuffer in native order.
  *
@@ -154,9 +153,8 @@ private[columnar] object NULL extends ColumnType[Any] {
 }
 
 private[columnar] abstract class NativeColumnType[T <: AtomicType](
-    val dataType: T,
-    val defaultSize: Int)
-  extends ColumnType[T#InternalType] {
+    val dataType: T, val defaultSize: Int)
+    extends ColumnType[T#InternalType] {
 
   /**
    * Scala TypeTag. Can be used to create primitive arrays and hash tables.
@@ -186,7 +184,6 @@ private[columnar] object INT extends NativeColumnType(IntegerType, 4) {
   }
 
   override def getField(row: InternalRow, ordinal: Int): Int = row.getInt(ordinal)
-
 
   override def copyField(from: InternalRow, fromOrdinal: Int, to: MutableRow, toOrdinal: Int) {
     to.setInt(toOrdinal, from.getInt(fromOrdinal))
@@ -371,8 +368,10 @@ private[columnar] trait DirectCopyColumnType[JvmType] extends ColumnType[JvmType
       val numBytes = buffer.getInt
       val cursor = buffer.position()
       buffer.position(cursor + numBytes)
-      row.asInstanceOf[MutableUnsafeRow].writer.write(ordinal, buffer.array(),
-        buffer.arrayOffset() + cursor, numBytes)
+      row
+        .asInstanceOf[MutableUnsafeRow]
+        .writer
+        .write(ordinal, buffer.array(), buffer.arrayOffset() + cursor, numBytes)
     } else {
       setField(row, ordinal, extract(buffer))
     }
@@ -389,7 +388,8 @@ private[columnar] trait DirectCopyColumnType[JvmType] extends ColumnType[JvmType
 }
 
 private[columnar] object STRING
-  extends NativeColumnType(StringType, 8) with DirectCopyColumnType[UTF8String] {
+    extends NativeColumnType(StringType, 8)
+    with DirectCopyColumnType[UTF8String] {
 
   override def actualSize(row: InternalRow, ordinal: Int): Int = {
     row.getUTF8String(ordinal).numBytes() + 4
@@ -427,7 +427,7 @@ private[columnar] object STRING
 }
 
 private[columnar] case class COMPACT_DECIMAL(precision: Int, scale: Int)
-  extends NativeColumnType(DecimalType(precision, scale), 8) {
+    extends NativeColumnType(DecimalType(precision, scale), 8) {
 
   override def extract(buffer: ByteBuffer): Decimal = {
     Decimal(ByteBufferHelper.getLong(buffer), precision, scale)
@@ -475,7 +475,8 @@ private[columnar] object COMPACT_DECIMAL {
 }
 
 private[columnar] sealed abstract class ByteArrayColumnType[JvmType](val defaultSize: Int)
-  extends ColumnType[JvmType] with DirectCopyColumnType[JvmType] {
+    extends ColumnType[JvmType]
+    with DirectCopyColumnType[JvmType] {
 
   def serialize(value: JvmType): Array[Byte]
   def deserialize(bytes: Array[Byte]): JvmType
@@ -514,7 +515,7 @@ private[columnar] object BINARY extends ByteArrayColumnType[Array[Byte]](16) {
 }
 
 private[columnar] case class LARGE_DECIMAL(precision: Int, scale: Int)
-  extends ByteArrayColumnType[Decimal](12) {
+    extends ByteArrayColumnType[Decimal](12) {
 
   override val dataType: DataType = DecimalType(precision, scale)
 
@@ -547,7 +548,8 @@ private[columnar] object LARGE_DECIMAL {
 }
 
 private[columnar] case class STRUCT(dataType: StructType)
-  extends ColumnType[UnsafeRow] with DirectCopyColumnType[UnsafeRow] {
+    extends ColumnType[UnsafeRow]
+    with DirectCopyColumnType[UnsafeRow] {
 
   private val numOfFields: Int = dataType.fields.length
 
@@ -576,10 +578,9 @@ private[columnar] case class STRUCT(dataType: StructType)
     val cursor = buffer.position()
     buffer.position(cursor + sizeInBytes)
     val unsafeRow = new UnsafeRow(numOfFields)
-    unsafeRow.pointTo(
-      buffer.array(),
-      Platform.BYTE_ARRAY_OFFSET + buffer.arrayOffset() + cursor,
-      sizeInBytes)
+    unsafeRow.pointTo(buffer.array(),
+                      Platform.BYTE_ARRAY_OFFSET + buffer.arrayOffset() + cursor,
+                      sizeInBytes)
     unsafeRow
   }
 
@@ -587,7 +588,8 @@ private[columnar] case class STRUCT(dataType: StructType)
 }
 
 private[columnar] case class ARRAY(dataType: ArrayType)
-  extends ColumnType[UnsafeArrayData] with DirectCopyColumnType[UnsafeArrayData] {
+    extends ColumnType[UnsafeArrayData]
+    with DirectCopyColumnType[UnsafeArrayData] {
 
   override def defaultSize: Int = 16
 
@@ -615,10 +617,9 @@ private[columnar] case class ARRAY(dataType: ArrayType)
     val cursor = buffer.position()
     buffer.position(cursor + numBytes)
     val array = new UnsafeArrayData
-    array.pointTo(
-      buffer.array(),
-      Platform.BYTE_ARRAY_OFFSET + buffer.arrayOffset() + cursor,
-      numBytes)
+    array.pointTo(buffer.array(),
+                  Platform.BYTE_ARRAY_OFFSET + buffer.arrayOffset() + cursor,
+                  numBytes)
     array
   }
 
@@ -626,7 +627,8 @@ private[columnar] case class ARRAY(dataType: ArrayType)
 }
 
 private[columnar] case class MAP(dataType: MapType)
-  extends ColumnType[UnsafeMapData] with DirectCopyColumnType[UnsafeMapData] {
+    extends ColumnType[UnsafeMapData]
+    with DirectCopyColumnType[UnsafeMapData] {
 
   override def defaultSize: Int = 32
 
@@ -653,10 +655,9 @@ private[columnar] case class MAP(dataType: MapType)
     val cursor = buffer.position()
     buffer.position(cursor + numBytes)
     val map = new UnsafeMapData
-    map.pointTo(
-      buffer.array(),
-      Platform.BYTE_ARRAY_OFFSET + buffer.arrayOffset() + cursor,
-      numBytes)
+    map.pointTo(buffer.array(),
+                Platform.BYTE_ARRAY_OFFSET + buffer.arrayOffset() + cursor,
+                numBytes)
     map
   }
 

@@ -30,10 +30,8 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.ThreadUtils
 
-
 /** Unique identifier for a [[StateStore]] */
 case class StateStoreId(checkpointLocation: String, operatorId: Long, partitionId: Int)
-
 
 /**
  * Base trait for a versioned key-value store used for streaming aggregations
@@ -83,7 +81,6 @@ trait StateStore {
   private[state] def hasCommitted: Boolean
 }
 
-
 /** Trait representing a provider of a specific version of a [[StateStore]]. */
 trait StateStoreProvider {
 
@@ -91,9 +88,8 @@ trait StateStoreProvider {
   def getStore(version: Long): StateStore
 
   /** Optional method for providers to allow for background maintenance */
-  def doMaintenance(): Unit = { }
+  def doMaintenance(): Unit = {}
 }
-
 
 /** Trait representing updates made to a [[StateStore]]. */
 sealed trait StoreUpdate
@@ -103,7 +99,6 @@ case class ValueAdded(key: UnsafeRow, value: UnsafeRow) extends StoreUpdate
 case class ValueUpdated(key: UnsafeRow, value: UnsafeRow) extends StoreUpdate
 
 case class KeyRemoved(key: UnsafeRow) extends StoreUpdate
-
 
 /**
  * Companion object to [[StateStore]] that provides helper methods to create and retrieve stores
@@ -126,19 +121,18 @@ private[sql] object StateStore extends Logging {
   @volatile private var _coordRef: StateStoreCoordinatorRef = null
 
   /** Get or create a store associated with the id. */
-  def get(
-      storeId: StateStoreId,
-      keySchema: StructType,
-      valueSchema: StructType,
-      version: Long,
-      storeConf: StateStoreConf,
-      hadoopConf: Configuration): StateStore = {
+  def get(storeId: StateStoreId,
+          keySchema: StructType,
+          valueSchema: StructType,
+          version: Long,
+          storeConf: StateStoreConf,
+          hadoopConf: Configuration): StateStore = {
     require(version >= 0)
     val storeProvider = loadedProviders.synchronized {
       startMaintenanceIfNeeded()
       val provider = loadedProviders.getOrElseUpdate(
-        storeId,
-        new HDFSBackedStateStoreProvider(storeId, keySchema, valueSchema, storeConf, hadoopConf))
+          storeId,
+          new HDFSBackedStateStoreProvider(storeId, keySchema, valueSchema, storeConf, hadoopConf))
       reportActiveStoreInstance(storeId)
       provider
     }
@@ -174,13 +168,13 @@ private[sql] object StateStore extends Logging {
   private def startMaintenanceIfNeeded(): Unit = loadedProviders.synchronized {
     val env = SparkEnv.get
     if (maintenanceTask == null && env != null) {
-      val periodMs = env.conf.getTimeAsMs(
-        MAINTENANCE_INTERVAL_CONFIG, s"${MAINTENANCE_INTERVAL_DEFAULT_SECS}s")
+      val periodMs =
+        env.conf.getTimeAsMs(MAINTENANCE_INTERVAL_CONFIG, s"${MAINTENANCE_INTERVAL_DEFAULT_SECS}s")
       val runnable = new Runnable {
         override def run(): Unit = { doMaintenance() }
       }
       maintenanceTask = maintenanceTaskExecutor.scheduleAtFixedRate(
-        runnable, periodMs, periodMs, TimeUnit.MILLISECONDS)
+          runnable, periodMs, periodMs, TimeUnit.MILLISECONDS)
       logInfo("State Store maintenance task started")
     }
   }
@@ -194,19 +188,20 @@ private[sql] object StateStore extends Logging {
     if (SparkEnv.get == null) {
       stop()
     } else {
-      loadedProviders.synchronized { loadedProviders.toSeq }.foreach { case (id, provider) =>
-        try {
-          if (verifyIfStoreInstanceActive(id)) {
-            provider.doMaintenance()
-          } else {
-            unload(id)
-            logInfo(s"Unloaded $provider")
+      loadedProviders.synchronized { loadedProviders.toSeq }.foreach {
+        case (id, provider) =>
+          try {
+            if (verifyIfStoreInstanceActive(id)) {
+              provider.doMaintenance()
+            } else {
+              unload(id)
+              logInfo(s"Unloaded $provider")
+            }
+          } catch {
+            case NonFatal(e) =>
+              logWarning(s"Error managing $provider, stopping management thread")
+              stop()
           }
-        } catch {
-          case NonFatal(e) =>
-            logWarning(s"Error managing $provider, stopping management thread")
-            stop()
-        }
       }
     }
   }
@@ -246,4 +241,3 @@ private[sql] object StateStore extends Logging {
     }
   }
 }
-

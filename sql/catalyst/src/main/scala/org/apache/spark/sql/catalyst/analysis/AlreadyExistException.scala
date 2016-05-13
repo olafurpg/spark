@@ -25,25 +25,25 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
  * as an [[org.apache.spark.sql.AnalysisException]] with the correct position information.
  */
 class DatabaseAlreadyExistsException(db: String)
-  extends AnalysisException(s"Database '$db' already exists")
+    extends AnalysisException(s"Database '$db' already exists")
 
 class TableAlreadyExistsException(db: String, table: String)
-  extends AnalysisException(s"Table or view '$table' already exists in database '$db'")
+    extends AnalysisException(s"Table or view '$table' already exists in database '$db'")
 
 class TempTableAlreadyExistsException(table: String)
-  extends AnalysisException(s"Temporary table '$table' already exists")
+    extends AnalysisException(s"Temporary table '$table' already exists")
 
 class PartitionAlreadyExistsException(db: String, table: String, spec: TablePartitionSpec)
-  extends AnalysisException(
-    s"Partition already exists in table '$table' database '$db':\n" + spec.mkString("\n"))
+    extends AnalysisException(
+        s"Partition already exists in table '$table' database '$db':\n" + spec.mkString("\n"))
 
 class PartitionsAlreadyExistException(db: String, table: String, specs: Seq[TablePartitionSpec])
-  extends AnalysisException(
-    s"The following partitions already exists in table '$table' database '$db':\n"
-      + specs.mkString("\n===\n"))
+    extends AnalysisException(
+        s"The following partitions already exists in table '$table' database '$db':\n" +
+        specs.mkString("\n===\n"))
 
 class FunctionAlreadyExistsException(db: String, func: String)
-  extends AnalysisException(s"Function '$func' already exists in database '$db'")
+    extends AnalysisException(s"Function '$func' already exists in database '$db'")
 
 class TempFunctionAlreadyExistsException(func: String)
-  extends AnalysisException(s"Temporary function '$func' already exists")
+    extends AnalysisException(s"Temporary function '$func' already exists")

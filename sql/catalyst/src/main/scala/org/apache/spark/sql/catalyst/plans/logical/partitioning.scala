@@ -28,7 +28,7 @@ abstract class RedistributeData extends UnaryNode {
 }
 
 case class SortPartitions(sortExpressions: Seq[SortOrder], child: LogicalPlan)
-  extends RedistributeData
+    extends RedistributeData
 
 /**
  * This method repartitions data using [[Expression]]s into `numPartitions`, and receives
@@ -38,10 +38,10 @@ case class SortPartitions(sortExpressions: Seq[SortOrder], child: LogicalPlan)
  * If `numPartitions` is not specified, the number of partitions will be the number set by
  * `spark.sql.shuffle.partitions`.
  */
-case class RepartitionByExpression(
-    partitionExpressions: Seq[Expression],
-    child: LogicalPlan,
-    numPartitions: Option[Int] = None) extends RedistributeData {
+case class RepartitionByExpression(partitionExpressions: Seq[Expression],
+                                   child: LogicalPlan,
+                                   numPartitions: Option[Int] = None)
+    extends RedistributeData {
   numPartitions match {
     case Some(n) => require(n > 0, "numPartitions must be greater than 0.")
     case None => // Ok

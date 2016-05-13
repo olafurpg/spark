@@ -34,8 +34,7 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
 
     val state = parent.scheduler.getDriverState(driverId)
     if (state.isEmpty) {
-      val content =
-        <div>
+      val content = <div>
           <p>Cannot find driver {driverId}</p>
         </div>
       return UIUtils.basicSparkPage(content, s"Details for Job $driverId")
@@ -52,21 +51,14 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
     val command = Iterable.apply(driverState.description.command)
     val schedulerProperties = Iterable.apply(driverState.description.schedulerProperties)
     val commandEnv = Iterable.apply(driverState.description.command.environment)
-    val driverTable =
-      UIUtils.listingTable(driverHeaders, driverRow, driverDescription)
-    val commandTable =
-      UIUtils.listingTable(commandHeaders, commandRow, command)
-    val commandEnvTable =
-      UIUtils.listingTable(commandEnvHeaders, propertiesRow, commandEnv)
-    val schedulerTable =
-      UIUtils.listingTable(schedulerHeaders, propertiesRow, schedulerProperties)
-    val launchedTable =
-      UIUtils.listingTable(launchedHeaders, launchedRow, submissionState)
-    val retryTable =
-      UIUtils.listingTable(
+    val driverTable = UIUtils.listingTable(driverHeaders, driverRow, driverDescription)
+    val commandTable = UIUtils.listingTable(commandHeaders, commandRow, command)
+    val commandEnvTable = UIUtils.listingTable(commandEnvHeaders, propertiesRow, commandEnv)
+    val schedulerTable = UIUtils.listingTable(schedulerHeaders, propertiesRow, schedulerProperties)
+    val launchedTable = UIUtils.listingTable(launchedHeaders, launchedRow, submissionState)
+    val retryTable = UIUtils.listingTable(
         retryHeaders, retryRow, Iterable.apply(driverState.description.retryState))
-    val content =
-      <p>Driver state information for driver id {driverId}</p>
+    val content = <p>Driver state information for driver id {driverId}</p>
         <a href={UIUtils.prependBaseUri("/")}>Back to Drivers</a>
         <div class="row-fluid">
           <div class="span12">
@@ -115,8 +107,9 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
   }
 
   private def propertiesRow(properties: collection.Map[String, String]): Seq[Node] = {
-    properties.map { case (k, v) =>
-      <tr>
+    properties.map {
+      case (k, v) =>
+        <tr>
         <td>{k}</td><td>{v}</td>
       </tr>
     }.toSeq

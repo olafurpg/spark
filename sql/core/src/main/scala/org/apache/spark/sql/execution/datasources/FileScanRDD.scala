@@ -31,12 +31,11 @@ import org.apache.spark.sql.execution.vectorized.ColumnarBatch
  * need to be prepended to each row.  The reading should start at the first
  * valid record found after `start`.
  */
-case class PartitionedFile(
-    partitionValues: InternalRow,
-    filePath: String,
-    start: Long,
-    length: Long,
-    locations: Array[String] = Array.empty) {
+case class PartitionedFile(partitionValues: InternalRow,
+                           filePath: String,
+                           start: Long,
+                           length: Long,
+                           locations: Array[String] = Array.empty) {
   override def toString: String = {
     s"path: $filePath, range: $start-${start + length}, partition values: $partitionValues"
   }
@@ -50,11 +49,10 @@ case class PartitionedFile(
  */
 case class FilePartition(index: Int, files: Seq[PartitionedFile]) extends RDDPartition
 
-class FileScanRDD(
-    @transient private val sparkSession: SparkSession,
-    readFunction: (PartitionedFile) => Iterator[InternalRow],
-    @transient val filePartitions: Seq[FilePartition])
-  extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
+class FileScanRDD(@transient private val sparkSession: SparkSession,
+                  readFunction: (PartitionedFile) => Iterator[InternalRow],
+                  @transient val filePartitions: Seq[FilePartition])
+    extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
   override def compute(split: RDDPartition, context: TaskContext): Iterator[InternalRow] = {
     val iterator = new Iterator[Object] with AutoCloseable {

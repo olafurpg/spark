@@ -45,7 +45,8 @@ object TPCDSBenchmark {
   // https://github.com/databricks/spark-sql-perf/blob/master/src/main/scala/com/databricks/spark/
   // sql/perf/tpcds/ImpalaKitQueries.scala
   val tpcds = Seq(
-    ("q19", """
+      ("q19",
+       """
               |select
               |  i_brand_id,
               |  i_brand,
@@ -79,17 +80,17 @@ object TPCDSBenchmark {
               |  i_manufact
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q19                                      1710 / 1858          8.7         114.5       1.0X
-     */
+       */
 
-    ("q27", """
+      ("q27",
+       """
               |select
               |  i_item_id,
               |  s_state,
@@ -119,17 +120,17 @@ object TPCDSBenchmark {
               |  s_state
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q27                                      2016 / 2180          8.2         122.6       1.0X
-     */
+       */
 
-    ("q3", """
+      ("q3",
+       """
              |select
              |  dt.d_year,
              |  item.i_brand_id brand_id,
@@ -157,17 +158,17 @@ object TPCDSBenchmark {
              |  brand_id
              |limit 100
            """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q3                                       1073 / 1140         13.5          73.9       1.0X
-     */
+       */
 
-    ("q34", """
+      ("q34",
+       """
               |select
               |  c_last_name,
               |  c_first_name,
@@ -213,17 +214,17 @@ object TPCDSBenchmark {
               |  cnt
               |limit 1000
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q34                                      1482 / 1734         10.0         100.4       1.0X
-     */
+       */
 
-    ("q42", """
+      ("q42",
+       """
               |select
               |  d_year,
               |  i_category_id,
@@ -249,17 +250,17 @@ object TPCDSBenchmark {
               |  i_category
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q42                                      1125 / 1357         12.9          77.4       1.0X
-     */
+       */
 
-    ("q43", """
+      ("q43",
+       """
               |select
               |  s_store_name,
               |  s_store_id,
@@ -297,17 +298,17 @@ object TPCDSBenchmark {
               |  sat_sales
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q43                                      1681 / 1985          8.6         116.1       1.0X
-     */
+       */
 
-    ("q46", """
+      ("q46",
+       """
               |select
               |  c_last_name,
               |  c_first_name,
@@ -356,17 +357,17 @@ object TPCDSBenchmark {
               |  ss_ticket_number
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q46                                      2948 / 3218          5.1         196.1       1.0X
-     */
+       */
 
-    ("q52", """
+      ("q52",
+       """
               |select
               |  d_year,
               |  i_brand_id,
@@ -391,17 +392,17 @@ object TPCDSBenchmark {
               |  i_brand_id
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q52                                      1099 / 1228         13.2          75.7       1.0X
-     */
+       */
 
-    ("q53", """
+      ("q53",
+       """
               |select
               |  *
               |from
@@ -439,17 +440,17 @@ object TPCDSBenchmark {
               |  i_manufact_id
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q53                                       968 / 1020         15.0          66.6       1.0X
-     */
+       */
 
-    ("q55", """
+      ("q55",
+       """
               |select
               |  i_brand_id,
               |  i_brand,
@@ -471,17 +472,17 @@ object TPCDSBenchmark {
               |  i_brand_id
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q55                                      1002 / 1020         14.5          69.0       1.0X
-     */
+       */
 
-    ("q59", """
+      ("q59",
+       """
               |select
               |  s_store_name1,
               |  s_store_id1,
@@ -590,17 +591,17 @@ object TPCDSBenchmark {
               |  d_week_seq1
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q59                                      1624 / 1663         17.9          55.8       1.0X
-     */
+       */
 
-    ("q63", """
+      ("q63",
+       """
               |select
               |  *
               |from
@@ -638,17 +639,17 @@ object TPCDSBenchmark {
               |  sum_sales
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q63                                       979 / 1006         14.8          67.4       1.0X
-     */
+       */
 
-    ("q65", """
+      ("q65",
+       """
               |select
               |  s_store_name,
               |  i_item_desc,
@@ -702,17 +703,17 @@ object TPCDSBenchmark {
               |  i_item_desc
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q65                                      7770 / 8097          3.7         267.9       1.0X
-     */
+       */
 
-    ("q68", """
+      ("q68",
+       """
               |select
               |  c_last_name,
               |  c_first_name,
@@ -765,17 +766,17 @@ object TPCDSBenchmark {
               |  ss_ticket_number
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q68                                      3105 / 3405          4.8         206.5       1.0X
-     */
+       */
 
-    ("q7", """
+      ("q7",
+       """
              |select
              |  i_item_id,
              |  avg(ss_quantity) agg1,
@@ -803,17 +804,17 @@ object TPCDSBenchmark {
              |  i_item_id
              |limit 100
            """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q7                                       2042 / 2333          8.1         124.2       1.0X
-     */
+       */
 
-    ("q73", """
+      ("q73",
+       """
               |select
               |  c_last_name,
               |  c_first_name,
@@ -872,17 +873,17 @@ object TPCDSBenchmark {
               |  cnt desc
               |limit 1000
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q73                                      1124 / 1221         13.1          76.5       1.0X
-     */
+       */
 
-    ("q79", """
+      ("q79",
+       """
               |select
               |  c_last_name,
               |  c_first_name,
@@ -927,18 +928,17 @@ object TPCDSBenchmark {
               |  profit
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q79                                      2029 / 2488          7.3         137.5       1.0X
-     */
+       */
 
       ("q8",
-        """
+       """
           |select  s_store_name
           |      ,sum(ss_net_profit)
           | from store_sales
@@ -1025,17 +1025,17 @@ object TPCDSBenchmark {
           | order by s_store_name
           |limit 100
         """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q8                                       1737 / 2197          8.7         115.6       1.0X
-     */
+       */
 
-      ("q82", """
+      ("q82",
+       """
                 |select
                 |  i_item_id,
                 |  i_item_desc,
@@ -1057,17 +1057,17 @@ object TPCDSBenchmark {
                 |  i_item_id
                 |limit 100
               """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q82                                     9399 / 10245          6.8         147.2       1.0X
-     */
+       */
 
-    ("q89", """
+      ("q89",
+       """
               |select
               |  *
               |from
@@ -1105,17 +1105,17 @@ object TPCDSBenchmark {
               |  s_store_name
               |limit 100
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q89                                      1122 / 1274         12.9          77.2       1.0X
-     */
+       */
 
-    ("q98", """
+      ("q98",
+       """
               |select
               |  i_item_desc,
               |  i_category,
@@ -1145,17 +1145,17 @@ object TPCDSBenchmark {
               |  -- revenueratio
               |limit 1000
             """.stripMargin),
-
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     q98                                      1235 / 1542         11.8          85.0       1.0X
-     */
+       */
 
-    ("ss_max", """
+      ("ss_max",
+       """
                  |select
                  |  count(*) as total,
                  |  max(ss_sold_date_sk) as max_ss_sold_date_sk,
@@ -1170,20 +1170,28 @@ object TPCDSBenchmark {
                  |from store_sales
                """.stripMargin)
 
-    /*
+      /*
     Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02 on Mac OS X 10.11.4
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz
 
     TPCDS Snappy (scale = 5):           Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
     -------------------------------------------------------------------------------------------
     ss_max                                   2305 / 2731          6.2         160.0       1.0X
-     */
-
+   */
   ).toArray
 
-  val tables = Seq("customer", "customer_address", "customer_demographics", "date_dim",
-    "household_demographics", "inventory", "item", "promotion", "store", "catalog_sales",
-    "web_sales", "store_sales")
+  val tables = Seq("customer",
+                   "customer_address",
+                   "customer_demographics",
+                   "date_dim",
+                   "household_demographics",
+                   "inventory",
+                   "item",
+                   "promotion",
+                   "store",
+                   "catalog_sales",
+                   "web_sales",
+                   "store_sales")
 
   def setupTables(dataLocation: String): Map[String, Long] = {
     tables.map { tableName =>
@@ -1194,17 +1202,22 @@ object TPCDSBenchmark {
 
   def tpcdsAll(dataLocation: String): Unit = {
     require(dataLocation.nonEmpty,
-      "please modify the value of dataLocation to point to your local TPCDS data")
+            "please modify the value of dataLocation to point to your local TPCDS data")
     val tableSizes = setupTables(dataLocation)
     spark.conf.set(SQLConf.PARQUET_VECTORIZED_READER_ENABLED.key, "true")
     spark.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
     tpcds.filter(q => q._1 != "").foreach {
       case (name: String, query: String) =>
-        val numRows = spark.sql(query).queryExecution.logical.map {
-          case ur@UnresolvedRelation(t: TableIdentifier, _) =>
-            tableSizes.getOrElse(t.table, throw new RuntimeException(s"${t.table} not found."))
-          case _ => 0L
-        }.sum
+        val numRows = spark
+          .sql(query)
+          .queryExecution
+          .logical
+          .map {
+            case ur @ UnresolvedRelation(t: TableIdentifier, _) =>
+              tableSizes.getOrElse(t.table, throw new RuntimeException(s"${t.table} not found."))
+            case _ => 0L
+          }
+          .sum
         val benchmark = new Benchmark("TPCDS Snappy (scale = 5)", numRows, 5)
         benchmark.addCase(name) { i =>
           spark.sql(query).collect()

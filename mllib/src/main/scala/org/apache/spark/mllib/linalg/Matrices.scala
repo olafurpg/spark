@@ -121,7 +121,8 @@ sealed trait Matrix extends Serializable {
 
   /** A human readable representation of the matrix with maximum lines and width */
   @Since("1.4.0")
-  def toString(maxLines: Int, maxLineWidth: Int): String = toBreeze.toString(maxLines, maxLineWidth)
+  def toString(maxLines: Int, maxLineWidth: Int): String =
+    toBreeze.toString(maxLines, maxLineWidth)
 
   /**
    * Map the values of this matrix using a function. Generates a new matrix. Performs the
@@ -175,15 +176,17 @@ private[spark] class MatrixUDT extends UserDefinedType[Matrix] {
     // be added for which values are not needed.
     // the sparse matrix needs colPtrs and rowIndices, which are set as
     // null, while building the dense matrix.
-    StructType(Seq(
-      StructField("type", ByteType, nullable = false),
-      StructField("numRows", IntegerType, nullable = false),
-      StructField("numCols", IntegerType, nullable = false),
-      StructField("colPtrs", ArrayType(IntegerType, containsNull = false), nullable = true),
-      StructField("rowIndices", ArrayType(IntegerType, containsNull = false), nullable = true),
-      StructField("values", ArrayType(DoubleType, containsNull = false), nullable = true),
-      StructField("isTransposed", BooleanType, nullable = false)
-      ))
+    StructType(
+        Seq(
+            StructField("type", ByteType, nullable = false),
+            StructField("numRows", IntegerType, nullable = false),
+            StructField("numCols", IntegerType, nullable = false),
+            StructField("colPtrs", ArrayType(IntegerType, containsNull = false), nullable = true),
+            StructField(
+                "rowIndices", ArrayType(IntegerType, containsNull = false), nullable = true),
+            StructField("values", ArrayType(DoubleType, containsNull = false), nullable = true),
+            StructField("isTransposed", BooleanType, nullable = false)
+        ))
   }
 
   override def serialize(obj: Matrix): InternalRow = {
@@ -213,8 +216,9 @@ private[spark] class MatrixUDT extends UserDefinedType[Matrix] {
   override def deserialize(datum: Any): Matrix = {
     datum match {
       case row: InternalRow =>
-        require(row.numFields == 7,
-          s"MatrixUDT.deserialize given row with length ${row.numFields} but requires length == 7")
+        require(
+            row.numFields == 7,
+            s"MatrixUDT.deserialize given row with length ${row.numFields} but requires length == 7")
         val tpe = row.getByte(0)
         val numRows = row.getInt(1)
         val numCols = row.getInt(2)
@@ -269,14 +273,16 @@ private[spark] class MatrixUDT extends UserDefinedType[Matrix] {
  */
 @Since("1.0.0")
 @SQLUserDefinedType(udt = classOf[MatrixUDT])
-class DenseMatrix @Since("1.3.0") (
-    @Since("1.0.0") val numRows: Int,
-    @Since("1.0.0") val numCols: Int,
-    @Since("1.0.0") val values: Array[Double],
-    @Since("1.3.0") override val isTransposed: Boolean) extends Matrix {
+class DenseMatrix @Since("1.3.0")(@Since("1.0.0") val numRows: Int,
+                                  @Since("1.0.0") val numCols: Int,
+                                  @Since("1.0.0") val values: Array[Double],
+                                  @Since("1.3.0") override val isTransposed: Boolean)
+    extends Matrix {
 
-  require(values.length == numRows * numCols, "The number of values supplied doesn't match the " +
-    s"size of the matrix! values.length: ${values.length}, numRows * numCols: ${numRows * numCols}")
+  require(
+      values.length == numRows * numCols,
+      "The number of values supplied doesn't match the " +
+      s"size of the matrix! values.length: ${values.length}, numRows * numCols: ${numRows * numCols}")
 
   /**
    * Column-major dense matrix.
@@ -333,8 +339,8 @@ class DenseMatrix @Since("1.3.0") (
   @Since("1.4.0")
   override def copy: DenseMatrix = new DenseMatrix(numRows, numCols, values.clone())
 
-  private[spark] def map(f: Double => Double) = new DenseMatrix(numRows, numCols, values.map(f),
-    isTransposed)
+  private[spark] def map(f: Double => Double) =
+    new DenseMatrix(numRows, numCols, values.map(f), isTransposed)
 
   private[mllib] def update(f: Double => Double): DenseMatrix = {
     val len = values.length
@@ -556,22 +562,25 @@ object DenseMatrix {
  */
 @Since("1.2.0")
 @SQLUserDefinedType(udt = classOf[MatrixUDT])
-class SparseMatrix @Since("1.3.0") (
-    @Since("1.2.0") val numRows: Int,
-    @Since("1.2.0") val numCols: Int,
-    @Since("1.2.0") val colPtrs: Array[Int],
-    @Since("1.2.0") val rowIndices: Array[Int],
-    @Since("1.2.0") val values: Array[Double],
-    @Since("1.3.0") override val isTransposed: Boolean) extends Matrix {
+class SparseMatrix @Since("1.3.0")(@Since("1.2.0") val numRows: Int,
+                                   @Since("1.2.0") val numCols: Int,
+                                   @Since("1.2.0") val colPtrs: Array[Int],
+                                   @Since("1.2.0") val rowIndices: Array[Int],
+                                   @Since("1.2.0") val values: Array[Double],
+                                   @Since("1.3.0") override val isTransposed: Boolean)
+    extends Matrix {
 
-  require(values.length == rowIndices.length, "The number of row indices and values don't match! " +
-    s"values.length: ${values.length}, rowIndices.length: ${rowIndices.length}")
+  require(values.length == rowIndices.length,
+          "The number of row indices and values don't match! " +
+          s"values.length: ${values.length}, rowIndices.length: ${rowIndices.length}")
   // The Or statement is for the case when the matrix is transposed
-  require(colPtrs.length == numCols + 1 || colPtrs.length == numRows + 1, "The length of the " +
-    "column indices should be the number of columns + 1. Currently, colPointers.length: " +
-    s"${colPtrs.length}, numCols: $numCols")
-  require(values.length == colPtrs.last, "The last value of colPtrs must equal the number of " +
-    s"elements. values.length: ${values.length}, colPtrs.last: ${colPtrs.last}")
+  require(colPtrs.length == numCols + 1 || colPtrs.length == numRows + 1,
+          "The length of the " +
+          "column indices should be the number of columns + 1. Currently, colPointers.length: " +
+          s"${colPtrs.length}, numCols: $numCols")
+  require(values.length == colPtrs.last,
+          "The last value of colPtrs must equal the number of " +
+          s"elements. values.length: ${values.length}, colPtrs.last: ${colPtrs.last}")
 
   /**
    * Column-major sparse matrix.
@@ -593,12 +602,11 @@ class SparseMatrix @Since("1.3.0") (
    * @param values non-zero matrix entries in column major
    */
   @Since("1.2.0")
-  def this(
-      numRows: Int,
-      numCols: Int,
-      colPtrs: Array[Int],
-      rowIndices: Array[Int],
-      values: Array[Double]) = this(numRows, numCols, colPtrs, rowIndices, values, false)
+  def this(numRows: Int,
+           numCols: Int,
+           colPtrs: Array[Int],
+           rowIndices: Array[Int],
+           values: Array[Double]) = this(numRows, numCols, colPtrs, rowIndices, values, false)
 
   override def equals(o: Any): Boolean = o match {
     case m: Matrix => toBreeze == m.toBreeze
@@ -608,12 +616,12 @@ class SparseMatrix @Since("1.3.0") (
   override def hashCode(): Int = toBreeze.hashCode
 
   private[mllib] def toBreeze: BM[Double] = {
-     if (!isTransposed) {
-       new BSM[Double](values, numRows, numCols, colPtrs, rowIndices)
-     } else {
-       val breezeMatrix = new BSM[Double](values, numCols, numRows, colPtrs, rowIndices)
-       breezeMatrix.t
-     }
+    if (!isTransposed) {
+      new BSM[Double](values, numRows, numCols, colPtrs, rowIndices)
+    } else {
+      val breezeMatrix = new BSM[Double](values, numCols, numRows, colPtrs, rowIndices)
+      breezeMatrix.t
+    }
   }
 
   @Since("1.3.0")
@@ -636,7 +644,7 @@ class SparseMatrix @Since("1.3.0") (
     val ind = index(i, j)
     if (ind < 0) {
       throw new NoSuchElementException("The given row and column indices correspond to a zero " +
-        "value. Only non-zero elements in Sparse Matrices can be updated.")
+          "value. Only non-zero elements in Sparse Matrices can be updated.")
     } else {
       values(ind) = v
     }
@@ -779,26 +787,27 @@ object SparseMatrix {
     var prevRow = -1
     var prevVal = 0.0
     // Append a dummy entry to include the last one at the end of the loop.
-    (sortedEntries.view :+ (numRows, numCols, 1.0)).foreach { case (i, j, v) =>
-      if (v != 0) {
-        if (i == prevRow && j == prevCol) {
-          prevVal += v
-        } else {
-          if (prevVal != 0) {
-            require(prevRow >= 0 && prevRow < numRows,
-              s"Row index out of range [0, $numRows): $prevRow.")
-            nnz += 1
-            rowIndices += prevRow
-            values += prevVal
-          }
-          prevRow = i
-          prevVal = v
-          while (prevCol < j) {
-            colPtrs(prevCol + 1) = nnz
-            prevCol += 1
+    (sortedEntries.view :+ (numRows, numCols, 1.0)).foreach {
+      case (i, j, v) =>
+        if (v != 0) {
+          if (i == prevRow && j == prevCol) {
+            prevVal += v
+          } else {
+            if (prevVal != 0) {
+              require(prevRow >= 0 && prevRow < numRows,
+                      s"Row index out of range [0, $numRows): $prevRow.")
+              nnz += 1
+              rowIndices += prevRow
+              values += prevVal
+            }
+            prevRow = i
+            prevVal = v
+            while (prevCol < j) {
+              colPtrs(prevCol + 1) = nnz
+              prevCol += 1
+            }
           }
         }
-      }
     }
     new SparseMatrix(numRows, numCols, colPtrs, rowIndices.result(), values.result())
   }
@@ -818,21 +827,19 @@ object SparseMatrix {
    * The values of the matrix returned are undefined.
    */
   private def genRandMatrix(
-      numRows: Int,
-      numCols: Int,
-      density: Double,
-      rng: Random): SparseMatrix = {
+      numRows: Int, numCols: Int, density: Double, rng: Random): SparseMatrix = {
     require(numRows > 0, s"numRows must be greater than 0 but got $numRows")
     require(numCols > 0, s"numCols must be greater than 0 but got $numCols")
     require(density >= 0.0 && density <= 1.0,
-      s"density must be a double in the range 0.0 <= d <= 1.0. Currently, density: $density")
+            s"density must be a double in the range 0.0 <= d <= 1.0. Currently, density: $density")
     val size = numRows.toLong * numCols
     val expected = size * density
     assert(expected < Int.MaxValue,
-      "The expected number of nonzeros cannot be greater than Int.MaxValue.")
+           "The expected number of nonzeros cannot be greater than Int.MaxValue.")
     val nnz = math.ceil(expected).toInt
     if (density == 0.0) {
-      new SparseMatrix(numRows, numCols, new Array[Int](numCols + 1), Array[Int](), Array[Double]())
+      new SparseMatrix(
+          numRows, numCols, new Array[Int](numCols + 1), Array[Int](), Array[Double]())
     } else if (density == 1.0) {
       val colPtrs = Array.tabulate(numCols + 1)(j => j * numRows)
       val rowIndices = Array.tabulate(size.toInt)(idx => idx % numRows)
@@ -951,12 +958,11 @@ object Matrices {
    * @param values non-zero matrix entries in column major
    */
   @Since("1.2.0")
-  def sparse(
-     numRows: Int,
-     numCols: Int,
-     colPtrs: Array[Int],
-     rowIndices: Array[Int],
-     values: Array[Double]): Matrix = {
+  def sparse(numRows: Int,
+             numCols: Int,
+             colPtrs: Array[Int],
+             rowIndices: Array[Int],
+             values: Array[Double]): Matrix = {
     new SparseMatrix(numRows, numCols, colPtrs, rowIndices, values)
   }
 
@@ -971,18 +977,19 @@ object Matrices {
         new DenseMatrix(dm.rows, dm.cols, dm.data, dm.isTranspose)
       case sm: BSM[Double] =>
         // Spark-11507. work around breeze issue 479.
-        val mat = if (sm.colPtrs.last != sm.data.length) {
-          val matCopy = sm.copy
-          matCopy.compact()
-          matCopy
-        } else {
-          sm
-        }
+        val mat =
+          if (sm.colPtrs.last != sm.data.length) {
+            val matCopy = sm.copy
+            matCopy.compact()
+            matCopy
+          } else {
+            sm
+          }
         // There is no isTranspose flag for sparse matrices in Breeze
         new SparseMatrix(mat.rows, mat.cols, mat.colPtrs, mat.rowIndices, mat.data)
       case _ =>
         throw new UnsupportedOperationException(
-          s"Do not support conversion from type ${breeze.getClass.getName}.")
+            s"Do not support conversion from type ${breeze.getClass.getName}.")
     }
   }
 
@@ -1093,13 +1100,14 @@ object Matrices {
     var hasSparse = false
     var numCols = 0
     matrices.foreach { mat =>
-      require(numRows == mat.numRows, "The number of rows of the matrices in this sequence, " +
-        "don't match!")
+      require(numRows == mat.numRows,
+              "The number of rows of the matrices in this sequence, " + "don't match!")
       mat match {
         case sparse: SparseMatrix => hasSparse = true
         case dense: DenseMatrix => // empty on purpose
-        case _ => throw new IllegalArgumentException("Unsupported matrix format. Expected " +
-          s"SparseMatrix or DenseMatrix. Instead got: ${mat.getClass}")
+        case _ =>
+          throw new IllegalArgumentException("Unsupported matrix format. Expected " +
+              s"SparseMatrix or DenseMatrix. Instead got: ${mat.getClass}")
       }
       numCols += mat.numCols
     }
@@ -1152,13 +1160,14 @@ object Matrices {
     var hasSparse = false
     var numRows = 0
     matrices.foreach { mat =>
-      require(numCols == mat.numCols, "The number of rows of the matrices in this sequence, " +
-        "don't match!")
+      require(numCols == mat.numCols,
+              "The number of rows of the matrices in this sequence, " + "don't match!")
       mat match {
         case sparse: SparseMatrix => hasSparse = true
         case dense: DenseMatrix => // empty on purpose
-        case _ => throw new IllegalArgumentException("Unsupported matrix format. Expected " +
-          s"SparseMatrix or DenseMatrix. Instead got: ${mat.getClass}")
+        case _ =>
+          throw new IllegalArgumentException("Unsupported matrix format. Expected " +
+              s"SparseMatrix or DenseMatrix. Instead got: ${mat.getClass}")
       }
       numRows += mat.numRows
     }

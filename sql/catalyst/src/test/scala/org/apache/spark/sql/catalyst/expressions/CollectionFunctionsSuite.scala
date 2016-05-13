@@ -20,7 +20,6 @@ package org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.types._
 
-
 class CollectionFunctionsSuite extends SparkFunSuite with ExpressionEvalHelper {
 
   test("Array and Map Size") {

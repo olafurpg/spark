@@ -57,4 +57,3 @@ class FailureSuite extends SparkFunSuite with BeforeAndAfter with Logging {
     MasterFailureTest.testUpdateStateByKey(directory.getAbsolutePath, numBatches, batchDuration)
   }
 }
-

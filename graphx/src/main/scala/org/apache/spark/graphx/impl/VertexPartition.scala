@@ -23,9 +23,9 @@ import org.apache.spark.graphx._
 import org.apache.spark.util.collection.BitSet
 
 private[graphx] object VertexPartition {
+
   /** Construct a `VertexPartition` from the given vertices. */
-  def apply[VD: ClassTag](iter: Iterator[(VertexId, VD)])
-    : VertexPartition[VD] = {
+  def apply[VD: ClassTag](iter: Iterator[(VertexId, VD)]): VertexPartition[VD] = {
     val (index, values, mask) = VertexPartitionBase.initFrom(iter)
     new VertexPartition(index, values, mask)
   }
@@ -36,8 +36,8 @@ private[graphx] object VertexPartition {
    * Implicit conversion to allow invoking `VertexPartitionBase` operations directly on a
    * `VertexPartition`.
    */
-  implicit def partitionToOps[VD: ClassTag](partition: VertexPartition[VD])
-    : VertexPartitionOps[VD] = new VertexPartitionOps(partition)
+  implicit def partitionToOps[VD: ClassTag](
+      partition: VertexPartition[VD]): VertexPartitionOps[VD] = new VertexPartitionOps(partition)
 
   /**
    * Implicit evidence that `VertexPartition` is a member of the `VertexPartitionBaseOpsConstructor`
@@ -45,21 +45,20 @@ private[graphx] object VertexPartition {
    * evidence parameter, as in [[VertexPartitionBaseOps]].
    */
   implicit object VertexPartitionOpsConstructor
-    extends VertexPartitionBaseOpsConstructor[VertexPartition] {
-    def toOps[VD: ClassTag](partition: VertexPartition[VD])
-      : VertexPartitionBaseOps[VD, VertexPartition] = partitionToOps(partition)
+      extends VertexPartitionBaseOpsConstructor[VertexPartition] {
+    def toOps[VD: ClassTag](
+        partition: VertexPartition[VD]): VertexPartitionBaseOps[VD, VertexPartition] =
+      partitionToOps(partition)
   }
 }
 
 /** A map from vertex id to vertex attribute. */
 private[graphx] class VertexPartition[VD: ClassTag](
-    val index: VertexIdToIndexMap,
-    val values: Array[VD],
-    val mask: BitSet)
-  extends VertexPartitionBase[VD]
+    val index: VertexIdToIndexMap, val values: Array[VD], val mask: BitSet)
+    extends VertexPartitionBase[VD]
 
 private[graphx] class VertexPartitionOps[VD: ClassTag](self: VertexPartition[VD])
-  extends VertexPartitionBaseOps[VD, VertexPartition](self) {
+    extends VertexPartitionBaseOps[VD, VertexPartition](self) {
 
   def withIndex(index: VertexIdToIndexMap): VertexPartition[VD] = {
     new VertexPartition(index, self.values, self.mask)

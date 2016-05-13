@@ -27,8 +27,8 @@ import org.apache.spark.mllib.linalg._
  * @param scalingVec The values used to scale the reference vector's individual components.
  */
 @Since("1.4.0")
-class ElementwiseProduct @Since("1.4.0") (
-    @Since("1.4.0") val scalingVec: Vector) extends VectorTransformer {
+class ElementwiseProduct @Since("1.4.0")(@Since("1.4.0") val scalingVec: Vector)
+    extends VectorTransformer {
 
   /**
    * Does the hadamard product transformation.
@@ -39,7 +39,7 @@ class ElementwiseProduct @Since("1.4.0") (
   @Since("1.4.0")
   override def transform(vector: Vector): Vector = {
     require(vector.size == scalingVec.size,
-      s"vector sizes do not match: Expected ${scalingVec.size} but found ${vector.size}")
+            s"vector sizes do not match: Expected ${scalingVec.size} but found ${vector.size}")
     vector match {
       case dv: DenseVector =>
         val values: Array[Double] = dv.values.clone()

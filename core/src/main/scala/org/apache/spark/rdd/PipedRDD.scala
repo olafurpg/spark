@@ -36,33 +36,34 @@ import scala.util.control.NonFatal
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 import org.apache.spark.util.Utils
 
-
 /**
  * An RDD that pipes the contents of each parent partition through an external command
  * (printing them one per line) and returns the output as a collection of strings.
  */
-private[spark] class PipedRDD[T: ClassTag](
-    prev: RDD[T],
-    command: Seq[String],
-    envVars: Map[String, String],
-    printPipeContext: (String => Unit) => Unit,
-    printRDDElement: (T, String => Unit) => Unit,
-    separateWorkingDir: Boolean,
-    bufferSize: Int)
-  extends RDD[String](prev) {
+private[spark] class PipedRDD[T: ClassTag](prev: RDD[T],
+                                           command: Seq[String],
+                                           envVars: Map[String, String],
+                                           printPipeContext: (String => Unit) => Unit,
+                                           printRDDElement: (T, String => Unit) => Unit,
+                                           separateWorkingDir: Boolean,
+                                           bufferSize: Int)
+    extends RDD[String](prev) {
 
   // Similar to Runtime.exec(), if we are given a single string, split it into words
   // using a standard StringTokenizer (i.e. by spaces)
-  def this(
-      prev: RDD[T],
-      command: String,
-      envVars: Map[String, String] = Map(),
-      printPipeContext: (String => Unit) => Unit = null,
-      printRDDElement: (T, String => Unit) => Unit = null,
-      separateWorkingDir: Boolean = false) =
-    this(prev, PipedRDD.tokenize(command), envVars, printPipeContext, printRDDElement,
-      separateWorkingDir, 8192)
-
+  def this(prev: RDD[T],
+           command: String,
+           envVars: Map[String, String] = Map(),
+           printPipeContext: (String => Unit) => Unit = null,
+           printRDDElement: (T, String => Unit) => Unit = null,
+           separateWorkingDir: Boolean = false) =
+    this(prev,
+         PipedRDD.tokenize(command),
+         envVars,
+         printPipeContext,
+         printRDDElement,
+         separateWorkingDir,
+         8192)
 
   override def getPartitions: Array[Partition] = firstParent[T].partitions
 
@@ -111,13 +112,15 @@ private[spark] class PipedRDD[T: ClassTag](
         for (file <- currentDir.list(tasksDirFilter)) {
           val fileWithDir = new File(currentDir, file)
           Utils.symlink(new File(fileWithDir.getAbsolutePath()),
-            new File(taskDirectory + File.separator + fileWithDir.getName()))
+                        new File(taskDirectory + File.separator + fileWithDir.getName()))
         }
         pb.directory(taskDirFile)
         workInTaskDirectory = true
       } catch {
-        case e: Exception => logError("Unable to setup task working directory: " + e.getMessage +
-          " (" + taskDirectory + ")", e)
+        case e: Exception =>
+          logError("Unable to setup task working directory: " + e.getMessage + " (" +
+                   taskDirectory + ")",
+                   e)
       }
     }
 
@@ -147,8 +150,8 @@ private[spark] class PipedRDD[T: ClassTag](
     new Thread(s"stdin writer for $command") {
       override def run(): Unit = {
         TaskContext.setTaskContext(context)
-        val out = new PrintWriter(new BufferedWriter(
-          new OutputStreamWriter(proc.getOutputStream), bufferSize))
+        val out = new PrintWriter(
+            new BufferedWriter(new OutputStreamWriter(proc.getOutputStream), bufferSize))
         try {
           // scalastyle:off println
           // input the pipe context firstly
@@ -182,17 +185,19 @@ private[spark] class PipedRDD[T: ClassTag](
       }
 
       def hasNext(): Boolean = {
-        val result = if (lines.hasNext) {
-          true
-        } else {
-          val exitStatus = proc.waitFor()
-          cleanup()
-          if (exitStatus != 0) {
-            throw new IllegalStateException(s"Subprocess exited with status $exitStatus. " +
-              s"Command ran: " + command.mkString(" "))
+        val result =
+          if (lines.hasNext) {
+            true
+          } else {
+            val exitStatus = proc.waitFor()
+            cleanup()
+            if (exitStatus != 0) {
+              throw new IllegalStateException(
+                  s"Subprocess exited with status $exitStatus. " + s"Command ran: " +
+                  command.mkString(" "))
+            }
+            false
           }
-          false
-        }
         propagateChildException()
         result
       }
@@ -211,8 +216,9 @@ private[spark] class PipedRDD[T: ClassTag](
         val t = childThreadException.get()
         if (t != null) {
           val commandRan = command.mkString(" ")
-          logError(s"Caught exception while running pipe() operator. Command ran: $commandRan. " +
-            s"Exception: ${t.getMessage}")
+          logError(
+              s"Caught exception while running pipe() operator. Command ran: $commandRan. " +
+              s"Exception: ${t.getMessage}")
           proc.destroy()
           cleanup()
           throw t
@@ -227,7 +233,7 @@ private object PipedRDD {
   def tokenize(command: String): Seq[String] = {
     val buf = new ArrayBuffer[String]
     val tok = new StringTokenizer(command)
-    while(tok.hasMoreElements) {
+    while (tok.hasMoreElements) {
       buf += tok.nextToken()
     }
     buf

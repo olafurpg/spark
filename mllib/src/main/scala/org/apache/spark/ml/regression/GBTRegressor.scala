@@ -57,9 +57,11 @@ import org.apache.spark.sql.functions._
  */
 @Since("1.4.0")
 @Experimental
-class GBTRegressor @Since("1.4.0") (@Since("1.4.0") override val uid: String)
-  extends Predictor[Vector, GBTRegressor, GBTRegressionModel]
-  with GBTRegressorParams with DefaultParamsWritable with Logging {
+class GBTRegressor @Since("1.4.0")(@Since("1.4.0") override val uid: String)
+    extends Predictor[Vector, GBTRegressor, GBTRegressionModel]
+    with GBTRegressorParams
+    with DefaultParamsWritable
+    with Logging {
 
   @Since("1.4.0")
   def this() = this(Identifiable.randomUID("gbtr"))
@@ -125,8 +127,8 @@ class GBTRegressor @Since("1.4.0") (@Since("1.4.0") override val uid: String)
     val oldDataset: RDD[LabeledPoint] = extractLabeledPoints(dataset)
     val numFeatures = oldDataset.first().features.size
     val boostingStrategy = super.getOldBoostingStrategy(categoricalFeatures, OldAlgo.Regression)
-    val (baseLearners, learnerWeights) = GradientBoostedTrees.run(oldDataset, boostingStrategy,
-      $(seed))
+    val (baseLearners, learnerWeights) =
+      GradientBoostedTrees.run(oldDataset, boostingStrategy, $(seed))
     new GBTRegressionModel(uid, baseLearners, learnerWeights, numFeatures)
   }
 
@@ -157,18 +159,20 @@ object GBTRegressor extends DefaultParamsReadable[GBTRegressor] {
  */
 @Since("1.4.0")
 @Experimental
-class GBTRegressionModel private[ml](
-    override val uid: String,
-    private val _trees: Array[DecisionTreeRegressionModel],
-    private val _treeWeights: Array[Double],
-    override val numFeatures: Int)
-  extends PredictionModel[Vector, GBTRegressionModel]
-  with GBTRegressorParams with TreeEnsembleModel[DecisionTreeRegressionModel]
-  with MLWritable with Serializable {
+class GBTRegressionModel private[ml](override val uid: String,
+                                     private val _trees: Array[DecisionTreeRegressionModel],
+                                     private val _treeWeights: Array[Double],
+                                     override val numFeatures: Int)
+    extends PredictionModel[Vector, GBTRegressionModel]
+    with GBTRegressorParams
+    with TreeEnsembleModel[DecisionTreeRegressionModel]
+    with MLWritable
+    with Serializable {
 
   require(_trees.nonEmpty, "GBTRegressionModel requires at least 1 tree.")
-  require(_trees.length == _treeWeights.length, "GBTRegressionModel given trees, treeWeights of" +
-    s" non-matching lengths (${_trees.length}, ${_treeWeights.length}, respectively).")
+  require(_trees.length == _treeWeights.length,
+          "GBTRegressionModel given trees, treeWeights of" +
+          s" non-matching lengths (${_trees.length}, ${_treeWeights.length}, respectively).")
 
   /**
    * Construct a GBTRegressionModel
@@ -205,8 +209,8 @@ class GBTRegressionModel private[ml](
 
   @Since("1.4.0")
   override def copy(extra: ParamMap): GBTRegressionModel = {
-    copyValues(new GBTRegressionModel(uid, _trees, _treeWeights, numFeatures),
-      extra).setParent(parent)
+    copyValues(new GBTRegressionModel(uid, _trees, _treeWeights, numFeatures), extra)
+      .setParent(parent)
   }
 
   @Since("1.4.0")
@@ -245,13 +249,12 @@ object GBTRegressionModel extends MLReadable[GBTRegressionModel] {
   @Since("2.0.0")
   override def load(path: String): GBTRegressionModel = super.load(path)
 
-  private[GBTRegressionModel]
-  class GBTRegressionModelWriter(instance: GBTRegressionModel) extends MLWriter {
+  private[GBTRegressionModel] class GBTRegressionModelWriter(instance: GBTRegressionModel)
+      extends MLWriter {
 
     override protected def saveImpl(path: String): Unit = {
       val extraMetadata: JObject = Map(
-        "numFeatures" -> instance.numFeatures,
-        "numTrees" -> instance.getNumTrees)
+          "numFeatures" -> instance.numFeatures, "numTrees" -> instance.getNumTrees)
       EnsembleModelReadWrite.saveImpl(instance, path, sqlContext, extraMetadata)
     }
   }
@@ -272,14 +275,14 @@ object GBTRegressionModel extends MLReadable[GBTRegressionModel] {
 
       val trees: Array[DecisionTreeRegressionModel] = treesData.map {
         case (treeMetadata, root) =>
-          val tree =
-            new DecisionTreeRegressionModel(treeMetadata.uid, root, numFeatures)
+          val tree = new DecisionTreeRegressionModel(treeMetadata.uid, root, numFeatures)
           DefaultParamsReader.getAndSetParams(tree, treeMetadata)
           tree
       }
 
-      require(numTrees == trees.length, s"GBTRegressionModel.load expected $numTrees" +
-        s" trees based on metadata but found ${trees.length} trees.")
+      require(numTrees == trees.length,
+              s"GBTRegressionModel.load expected $numTrees" +
+              s" trees based on metadata but found ${trees.length} trees.")
 
       val model = new GBTRegressionModel(metadata.uid, trees, treeWeights, numFeatures)
       DefaultParamsReader.getAndSetParams(model, metadata)
@@ -288,13 +291,13 @@ object GBTRegressionModel extends MLReadable[GBTRegressionModel] {
   }
 
   /** Convert a model from the old API */
-  private[ml] def fromOld(
-      oldModel: OldGBTModel,
-      parent: GBTRegressor,
-      categoricalFeatures: Map[Int, Int],
-      numFeatures: Int = -1): GBTRegressionModel = {
-    require(oldModel.algo == OldAlgo.Regression, "Cannot convert GradientBoostedTreesModel" +
-      s" with algo=${oldModel.algo} (old API) to GBTRegressionModel (new API).")
+  private[ml] def fromOld(oldModel: OldGBTModel,
+                          parent: GBTRegressor,
+                          categoricalFeatures: Map[Int, Int],
+                          numFeatures: Int = -1): GBTRegressionModel = {
+    require(oldModel.algo == OldAlgo.Regression,
+            "Cannot convert GradientBoostedTreesModel" +
+            s" with algo=${oldModel.algo} (old API) to GBTRegressionModel (new API).")
     val newTrees = oldModel.trees.map { tree =>
       // parent for each tree is null since there is no good way to set this.
       DecisionTreeRegressionModel.fromOld(tree, null, categoricalFeatures)

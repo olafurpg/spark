@@ -38,15 +38,15 @@ import org.apache.spark.util.{Clock, Utils}
 private[streaming] sealed trait ReceivedBlockTrackerLogEvent
 
 private[streaming] case class BlockAdditionEvent(receivedBlockInfo: ReceivedBlockInfo)
-  extends ReceivedBlockTrackerLogEvent
+    extends ReceivedBlockTrackerLogEvent
 private[streaming] case class BatchAllocationEvent(time: Time, allocatedBlocks: AllocatedBlocks)
-  extends ReceivedBlockTrackerLogEvent
+    extends ReceivedBlockTrackerLogEvent
 private[streaming] case class BatchCleanupEvent(times: Seq[Time])
-  extends ReceivedBlockTrackerLogEvent
+    extends ReceivedBlockTrackerLogEvent
 
 /** Class representing the blocks of all the streams allocated to a batch */
-private[streaming]
-case class AllocatedBlocks(streamIdToAllocatedBlocks: Map[Int, Seq[ReceivedBlockInfo]]) {
+private[streaming] case class AllocatedBlocks(
+    streamIdToAllocatedBlocks: Map[Int, Seq[ReceivedBlockInfo]]) {
   def getBlocksOfStream(streamId: Int): Seq[ReceivedBlockInfo] = {
     streamIdToAllocatedBlocks.getOrElse(streamId, Seq.empty)
   }
@@ -61,14 +61,13 @@ case class AllocatedBlocks(streamIdToAllocatedBlocks: Map[Int, Seq[ReceivedBlock
  * Note that when any instance of this class is created with a checkpoint directory,
  * it will try reading events from logs in the directory.
  */
-private[streaming] class ReceivedBlockTracker(
-    conf: SparkConf,
-    hadoopConf: Configuration,
-    streamIds: Seq[Int],
-    clock: Clock,
-    recoverFromWriteAheadLog: Boolean,
-    checkpointDirOption: Option[String])
-  extends Logging {
+private[streaming] class ReceivedBlockTracker(conf: SparkConf,
+                                              hadoopConf: Configuration,
+                                              streamIds: Seq[Int],
+                                              clock: Clock,
+                                              recoverFromWriteAheadLog: Boolean,
+                                              checkpointDirOption: Option[String])
+    extends Logging {
 
   private type ReceivedBlockQueue = mutable.Queue[ReceivedBlockInfo]
 
@@ -91,11 +90,13 @@ private[streaming] class ReceivedBlockTracker(
         synchronized {
           getReceivedBlockQueue(receivedBlockInfo.streamId) += receivedBlockInfo
         }
-        logDebug(s"Stream ${receivedBlockInfo.streamId} received " +
-          s"block ${receivedBlockInfo.blockStoreResult.blockId}")
+        logDebug(
+            s"Stream ${receivedBlockInfo.streamId} received " +
+            s"block ${receivedBlockInfo.blockStoreResult.blockId}")
       } else {
-        logDebug(s"Failed to acknowledge stream ${receivedBlockInfo.streamId} receiving " +
-          s"block ${receivedBlockInfo.blockStoreResult.blockId} in the Write Ahead Log.")
+        logDebug(
+            s"Failed to acknowledge stream ${receivedBlockInfo.streamId} receiving " +
+            s"block ${receivedBlockInfo.blockStoreResult.blockId} in the Write Ahead Log.")
       }
       writeResult
     } catch {
@@ -112,7 +113,7 @@ private[streaming] class ReceivedBlockTracker(
   def allocateBlocksToBatch(batchTime: Time): Unit = synchronized {
     if (lastAllocatedBatchTime == null || batchTime > lastAllocatedBatchTime) {
       val streamIdToBlocks = streamIds.map { streamId =>
-          (streamId, getReceivedBlockQueue(streamId).dequeueAll(x => true))
+        (streamId, getReceivedBlockQueue(streamId).dequeueAll(x => true))
       }.toMap
       val allocatedBlocks = AllocatedBlocks(streamIdToBlocks)
       if (writeToLog(BatchAllocationEvent(batchTime, allocatedBlocks))) {
@@ -141,9 +142,12 @@ private[streaming] class ReceivedBlockTracker(
   /** Get the blocks allocated to the given batch and stream. */
   def getBlocksOfBatchAndStream(batchTime: Time, streamId: Int): Seq[ReceivedBlockInfo] = {
     synchronized {
-      timeToAllocatedBlocks.get(batchTime).map {
-        _.getBlocksOfStream(streamId)
-      }.getOrElse(Seq.empty)
+      timeToAllocatedBlocks
+        .get(batchTime)
+        .map {
+          _.getBlocksOfStream(streamId)
+        }
+        .getOrElse(Seq.empty)
     }
   }
 
@@ -197,7 +201,7 @@ private[streaming] class ReceivedBlockTracker(
     // (when the blocks were originally allocated to the batch, the queue must have been cleared).
     def insertAllocatedBatch(batchTime: Time, allocatedBlocks: AllocatedBlocks) {
       logTrace(s"Recovery: Inserting allocated batch for time $batchTime to " +
-        s"${allocatedBlocks.streamIdToAllocatedBlocks}")
+          s"${allocatedBlocks.streamIdToAllocatedBlocks}")
       streamIdToUnallocatedBlockQueues.values.foreach { _.clear() }
       timeToAllocatedBlocks.put(batchTime, allocatedBlocks)
       lastAllocatedBatchTime = batchTime
@@ -214,7 +218,8 @@ private[streaming] class ReceivedBlockTracker(
       writeAheadLog.readAll().asScala.foreach { byteBuffer =>
         logInfo("Recovering record " + byteBuffer)
         Utils.deserialize[ReceivedBlockTrackerLogEvent](
-          JavaUtils.bufferToArray(byteBuffer), Thread.currentThread().getContextClassLoader) match {
+            JavaUtils.bufferToArray(byteBuffer),
+            Thread.currentThread().getContextClassLoader) match {
           case BlockAdditionEvent(receivedBlockInfo) =>
             insertAddedBlock(receivedBlockInfo)
           case BatchAllocationEvent(time, allocatedBlocks) =>
@@ -231,8 +236,8 @@ private[streaming] class ReceivedBlockTracker(
     if (isWriteAheadLogEnabled) {
       logTrace(s"Writing record: $record")
       try {
-        writeAheadLogOption.get.write(ByteBuffer.wrap(Utils.serialize(record)),
-          clock.getTimeMillis())
+        writeAheadLogOption.get.write(
+            ByteBuffer.wrap(Utils.serialize(record)), clock.getTimeMillis())
         true
       } catch {
         case NonFatal(e) =>

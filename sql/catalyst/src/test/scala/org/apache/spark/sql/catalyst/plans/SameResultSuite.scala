@@ -63,7 +63,7 @@ class SameResultSuite extends SparkFunSuite {
   }
 
   test("union") {
-    assertSameResult(Union(Seq(testRelation, testRelation2)),
-      Union(Seq(testRelation2, testRelation)))
+    assertSameResult(
+        Union(Seq(testRelation, testRelation2)), Union(Seq(testRelation2, testRelation)))
   }
 }

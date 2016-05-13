@@ -29,13 +29,11 @@ private[history] class HistoryPage(parent: HistoryServer) extends WebUIPage("") 
     val requestedIncomplete =
       Option(request.getParameter("showIncomplete")).getOrElse("false").toBoolean
 
-    val allApps = parent.getApplicationList()
-      .filter(_.completed != requestedIncomplete)
+    val allApps = parent.getApplicationList().filter(_.completed != requestedIncomplete)
     val allAppsSize = allApps.size
 
     val providerConfig = parent.getProviderConfig()
-    val content =
-      <div>
+    val content = <div>
           <div class="span12">
             <ul class="unstyled">
               {providerConfig.map { case (k, v) => <li><strong>{k}:</strong> {v}</li> }}

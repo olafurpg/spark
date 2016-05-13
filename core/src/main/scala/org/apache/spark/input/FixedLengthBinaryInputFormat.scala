@@ -30,6 +30,7 @@ import org.apache.spark.internal.Logging
  * a parameter recordLength in the Hadoop configuration.
  */
 private[spark] object FixedLengthBinaryInputFormat {
+
   /** Property name to set in Hadoop JobConfs for record length */
   val RECORD_LENGTH_PROPERTY = "org.apache.spark.input.FixedLengthBinaryInputFormat.recordLength"
 
@@ -40,8 +41,8 @@ private[spark] object FixedLengthBinaryInputFormat {
 }
 
 private[spark] class FixedLengthBinaryInputFormat
-  extends FileInputFormat[LongWritable, BytesWritable]
-  with Logging {
+    extends FileInputFormat[LongWritable, BytesWritable]
+    with Logging {
 
   private var recordLength = -1
 
@@ -81,8 +82,9 @@ private[spark] class FixedLengthBinaryInputFormat
   /**
    * Create a FixedLengthBinaryRecordReader
    */
-  override def createRecordReader(split: InputSplit, context: TaskAttemptContext)
-      : RecordReader[LongWritable, BytesWritable] = {
+  override def createRecordReader(
+      split: InputSplit,
+      context: TaskAttemptContext): RecordReader[LongWritable, BytesWritable] = {
     new FixedLengthBinaryRecordReader
   }
 }

@@ -24,7 +24,6 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.mllib.tree.configuration.{FeatureType => OldFeatureType}
 import org.apache.spark.mllib.tree.model.{Split => OldSplit}
 
-
 /**
  * :: DeveloperApi ::
  * Interface for a "Split," which specifies a test made at a decision tree node
@@ -59,7 +58,8 @@ private[tree] object Split {
     oldSplit.featureType match {
       case OldFeatureType.Categorical =>
         new CategoricalSplit(featureIndex = oldSplit.feature,
-          _leftCategories = oldSplit.categories.toArray, categoricalFeatures(oldSplit.feature))
+                             _leftCategories = oldSplit.categories.toArray,
+                             categoricalFeatures(oldSplit.feature))
       case OldFeatureType.Continuous =>
         new ContinuousSplit(featureIndex = oldSplit.feature, threshold = oldSplit.threshold)
     }
@@ -75,14 +75,14 @@ private[tree] object Split {
  * @param numCategories  Number of categories for this feature.
  */
 @DeveloperApi
-class CategoricalSplit private[ml] (
-    override val featureIndex: Int,
-    _leftCategories: Array[Double],
-    @Since("2.0.0") val numCategories: Int)
-  extends Split {
+class CategoricalSplit private[ml](override val featureIndex: Int,
+                                   _leftCategories: Array[Double],
+                                   @Since("2.0.0") val numCategories: Int)
+    extends Split {
 
-  require(_leftCategories.forall(cat => 0 <= cat && cat < numCategories), "Invalid leftCategories" +
-    s" (should be in range [0, $numCategories)): ${_leftCategories.mkString(",")}")
+  require(_leftCategories.forall(cat => 0 <= cat && cat < numCategories),
+          "Invalid leftCategories" +
+          s" (should be in range [0, $numCategories)): ${_leftCategories.mkString(",")}")
 
   /**
    * If true, then "categories" is the set of categories for splitting to the left, and vice versa.
@@ -120,17 +120,19 @@ class CategoricalSplit private[ml] (
   }
 
   override def equals(o: Any): Boolean = o match {
-    case other: CategoricalSplit => featureIndex == other.featureIndex &&
-      isLeft == other.isLeft && categories == other.categories
+    case other: CategoricalSplit =>
+      featureIndex == other.featureIndex && isLeft == other.isLeft &&
+      categories == other.categories
     case _ => false
   }
 
   override private[tree] def toOld: OldSplit = {
-    val oldCats = if (isLeft) {
-      categories
-    } else {
-      setComplement(categories)
-    }
+    val oldCats =
+      if (isLeft) {
+        categories
+      } else {
+        setComplement(categories)
+      }
     OldSplit(featureIndex, threshold = 0.0, OldFeatureType.Categorical, oldCats.toList)
   }
 
@@ -160,8 +162,8 @@ class CategoricalSplit private[ml] (
  *                    Otherwise, it goes right.
  */
 @DeveloperApi
-class ContinuousSplit private[ml] (override val featureIndex: Int, val threshold: Double)
-  extends Split {
+class ContinuousSplit private[ml](override val featureIndex: Int, val threshold: Double)
+    extends Split {
 
   override private[ml] def shouldGoLeft(features: Vector): Boolean = {
     features(featureIndex) <= threshold

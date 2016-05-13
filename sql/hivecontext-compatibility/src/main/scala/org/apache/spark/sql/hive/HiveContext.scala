@@ -22,16 +22,14 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{SparkSession, SQLContext}
 
-
 /**
  * An instance of the Spark SQL execution engine that integrates with data stored in Hive.
  * Configuration for Hive is read from hive-site.xml on the classpath.
  */
 @deprecated("Use SparkSession.builder.enableHiveSupport instead", "2.0.0")
-class HiveContext private[hive](
-    _sparkSession: SparkSession,
-    isRootContext: Boolean)
-  extends SQLContext(_sparkSession, isRootContext) with Logging {
+class HiveContext private[hive](_sparkSession: SparkSession, isRootContext: Boolean)
+    extends SQLContext(_sparkSession, isRootContext)
+    with Logging {
 
   self =>
 
@@ -57,5 +55,4 @@ class HiveContext private[hive](
   protected[sql] override def sharedState: HiveSharedState = {
     sparkSession.sharedState.asInstanceOf[HiveSharedState]
   }
-
 }

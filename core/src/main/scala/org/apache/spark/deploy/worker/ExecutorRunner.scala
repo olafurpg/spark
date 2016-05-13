@@ -36,24 +36,23 @@ import org.apache.spark.util.logging.FileAppender
  * Manages the execution of one executor process.
  * This is currently only used in standalone mode.
  */
-private[deploy] class ExecutorRunner(
-    val appId: String,
-    val execId: Int,
-    val appDesc: ApplicationDescription,
-    val cores: Int,
-    val memory: Int,
-    val worker: RpcEndpointRef,
-    val workerId: String,
-    val host: String,
-    val webUiPort: Int,
-    val publicAddress: String,
-    val sparkHome: File,
-    val executorDir: File,
-    val workerUrl: String,
-    conf: SparkConf,
-    val appLocalDirs: Seq[String],
-    @volatile var state: ExecutorState.Value)
-  extends Logging {
+private[deploy] class ExecutorRunner(val appId: String,
+                                     val execId: Int,
+                                     val appDesc: ApplicationDescription,
+                                     val cores: Int,
+                                     val memory: Int,
+                                     val worker: RpcEndpointRef,
+                                     val workerId: String,
+                                     val host: String,
+                                     val webUiPort: Int,
+                                     val publicAddress: String,
+                                     val sparkHome: File,
+                                     val executorDir: File,
+                                     val workerUrl: String,
+                                     conf: SparkConf,
+                                     val appLocalDirs: Seq[String],
+                                     @volatile var state: ExecutorState.Value)
+    extends Logging {
 
   private val fullId = appId + "/" + execId
   private var workerThread: Thread = null
@@ -80,7 +79,8 @@ private[deploy] class ExecutorRunner(
       if (state == ExecutorState.RUNNING) {
         state = ExecutorState.FAILED
       }
-      killProcess(Some("Worker shutting down")) }
+      killProcess(Some("Worker shutting down"))
+    }
   }
 
   /**
@@ -100,8 +100,8 @@ private[deploy] class ExecutorRunner(
       }
       exitCode = Utils.terminateProcess(process, EXECUTOR_TERMINATE_TIMEOUT_MS)
       if (exitCode.isEmpty) {
-        logWarning("Failed to terminate process: " + process +
-          ". This process will likely be orphaned.")
+        logWarning(
+            "Failed to terminate process: " + process + ". This process will likely be orphaned.")
       }
     }
     try {
@@ -142,8 +142,11 @@ private[deploy] class ExecutorRunner(
   private def fetchAndRunExecutor() {
     try {
       // Launch the process
-      val builder = CommandUtils.buildProcessBuilder(appDesc.command, new SecurityManager(conf),
-        memory, sparkHome.getAbsolutePath, substituteVariables)
+      val builder = CommandUtils.buildProcessBuilder(appDesc.command,
+                                                     new SecurityManager(conf),
+                                                     memory,
+                                                     sparkHome.getAbsolutePath,
+                                                     substituteVariables)
       val command = builder.command()
       val formattedCommand = command.asScala.mkString("\"", "\" \"", "\"")
       logInfo(s"Launch command: $formattedCommand")
@@ -161,8 +164,7 @@ private[deploy] class ExecutorRunner(
       builder.environment.put("SPARK_LOG_URL_STDOUT", s"${baseUrl}stdout")
 
       process = builder.start()
-      val header = "Spark Executor Command: %s\n%s\n\n".format(
-        formattedCommand, "=" * 40)
+      val header = "Spark Executor Command: %s\n%s\n\n".format(formattedCommand, "=" * 40)
 
       // Redirect its stdout and stderr to files
       val stdout = new File(executorDir, "stdout")

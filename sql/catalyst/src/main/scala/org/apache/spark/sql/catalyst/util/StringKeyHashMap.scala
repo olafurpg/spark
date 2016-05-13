@@ -28,7 +28,6 @@ object StringKeyHashMap {
   }
 }
 
-
 class StringKeyHashMap[T](normalizer: (String) => String) {
   private val base = new collection.mutable.HashMap[String, T]()
 

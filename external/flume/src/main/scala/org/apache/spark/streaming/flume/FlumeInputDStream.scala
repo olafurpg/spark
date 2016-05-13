@@ -39,14 +39,14 @@ import org.apache.spark.streaming.dstream._
 import org.apache.spark.streaming.receiver.Receiver
 import org.apache.spark.util.Utils
 
-private[streaming]
-class FlumeInputDStream[T: ClassTag](
-  _ssc: StreamingContext,
-  host: String,
-  port: Int,
-  storageLevel: StorageLevel,
-  enableDecompression: Boolean
-) extends ReceiverInputDStream[SparkFlumeEvent](_ssc) {
+private[streaming] class FlumeInputDStream[T: ClassTag](
+    _ssc: StreamingContext,
+    host: String,
+    port: Int,
+    storageLevel: StorageLevel,
+    enableDecompression: Boolean
+)
+    extends ReceiverInputDStream[SparkFlumeEvent](_ssc) {
 
   override def getReceiver(): Receiver[SparkFlumeEvent] = {
     new FlumeReceiver(host, port, storageLevel, enableDecompression)
@@ -117,8 +117,7 @@ private[streaming] object SparkFlumeEvent {
 }
 
 /** A simple server that implements Flume's Avro protocol. */
-private[streaming]
-class FlumeEventServer(receiver: FlumeReceiver) extends AvroSourceProtocol {
+private[streaming] class FlumeEventServer(receiver: FlumeReceiver) extends AvroSourceProtocol {
   override def append(event: AvroFlumeEvent): Status = {
     receiver.store(SparkFlumeEvent.fromAvroFlumeEvent(event))
     Status.OK
@@ -134,16 +133,17 @@ class FlumeEventServer(receiver: FlumeReceiver) extends AvroSourceProtocol {
  * A NetworkReceiver which listens for events using the
  * Flume Avro interface.
  */
-private[streaming]
-class FlumeReceiver(
+private[streaming] class FlumeReceiver(
     host: String,
     port: Int,
     storageLevel: StorageLevel,
     enableDecompression: Boolean
-  ) extends Receiver[SparkFlumeEvent](storageLevel) with Logging {
+)
+    extends Receiver[SparkFlumeEvent](storageLevel)
+    with Logging {
 
   lazy val responder = new SpecificResponder(
-    classOf[AvroSourceProtocol], new FlumeEventServer(this))
+      classOf[AvroSourceProtocol], new FlumeEventServer(this))
   var server: NettyServer = null
 
   private def initServer() = {
@@ -152,12 +152,11 @@ class FlumeReceiver(
                                                              Executors.newCachedThreadPool())
       val channelPipelineFactory = new CompressionChannelPipelineFactory()
 
-      new NettyServer(
-        responder,
-        new InetSocketAddress(host, port),
-        channelFactory,
-        channelPipelineFactory,
-        null)
+      new NettyServer(responder,
+                      new InetSocketAddress(host, port),
+                      channelFactory,
+                      channelPipelineFactory,
+                      null)
     } else {
       new NettyServer(responder, new InetSocketAddress(host, port))
     }
@@ -195,8 +194,7 @@ class FlumeReceiver(
    * a successful response to indicate it can remove the event/batch
    * from the configured channel
    */
-  private[streaming]
-  class CompressionChannelPipelineFactory extends ChannelPipelineFactory {
+  private[streaming] class CompressionChannelPipelineFactory extends ChannelPipelineFactory {
     def getPipeline(): ChannelPipeline = {
       val pipeline = Channels.pipeline()
       val encoder = new ZlibEncoder(6)

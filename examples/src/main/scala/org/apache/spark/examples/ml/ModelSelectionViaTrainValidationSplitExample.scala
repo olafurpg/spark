@@ -35,10 +35,8 @@ import org.apache.spark.sql.SparkSession
 object ModelSelectionViaTrainValidationSplitExample {
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("ModelSelectionViaTrainValidationSplitExample")
-      .getOrCreate()
+    val spark =
+      SparkSession.builder.appName("ModelSelectionViaTrainValidationSplitExample").getOrCreate()
 
     // $example on$
     // Prepare training and test data.
@@ -70,9 +68,7 @@ object ModelSelectionViaTrainValidationSplitExample {
 
     // Make predictions on test data. model is the model with combination of parameters
     // that performed best.
-    model.transform(test)
-      .select("features", "label", "prediction")
-      .show()
+    model.transform(test).select("features", "label", "prediction").show()
     // $example off$
 
     spark.stop()

@@ -21,6 +21,7 @@ package org.apache.spark.mllib.evaluation.binary
  * Trait for a binary confusion matrix.
  */
 private[evaluation] trait BinaryConfusionMatrix {
+
   /** number of true positives */
   def numTruePositives: Long
 
@@ -47,8 +48,8 @@ private[evaluation] trait BinaryConfusionMatrix {
  * @param totalCount label counter for all labels
  */
 private[evaluation] case class BinaryConfusionMatrixImpl(
-    count: BinaryLabelCounter,
-    totalCount: BinaryLabelCounter) extends BinaryConfusionMatrix {
+    count: BinaryLabelCounter, totalCount: BinaryLabelCounter)
+    extends BinaryConfusionMatrix {
 
   /** number of true positives */
   override def numTruePositives: Long = count.numPositives

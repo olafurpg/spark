@@ -59,8 +59,8 @@ class MatricesSuite extends SparkFunSuite {
     assert(mat.colPtrs.eq(colPtrs), "should not copy data")
     assert(mat.rowIndices.eq(rowIndices), "should not copy data")
 
-    val entries: Array[(Int, Int, Double)] = Array((2, 2, 3.0), (1, 0, 1.0), (2, 0, 2.0),
-        (1, 2, 2.0), (2, 2, 2.0), (1, 2, 2.0), (0, 0, 0.0))
+    val entries: Array[(Int, Int, Double)] = Array(
+        (2, 2, 3.0), (1, 0, 1.0), (2, 0, 2.0), (1, 2, 2.0), (2, 2, 2.0), (1, 2, 2.0), (0, 0, 0.0))
 
     val mat2 = SparseMatrix.fromCOO(m, n, entries)
     assert(mat.toBreeze === mat2.toBreeze)
@@ -202,7 +202,8 @@ class MatricesSuite extends SparkFunSuite {
   test("transpose") {
     val dA =
       new DenseMatrix(4, 3, Array(0.0, 1.0, 0.0, 0.0, 2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 3.0))
-    val sA = new SparseMatrix(4, 3, Array(0, 1, 3, 4), Array(1, 0, 2, 3), Array(1.0, 2.0, 1.0, 3.0))
+    val sA =
+      new SparseMatrix(4, 3, Array(0, 1, 3, 4), Array(1, 0, 2, 3), Array(1.0, 2.0, 1.0, 3.0))
 
     val dAT = dA.transpose.asInstanceOf[DenseMatrix]
     val sAT = sA.transpose.asInstanceOf[SparseMatrix]
@@ -469,8 +470,8 @@ class MatricesSuite extends SparkFunSuite {
     val sm2 = dm2.toSparse
     val sm3 = dm3.toSparse
     val mUDT = new MatrixUDT()
-    Seq(dm1, dm2, dm3, sm1, sm2, sm3).foreach {
-        mat => assert(mat.toArray === mUDT.deserialize(mUDT.serialize(mat)).toArray)
+    Seq(dm1, dm2, dm3, sm1, sm2, sm3).foreach { mat =>
+      assert(mat.toArray === mUDT.deserialize(mUDT.serialize(mat)).toArray)
     }
     assert(mUDT.typeName == "matrix")
     assert(mUDT.simpleString == "matrix")
@@ -505,10 +506,10 @@ class MatricesSuite extends SparkFunSuite {
   test("fromBreeze with sparse matrix") {
     // colPtr.last does NOT always equal to values.length in breeze SCSMatrix and
     // invocation of compact() may be necessary. Refer to SPARK-11507
-    val bm1: BM[Double] = new CSCMatrix[Double](
-      Array(1.0, 1, 1), 3, 3, Array(0, 1, 2, 3), Array(0, 1, 2))
-    val bm2: BM[Double] = new CSCMatrix[Double](
-      Array(1.0, 2, 2, 4), 3, 3, Array(0, 0, 2, 4), Array(1, 2, 1, 2))
+    val bm1: BM[Double] =
+      new CSCMatrix[Double](Array(1.0, 1, 1), 3, 3, Array(0, 1, 2, 3), Array(0, 1, 2))
+    val bm2: BM[Double] =
+      new CSCMatrix[Double](Array(1.0, 2, 2, 4), 3, 3, Array(0, 0, 2, 4), Array(1, 2, 1, 2))
     val sum = bm1 + bm2
     Matrices.fromBreeze(sum)
   }

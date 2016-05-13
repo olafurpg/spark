@@ -31,16 +31,17 @@ private[sql] class ExecutionPage(parent: SQLTab) extends WebUIPage("execution") 
   override def render(request: HttpServletRequest): Seq[Node] = listener.synchronized {
     val parameterExecutionId = request.getParameter("id")
     require(parameterExecutionId != null && parameterExecutionId.nonEmpty,
-      "Missing execution id parameter")
+            "Missing execution id parameter")
 
     val executionId = parameterExecutionId.toLong
-    val content = listener.getExecution(executionId).map { executionUIData =>
-      val currentTime = System.currentTimeMillis()
-      val duration =
-        executionUIData.completionTime.getOrElse(currentTime) - executionUIData.submissionTime
+    val content = listener
+      .getExecution(executionId)
+      .map { executionUIData =>
+        val currentTime = System.currentTimeMillis()
+        val duration =
+          executionUIData.completionTime.getOrElse(currentTime) - executionUIData.submissionTime
 
-      val summary =
-        <div>
+        val summary = <div>
           <ul class="unstyled">
             <li>
               <strong>Submitted Time: </strong>{UIUtils.formatDate(executionUIData.submissionTime)}
@@ -75,18 +76,18 @@ private[sql] class ExecutionPage(parent: SQLTab) extends WebUIPage("execution") 
           </ul>
         </div>
 
-      val metrics = listener.getExecutionMetrics(executionId)
+        val metrics = listener.getExecutionMetrics(executionId)
 
-      summary ++
+        summary ++
         planVisualization(metrics, executionUIData.physicalPlanGraph) ++
         physicalPlanDescription(executionUIData.physicalPlanDescription)
-    }.getOrElse {
-      <div>No information to display for Plan {executionId}</div>
-    }
+      }
+      .getOrElse {
+        <div>No information to display for Plan {executionId}</div>
+      }
 
     UIUtils.headerSparkPage(s"Details for Query $executionId", content, parent, Some(5000))
   }
-
 
   private def planVisualizationResources: Seq[Node] = {
     // scalastyle:off

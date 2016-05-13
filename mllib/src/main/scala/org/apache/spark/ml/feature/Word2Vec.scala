@@ -34,8 +34,13 @@ import org.apache.spark.sql.types._
 /**
  * Params for [[Word2Vec]] and [[Word2VecModel]].
  */
-private[feature] trait Word2VecBase extends Params
-  with HasInputCol with HasOutputCol with HasMaxIter with HasStepSize with HasSeed {
+private[feature] trait Word2VecBase
+    extends Params
+    with HasInputCol
+    with HasOutputCol
+    with HasMaxIter
+    with HasStepSize
+    with HasSeed {
 
   /**
    * The dimension of the code that you want to transform from words.
@@ -43,7 +48,7 @@ private[feature] trait Word2VecBase extends Params
    * @group param
    */
   final val vectorSize = new IntParam(
-    this, "vectorSize", "the dimension of codes after transforming from words")
+      this, "vectorSize", "the dimension of codes after transforming from words")
   setDefault(vectorSize -> 100)
 
   /** @group getParam */
@@ -54,7 +59,7 @@ private[feature] trait Word2VecBase extends Params
    * @group expertParam
    */
   final val windowSize = new IntParam(
-    this, "windowSize", "the window size (context words from [-window, window])")
+      this, "windowSize", "the window size (context words from [-window, window])")
   setDefault(windowSize -> 5)
 
   /** @group expertGetParam */
@@ -66,7 +71,7 @@ private[feature] trait Word2VecBase extends Params
    * @group param
    */
   final val numPartitions = new IntParam(
-    this, "numPartitions", "number of partitions for sentences of words")
+      this, "numPartitions", "number of partitions for sentences of words")
   setDefault(numPartitions -> 1)
 
   /** @group getParam */
@@ -78,8 +83,10 @@ private[feature] trait Word2VecBase extends Params
    * Default: 5
    * @group param
    */
-  final val minCount = new IntParam(this, "minCount", "the minimum number of times a token must " +
-    "appear to be included in the word2vec model's vocabulary")
+  final val minCount = new IntParam(this,
+                                    "minCount",
+                                    "the minimum number of times a token must " +
+                                    "appear to be included in the word2vec model's vocabulary")
   setDefault(minCount -> 5)
 
   /** @group getParam */
@@ -103,8 +110,10 @@ private[feature] trait Word2VecBase extends Params
  * natural language processing or machine learning process.
  */
 @Experimental
-final class Word2Vec(override val uid: String) extends Estimator[Word2VecModel] with Word2VecBase
-  with DefaultParamsWritable {
+final class Word2Vec(override val uid: String)
+    extends Estimator[Word2VecModel]
+    with Word2VecBase
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("w2v"))
 
@@ -170,10 +179,11 @@ object Word2Vec extends DefaultParamsReadable[Word2Vec] {
  * Model fitted by [[Word2Vec]].
  */
 @Experimental
-class Word2VecModel private[ml] (
-    override val uid: String,
-    @transient private val wordVectors: feature.Word2VecModel)
-  extends Model[Word2VecModel] with Word2VecBase with MLWritable {
+class Word2VecModel private[ml](
+    override val uid: String, @transient private val wordVectors: feature.Word2VecModel)
+    extends Model[Word2VecModel]
+    with Word2VecBase
+    with MLWritable {
 
   import Word2VecModel._
 
@@ -261,8 +271,7 @@ class Word2VecModel private[ml] (
 @Since("1.6.0")
 object Word2VecModel extends MLReadable[Word2VecModel] {
 
-  private[Word2VecModel]
-  class Word2VecModelWriter(instance: Word2VecModel) extends MLWriter {
+  private[Word2VecModel] class Word2VecModelWriter(instance: Word2VecModel) extends MLWriter {
 
     private case class Data(wordIndex: Map[String, Int], wordVectors: Seq[Float])
 
@@ -281,9 +290,7 @@ object Word2VecModel extends MLReadable[Word2VecModel] {
     override def load(path: String): Word2VecModel = {
       val metadata = DefaultParamsReader.loadMetadata(path, sc, className)
       val dataPath = new Path(path, "data").toString
-      val data = sqlContext.read.parquet(dataPath)
-        .select("wordIndex", "wordVectors")
-        .head()
+      val data = sqlContext.read.parquet(dataPath).select("wordIndex", "wordVectors").head()
       val wordIndex = data.getAs[Map[String, Int]](0)
       val wordVectors = data.getAs[Seq[Float]](1).toArray
       val oldModel = new feature.Word2VecModel(wordIndex, wordVectors)

@@ -22,10 +22,9 @@ import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, Expressi
 import org.apache.spark.sql.catalyst.expressions.codegen.{GenerateOrdering, GenerateUnsafeProjection}
 
 object GroupedIterator {
-  def apply(
-      input: Iterator[InternalRow],
-      keyExpressions: Seq[Expression],
-      inputSchema: Seq[Attribute]): Iterator[(InternalRow, Iterator[InternalRow])] = {
+  def apply(input: Iterator[InternalRow],
+            keyExpressions: Seq[Expression],
+            inputSchema: Seq[Attribute]): Iterator[(InternalRow, Iterator[InternalRow])] = {
     if (input.hasNext) {
       new GroupedIterator(input.buffered, keyExpressions, inputSchema)
     } else {
@@ -63,11 +62,10 @@ object GroupedIterator {
  *                            to `next()`.
  * @param inputSchema The schema of the rows in the `input` iterator.
  */
-class GroupedIterator private(
-    input: BufferedIterator[InternalRow],
-    groupingExpressions: Seq[Expression],
-    inputSchema: Seq[Attribute])
-  extends Iterator[(InternalRow, Iterator[InternalRow])] {
+class GroupedIterator private (input: BufferedIterator[InternalRow],
+                               groupingExpressions: Seq[Expression],
+                               inputSchema: Seq[Attribute])
+    extends Iterator[(InternalRow, Iterator[InternalRow])] {
 
   /** Compares two input rows and returns 0 if they are in the same group. */
   val sortOrder = groupingExpressions.map(SortOrder(_, Ascending))

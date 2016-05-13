@@ -52,11 +52,13 @@ private[flume] class FlumeTestUtils {
   /** Find a free port */
   private def findFreePort(): Int = {
     val candidatePort = RandomUtils.nextInt(1024, 65536)
-    Utils.startServiceOnPort(candidatePort, (trialPort: Int) => {
-      val socket = new ServerSocket(trialPort)
-      socket.close()
-      (null, trialPort)
-    }, new SparkConf())._2
+    Utils
+      .startServiceOnPort(candidatePort, (trialPort: Int) => {
+        val socket = new ServerSocket(trialPort)
+        socket.close()
+        (null, trialPort)
+      }, new SparkConf())
+      ._2
   }
 
   /** Send data to the flume receiver */
@@ -104,7 +106,7 @@ private[flume] class FlumeTestUtils {
 
   /** Class to create socket channel with compression */
   private class CompressionChannelFactory(compressionLevel: Int)
-    extends NioClientSocketChannelFactory {
+      extends NioClientSocketChannelFactory {
 
     override def newChannel(pipeline: ChannelPipeline): SocketChannel = {
       val encoder = new ZlibEncoder(compressionLevel)
@@ -113,5 +115,4 @@ private[flume] class FlumeTestUtils {
       super.newChannel(pipeline)
     }
   }
-
 }

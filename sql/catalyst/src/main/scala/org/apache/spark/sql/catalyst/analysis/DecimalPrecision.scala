@@ -23,7 +23,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types._
 
-
 // scalastyle:off
 /**
  * Calculates and propagates precision for fixed-precision decimals. Hive has a number of
@@ -80,8 +79,9 @@ object DecimalPrecision extends Rule[LogicalPlan] {
 
   def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
     // fix decimal precision for expressions
-    case q => q.transformExpressions(
-      decimalAndDecimal.orElse(integralAndDecimalLiteral).orElse(nondecimalAndDecimal))
+    case q =>
+      q.transformExpressions(
+          decimalAndDecimal.orElse(integralAndDecimalLiteral).orElse(nondecimalAndDecimal))
   }
 
   /** Decimal precision promotion for +, -, *, /, %, pmod, and binary comparison. */
@@ -103,8 +103,8 @@ object DecimalPrecision extends Rule[LogicalPlan] {
     case Multiply(e1 @ DecimalType.Expression(p1, s1), e2 @ DecimalType.Expression(p2, s2)) =>
       val resultType = DecimalType.bounded(p1 + p2 + 1, s1 + s2)
       val widerType = widerDecimalType(p1, s1, p2, s2)
-      CheckOverflow(Multiply(promotePrecision(e1, widerType), promotePrecision(e2, widerType)),
-        resultType)
+      CheckOverflow(
+          Multiply(promotePrecision(e1, widerType), promotePrecision(e2, widerType)), resultType)
 
     case Divide(e1 @ DecimalType.Expression(p1, s1), e2 @ DecimalType.Expression(p2, s2)) =>
       var intDig = min(DecimalType.MAX_SCALE, p1 - s1 + s2)
@@ -116,25 +116,26 @@ object DecimalPrecision extends Rule[LogicalPlan] {
       }
       val resultType = DecimalType.bounded(intDig + decDig, decDig)
       val widerType = widerDecimalType(p1, s1, p2, s2)
-      CheckOverflow(Divide(promotePrecision(e1, widerType), promotePrecision(e2, widerType)),
-        resultType)
+      CheckOverflow(
+          Divide(promotePrecision(e1, widerType), promotePrecision(e2, widerType)), resultType)
 
     case Remainder(e1 @ DecimalType.Expression(p1, s1), e2 @ DecimalType.Expression(p2, s2)) =>
       val resultType = DecimalType.bounded(min(p1 - s1, p2 - s2) + max(s1, s2), max(s1, s2))
       // resultType may have lower precision, so we cast them into wider type first.
       val widerType = widerDecimalType(p1, s1, p2, s2)
-      CheckOverflow(Remainder(promotePrecision(e1, widerType), promotePrecision(e2, widerType)),
-        resultType)
+      CheckOverflow(
+          Remainder(promotePrecision(e1, widerType), promotePrecision(e2, widerType)), resultType)
 
     case Pmod(e1 @ DecimalType.Expression(p1, s1), e2 @ DecimalType.Expression(p2, s2)) =>
       val resultType = DecimalType.bounded(min(p1 - s1, p2 - s2) + max(s1, s2), max(s1, s2))
       // resultType may have lower precision, so we cast them into wider type first.
       val widerType = widerDecimalType(p1, s1, p2, s2)
-      CheckOverflow(Pmod(promotePrecision(e1, widerType), promotePrecision(e2, widerType)),
-        resultType)
+      CheckOverflow(
+          Pmod(promotePrecision(e1, widerType), promotePrecision(e2, widerType)), resultType)
 
-    case b @ BinaryComparison(e1 @ DecimalType.Expression(p1, s1),
-    e2 @ DecimalType.Expression(p2, s2)) if p1 != p2 || s1 != s2 =>
+    case b @ BinaryComparison(
+        e1 @ DecimalType.Expression(p1, s1), e2 @ DecimalType.Expression(p2, s2))
+        if p1 != p2 || s1 != s2 =>
       val resultType = widerDecimalType(p1, s1, p2, s2)
       b.makeCopy(Array(Cast(e1, resultType), Cast(e2, resultType)))
 

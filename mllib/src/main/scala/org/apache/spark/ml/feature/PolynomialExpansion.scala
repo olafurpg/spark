@@ -36,7 +36,8 @@ import org.apache.spark.sql.types.DataType
  */
 @Experimental
 class PolynomialExpansion(override val uid: String)
-  extends UnaryTransformer[Vector, Vector, PolynomialExpansion] with DefaultParamsWritable {
+    extends UnaryTransformer[Vector, Vector, PolynomialExpansion]
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("poly"))
 
@@ -45,8 +46,8 @@ class PolynomialExpansion(override val uid: String)
    * Default: 2
    * @group param
    */
-  val degree = new IntParam(this, "degree", "the polynomial degree to expand (>= 1)",
-    ParamValidators.gtEq(1))
+  val degree = new IntParam(
+      this, "degree", "the polynomial degree to expand (>= 1)", ParamValidators.gtEq(1))
 
   setDefault(degree -> 2)
 
@@ -84,19 +85,20 @@ object PolynomialExpansion extends DefaultParamsReadable[PolynomialExpansion] {
     Range(n, n - k, -1).product / Range(k, 1, -1).product
   }
 
-  private def getPolySize(numFeatures: Int, degree: Int): Int = choose(numFeatures + degree, degree)
+  private def getPolySize(numFeatures: Int, degree: Int): Int =
+    choose(numFeatures + degree, degree)
 
-  private def expandDense(
-      values: Array[Double],
-      lastIdx: Int,
-      degree: Int,
-      multiplier: Double,
-      polyValues: Array[Double],
-      curPolyIdx: Int): Int = {
+  private def expandDense(values: Array[Double],
+                          lastIdx: Int,
+                          degree: Int,
+                          multiplier: Double,
+                          polyValues: Array[Double],
+                          curPolyIdx: Int): Int = {
     if (multiplier == 0.0) {
       // do nothing
     } else if (degree == 0 || lastIdx < 0) {
-      if (curPolyIdx >= 0) { // skip the very first 1
+      if (curPolyIdx >= 0) {
+        // skip the very first 1
         polyValues(curPolyIdx) = multiplier
       }
     } else {
@@ -114,20 +116,20 @@ object PolynomialExpansion extends DefaultParamsReadable[PolynomialExpansion] {
     curPolyIdx + getPolySize(lastIdx + 1, degree)
   }
 
-  private def expandSparse(
-      indices: Array[Int],
-      values: Array[Double],
-      lastIdx: Int,
-      lastFeatureIdx: Int,
-      degree: Int,
-      multiplier: Double,
-      polyIndices: mutable.ArrayBuilder[Int],
-      polyValues: mutable.ArrayBuilder[Double],
-      curPolyIdx: Int): Int = {
+  private def expandSparse(indices: Array[Int],
+                           values: Array[Double],
+                           lastIdx: Int,
+                           lastFeatureIdx: Int,
+                           degree: Int,
+                           multiplier: Double,
+                           polyIndices: mutable.ArrayBuilder[Int],
+                           polyValues: mutable.ArrayBuilder[Double],
+                           curPolyIdx: Int): Int = {
     if (multiplier == 0.0) {
       // do nothing
     } else if (degree == 0 || lastIdx < 0) {
-      if (curPolyIdx >= 0) { // skip the very first 1
+      if (curPolyIdx >= 0) {
+        // skip the very first 1
         polyIndices += curPolyIdx
         polyValues += multiplier
       }
@@ -140,8 +142,15 @@ object PolynomialExpansion extends DefaultParamsReadable[PolynomialExpansion] {
       var curStart = curPolyIdx
       var i = 0
       while (i <= degree && alpha != 0.0) {
-        curStart = expandSparse(indices, values, lastIdx1, lastFeatureIdx1, degree - i, alpha,
-          polyIndices, polyValues, curStart)
+        curStart = expandSparse(indices,
+                                values,
+                                lastIdx1,
+                                lastFeatureIdx1,
+                                degree - i,
+                                alpha,
+                                polyIndices,
+                                polyValues,
+                                curStart)
         i += 1
         alpha *= v
       }
@@ -166,7 +175,7 @@ object PolynomialExpansion extends DefaultParamsReadable[PolynomialExpansion] {
     val polyValues = mutable.ArrayBuilder.make[Double]
     polyValues.sizeHint(nnzPolySize - 1)
     expandSparse(
-      sv.indices, sv.values, nnz - 1, sv.size - 1, degree, 1.0, polyIndices, polyValues, -1)
+        sv.indices, sv.values, nnz - 1, sv.size - 1, degree, 1.0, polyIndices, polyValues, -1)
     new SparseVector(polySize - 1, polyIndices.result(), polyValues.result())
   }
 

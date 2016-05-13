@@ -58,18 +58,18 @@ object HiveThriftServer2 extends Logging {
     val server = new HiveThriftServer2(sqlContext)
 
     val executionHive = HiveUtils.newClientForExecution(
-      sqlContext.sparkContext.conf,
-      sqlContext.sessionState.newHadoopConf())
+        sqlContext.sparkContext.conf, sqlContext.sessionState.newHadoopConf())
 
     server.init(executionHive.conf)
     server.start()
     listener = new HiveThriftServer2Listener(server, sqlContext.conf)
     sqlContext.sparkContext.addSparkListener(listener)
-    uiTab = if (sqlContext.sparkContext.getConf.getBoolean("spark.ui.enabled", true)) {
-      Some(new ThriftServerTab(sqlContext.sparkContext))
-    } else {
-      None
-    }
+    uiTab =
+      if (sqlContext.sparkContext.getConf.getBoolean("spark.ui.enabled", true)) {
+        Some(new ThriftServerTab(sqlContext.sparkContext))
+      } else {
+        None
+      }
   }
 
   def main(args: Array[String]) {
@@ -86,8 +86,8 @@ object HiveThriftServer2 extends Logging {
     }
 
     val executionHive = HiveUtils.newClientForExecution(
-      SparkSQLEnv.sqlContext.sparkContext.conf,
-      SparkSQLEnv.sqlContext.sessionState.newHadoopConf())
+        SparkSQLEnv.sqlContext.sparkContext.conf,
+        SparkSQLEnv.sqlContext.sessionState.newHadoopConf())
 
     try {
       val server = new HiveThriftServer2(SparkSQLEnv.sqlContext)
@@ -96,11 +96,12 @@ object HiveThriftServer2 extends Logging {
       logInfo("HiveThriftServer2 started")
       listener = new HiveThriftServer2Listener(server, SparkSQLEnv.sqlContext.conf)
       SparkSQLEnv.sparkContext.addSparkListener(listener)
-      uiTab = if (SparkSQLEnv.sparkContext.getConf.getBoolean("spark.ui.enabled", true)) {
-        Some(new ThriftServerTab(SparkSQLEnv.sparkContext))
-      } else {
-        None
-      }
+      uiTab =
+        if (SparkSQLEnv.sparkContext.getConf.getBoolean("spark.ui.enabled", true)) {
+          Some(new ThriftServerTab(SparkSQLEnv.sparkContext))
+        } else {
+          None
+        }
       // If application was killed before HiveThriftServer2 start successfully then SparkSubmit
       // process can not exit, so check whether if SparkContext was stopped.
       if (SparkSQLEnv.sparkContext.stopped.get()) {
@@ -114,11 +115,10 @@ object HiveThriftServer2 extends Logging {
     }
   }
 
-  private[thriftserver] class SessionInfo(
-      val sessionId: String,
-      val startTimestamp: Long,
-      val ip: String,
-      val userName: String) {
+  private[thriftserver] class SessionInfo(val sessionId: String,
+                                          val startTimestamp: Long,
+                                          val ip: String,
+                                          val userName: String) {
     var finishTimestamp: Long = 0L
     var totalExecution: Int = 0
     def totalTime: Long = {
@@ -135,11 +135,10 @@ object HiveThriftServer2 extends Logging {
     type ExecutionState = Value
   }
 
-  private[thriftserver] class ExecutionInfo(
-      val statement: String,
-      val sessionId: String,
-      val startTimestamp: Long,
-      val userName: String) {
+  private[thriftserver] class ExecutionInfo(val statement: String,
+                                            val sessionId: String,
+                                            val startTimestamp: Long,
+                                            val userName: String) {
     var finishTimestamp: Long = 0L
     var executePlan: String = ""
     var detail: String = ""
@@ -155,13 +154,11 @@ object HiveThriftServer2 extends Logging {
     }
   }
 
-
   /**
    * A inner sparkListener called in sc.stop to clean up the HiveThriftServer2
    */
-  private[thriftserver] class HiveThriftServer2Listener(
-      val server: HiveServer2,
-      val conf: SQLConf) extends SparkListener {
+  private[thriftserver] class HiveThriftServer2Listener(val server: HiveServer2, val conf: SQLConf)
+      extends SparkListener {
 
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
       server.stop()
@@ -211,12 +208,11 @@ object HiveThriftServer2 extends Logging {
       trimSessionIfNecessary()
     }
 
-    def onStatementStart(
-        id: String,
-        sessionId: String,
-        statement: String,
-        groupId: String,
-        userName: String = "UNKNOWN"): Unit = synchronized {
+    def onStatementStart(id: String,
+                         sessionId: String,
+                         statement: String,
+                         groupId: String,
+                         userName: String = "UNKNOWN"): Unit = synchronized {
       val info = new ExecutionInfo(statement, sessionId, System.currentTimeMillis, userName)
       info.state = ExecutionState.STARTED
       executionList.put(id, info)
@@ -264,14 +260,14 @@ object HiveThriftServer2 extends Logging {
           sessionList.remove(s._1)
         }
       }
-
     }
   }
 }
 
 private[hive] class HiveThriftServer2(sqlContext: SQLContext)
-  extends HiveServer2
-  with ReflectedCompositeService with Logging {
+    extends HiveServer2
+    with ReflectedCompositeService
+    with Logging {
   // state is tracked internally so that the server only attempts to shut down if it successfully
   // started, and then once only.
   private val started = new AtomicBoolean(false)
@@ -295,7 +291,6 @@ private[hive] class HiveThriftServer2(sqlContext: SQLContext)
     transportMode.toLowerCase(Locale.ENGLISH).equals("binary")
   }
 
-
   override def start(): Unit = {
     super.start()
     started.set(true)
@@ -303,7 +298,7 @@ private[hive] class HiveThriftServer2(sqlContext: SQLContext)
 
   override def stop(): Unit = {
     if (started.getAndSet(false)) {
-       super.stop()
+      super.stop()
     }
   }
 }

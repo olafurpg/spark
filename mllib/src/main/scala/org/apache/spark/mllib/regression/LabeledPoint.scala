@@ -32,9 +32,8 @@ import org.apache.spark.SparkException
  */
 @Since("0.8.0")
 @BeanInfo
-case class LabeledPoint @Since("1.0.0") (
-    @Since("0.8.0") label: Double,
-    @Since("1.0.0") features: Vector) {
+case class LabeledPoint @Since("1.0.0")(
+    @Since("0.8.0") label: Double, @Since("1.0.0") features: Vector) {
   override def toString: String = {
     s"($label,$features)"
   }
@@ -46,6 +45,7 @@ case class LabeledPoint @Since("1.0.0") (
  */
 @Since("1.1.0")
 object LabeledPoint {
+
   /**
    * Parses a string resulted from `LabeledPoint#toString` into
    * an [[org.apache.spark.mllib.regression.LabeledPoint]].
@@ -60,7 +60,8 @@ object LabeledPoint {
         case other =>
           throw new SparkException(s"Cannot parse $other.")
       }
-    } else { // dense format used before v1.0
+    } else {
+      // dense format used before v1.0
       val parts = s.split(',')
       val label = java.lang.Double.parseDouble(parts(0))
       val features = Vectors.dense(parts(1).trim().split(' ').map(java.lang.Double.parseDouble))

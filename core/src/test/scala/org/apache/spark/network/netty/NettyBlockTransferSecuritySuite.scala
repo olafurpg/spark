@@ -39,8 +39,7 @@ import org.apache.spark.storage.{BlockId, ShuffleBlockId}
 
 class NettyBlockTransferSecuritySuite extends SparkFunSuite with MockitoSugar with ShouldMatchers {
   test("security default off") {
-    val conf = new SparkConf()
-      .set("spark.app.id", "app-id")
+    val conf = new SparkConf().set("spark.app.id", "app-id")
     testConnection(conf, conf) match {
       case Success(_) => // expected
       case Failure(t) => fail(t)
@@ -66,7 +65,7 @@ class NettyBlockTransferSecuritySuite extends SparkFunSuite with MockitoSugar wi
     val conf1 = conf0.clone.set("spark.authenticate.secret", "bad")
     testConnection(conf0, conf1) match {
       case Success(_) => fail("Should have failed")
-      case Failure(t) => t.getMessage should include ("Mismatched response")
+      case Failure(t) => t.getMessage should include("Mismatched response")
     }
   }
 
@@ -90,7 +89,7 @@ class NettyBlockTransferSecuritySuite extends SparkFunSuite with MockitoSugar wi
     val conf1 = conf0.clone.set("spark.authenticate", "true")
     testConnection(conf0, conf1) match {
       case Success(_) => fail("Should have failed")
-      case Failure(t) => t.getMessage should include ("Expected SaslMessage")
+      case Failure(t) => t.getMessage should include("Expected SaslMessage")
     }
   }
 
@@ -103,8 +102,8 @@ class NettyBlockTransferSecuritySuite extends SparkFunSuite with MockitoSugar wi
     val blockManager = mock[BlockDataManager]
     val blockId = ShuffleBlockId(0, 1, 2)
     val blockString = "Hello, world!"
-    val blockBuffer = new NioManagedBuffer(ByteBuffer.wrap(
-      blockString.getBytes(StandardCharsets.UTF_8)))
+    val blockBuffer = new NioManagedBuffer(
+        ByteBuffer.wrap(blockString.getBytes(StandardCharsets.UTF_8)))
     when(blockManager.getBlockData(blockId)).thenReturn(blockBuffer)
 
     val securityManager0 = new SecurityManager(conf0)
@@ -118,7 +117,7 @@ class NettyBlockTransferSecuritySuite extends SparkFunSuite with MockitoSugar wi
     val result = fetchBlock(exec0, exec1, "1", blockId) match {
       case Success(buf) =>
         val actualString = CharStreams.toString(
-          new InputStreamReader(buf.createInputStream(), StandardCharsets.UTF_8))
+            new InputStreamReader(buf.createInputStream(), StandardCharsets.UTF_8))
         actualString should equal(blockString)
         buf.release()
         Success(())
@@ -131,27 +130,25 @@ class NettyBlockTransferSecuritySuite extends SparkFunSuite with MockitoSugar wi
   }
 
   /** Synchronously fetches a single block, acting as the given executor fetching from another. */
-  private def fetchBlock(
-      self: BlockTransferService,
-      from: BlockTransferService,
-      execId: String,
-      blockId: BlockId): Try[ManagedBuffer] = {
+  private def fetchBlock(self: BlockTransferService,
+                         from: BlockTransferService,
+                         execId: String,
+                         blockId: BlockId): Try[ManagedBuffer] = {
 
     val promise = Promise[ManagedBuffer]()
 
-    self.fetchBlocks(from.hostName, from.port, execId, Array(blockId.toString),
-      new BlockFetchingListener {
-        override def onBlockFetchFailure(blockId: String, exception: Throwable): Unit = {
-          promise.failure(exception)
-        }
+    self.fetchBlocks(
+        from.hostName, from.port, execId, Array(blockId.toString), new BlockFetchingListener {
+      override def onBlockFetchFailure(blockId: String, exception: Throwable): Unit = {
+        promise.failure(exception)
+      }
 
-        override def onBlockFetchSuccess(blockId: String, data: ManagedBuffer): Unit = {
-          promise.success(data.retain())
-        }
-      })
+      override def onBlockFetchSuccess(blockId: String, data: ManagedBuffer): Unit = {
+        promise.success(data.retain())
+      }
+    })
 
     Await.ready(promise.future, FiniteDuration(10, TimeUnit.SECONDS))
     promise.future.value.get
   }
 }
-

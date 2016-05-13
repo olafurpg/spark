@@ -35,5 +35,4 @@ object SparkFiles {
    */
   def getRootDirectory(): String =
     SparkEnv.get.driverTmpDir.getOrElse(".")
-
 }

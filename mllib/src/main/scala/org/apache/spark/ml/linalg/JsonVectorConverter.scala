@@ -49,7 +49,8 @@ private[ml] object JsonVectorConverter {
   def toJson(v: Vector): String = {
     v match {
       case SparseVector(size, indices, values) =>
-        val jValue = ("type" -> 0) ~
+        val jValue =
+          ("type" -> 0) ~
           ("size" -> size) ~
           ("indices" -> indices.toSeq) ~
           ("values" -> values.toSeq)

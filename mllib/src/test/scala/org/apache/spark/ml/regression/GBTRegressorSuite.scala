@@ -32,14 +32,16 @@ import org.apache.spark.util.Utils
 /**
  * Test suite for [[GBTRegressor]].
  */
-class GBTRegressorSuite extends SparkFunSuite with MLlibTestSparkContext
-  with DefaultReadWriteTest {
+class GBTRegressorSuite
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   import GBTRegressorSuite.compareAPIs
 
   // Combinations for estimators, learning rates and subsamplingRate
-  private val testCombinations =
-    Array((10, 1.0, 1.0), (10, 0.1, 1.0), (10, 0.5, 0.75), (10, 0.1, 0.75))
+  private val testCombinations = Array(
+      (10, 1.0, 1.0), (10, 0.1, 1.0), (10, 0.5, 0.75), (10, 0.1, 0.75))
 
   private var data: RDD[LabeledPoint] = _
   private var trainData: RDD[LabeledPoint] = _
@@ -47,7 +49,8 @@ class GBTRegressorSuite extends SparkFunSuite with MLlibTestSparkContext
 
   override def beforeAll() {
     super.beforeAll()
-    data = sc.parallelize(EnsembleTestHelper.generateOrderedLabeledPoints(numFeatures = 10, 100), 2)
+    data =
+      sc.parallelize(EnsembleTestHelper.generateOrderedLabeledPoints(numFeatures = 10, 100), 2)
     trainData =
       sc.parallelize(EnsembleTestHelper.generateOrderedLabeledPoints(numFeatures = 20, 120), 2)
     validationData =
@@ -72,17 +75,16 @@ class GBTRegressorSuite extends SparkFunSuite with MLlibTestSparkContext
   }
 
   test("GBTRegressor behaves reasonably on toy data") {
-    val df = spark.createDataFrame(Seq(
-      LabeledPoint(10, Vectors.dense(1, 2, 3, 4)),
-      LabeledPoint(-5, Vectors.dense(6, 3, 2, 1)),
-      LabeledPoint(11, Vectors.dense(2, 2, 3, 4)),
-      LabeledPoint(-6, Vectors.dense(6, 4, 2, 1)),
-      LabeledPoint(9, Vectors.dense(1, 2, 6, 4)),
-      LabeledPoint(-4, Vectors.dense(6, 3, 2, 2))
-    ))
-    val gbt = new GBTRegressor()
-      .setMaxDepth(2)
-      .setMaxIter(2)
+    val df = spark.createDataFrame(
+        Seq(
+            LabeledPoint(10, Vectors.dense(1, 2, 3, 4)),
+            LabeledPoint(-5, Vectors.dense(6, 3, 2, 1)),
+            LabeledPoint(11, Vectors.dense(2, 2, 3, 4)),
+            LabeledPoint(-6, Vectors.dense(6, 4, 2, 1)),
+            LabeledPoint(9, Vectors.dense(1, 2, 6, 4)),
+            LabeledPoint(-4, Vectors.dense(6, 3, 2, 2))
+        ))
+    val gbt = new GBTRegressor().setMaxDepth(2).setMaxIter(2)
     val model = gbt.fit(df)
 
     // copied model must have the same parent.
@@ -115,9 +117,9 @@ class GBTRegressorSuite extends SparkFunSuite with MLlibTestSparkContext
   test("should support all NumericType labels and not support other types") {
     val gbt = new GBTRegressor().setMaxDepth(1)
     MLTestingUtils.checkNumericTypes[GBTRegressionModel, GBTRegressor](
-      gbt, spark, isClassification = false) { (expected, actual) =>
-        TreeTests.checkEqual(expected, actual)
-      }
+        gbt, spark, isClassification = false) { (expected, actual) =>
+      TreeTests.checkEqual(expected, actual)
+    }
   }
 
   // TODO: Reinstate test once runWithValidation is implemented  SPARK-7132
@@ -136,7 +138,7 @@ class GBTRegressorSuite extends SparkFunSuite with MLlibTestSparkContext
       compareAPIs(trainData, Some(validationData), gbt, categoricalFeatures)
     }
   }
-  */
+   */
 
   /////////////////////////////////////////////////////////////////////////////
   // Tests of feature importance
@@ -166,9 +168,7 @@ class GBTRegressorSuite extends SparkFunSuite with MLlibTestSparkContext
   /////////////////////////////////////////////////////////////////////////////
 
   test("model save/load") {
-    def checkModelData(
-        model: GBTRegressionModel,
-        model2: GBTRegressionModel): Unit = {
+    def checkModelData(model: GBTRegressionModel, model2: GBTRegressionModel): Unit = {
       TreeTests.checkEqual(model, model2)
       assert(model.numFeatures === model2.numFeatures)
     }
@@ -177,8 +177,7 @@ class GBTRegressorSuite extends SparkFunSuite with MLlibTestSparkContext
     val rdd = TreeTests.getTreeReadWriteData(sc)
 
     val allParamSettings = TreeTests.allParamSettings ++ Map("lossType" -> "squared")
-    val continuousData: DataFrame =
-      TreeTests.setMetadata(rdd, Map.empty[Int, Int], numClasses = 0)
+    val continuousData: DataFrame = TreeTests.setMetadata(rdd, Map.empty[Int, Int], numClasses = 0)
     testEstimatorAndModelReadWrite(gbt, continuousData, allParamSettings, checkModelData)
   }
 }
@@ -189,11 +188,10 @@ private object GBTRegressorSuite extends SparkFunSuite {
    * Train 2 models on the given dataset, one using the old API and one using the new API.
    * Convert the old model to the new format, compare them, and fail if they are not exactly equal.
    */
-  def compareAPIs(
-      data: RDD[LabeledPoint],
-      validationData: Option[RDD[LabeledPoint]],
-      gbt: GBTRegressor,
-      categoricalFeatures: Map[Int, Int]): Unit = {
+  def compareAPIs(data: RDD[LabeledPoint],
+                  validationData: Option[RDD[LabeledPoint]],
+                  gbt: GBTRegressor,
+                  categoricalFeatures: Map[Int, Int]): Unit = {
     val numFeatures = data.first().features.size
     val oldBoostingStrategy = gbt.getOldBoostingStrategy(categoricalFeatures, OldAlgo.Regression)
     val oldGBT = new OldGBT(oldBoostingStrategy, gbt.getSeed.toInt)
@@ -202,7 +200,7 @@ private object GBTRegressorSuite extends SparkFunSuite {
     val newModel = gbt.fit(newData)
     // Use parent from newTree since this is not checked anyways.
     val oldModelAsNew = GBTRegressionModel.fromOld(
-      oldModel, newModel.parent.asInstanceOf[GBTRegressor], categoricalFeatures, numFeatures)
+        oldModel, newModel.parent.asInstanceOf[GBTRegressor], categoricalFeatures, numFeatures)
     TreeTests.checkEqual(oldModelAsNew, newModel)
     assert(newModel.numFeatures === numFeatures)
     assert(oldModelAsNew.numFeatures === numFeatures)

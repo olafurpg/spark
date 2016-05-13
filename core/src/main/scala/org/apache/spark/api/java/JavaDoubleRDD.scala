@@ -31,7 +31,7 @@ import org.apache.spark.util.StatCounter
 import org.apache.spark.util.Utils
 
 class JavaDoubleRDD(val srdd: RDD[scala.Double])
-  extends AbstractJavaRDDLike[JDouble, JavaDoubleRDD] {
+    extends AbstractJavaRDDLike[JDouble, JavaDoubleRDD] {
 
   override val classTag: ClassTag[JDouble] = implicitly[ClassTag[JDouble]]
 

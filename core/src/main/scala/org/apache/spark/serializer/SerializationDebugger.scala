@@ -38,7 +38,7 @@ private[spark] object SerializationDebugger extends Logging {
     if (enableDebugging && reflect != null) {
       try {
         new NotSerializableException(
-          e.getMessage + "\nSerialization stack:\n" + find(obj).map("\t- " + _).mkString("\n"))
+            e.getMessage + "\nSerialization stack:\n" + find(obj).map("\t- " + _).mkString("\n"))
       } catch {
         case NonFatal(t) =>
           // Fall back to old exception
@@ -68,8 +68,10 @@ private[spark] object SerializationDebugger extends Logging {
   }
 
   private[serializer] var enableDebugging: Boolean = {
-    !AccessController.doPrivileged(new sun.security.action.GetBooleanAction(
-      "sun.io.serialization.extendedDebugInfo")).booleanValue()
+    !AccessController
+      .doPrivileged(
+          new sun.security.action.GetBooleanAction("sun.io.serialization.extendedDebugInfo"))
+      .booleanValue()
   }
 
   private class SerializationDebugger {
@@ -132,8 +134,7 @@ private[spark] object SerializationDebugger extends Logging {
      * the only way to capture all the objects it will serialize is by using a
      * dummy ObjectOutput that collects all the relevant objects for further testing.
      */
-    private def visitExternalizable(o: java.io.Externalizable, stack: List[String]): List[String] =
-    {
+    private def visitExternalizable(o: java.io.Externalizable, stack: List[String]): List[String] = {
       val fieldList = new ListObjectOutput
       o.writeExternal(fieldList)
       val childObjects = fieldList.outputArray
@@ -200,8 +201,8 @@ private[spark] object SerializationDebugger extends Logging {
           var j = 0
           while (j < objFieldValues.length) {
             val fieldDesc = fields(numPrims + j)
-            val elem = s"field (class: ${slotDesc.getName}" +
-              s", name: ${fieldDesc.getName}" +
+            val elem =
+              s"field (class: ${slotDesc.getName}" + s", name: ${fieldDesc.getName}" +
               s", type: ${fieldDesc.getType})"
             val childStack = visit(objFieldValues(j), elem :: stack)
             if (childStack.nonEmpty) {
@@ -304,7 +305,7 @@ private[spark] object SerializationDebugger extends Logging {
 
   /** An output stream that emulates /dev/null */
   private class NullOutputStream extends OutputStream {
-    override def write(b: Int) { }
+    override def write(b: Int) {}
   }
 
   /**
@@ -330,8 +331,8 @@ private[spark] object SerializationDebugger extends Logging {
   /** An implicit class that allows us to call private methods of ObjectStreamClass. */
   implicit class ObjectStreamClassMethods(val desc: ObjectStreamClass) extends AnyVal {
     def getSlotDescs: Array[ObjectStreamClass] = {
-      reflect.GetClassDataLayout.invoke(desc).asInstanceOf[Array[Object]].map {
-        classDataSlot => reflect.DescField.get(classDataSlot).asInstanceOf[ObjectStreamClass]
+      reflect.GetClassDataLayout.invoke(desc).asInstanceOf[Array[Object]].map { classDataSlot =>
+        reflect.DescField.get(classDataSlot).asInstanceOf[ObjectStreamClass]
       }
     }
 
@@ -369,6 +370,7 @@ private[spark] object SerializationDebugger extends Logging {
   }
 
   private class ObjectStreamClassReflection {
+
     /** ObjectStreamClass.getClassDataLayout */
     val GetClassDataLayout: Method = {
       val f = classOf[ObjectStreamClass].getDeclaredMethod("getClassDataLayout")
@@ -407,7 +409,7 @@ private[spark] object SerializationDebugger extends Logging {
     /** ObjectStreamClass.getObjFieldValues */
     val GetObjFieldValues: Method = {
       val f = classOf[ObjectStreamClass].getDeclaredMethod(
-        "getObjFieldValues", classOf[Object], classOf[Array[Object]])
+          "getObjFieldValues", classOf[Object], classOf[Array[Object]])
       f.setAccessible(true)
       f
     }

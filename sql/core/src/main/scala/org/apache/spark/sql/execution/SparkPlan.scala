@@ -57,11 +57,12 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
   // sqlContext will be null when we are being deserialized on the slaves.  In this instance
   // the value of subexpressionEliminationEnabled will be set by the deserializer after the
   // constructor has run.
-  val subexpressionEliminationEnabled: Boolean = if (sqlContext != null) {
-    sqlContext.conf.subexpressionEliminationEnabled
-  } else {
-    false
-  }
+  val subexpressionEliminationEnabled: Boolean =
+    if (sqlContext != null) {
+      sqlContext.conf.subexpressionEliminationEnabled
+    } else {
+      false
+    }
 
   /** Overridden make copy also propagates sqlContext to copied plan. */
   override def makeCopy(newArgs: Array[AnyRef]): SparkPlan = {
@@ -149,7 +150,7 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
    * The list of subqueries are added to [[subqueryResults]].
    */
   protected def prepareSubqueries(): Unit = {
-    val allSubqueries = expressions.flatMap(_.collect {case e: ScalarSubquery => e})
+    val allSubqueries = expressions.flatMap(_.collect { case e: ScalarSubquery => e })
     allSubqueries.asInstanceOf[Seq[ScalarSubquery]].foreach { e =>
       val futureResult = Future {
         // Each subquery should return only one row (and one column). We take two here and throws
@@ -165,19 +166,21 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
    */
   protected def waitForSubqueries(): Unit = synchronized {
     // fill in the result of subqueries
-    subqueryResults.foreach { case (e, futureResult) =>
-      val rows = ThreadUtils.awaitResult(futureResult, Duration.Inf)
-      if (rows.length > 1) {
-        sys.error(s"more than one row returned by a subquery used as an expression:\n${e.plan}")
-      }
-      if (rows.length == 1) {
-        assert(rows(0).numFields == 1,
-          s"Expects 1 field, but got ${rows(0).numFields}; something went wrong in analysis")
-        e.updateResult(rows(0).get(0, e.dataType))
-      } else {
-        // If there is no rows returned, the result should be null.
-        e.updateResult(null)
-      }
+    subqueryResults.foreach {
+      case (e, futureResult) =>
+        val rows = ThreadUtils.awaitResult(futureResult, Duration.Inf)
+        if (rows.length > 1) {
+          sys.error(s"more than one row returned by a subquery used as an expression:\n${e.plan}")
+        }
+        if (rows.length == 1) {
+          assert(
+              rows(0).numFields == 1,
+              s"Expects 1 field, but got ${rows(0).numFields}; something went wrong in analysis")
+          e.updateResult(rows(0).get(0, e.dataType))
+        } else {
+          // If there is no rows returned, the result should be null.
+          e.updateResult(null)
+        }
     }
     subqueryResults.clear()
   }
@@ -239,7 +242,7 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
   private def getByteArrayRdd(n: Int = -1): RDD[Array[Byte]] = {
     execute().mapPartitionsInternal { iter =>
       var count = 0
-      val buffer = new Array[Byte](4 << 10)  // 4K
+      val buffer = new Array[Byte](4 << 10) // 4K
       val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
       val bos = new ByteArrayOutputStream()
       val out = new DataOutputStream(codec.compressedOutputStream(bos))
@@ -339,13 +342,13 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
           numPartsToTry = (1.5 * n * partsScanned / buf.size).toInt
         }
       }
-      numPartsToTry = math.max(0, numPartsToTry)  // guard against negative num of partitions
+      numPartsToTry = math.max(0, numPartsToTry) // guard against negative num of partitions
 
       val left = n - buf.size
       val p = partsScanned.until(math.min(partsScanned + numPartsToTry, totalParts).toInt)
       val sc = sqlContext.sparkContext
-      val res = sc.runJob(childRDD,
-        (it: Iterator[Array[Byte]]) => if (it.hasNext) it.next() else Array.empty, p)
+      val res = sc.runJob(
+          childRDD, (it: Iterator[Array[Byte]]) => if (it.hasNext) it.next() else Array.empty, p)
 
       res.foreach { r =>
         decodeUnsafeRows(r.asInstanceOf[Array[Byte]]).foreach(buf.+=)
@@ -361,10 +364,9 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
     }
   }
 
-  protected def newMutableProjection(
-      expressions: Seq[Expression],
-      inputSchema: Seq[Attribute],
-      useSubexprElimination: Boolean = false): MutableProjection = {
+  protected def newMutableProjection(expressions: Seq[Expression],
+                                     inputSchema: Seq[Attribute],
+                                     useSubexprElimination: Boolean = false): MutableProjection = {
     log.debug(s"Creating MutableProj: $expressions, inputSchema: $inputSchema")
     GenerateMutableProjection.generate(expressions, inputSchema, useSubexprElimination)
   }
@@ -391,8 +393,8 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
 }
 
 object SparkPlan {
-  private[execution] val subqueryExecutionContext = ExecutionContext.fromExecutorService(
-    ThreadUtils.newDaemonCachedThreadPool("subquery", 16))
+  private[execution] val subqueryExecutionContext =
+    ExecutionContext.fromExecutorService(ThreadUtils.newDaemonCachedThreadPool("subquery", 16))
 }
 
 private[sql] trait LeafExecNode extends SparkPlan {

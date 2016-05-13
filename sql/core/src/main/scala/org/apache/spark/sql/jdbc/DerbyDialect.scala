@@ -21,7 +21,6 @@ import java.sql.Types
 
 import org.apache.spark.sql.types._
 
-
 private object DerbyDialect extends JdbcDialect {
 
   override def canHandle(url: String): Boolean = url.startsWith("jdbc:derby")

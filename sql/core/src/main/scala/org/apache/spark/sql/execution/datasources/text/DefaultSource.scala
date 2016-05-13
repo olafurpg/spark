@@ -42,25 +42,24 @@ class DefaultSource extends FileFormat with DataSourceRegister {
   private def verifySchema(schema: StructType): Unit = {
     if (schema.size != 1) {
       throw new AnalysisException(
-        s"Text data source supports only a single column, and you have ${schema.size} columns.")
+          s"Text data source supports only a single column, and you have ${schema.size} columns.")
     }
     val tpe = schema(0).dataType
     if (tpe != StringType) {
       throw new AnalysisException(
-        s"Text data source supports only a string column, but you have ${tpe.simpleString}.")
+          s"Text data source supports only a string column, but you have ${tpe.simpleString}.")
     }
   }
 
-  override def inferSchema(
-      sparkSession: SparkSession,
-      options: Map[String, String],
-      files: Seq[FileStatus]): Option[StructType] = Some(new StructType().add("value", StringType))
+  override def inferSchema(sparkSession: SparkSession,
+                           options: Map[String, String],
+                           files: Seq[FileStatus]): Option[StructType] =
+    Some(new StructType().add("value", StringType))
 
-  override def prepareWrite(
-      sparkSession: SparkSession,
-      job: Job,
-      options: Map[String, String],
-      dataSchema: StructType): OutputWriterFactory = {
+  override def prepareWrite(sparkSession: SparkSession,
+                            job: Job,
+                            options: Map[String, String],
+                            dataSchema: StructType): OutputWriterFactory = {
     verifySchema(dataSchema)
 
     val conf = job.getConfiguration
@@ -70,11 +69,10 @@ class DefaultSource extends FileFormat with DataSourceRegister {
     }
 
     new OutputWriterFactory {
-      override def newInstance(
-          path: String,
-          bucketId: Option[Int],
-          dataSchema: StructType,
-          context: TaskAttemptContext): OutputWriter = {
+      override def newInstance(path: String,
+                               bucketId: Option[Int],
+                               dataSchema: StructType,
+                               context: TaskAttemptContext): OutputWriter = {
         if (bucketId.isDefined) {
           throw new AnalysisException("Text doesn't support bucketing")
         }
@@ -93,38 +91,38 @@ class DefaultSource extends FileFormat with DataSourceRegister {
       hadoopConf: Configuration): (PartitionedFile) => Iterator[InternalRow] = {
     // Text data source doesn't support partitioning. Here we simply delegate to `buildReader`.
     buildReader(
-      sparkSession, dataSchema, partitionSchema, requiredSchema, filters, options, hadoopConf)
+        sparkSession, dataSchema, partitionSchema, requiredSchema, filters, options, hadoopConf)
   }
 
-  override def buildReader(
-      sparkSession: SparkSession,
-      dataSchema: StructType,
-      partitionSchema: StructType,
-      requiredSchema: StructType,
-      filters: Seq[Filter],
-      options: Map[String, String],
-      hadoopConf: Configuration): PartitionedFile => Iterator[InternalRow] = {
+  override def buildReader(sparkSession: SparkSession,
+                           dataSchema: StructType,
+                           partitionSchema: StructType,
+                           requiredSchema: StructType,
+                           filters: Seq[Filter],
+                           options: Map[String, String],
+                           hadoopConf: Configuration): PartitionedFile => Iterator[InternalRow] = {
     val broadcastedHadoopConf =
       sparkSession.sparkContext.broadcast(new SerializableConfiguration(hadoopConf))
 
-    (file: PartitionedFile) => {
-      val unsafeRow = new UnsafeRow(1)
-      val bufferHolder = new BufferHolder(unsafeRow)
-      val unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 1)
+    (file: PartitionedFile) =>
+      {
+        val unsafeRow = new UnsafeRow(1)
+        val bufferHolder = new BufferHolder(unsafeRow)
+        val unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 1)
 
-      new HadoopFileLinesReader(file, broadcastedHadoopConf.value.value).map { line =>
-        // Writes to an UnsafeRow directly
-        bufferHolder.reset()
-        unsafeRowWriter.write(0, line.getBytes, 0, line.getLength)
-        unsafeRow.setTotalSize(bufferHolder.totalSize())
-        unsafeRow
+        new HadoopFileLinesReader(file, broadcastedHadoopConf.value.value).map { line =>
+          // Writes to an UnsafeRow directly
+          bufferHolder.reset()
+          unsafeRowWriter.write(0, line.getBytes, 0, line.getLength)
+          unsafeRow.setTotalSize(bufferHolder.totalSize())
+          unsafeRow
+        }
       }
-    }
   }
 }
 
 class TextOutputWriter(path: String, dataSchema: StructType, context: TaskAttemptContext)
-  extends OutputWriter {
+    extends OutputWriter {
 
   private[this] val buffer = new Text()
 
@@ -140,7 +138,8 @@ class TextOutputWriter(path: String, dataSchema: StructType, context: TaskAttemp
     }.getRecordWriter(context)
   }
 
-  override def write(row: Row): Unit = throw new UnsupportedOperationException("call writeInternal")
+  override def write(row: Row): Unit =
+    throw new UnsupportedOperationException("call writeInternal")
 
   override protected[sql] def writeInternal(row: InternalRow): Unit = {
     val utf8string = row.getUTF8String(0)
@@ -152,4 +151,3 @@ class TextOutputWriter(path: String, dataSchema: StructType, context: TaskAttemp
     recordWriter.close(context)
   }
 }
-

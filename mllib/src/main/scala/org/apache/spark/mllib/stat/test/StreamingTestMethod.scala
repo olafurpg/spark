@@ -40,8 +40,7 @@ private[stat] sealed trait StreamingTestMethod extends Serializable {
   val methodName: String
   val nullHypothesis: String
 
-  protected type SummaryPairStream =
-    DStream[(StatCounter, StatCounter)]
+  protected type SummaryPairStream = DStream[(StatCounter, StatCounter)]
 
   /**
    * Perform streaming 2-sample statistical significance testing.
@@ -58,12 +57,12 @@ private[stat] sealed trait StreamingTestMethod extends Serializable {
   protected implicit def toApacheCommonsStats(
       summaryStats: StatCounter): StatisticalSummaryValues = {
     new StatisticalSummaryValues(
-      summaryStats.mean,
-      summaryStats.variance,
-      summaryStats.count,
-      summaryStats.max,
-      summaryStats.min,
-      summaryStats.mean * summaryStats.count
+        summaryStats.mean,
+        summaryStats.variance,
+        summaryStats.count,
+        summaryStats.max,
+        summaryStats.min,
+        summaryStats.mean * summaryStats.count
     )
   }
 }
@@ -85,9 +84,7 @@ private[stat] object WelchTTest extends StreamingTestMethod with Logging {
   override def doTest(data: SummaryPairStream): DStream[StreamingTestResult] =
     data.map[StreamingTestResult]((test _).tupled)
 
-  private def test(
-      statsA: StatCounter,
-      statsB: StatCounter): StreamingTestResult = {
+  private def test(statsA: StatCounter, statsB: StatCounter): StreamingTestResult = {
     def welchDF(sample1: StatisticalSummaryValues, sample2: StatisticalSummaryValues): Double = {
       val s1 = sample1.getVariance
       val n1 = sample1.getN
@@ -101,11 +98,11 @@ private[stat] object WelchTTest extends StreamingTestMethod with Logging {
     }
 
     new StreamingTestResult(
-      tTester.get.tTest(statsA, statsB),
-      welchDF(statsA, statsB),
-      tTester.get.t(statsA, statsB),
-      methodName,
-      nullHypothesis
+        tTester.get.tTest(statsA, statsB),
+        welchDF(statsA, statsB),
+        tTester.get.t(statsA, statsB),
+        methodName,
+        nullHypothesis
     )
   }
 }
@@ -127,18 +124,16 @@ private[stat] object StudentTTest extends StreamingTestMethod with Logging {
   override def doTest(data: SummaryPairStream): DStream[StreamingTestResult] =
     data.map[StreamingTestResult]((test _).tupled)
 
-  private def test(
-      statsA: StatCounter,
-      statsB: StatCounter): StreamingTestResult = {
+  private def test(statsA: StatCounter, statsB: StatCounter): StreamingTestResult = {
     def studentDF(sample1: StatisticalSummaryValues, sample2: StatisticalSummaryValues): Double =
       sample1.getN + sample2.getN - 2
 
     new StreamingTestResult(
-      tTester.get.homoscedasticTTest(statsA, statsB),
-      studentDF(statsA, statsB),
-      tTester.get.homoscedasticT(statsA, statsB),
-      methodName,
-      nullHypothesis
+        tTester.get.homoscedasticTTest(statsA, statsB),
+        studentDF(statsA, statsB),
+        tTester.get.homoscedasticT(statsA, statsB),
+        methodName,
+        nullHypothesis
     )
   }
 }
@@ -152,16 +147,14 @@ private[stat] object StudentTTest extends StreamingTestMethod with Logging {
 private[stat] object StreamingTestMethod {
   // Note: after new `StreamingTestMethod`s are implemented, please update this map.
   private final val TEST_NAME_TO_OBJECT: Map[String, StreamingTestMethod] = Map(
-    "welch" -> WelchTTest,
-    "student" -> StudentTTest)
+      "welch" -> WelchTTest, "student" -> StudentTTest)
 
   def getTestMethodFromName(method: String): StreamingTestMethod =
     TEST_NAME_TO_OBJECT.get(method) match {
       case Some(test) => test
       case None =>
         throw new IllegalArgumentException(
-          "Unrecognized method name. Supported streaming test methods: "
-            + TEST_NAME_TO_OBJECT.keys.mkString(", "))
+            "Unrecognized method name. Supported streaming test methods: " +
+            TEST_NAME_TO_OBJECT.keys.mkString(", "))
     }
 }
-

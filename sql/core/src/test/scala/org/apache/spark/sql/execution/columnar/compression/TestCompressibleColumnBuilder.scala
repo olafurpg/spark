@@ -20,22 +20,20 @@ package org.apache.spark.sql.execution.columnar.compression
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.types.AtomicType
 
-class TestCompressibleColumnBuilder[T <: AtomicType](
-    override val columnStats: ColumnStats,
-    override val columnType: NativeColumnType[T],
-    override val schemes: Seq[CompressionScheme])
-  extends NativeColumnBuilder(columnStats, columnType)
-  with NullableColumnBuilder
-  with CompressibleColumnBuilder[T] {
+class TestCompressibleColumnBuilder[T <: AtomicType](override val columnStats: ColumnStats,
+                                                     override val columnType: NativeColumnType[T],
+                                                     override val schemes: Seq[CompressionScheme])
+    extends NativeColumnBuilder(columnStats, columnType)
+    with NullableColumnBuilder
+    with CompressibleColumnBuilder[T] {
 
   override protected def isWorthCompressing(encoder: Encoder[T]) = true
 }
 
 object TestCompressibleColumnBuilder {
-  def apply[T <: AtomicType](
-      columnStats: ColumnStats,
-      columnType: NativeColumnType[T],
-      scheme: CompressionScheme): TestCompressibleColumnBuilder[T] = {
+  def apply[T <: AtomicType](columnStats: ColumnStats,
+                             columnType: NativeColumnType[T],
+                             scheme: CompressionScheme): TestCompressibleColumnBuilder[T] = {
 
     val builder = new TestCompressibleColumnBuilder(columnStats, columnType, Seq(scheme))
     builder.initialize(0, "", useCompression = true)

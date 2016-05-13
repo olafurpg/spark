@@ -20,7 +20,6 @@ package org.apache.spark.sql
 import org.apache.spark.internal.config.{ConfigEntry, OptionalConfigEntry}
 import org.apache.spark.sql.internal.SQLConf
 
-
 /**
  * Runtime configuration interface for Spark. To access this, use [[SparkSession.conf]].
  *
@@ -131,5 +130,4 @@ class RuntimeConfig private[sql](sqlConf: SQLConf = new SQLConf) {
   protected[sql] def contains(key: String): Boolean = {
     sqlConf.contains(key)
   }
-
 }

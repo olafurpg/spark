@@ -36,7 +36,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit
  * value = the record itself (BytesWritable)
  */
 private[spark] class FixedLengthBinaryRecordReader
-  extends RecordReader[LongWritable, BytesWritable] {
+    extends RecordReader[LongWritable, BytesWritable] {
 
   private var splitStart: Long = 0L
   private var splitEnd: Long = 0L
@@ -63,9 +63,13 @@ private[spark] class FixedLengthBinaryRecordReader
   override def getProgress: Float = {
     splitStart match {
       case x if x == splitEnd => 0.0.toFloat
-      case _ => Math.min(
-        ((currentPosition - splitStart) / (splitEnd - splitStart)).toFloat, 1.0
-      ).toFloat
+      case _ =>
+        Math
+          .min(
+              ((currentPosition - splitStart) / (splitEnd - splitStart)).toFloat,
+              1.0
+          )
+          .toFloat
     }
   }
 

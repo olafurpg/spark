@@ -25,8 +25,7 @@ import org.apache.spark.util.{CallSite, Utils}
 /**
  * Class representing a Spark computation. It may contain multiple Spark jobs.
  */
-private[streaming]
-class Job(val time: Time, func: () => _) {
+private[streaming] class Job(val time: Time, func: () => _) {
   private var _id: String = _
   private var _outputOpId: Int = _
   private var isSet = false
@@ -90,13 +89,19 @@ class Job(val time: Time, func: () => _) {
   }
 
   def toOutputOperationInfo: OutputOperationInfo = {
-    val failureReason = if (_result != null && _result.isFailure) {
-      Some(Utils.exceptionString(_result.asInstanceOf[Failure[_]].exception))
-    } else {
-      None
-    }
-    OutputOperationInfo(
-      time, outputOpId, callSite.shortForm, callSite.longForm, _startTime, _endTime, failureReason)
+    val failureReason =
+      if (_result != null && _result.isFailure) {
+        Some(Utils.exceptionString(_result.asInstanceOf[Failure[_]].exception))
+      } else {
+        None
+      }
+    OutputOperationInfo(time,
+                        outputOpId,
+                        callSite.shortForm,
+                        callSite.longForm,
+                        _startTime,
+                        _endTime,
+                        failureReason)
   }
 
   override def toString: String = id

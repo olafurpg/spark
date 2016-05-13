@@ -17,12 +17,12 @@
 
 package org.apache.spark.sql.internal
 
-case class HiveSerDe(
-  inputFormat: Option[String] = None,
-  outputFormat: Option[String] = None,
-  serde: Option[String] = None)
+case class HiveSerDe(inputFormat: Option[String] = None,
+                     outputFormat: Option[String] = None,
+                     serde: Option[String] = None)
 
 object HiveSerDe {
+
   /**
    * Get the Hive SerDe information from the data source abbreviation string or classname.
    *
@@ -33,40 +33,34 @@ object HiveSerDe {
    */
   def sourceToSerDe(source: String, conf: SQLConf): Option[HiveSerDe] = {
     val serdeMap = Map(
-      "sequencefile" ->
+        "sequencefile" ->
+        HiveSerDe(inputFormat = Option("org.apache.hadoop.mapred.SequenceFileInputFormat"),
+                  outputFormat = Option("org.apache.hadoop.mapred.SequenceFileOutputFormat")),
+        "rcfile" ->
+        HiveSerDe(inputFormat = Option("org.apache.hadoop.hive.ql.io.RCFileInputFormat"),
+                  outputFormat = Option("org.apache.hadoop.hive.ql.io.RCFileOutputFormat"),
+                  serde = Option(conf.getConfString(
+                            "hive.default.rcfile.serde",
+                            "org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe"))),
+        "orc" ->
+        HiveSerDe(inputFormat = Option("org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"),
+                  outputFormat = Option("org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat"),
+                  serde = Option("org.apache.hadoop.hive.ql.io.orc.OrcSerde")),
+        "parquet" ->
         HiveSerDe(
-          inputFormat = Option("org.apache.hadoop.mapred.SequenceFileInputFormat"),
-          outputFormat = Option("org.apache.hadoop.mapred.SequenceFileOutputFormat")),
-
-      "rcfile" ->
+            inputFormat = Option("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"),
+            outputFormat = Option(
+                  "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"),
+            serde = Option("org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe")),
+        "textfile" ->
+        HiveSerDe(inputFormat = Option("org.apache.hadoop.mapred.TextInputFormat"),
+                  outputFormat = Option(
+                        "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat")),
+        "avro" ->
         HiveSerDe(
-          inputFormat = Option("org.apache.hadoop.hive.ql.io.RCFileInputFormat"),
-          outputFormat = Option("org.apache.hadoop.hive.ql.io.RCFileOutputFormat"),
-          serde = Option(conf.getConfString("hive.default.rcfile.serde",
-            "org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe"))),
-
-      "orc" ->
-        HiveSerDe(
-          inputFormat = Option("org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"),
-          outputFormat = Option("org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat"),
-          serde = Option("org.apache.hadoop.hive.ql.io.orc.OrcSerde")),
-
-      "parquet" ->
-        HiveSerDe(
-          inputFormat = Option("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"),
-          outputFormat = Option("org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"),
-          serde = Option("org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe")),
-
-      "textfile" ->
-        HiveSerDe(
-          inputFormat = Option("org.apache.hadoop.mapred.TextInputFormat"),
-          outputFormat = Option("org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat")),
-
-      "avro" ->
-        HiveSerDe(
-          inputFormat = Option("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat"),
-          outputFormat = Option("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat"),
-          serde = Option("org.apache.hadoop.hive.serde2.avro.AvroSerDe")))
+            inputFormat = Option("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat"),
+            outputFormat = Option("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat"),
+            serde = Option("org.apache.hadoop.hive.serde2.avro.AvroSerDe")))
 
     val key = source.toLowerCase match {
       case s if s.startsWith("org.apache.spark.sql.parquet") => "parquet"
@@ -77,4 +71,3 @@ object HiveSerDe {
     serdeMap.get(key)
   }
 }
-

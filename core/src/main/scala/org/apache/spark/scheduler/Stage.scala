@@ -54,14 +54,13 @@ import org.apache.spark.util.CallSite
  * @param callSite Location in the user program associated with this stage: either where the target
  *   RDD was created, for a shuffle map stage, or where the action for a result stage was called.
  */
-private[scheduler] abstract class Stage(
-    val id: Int,
-    val rdd: RDD[_],
-    val numTasks: Int,
-    val parents: List[Stage],
-    val firstJobId: Int,
-    val callSite: CallSite)
-  extends Logging {
+private[scheduler] abstract class Stage(val id: Int,
+                                        val rdd: RDD[_],
+                                        val numTasks: Int,
+                                        val parents: List[Stage],
+                                        val firstJobId: Int,
+                                        val callSite: CallSite)
+    extends Logging {
 
   val numPartitions = rdd.partitions.length
 
@@ -92,7 +91,7 @@ private[scheduler] abstract class Stage(
    */
   private val fetchFailedAttemptIds = new HashSet[Int]
 
-  private[scheduler] def clearFailures() : Unit = {
+  private[scheduler] def clearFailures(): Unit = {
     fetchFailedAttemptIds.clear()
   }
 
@@ -108,13 +107,12 @@ private[scheduler] abstract class Stage(
   }
 
   /** Creates a new attempt for this stage by creating a new StageInfo with a new attempt ID. */
-  def makeNewStageAttempt(
-      numPartitionsToCompute: Int,
-      taskLocalityPreferences: Seq[Seq[TaskLocation]] = Seq.empty): Unit = {
+  def makeNewStageAttempt(numPartitionsToCompute: Int,
+                          taskLocalityPreferences: Seq[Seq[TaskLocation]] = Seq.empty): Unit = {
     val metrics = new TaskMetrics
     metrics.register(rdd.sparkContext)
     _latestInfo = StageInfo.fromStage(
-      this, nextAttemptId, Some(numPartitionsToCompute), metrics, taskLocalityPreferences)
+        this, nextAttemptId, Some(numPartitionsToCompute), metrics, taskLocalityPreferences)
     nextAttemptId += 1
   }
 

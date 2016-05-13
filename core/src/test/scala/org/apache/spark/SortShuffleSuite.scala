@@ -90,7 +90,7 @@ class SortShuffleSuite extends ShuffleSuite with BeforeAndAfterAll {
     // Check that the cleanup actually removes the files
     sc.env.blockManager.master.removeShuffle(0, blocking = true)
     for (file <- filesCreatedByShuffle) {
-      assert (!file.exists(), s"Shuffle file $file was not cleaned up")
+      assert(!file.exists(), s"Shuffle file $file was not cleaned up")
     }
   }
 }

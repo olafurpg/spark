@@ -34,8 +34,13 @@ import org.apache.spark.sql.types.{IntegerType, StructType}
 /**
  * Common params for KMeans and KMeansModel
  */
-private[clustering] trait KMeansParams extends Params with HasMaxIter with HasFeaturesCol
-  with HasSeed with HasPredictionCol with HasTol {
+private[clustering] trait KMeansParams
+    extends Params
+    with HasMaxIter
+    with HasFeaturesCol
+    with HasSeed
+    with HasPredictionCol
+    with HasTol {
 
   /**
    * Set the number of clusters to create (k). Must be > 1. Default: 2.
@@ -55,8 +60,10 @@ private[clustering] trait KMeansParams extends Params with HasMaxIter with HasFe
    * @group expertParam
    */
   @Since("1.5.0")
-  final val initMode = new Param[String](this, "initMode", "initialization algorithm",
-    (value: String) => MLlibKMeans.validateInitMode(value))
+  final val initMode = new Param[String](this,
+                                         "initMode",
+                                         "initialization algorithm",
+                                         (value: String) => MLlibKMeans.validateInitMode(value))
 
   /** @group expertGetParam */
   @Since("1.5.0")
@@ -68,8 +75,8 @@ private[clustering] trait KMeansParams extends Params with HasMaxIter with HasFe
    * @group expertParam
    */
   @Since("1.5.0")
-  final val initSteps = new IntParam(this, "initSteps", "number of steps for k-means||",
-    (value: Int) => value > 0)
+  final val initSteps = new IntParam(
+      this, "initSteps", "number of steps for k-means||", (value: Int) => value > 0)
 
   /** @group expertGetParam */
   @Since("1.5.0")
@@ -94,10 +101,11 @@ private[clustering] trait KMeansParams extends Params with HasMaxIter with HasFe
  */
 @Since("1.5.0")
 @Experimental
-class KMeansModel private[ml] (
-    @Since("1.5.0") override val uid: String,
-    private val parentModel: MLlibKMeansModel)
-  extends Model[KMeansModel] with KMeansParams with MLWritable {
+class KMeansModel private[ml](
+    @Since("1.5.0") override val uid: String, private val parentModel: MLlibKMeansModel)
+    extends Model[KMeansModel]
+    with KMeansParams
+    with MLWritable {
 
   @Since("1.5.0")
   override def copy(extra: ParamMap): KMeansModel = {
@@ -164,7 +172,7 @@ class KMeansModel private[ml] (
   @Since("2.0.0")
   def summary: KMeansSummary = trainingSummary.getOrElse {
     throw new SparkException(
-      s"No training summary available for the ${this.getClass.getSimpleName}")
+        s"No training summary available for the ${this.getClass.getSimpleName}")
   }
 }
 
@@ -187,8 +195,9 @@ object KMeansModel extends MLReadable[KMeansModel] {
       // Save metadata and Params
       DefaultParamsWriter.saveMetadata(instance, path, sc)
       // Save model data: cluster centers
-      val data: Array[Data] = instance.clusterCenters.zipWithIndex.map { case (center, idx) =>
-        Data(idx, center)
+      val data: Array[Data] = instance.clusterCenters.zipWithIndex.map {
+        case (center, idx) =>
+          Data(idx, center)
       }
       val dataPath = new Path(path, "data").toString
       sqlContext.createDataFrame(data).repartition(1).write.parquet(dataPath)
@@ -226,16 +235,16 @@ object KMeansModel extends MLReadable[KMeansModel] {
  */
 @Since("1.5.0")
 @Experimental
-class KMeans @Since("1.5.0") (
-    @Since("1.5.0") override val uid: String)
-  extends Estimator[KMeansModel] with KMeansParams with DefaultParamsWritable {
+class KMeans @Since("1.5.0")(@Since("1.5.0") override val uid: String)
+    extends Estimator[KMeansModel]
+    with KMeansParams
+    with DefaultParamsWritable {
 
-  setDefault(
-    k -> 2,
-    maxIter -> 20,
-    initMode -> MLlibKMeans.K_MEANS_PARALLEL,
-    initSteps -> 5,
-    tol -> 1e-4)
+  setDefault(k -> 2,
+             maxIter -> 20,
+             initMode -> MLlibKMeans.K_MEANS_PARALLEL,
+             initSteps -> 5,
+             tol -> 1e-4)
 
   @Since("1.5.0")
   override def copy(extra: ParamMap): KMeans = defaultCopy(extra)
@@ -292,7 +301,7 @@ class KMeans @Since("1.5.0") (
     val parentModel = algo.run(rdd, Option(instr))
     val model = copyValues(new KMeansModel(uid, parentModel).setParent(this))
     val summary = new KMeansSummary(
-      model.transform(dataset), $(predictionCol), $(featuresCol), $(k))
+        model.transform(dataset), $(predictionCol), $(featuresCol), $(k))
     val m = model.setSummary(summary)
     instr.logSuccess(m)
     m
@@ -322,11 +331,11 @@ object KMeans extends DefaultParamsReadable[KMeans] {
  */
 @Since("2.0.0")
 @Experimental
-class KMeansSummary private[clustering] (
-    @Since("2.0.0") @transient val predictions: DataFrame,
-    @Since("2.0.0") val predictionCol: String,
-    @Since("2.0.0") val featuresCol: String,
-    @Since("2.0.0") val k: Int) extends Serializable {
+class KMeansSummary private[clustering](@Since("2.0.0") @transient val predictions: DataFrame,
+                                        @Since("2.0.0") val predictionCol: String,
+                                        @Since("2.0.0") val featuresCol: String,
+                                        @Since("2.0.0") val k: Int)
+    extends Serializable {
 
   /**
    * Cluster centers of the transformed data.
@@ -345,5 +354,4 @@ class KMeansSummary private[clustering] (
     }
     sizes
   }
-
 }

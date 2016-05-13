@@ -42,7 +42,7 @@ private[sql] object SQLUtils {
     new JavaSparkContext(sqlCtx.sparkContext)
   }
 
-  def createStructType(fields : Seq[StructField]): StructType = {
+  def createStructType(fields: Seq[StructField]): StructType = {
     StructType(fields)
   }
 
@@ -66,21 +66,21 @@ private[sql] object SQLUtils {
       case "boolean" => org.apache.spark.sql.types.BooleanType
       case "timestamp" => org.apache.spark.sql.types.TimestampType
       case "date" => org.apache.spark.sql.types.DateType
-      case r"\Aarray<(.+)${elemType}>\Z" =>
+      case r"\Aarray<(.+)${ elemType }>\Z" =>
         org.apache.spark.sql.types.ArrayType(getSQLDataType(elemType))
-      case r"\Amap<(.+)${keyType},(.+)${valueType}>\Z" =>
+      case r"\Amap<(.+)${ keyType },(.+)${ valueType }>\Z" =>
         if (keyType != "string" && keyType != "character") {
           throw new IllegalArgumentException("Key type of a map must be string or character")
         }
         org.apache.spark.sql.types.MapType(getSQLDataType(keyType), getSQLDataType(valueType))
-      case r"\Astruct<(.+)${fieldsStr}>\Z" =>
+      case r"\Astruct<(.+)${ fieldsStr }>\Z" =>
         if (fieldsStr(fieldsStr.length - 1) == ',') {
           throw new IllegalArgumentException(s"Invaid type $dataType")
         }
         val fields = fieldsStr.split(",")
         val structFields = fields.map { field =>
           field match {
-            case r"\A(.+)${fieldName}:(.+)${fieldType}\Z" =>
+            case r"\A(.+)${ fieldName }:(.+)${ fieldType }\Z" =>
               createStructField(fieldName, fieldType, true)
 
             case _ => throw new IllegalArgumentException(s"Invaid type $dataType")
@@ -118,7 +118,8 @@ private[sql] object SQLUtils {
     val bis = new ByteArrayInputStream(bytes)
     val dis = new DataInputStream(bis)
     val num = SerDe.readInt(dis)
-    Row.fromSeq((0 until num).map { i =>
+    Row.fromSeq(
+        (0 until num).map { i =>
       doConversion(SerDe.readObject(dis), schema.fields(i).dataType)
     }.toSeq)
   }
@@ -139,12 +140,11 @@ private[sql] object SQLUtils {
   /**
    * The helper function for dapply() on R side.
    */
-  def dapply(
-      df: DataFrame,
-      func: Array[Byte],
-      packageNames: Array[Byte],
-      broadcastVars: Array[Object],
-      schema: StructType): DataFrame = {
+  def dapply(df: DataFrame,
+             func: Array[Byte],
+             packageNames: Array[Byte],
+             broadcastVars: Array[Object],
+             schema: StructType): DataFrame = {
     val bv = broadcastVars.map(x => x.asInstanceOf[Broadcast[Object]])
     val realSchema =
       if (schema == null) {
@@ -179,18 +179,16 @@ private[sql] object SQLUtils {
     }
   }
 
-  def loadDF(
-      sqlContext: SQLContext,
-      source: String,
-      options: java.util.Map[String, String]): DataFrame = {
+  def loadDF(sqlContext: SQLContext,
+             source: String,
+             options: java.util.Map[String, String]): DataFrame = {
     sqlContext.read.format(source).options(options).load()
   }
 
-  def loadDF(
-      sqlContext: SQLContext,
-      source: String,
-      schema: StructType,
-      options: java.util.Map[String, String]): DataFrame = {
+  def loadDF(sqlContext: SQLContext,
+             source: String,
+             schema: StructType,
+             options: java.util.Map[String, String]): DataFrame = {
     sqlContext.read.format(source).schema(schema).options(options).load()
   }
 

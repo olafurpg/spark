@@ -105,7 +105,7 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
 
     // New updates to the reloaded store with new version, and does not change old version
     val reloadedProvider = new HDFSBackedStateStoreProvider(
-      store.id, keySchema, valueSchema, StateStoreConf.empty, new Configuration)
+        store.id, keySchema, valueSchema, StateStoreConf.empty, new Configuration)
     val reloadedStore = reloadedProvider.getStore(1)
     put(reloadedStore, "c", 4)
     assert(reloadedStore.commit() === 2)
@@ -147,8 +147,8 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
 
     // Keys added, updated and finally removed before commit should not appear in updates
     withStore { store =>
-      put(store, "b", 4)     // Added, finally removed
-      put(store, "bb", 5)    // Added, updated, finally removed
+      put(store, "b", 4) // Added, finally removed
+      put(store, "bb", 5) // Added, updated, finally removed
       put(store, "bb", 6)
       remove(store, _.startsWith("b"))
       store.commit()
@@ -229,36 +229,35 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
 
     updateVersionTo(2)
     require(getDataFromFiles(provider) === Set("a" -> 2))
-    provider.doMaintenance()               // should not generate snapshot files
+    provider.doMaintenance() // should not generate snapshot files
     assert(getDataFromFiles(provider) === Set("a" -> 2))
 
     for (i <- 1 to currentVersion) {
-      assert(fileExists(provider, i, isSnapshot = false))  // all delta files present
-      assert(!fileExists(provider, i, isSnapshot = true))  // no snapshot files present
+      assert(fileExists(provider, i, isSnapshot = false)) // all delta files present
+      assert(!fileExists(provider, i, isSnapshot = true)) // no snapshot files present
     }
 
     // After version 6, snapshotting should generate one snapshot file
     updateVersionTo(6)
     require(getDataFromFiles(provider) === Set("a" -> 6), "store not updated correctly")
-    provider.doMaintenance()       // should generate snapshot files
+    provider.doMaintenance() // should generate snapshot files
 
-    val snapshotVersion = (0 to 6).find(version => fileExists(provider, version, isSnapshot = true))
+    val snapshotVersion =
+      (0 to 6).find(version => fileExists(provider, version, isSnapshot = true))
     assert(snapshotVersion.nonEmpty, "snapshot file not generated")
     deleteFilesEarlierThanVersion(provider, snapshotVersion.get)
-    assert(
-      getDataFromFiles(provider, snapshotVersion.get) === Set("a" -> snapshotVersion.get),
-      "snapshotting messed up the data of the snapshotted version")
-    assert(
-      getDataFromFiles(provider) === Set("a" -> 6),
-      "snapshotting messed up the data of the final version")
+    assert(getDataFromFiles(provider, snapshotVersion.get) === Set("a" -> snapshotVersion.get),
+           "snapshotting messed up the data of the snapshotted version")
+    assert(getDataFromFiles(provider) === Set("a" -> 6),
+           "snapshotting messed up the data of the final version")
 
     // After version 20, snapshotting should generate newer snapshot files
     updateVersionTo(20)
     require(getDataFromFiles(provider) === Set("a" -> 20), "store not updated correctly")
-    provider.doMaintenance()       // do snapshot
+    provider.doMaintenance() // do snapshot
 
-    val latestSnapshotVersion = (0 to 20).filter(version =>
-      fileExists(provider, version, isSnapshot = true)).lastOption
+    val latestSnapshotVersion =
+      (0 to 20).filter(version => fileExists(provider, version, isSnapshot = true)).lastOption
     assert(latestSnapshotVersion.nonEmpty, "no snapshot file found")
     assert(latestSnapshotVersion.get > snapshotVersion.get, "newer snapshot not generated")
 
@@ -275,9 +274,7 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
       store.commit()
       provider.doMaintenance() // do cleanup
     }
-    require(
-      rowsToSet(provider.latestIterator()) === Set("a" -> 20),
-      "store not updated correctly")
+    require(rowsToSet(provider.latestIterator()) === Set("a" -> 20), "store not updated correctly")
 
     assert(!fileExists(provider, version = 1, isSnapshot = false)) // first file should be deleted
 
@@ -285,7 +282,6 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
     assert(getDataFromFiles(provider, 20) === Set("a" -> 20))
     assert(getDataFromFiles(provider, 19) === Set("a" -> 19))
   }
-
 
   test("corrupted file handling") {
     val provider = newStoreProvider(minDeltasForSnapshot = 5)
@@ -295,8 +291,9 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
       store.commit()
       provider.doMaintenance() // do cleanup
     }
-    val snapshotVersion = (0 to 10).find( version =>
-      fileExists(provider, version, isSnapshot = true)).getOrElse(fail("snapshot file not found"))
+    val snapshotVersion = (0 to 10)
+      .find(version => fileExists(provider, version, isSnapshot = true))
+      .getOrElse(fail("snapshot file not found"))
 
     // Corrupt snapshot file and verify that it throws error
     assert(getDataFromFiles(provider, snapshotVersion) === Set("a" -> snapshotVersion))
@@ -326,7 +323,6 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
       val storeConf = StateStoreConf.empty
       val hadoopConf = new Configuration()
 
-
       // Verify that trying to get incorrect versions throw errors
       intercept[IllegalArgumentException] {
         StateStore.get(storeId, keySchema, valueSchema, -1, storeConf, hadoopConf)
@@ -343,8 +339,10 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
       put(store0, "a", 1)
       store0.commit()
 
-      assert(StateStore.get(storeId, keySchema, valueSchema, 1, storeConf, hadoopConf).version == 1)
-      assert(StateStore.get(storeId, keySchema, valueSchema, 0, storeConf, hadoopConf).version == 0)
+      assert(
+          StateStore.get(storeId, keySchema, valueSchema, 1, storeConf, hadoopConf).version == 1)
+      assert(
+          StateStore.get(storeId, keySchema, valueSchema, 0, storeConf, hadoopConf).version == 0)
 
       // Verify that you can remove the store and still reload and use it
       StateStore.unload(storeId)
@@ -369,9 +367,8 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
     val storeId = StateStoreId(dir, opId, 0)
     val storeConf = StateStoreConf.empty
     val hadoopConf = new Configuration()
-    val provider = new HDFSBackedStateStoreProvider(
-      storeId, keySchema, valueSchema, storeConf, hadoopConf)
-
+    val provider =
+      new HDFSBackedStateStoreProvider(storeId, keySchema, valueSchema, storeConf, hadoopConf)
 
     quietly {
       withSpark(new SparkContext(conf)) { sc =>
@@ -379,14 +376,15 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
           require(!StateStore.isMaintenanceRunning, "StateStore is unexpectedly running")
 
           for (i <- 1 to 20) {
-            val store = StateStore.get(
-              storeId, keySchema, valueSchema, i - 1, storeConf, hadoopConf)
+            val store =
+              StateStore.get(storeId, keySchema, valueSchema, i - 1, storeConf, hadoopConf)
             put(store, "a", i)
             store.commit()
           }
 
           eventually(timeout(10 seconds)) {
-            assert(coordinatorRef.getLocation(storeId).nonEmpty, "active instance was not reported")
+            assert(coordinatorRef.getLocation(storeId).nonEmpty,
+                   "active instance was not reported")
           }
 
           // Background maintenance should clean up and generate snapshots
@@ -436,10 +434,9 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
   }
 
   def getDataFromFiles(
-      provider: HDFSBackedStateStoreProvider,
-    version: Int = -1): Set[(String, Int)] = {
+      provider: HDFSBackedStateStoreProvider, version: Int = -1): Set[(String, Int)] = {
     val reloadedProvider = new HDFSBackedStateStoreProvider(
-      provider.id, keySchema, valueSchema, StateStoreConf.empty, new Configuration)
+        provider.id, keySchema, valueSchema, StateStoreConf.empty, new Configuration)
     if (version < 0) {
       reloadedProvider.latestIterator().map(rowsToStringInt).toSet
     } else {
@@ -447,18 +444,14 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
     }
   }
 
-  def assertMap(
-      testMapOption: Option[MapType],
-      expectedMap: Map[String, Int]): Unit = {
+  def assertMap(testMapOption: Option[MapType], expectedMap: Map[String, Int]): Unit = {
     assert(testMapOption.nonEmpty, "no map present")
     val convertedMap = testMapOption.get.map(rowsToStringInt)
     assert(convertedMap === expectedMap)
   }
 
   def fileExists(
-      provider: HDFSBackedStateStoreProvider,
-      version: Long,
-      isSnapshot: Boolean): Boolean = {
+      provider: HDFSBackedStateStoreProvider, version: Long, isSnapshot: Boolean): Boolean = {
     val method = PrivateMethod[Path]('baseDir)
     val basePath = provider invokePrivate method()
     val fileName = if (isSnapshot) s"$version.snapshot" else s"$version.delta"
@@ -479,9 +472,7 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
   }
 
   def corruptFile(
-    provider: HDFSBackedStateStoreProvider,
-    version: Long,
-    isSnapshot: Boolean): Unit = {
+      provider: HDFSBackedStateStoreProvider, version: Long, isSnapshot: Boolean): Unit = {
     val method = PrivateMethod[Path]('baseDir)
     val basePath = provider invokePrivate method()
     val fileName = if (isSnapshot) s"$version.snapshot" else s"$version.delta"
@@ -505,16 +496,15 @@ class StateStoreSuite extends SparkFunSuite with BeforeAndAfter with PrivateMeth
       opId: Long = Random.nextLong,
       partition: Int = 0,
       minDeltasForSnapshot: Int = SQLConf.STATE_STORE_MIN_DELTAS_FOR_SNAPSHOT.defaultValue.get
-    ): HDFSBackedStateStoreProvider = {
+  ): HDFSBackedStateStoreProvider = {
     val dir = Utils.createDirectory(tempDir, Random.nextString(5)).toString
     val sqlConf = new SQLConf()
     sqlConf.setConf(SQLConf.STATE_STORE_MIN_DELTAS_FOR_SNAPSHOT, minDeltasForSnapshot)
-    new HDFSBackedStateStoreProvider(
-      StateStoreId(dir, opId, partition),
-      keySchema,
-      valueSchema,
-      new StateStoreConf(sqlConf),
-      new Configuration())
+    new HDFSBackedStateStoreProvider(StateStoreId(dir, opId, partition),
+                                     keySchema,
+                                     valueSchema,
+                                     new StateStoreConf(sqlConf),
+                                     new Configuration())
   }
 
   def remove(store: StateStore, condition: String => Boolean): Unit = {
@@ -561,7 +551,6 @@ private[state] object StateStoreSuite {
     (rowToInt(row._1), rowToInt(row._2))
   }
 
-
   def rowsToStringInt(row: (UnsafeRow, UnsafeRow)): (String, Int) = {
     (rowToString(row._1), rowToInt(row._2))
   }
@@ -571,10 +560,12 @@ private[state] object StateStoreSuite {
   }
 
   def updatesToSet(iterator: Iterator[StoreUpdate]): Set[TestUpdate] = {
-    iterator.map { _ match {
-      case ValueAdded(key, value) => Added(rowToString(key), rowToInt(value))
-      case ValueUpdated(key, value) => Updated(rowToString(key), rowToInt(value))
-      case KeyRemoved(key) => Removed(rowToString(key))
-    }}.toSet
+    iterator.map {
+      _ match {
+        case ValueAdded(key, value) => Added(rowToString(key), rowToInt(value))
+        case ValueUpdated(key, value) => Updated(rowToString(key), rowToInt(value))
+        case KeyRemoved(key) => Removed(rowToString(key))
+      }
+    }.toSet
   }
 }

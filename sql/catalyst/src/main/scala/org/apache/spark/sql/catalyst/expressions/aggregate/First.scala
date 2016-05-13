@@ -29,7 +29,7 @@ import org.apache.spark.sql.types._
  * a single partition, and we use a single reducer to do the aggregation.).
  */
 @ExpressionDescription(
-  usage = """_FUNC_(expr) - Returns the first value of `child` for a group of rows.
+    usage = """_FUNC_(expr) - Returns the first value of `child` for a group of rows.
     _FUNC_(expr,isIgnoreNull=false) - Returns the first value of `child` for a group of rows.
       If isIgnoreNull is true, returns only non-null values.
     """)
@@ -63,20 +63,20 @@ case class First(child: Expression, ignoreNullsExpr: Expression) extends Declara
   override lazy val aggBufferAttributes: Seq[AttributeReference] = first :: valueSet :: Nil
 
   override lazy val initialValues: Seq[Literal] = Seq(
-    /* first = */ Literal.create(null, child.dataType),
-    /* valueSet = */ Literal.create(false, BooleanType)
+      /* first = */ Literal.create(null, child.dataType),
+      /* valueSet = */ Literal.create(false, BooleanType)
   )
 
   override lazy val updateExpressions: Seq[Expression] = {
     if (ignoreNulls) {
       Seq(
-        /* first = */ If(Or(valueSet, IsNull(child)), first, child),
-        /* valueSet = */ Or(valueSet, IsNotNull(child))
+          /* first = */ If(Or(valueSet, IsNull(child)), first, child),
+          /* valueSet = */ Or(valueSet, IsNotNull(child))
       )
     } else {
       Seq(
-        /* first = */ If(valueSet, first, child),
-        /* valueSet = */ Literal.create(true, BooleanType)
+          /* first = */ If(valueSet, first, child),
+          /* valueSet = */ Literal.create(true, BooleanType)
       )
     }
   }
@@ -86,8 +86,8 @@ case class First(child: Expression, ignoreNullsExpr: Expression) extends Declara
     // to true, we use first.right. If not, we use first.right (even if valueSet.right is
     // false, we are safe to do so because first.right will be null in this case).
     Seq(
-      /* first = */ If(valueSet.left, first.left, first.right),
-      /* valueSet = */ Or(valueSet.left, valueSet.right)
+        /* first = */ If(valueSet.left, first.left, first.right),
+        /* valueSet = */ Or(valueSet.left, valueSet.right)
     )
   }
 

@@ -32,8 +32,11 @@ import org.apache.spark.sql.types.DoubleType
  */
 @Since("1.5.0")
 @Experimental
-class MulticlassClassificationEvaluator @Since("1.5.0") (@Since("1.5.0") override val uid: String)
-  extends Evaluator with HasPredictionCol with HasLabelCol with DefaultParamsWritable {
+class MulticlassClassificationEvaluator @Since("1.5.0")(@Since("1.5.0") override val uid: String)
+    extends Evaluator
+    with HasPredictionCol
+    with HasLabelCol
+    with DefaultParamsWritable {
 
   @Since("1.5.0")
   def this() = this(Identifiable.randomUID("mcEval"))
@@ -45,10 +48,13 @@ class MulticlassClassificationEvaluator @Since("1.5.0") (@Since("1.5.0") overrid
    */
   @Since("1.5.0")
   val metricName: Param[String] = {
-    val allowedParams = ParamValidators.inArray(Array("f1", "precision",
-      "recall", "weightedPrecision", "weightedRecall", "accuracy"))
-    new Param(this, "metricName", "metric name in evaluation " +
-      "(f1|precision|recall|weightedPrecision|weightedRecall|accuracy)", allowedParams)
+    val allowedParams = ParamValidators.inArray(
+        Array("f1", "precision", "recall", "weightedPrecision", "weightedRecall", "accuracy"))
+    new Param(this,
+              "metricName",
+              "metric name in evaluation " +
+              "(f1|precision|recall|weightedPrecision|weightedRecall|accuracy)",
+              allowedParams)
   }
 
   /** @group getParam */
@@ -100,7 +106,7 @@ class MulticlassClassificationEvaluator @Since("1.5.0") (@Since("1.5.0") overrid
 
 @Since("1.6.0")
 object MulticlassClassificationEvaluator
-  extends DefaultParamsReadable[MulticlassClassificationEvaluator] {
+    extends DefaultParamsReadable[MulticlassClassificationEvaluator] {
 
   @Since("1.6.0")
   override def load(path: String): MulticlassClassificationEvaluator = super.load(path)

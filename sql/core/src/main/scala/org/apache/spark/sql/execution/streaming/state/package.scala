@@ -29,24 +29,22 @@ package object state {
   implicit class StateStoreOps[T: ClassTag](dataRDD: RDD[T]) {
 
     /** Map each partition of a RDD along with data in a [[StateStore]]. */
-    def mapPartitionsWithStateStore[U: ClassTag](
-        sqlContext: SQLContext,
-        checkpointLocation: String,
-        operatorId: Long,
-        storeVersion: Long,
-        keySchema: StructType,
-        valueSchema: StructType)(
+    def mapPartitionsWithStateStore[U: ClassTag](sqlContext: SQLContext,
+                                                 checkpointLocation: String,
+                                                 operatorId: Long,
+                                                 storeVersion: Long,
+                                                 keySchema: StructType,
+                                                 valueSchema: StructType)(
         storeUpdateFunction: (StateStore, Iterator[T]) => Iterator[U]): StateStoreRDD[T, U] = {
 
       mapPartitionsWithStateStore(
-        checkpointLocation,
-        operatorId,
-        storeVersion,
-        keySchema,
-        valueSchema,
-        sqlContext.sessionState,
-        Some(sqlContext.streams.stateStoreCoordinator))(
-        storeUpdateFunction)
+          checkpointLocation,
+          operatorId,
+          storeVersion,
+          keySchema,
+          valueSchema,
+          sqlContext.sessionState,
+          Some(sqlContext.streams.stateStoreCoordinator))(storeUpdateFunction)
     }
 
     /** Map each partition of a RDD along with data in a [[StateStore]]. */
@@ -60,16 +58,15 @@ package object state {
         storeCoordinator: Option[StateStoreCoordinatorRef])(
         storeUpdateFunction: (StateStore, Iterator[T]) => Iterator[U]): StateStoreRDD[T, U] = {
       val cleanedF = dataRDD.sparkContext.clean(storeUpdateFunction)
-      new StateStoreRDD(
-        dataRDD,
-        cleanedF,
-        checkpointLocation,
-        operatorId,
-        storeVersion,
-        keySchema,
-        valueSchema,
-        sessionState,
-        storeCoordinator)
+      new StateStoreRDD(dataRDD,
+                        cleanedF,
+                        checkpointLocation,
+                        operatorId,
+                        storeVersion,
+                        keySchema,
+                        valueSchema,
+                        sessionState,
+                        storeCoordinator)
     }
   }
 }

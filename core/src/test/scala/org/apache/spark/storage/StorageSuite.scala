@@ -331,5 +331,4 @@ class StorageSuite extends SparkFunSuite {
     assert(blockLocations1(RDDBlockId(1, 1)) === Seq("duck:2"))
     assert(blockLocations1(RDDBlockId(1, 2)) === Seq("cat:3"))
   }
-
 }

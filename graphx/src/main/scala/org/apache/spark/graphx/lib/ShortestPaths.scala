@@ -26,6 +26,7 @@ import org.apache.spark.graphx._
  * vertex attribute is a map containing the shortest-path distance to each reachable landmark.
  */
 object ShortestPaths {
+
   /** Stores a map from the vertex id of a landmark to the distance to that landmark. */
   type SPMap = Map[VertexId, Int]
 
@@ -34,8 +35,8 @@ object ShortestPaths {
   private def incrementMap(spmap: SPMap): SPMap = spmap.map { case (v, d) => v -> (d + 1) }
 
   private def addMaps(spmap1: SPMap, spmap2: SPMap): SPMap =
-    (spmap1.keySet ++ spmap2.keySet).map {
-      k => k -> math.min(spmap1.getOrElse(k, Int.MaxValue), spmap2.getOrElse(k, Int.MaxValue))
+    (spmap1.keySet ++ spmap2.keySet).map { k =>
+      k -> math.min(spmap1.getOrElse(k, Int.MaxValue), spmap2.getOrElse(k, Int.MaxValue))
     }.toMap
 
   /**

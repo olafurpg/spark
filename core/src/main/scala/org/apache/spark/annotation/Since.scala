@@ -26,5 +26,10 @@ import scala.annotation.meta._
  * hence works for overridden methods that inherit API documentation directly from parents.
  * The limitation is that it does not show up in the generated Java API documentation.
  */
-@param @field @getter @setter @beanGetter @beanSetter
+@param
+@field
+@getter
+@setter
+@beanGetter
+@beanSetter
 private[spark] class Since(version: String) extends StaticAnnotation

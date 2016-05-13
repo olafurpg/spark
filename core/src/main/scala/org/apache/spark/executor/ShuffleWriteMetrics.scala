@@ -20,14 +20,13 @@ package org.apache.spark.executor
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.util.LongAccumulator
 
-
 /**
  * :: DeveloperApi ::
  * A collection of accumulators that represent metrics about writing shuffle data.
  * Operations are not thread-safe.
  */
 @DeveloperApi
-class ShuffleWriteMetrics private[spark] () extends Serializable {
+class ShuffleWriteMetrics private[spark]() extends Serializable {
   private[executor] val _bytesWritten = new LongAccumulator
   private[executor] val _recordsWritten = new LongAccumulator
   private[executor] val _writeTime = new LongAccumulator
@@ -65,5 +64,4 @@ class ShuffleWriteMetrics private[spark] () extends Serializable {
   def shuffleWriteTime: Long = writeTime
   @deprecated("use recordsWritten instead", "2.0.0")
   def shuffleRecordsWritten: Long = recordsWritten
-
 }

@@ -32,8 +32,11 @@ import org.apache.spark.sql.types.{DoubleType, FloatType}
  */
 @Since("1.4.0")
 @Experimental
-final class RegressionEvaluator @Since("1.4.0") (@Since("1.4.0") override val uid: String)
-  extends Evaluator with HasPredictionCol with HasLabelCol with DefaultParamsWritable {
+final class RegressionEvaluator @Since("1.4.0")(@Since("1.4.0") override val uid: String)
+    extends Evaluator
+    with HasPredictionCol
+    with HasLabelCol
+    with DefaultParamsWritable {
 
   @Since("1.4.0")
   def this() = this(Identifiable.randomUID("regEval"))

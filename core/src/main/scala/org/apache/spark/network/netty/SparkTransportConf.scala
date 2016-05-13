@@ -26,6 +26,7 @@ import org.apache.spark.network.util.{ConfigProvider, TransportConf}
  * like the number of cores that are allocated to this JVM.
  */
 object SparkTransportConf {
+
   /**
    * Specifies an upper bound on the number of Netty threads that Spark requires by default.
    * In practice, only 2-4 cores should be required to transfer roughly 10 Gb/s, and each core

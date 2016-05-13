@@ -35,7 +35,6 @@ import org.apache.spark.storage.{BlockId, BlockStatus, StorageLevel}
 import org.apache.spark.storage.memory.MemoryStore
 import org.apache.spark.util.ThreadUtils
 
-
 /**
  * Helper trait for sharing code among [[MemoryManager]] tests.
  */
@@ -113,13 +112,12 @@ private[memory] trait MemoryManagerSuite extends SparkFunSuite with BeforeAndAft
         val numBytesToFree = args(1).asInstanceOf[Long]
         assert(numBytesToFree > 0)
         require(evictBlocksToFreeSpaceCalled.get() === DEFAULT_EVICT_BLOCKS_TO_FREE_SPACE_CALLED,
-          "bad test: evictBlocksToFreeSpace() variable was not reset")
+                "bad test: evictBlocksToFreeSpace() variable was not reset")
         evictBlocksToFreeSpaceCalled.set(numBytesToFree)
         if (numBytesToFree <= mm.storageMemoryUsed) {
           // We can evict enough blocks to fulfill the request for space
           mm.releaseStorageMemory(numBytesToFree, MemoryMode.ON_HEAP)
-          evictedBlocks.append(
-            (null, BlockStatus(StorageLevel.MEMORY_ONLY, numBytesToFree, 0L)))
+          evictedBlocks.append((null, BlockStatus(StorageLevel.MEMORY_ONLY, numBytesToFree, 0L)))
           numBytesToFree
         } else {
           // No blocks were evicted because eviction would not free enough space.
@@ -134,7 +132,7 @@ private[memory] trait MemoryManagerSuite extends SparkFunSuite with BeforeAndAft
    */
   protected def assertEvictBlocksToFreeSpaceCalled(ms: MemoryStore, numBytes: Long): Unit = {
     assert(evictBlocksToFreeSpaceCalled.get() === numBytes,
-      s"expected evictBlocksToFreeSpace() to be called with $numBytes")
+           s"expected evictBlocksToFreeSpace() to be called with $numBytes")
     evictBlocksToFreeSpaceCalled.set(DEFAULT_EVICT_BLOCKS_TO_FREE_SPACE_CALLED)
   }
 
@@ -143,7 +141,7 @@ private[memory] trait MemoryManagerSuite extends SparkFunSuite with BeforeAndAft
    */
   protected def assertEvictBlocksToFreeSpaceNotCalled[T](ms: MemoryStore): Unit = {
     assert(evictBlocksToFreeSpaceCalled.get() === DEFAULT_EVICT_BLOCKS_TO_FREE_SPACE_CALLED,
-      "evictBlocksToFreeSpace() should not have been called!")
+           "evictBlocksToFreeSpace() should not have been called!")
     assert(evictedBlocks.isEmpty)
   }
 
@@ -151,8 +149,7 @@ private[memory] trait MemoryManagerSuite extends SparkFunSuite with BeforeAndAft
    * Create a MemoryManager with the specified execution memory limits and no storage memory.
    */
   protected def createMemoryManager(
-     maxOnHeapExecutionMemory: Long,
-     maxOffHeapExecutionMemory: Long = 0L): MemoryManager
+      maxOnHeapExecutionMemory: Long, maxOffHeapExecutionMemory: Long = 0L): MemoryManager
 
   // -- Tests of sharing of execution memory between tasks ----------------------------------------
   // Prior to Spark 1.6, these tests were part of ShuffleMemoryManagerSuite.
@@ -280,9 +277,8 @@ private[memory] trait MemoryManagerSuite extends SparkFunSuite with BeforeAndAft
   }
 
   test("off-heap execution allocations cannot exceed limit") {
-    val memoryManager = createMemoryManager(
-      maxOnHeapExecutionMemory = 0L,
-      maxOffHeapExecutionMemory = 1000L)
+    val memoryManager =
+      createMemoryManager(maxOnHeapExecutionMemory = 0L, maxOffHeapExecutionMemory = 1000L)
 
     val tMemManager = new TaskMemoryManager(memoryManager, 1)
     val result1 = Future { tMemManager.acquireExecutionMemory(1000L, MemoryMode.OFF_HEAP, null) }

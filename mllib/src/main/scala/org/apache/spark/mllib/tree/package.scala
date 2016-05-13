@@ -25,5 +25,4 @@ package org.apache.spark.mllib
  *    variance for regression,
  *  - both continuous and categorical features.
  */
-package object tree {
-}
+package object tree {}

@@ -22,19 +22,25 @@ package org.apache.spark.graphx
  * edge. Used in [[Graph#aggregateMessages]].
  */
 abstract class EdgeContext[VD, ED, A] {
+
   /** The vertex id of the edge's source vertex. */
   def srcId: VertexId
+
   /** The vertex id of the edge's destination vertex. */
   def dstId: VertexId
+
   /** The vertex attribute of the edge's source vertex. */
   def srcAttr: VD
+
   /** The vertex attribute of the edge's destination vertex. */
   def dstAttr: VD
+
   /** The attribute associated with the edge. */
   def attr: ED
 
   /** Sends a message to the source vertex. */
   def sendToSrc(msg: A): Unit
+
   /** Sends a message to the destination vertex. */
   def sendToDst(msg: A): Unit
 

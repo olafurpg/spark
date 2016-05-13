@@ -33,10 +33,7 @@ trait MLlibTestSparkContext extends TempDirectory { self: Suite =>
 
   override def beforeAll() {
     super.beforeAll()
-    spark = SparkSession.builder
-      .master("local[2]")
-      .appName("MLlibUnitTest")
-      .getOrCreate()
+    spark = SparkSession.builder.master("local[2]").appName("MLlibUnitTest").getOrCreate()
     sc = spark.sparkContext
 
     checkpointDir = Utils.createDirectory(tempDir.getCanonicalPath, "checkpoints").toString

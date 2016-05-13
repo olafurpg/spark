@@ -48,12 +48,11 @@ object SynthBenchmark {
    *   -seed seed to use for RNGs (Default: -1, picks seed randomly)
    */
   def main(args: Array[String]) {
-    val options = args.map {
-      arg =>
-        arg.dropWhile(_ == '-').split('=') match {
-          case Array(opt, v) => (opt -> v)
-          case _ => throw new IllegalArgumentException("Invalid argument: " + arg)
-        }
+    val options = args.map { arg =>
+      arg.dropWhile(_ == '-').split('=') match {
+        case Array(opt, v) => (opt -> v)
+        case _ => throw new IllegalArgumentException("Invalid argument: " + arg)
+      }
     }
 
     var app = "pagerank"
@@ -79,16 +78,16 @@ object SynthBenchmark {
       case (opt, _) => throw new IllegalArgumentException("Invalid option: " + opt)
     }
 
-    val conf = new SparkConf()
-      .setAppName(s"GraphX Synth Benchmark (nverts = $numVertices, app = $app)")
+    val conf =
+      new SparkConf().setAppName(s"GraphX Synth Benchmark (nverts = $numVertices, app = $app)")
     GraphXUtils.registerKryoClasses(conf)
 
     val sc = new SparkContext(conf)
 
     // Create the graph
     println(s"Creating graph...")
-    val unpartitionedGraph = GraphGenerators.logNormalGraph(sc, numVertices,
-      numEPart.getOrElse(sc.defaultParallelism), mu, sigma, seed)
+    val unpartitionedGraph = GraphGenerators.logNormalGraph(
+        sc, numVertices, numEPart.getOrElse(sc.defaultParallelism), mu, sigma, seed)
     // Repartition the graph
     val graph = partitionStrategy.foldLeft(unpartitionedGraph)(_.partitionBy(_)).cache()
 
@@ -101,8 +100,10 @@ object SynthBenchmark {
     if (!degFile.isEmpty) {
       val fos = new FileOutputStream(degFile)
       val pos = new PrintWriter(fos)
-      val hist = graph.vertices.leftJoin(graph.degrees)((id, _, optDeg) => optDeg.getOrElse(0))
-        .map(p => p._2).countByValue()
+      val hist = graph.vertices
+        .leftJoin(graph.degrees)((id, _, optDeg) => optDeg.getOrElse(0))
+        .map(p => p._2)
+        .countByValue()
       hist.foreach {
         case (deg, count) => pos.println(s"$deg \t $count")
       }
@@ -123,8 +124,8 @@ object SynthBenchmark {
 
     println(s"Num Vertices = $numVertices")
     println(s"Num Edges = $numEdges")
-    println(s"Creation time = ${loadTime/1000.0} seconds")
-    println(s"Run time = ${runTime/1000.0} seconds")
+    println(s"Creation time = ${loadTime / 1000.0} seconds")
+    println(s"Run time = ${runTime / 1000.0} seconds")
 
     sc.stop()
   }

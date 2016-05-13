@@ -47,6 +47,7 @@ import org.apache.spark.util.SerializableConfiguration
  */
 @Experimental
 abstract class OutputWriterFactory extends Serializable {
+
   /**
    * When writing to a [[HadoopFsRelation]], this method gets called by each task on executor side
    * to instantiate new [[OutputWriter]]s.
@@ -60,11 +61,10 @@ abstract class OutputWriterFactory extends Serializable {
    * @param context The Hadoop MapReduce task context.
    * @since 1.4.0
    */
-  def newInstance(
-      path: String,
-      bucketId: Option[Int], // TODO: This doesn't belong here...
-      dataSchema: StructType,
-      context: TaskAttemptContext): OutputWriter
+  def newInstance(path: String,
+                  bucketId: Option[Int], // TODO: This doesn't belong here...
+                  dataSchema: StructType,
+                  context: TaskAttemptContext): OutputWriter
 
   /**
    * Returns a new instance of [[OutputWriter]] that will write data to the given path.
@@ -92,6 +92,7 @@ abstract class OutputWriterFactory extends Serializable {
  */
 @Experimental
 abstract class OutputWriter {
+
   /**
    * Persists a single row.  Invoked on the executor side.  When writing to dynamically partitioned
    * tables, dynamic partition columns are not included in rows to be written.
@@ -133,20 +134,22 @@ abstract class OutputWriter {
  * @param fileFormat A file format that can be used to read and write the data in files.
  * @param options Configuration used when reading / writing data.
  */
-case class HadoopFsRelation(
-    sparkSession: SparkSession,
-    location: FileCatalog,
-    partitionSchema: StructType,
-    dataSchema: StructType,
-    bucketSpec: Option[BucketSpec],
-    fileFormat: FileFormat,
-    options: Map[String, String]) extends BaseRelation with FileRelation {
+case class HadoopFsRelation(sparkSession: SparkSession,
+                            location: FileCatalog,
+                            partitionSchema: StructType,
+                            dataSchema: StructType,
+                            bucketSpec: Option[BucketSpec],
+                            fileFormat: FileFormat,
+                            options: Map[String, String])
+    extends BaseRelation
+    with FileRelation {
 
   override def sqlContext: SQLContext = sparkSession.wrapped
 
   val schema: StructType = {
     val dataSchemaColumnNames = dataSchema.map(_.name.toLowerCase).toSet
-    StructType(dataSchema ++ partitionSchema.filterNot { column =>
+    StructType(
+        dataSchema ++ partitionSchema.filterNot { column =>
       dataSchemaColumnNames.contains(column.name.toLowerCase)
     })
   }
@@ -175,35 +178,33 @@ case class HadoopFsRelation(
  * Used to read and write data stored in files to/from the [[InternalRow]] format.
  */
 trait FileFormat {
+
   /**
    * When possible, this method should return the schema of the given `files`.  When the format
    * does not support inference, or no valid files are given should return None.  In these cases
    * Spark will require that user specify the schema manually.
    */
-  def inferSchema(
-      sparkSession: SparkSession,
-      options: Map[String, String],
-      files: Seq[FileStatus]): Option[StructType]
+  def inferSchema(sparkSession: SparkSession,
+                  options: Map[String, String],
+                  files: Seq[FileStatus]): Option[StructType]
 
   /**
    * Prepares a read job and returns a potentially updated data source option [[Map]]. This method
    * can be useful for collecting necessary global information for scanning input data.
    */
-  def prepareRead(
-      sparkSession: SparkSession,
-      options: Map[String, String],
-      files: Seq[FileStatus]): Map[String, String] = options
+  def prepareRead(sparkSession: SparkSession,
+                  options: Map[String, String],
+                  files: Seq[FileStatus]): Map[String, String] = options
 
   /**
    * Prepares a write job and returns an [[OutputWriterFactory]].  Client side job preparation can
    * be put here.  For example, user defined output committer can be configured here
    * by setting the output committer class in the conf of spark.sql.sources.outputCommitterClass.
    */
-  def prepareWrite(
-      sparkSession: SparkSession,
-      job: Job,
-      options: Map[String, String],
-      dataSchema: StructType): OutputWriterFactory
+  def prepareWrite(sparkSession: SparkSession,
+                   job: Job,
+                   options: Map[String, String],
+                   dataSchema: StructType): OutputWriterFactory
 
   /**
    * Returns whether this format support returning columnar batch or not.
@@ -230,14 +231,13 @@ trait FileFormat {
    * @param options A set of string -> string configuration options.
    * @return
    */
-  def buildReader(
-      sparkSession: SparkSession,
-      dataSchema: StructType,
-      partitionSchema: StructType,
-      requiredSchema: StructType,
-      filters: Seq[Filter],
-      options: Map[String, String],
-      hadoopConf: Configuration): PartitionedFile => Iterator[InternalRow] = {
+  def buildReader(sparkSession: SparkSession,
+                  dataSchema: StructType,
+                  partitionSchema: StructType,
+                  requiredSchema: StructType,
+                  filters: Seq[Filter],
+                  options: Map[String, String],
+                  hadoopConf: Configuration): PartitionedFile => Iterator[InternalRow] = {
     // TODO: Remove this default implementation when the other formats have been ported
     // Until then we guard in [[FileSourceStrategy]] to only call this method on supported formats.
     throw new UnsupportedOperationException(s"buildReader is not supported for $this")
@@ -257,7 +257,7 @@ trait FileFormat {
       options: Map[String, String],
       hadoopConf: Configuration): PartitionedFile => Iterator[InternalRow] = {
     val dataReader = buildReader(
-      sparkSession, dataSchema, partitionSchema, requiredSchema, filters, options, hadoopConf)
+        sparkSession, dataSchema, partitionSchema, requiredSchema, filters, options, hadoopConf)
 
     new (PartitionedFile => Iterator[InternalRow]) with Serializable {
       private val fullSchema = requiredSchema.toAttributes ++ partitionSchema.toAttributes
@@ -288,10 +288,9 @@ trait FileFormat {
    * does not use output committers to write data. The OutputWriter generated by the returned
    * [[OutputWriterFactory]] must implement the method `newWriter(path)`..
    */
-  def buildWriter(
-      sqlContext: SQLContext,
-      dataSchema: StructType,
-      options: Map[String, String]): OutputWriterFactory = {
+  def buildWriter(sqlContext: SQLContext,
+                  dataSchema: StructType,
+                  options: Map[String, String]): OutputWriterFactory = {
     // TODO: Remove this default implementation when the other formats have been ported
     throw new UnsupportedOperationException(s"buildWriter is not supported for $this")
   }
@@ -332,7 +331,6 @@ trait FileCatalog {
   /** Refresh the file listing */
   def refresh(): Unit
 }
-
 
 /**
  * Helper methods for gathering metadata from HDFS.
@@ -379,67 +377,68 @@ private[sql] object HadoopFsRelation extends Logging {
   // Here we use `FakeFileStatus` to extract key components of a `FileStatus` to serialize it from
   // executor side and reconstruct it on driver side.
   case class FakeBlockLocation(
-      names: Array[String],
-      hosts: Array[String],
-      offset: Long,
-      length: Long)
+      names: Array[String], hosts: Array[String], offset: Long, length: Long)
 
-  case class FakeFileStatus(
-      path: String,
-      length: Long,
-      isDir: Boolean,
-      blockReplication: Short,
-      blockSize: Long,
-      modificationTime: Long,
-      accessTime: Long,
-      blockLocations: Array[FakeBlockLocation])
+  case class FakeFileStatus(path: String,
+                            length: Long,
+                            isDir: Boolean,
+                            blockReplication: Short,
+                            blockSize: Long,
+                            modificationTime: Long,
+                            accessTime: Long,
+                            blockLocations: Array[FakeBlockLocation])
 
-  def listLeafFilesInParallel(
-      paths: Seq[Path],
-      hadoopConf: Configuration,
-      sparkContext: SparkContext): mutable.LinkedHashSet[FileStatus] = {
+  def listLeafFilesInParallel(paths: Seq[Path],
+                              hadoopConf: Configuration,
+                              sparkContext: SparkContext): mutable.LinkedHashSet[FileStatus] = {
     logInfo(s"Listing leaf files and directories in parallel under: ${paths.mkString(", ")}")
 
     val serializableConfiguration = new SerializableConfiguration(hadoopConf)
     val serializedPaths = paths.map(_.toString)
 
-    val fakeStatuses = sparkContext.parallelize(serializedPaths).map(new Path(_)).flatMap { path =>
-      val fs = path.getFileSystem(serializableConfiguration.value)
-      Try(listLeafFiles(fs, fs.getFileStatus(path))).getOrElse(Array.empty)
-    }.map { status =>
-      val blockLocations = status match {
-        case f: LocatedFileStatus =>
-          f.getBlockLocations.map { loc =>
-            FakeBlockLocation(
-              loc.getNames,
-              loc.getHosts,
-              loc.getOffset,
-              loc.getLength)
-          }
-
-        case _ =>
-          Array.empty[FakeBlockLocation]
+    val fakeStatuses = sparkContext
+      .parallelize(serializedPaths)
+      .map(new Path(_))
+      .flatMap { path =>
+        val fs = path.getFileSystem(serializableConfiguration.value)
+        Try(listLeafFiles(fs, fs.getFileStatus(path))).getOrElse(Array.empty)
       }
+      .map { status =>
+        val blockLocations = status match {
+          case f: LocatedFileStatus =>
+            f.getBlockLocations.map { loc =>
+              FakeBlockLocation(loc.getNames,
+                                loc.getHosts,
+                                loc.getOffset,
+                                loc.getLength)
+            }
 
-      FakeFileStatus(
-        status.getPath.toString,
-        status.getLen,
-        status.isDirectory,
-        status.getReplication,
-        status.getBlockSize,
-        status.getModificationTime,
-        status.getAccessTime,
-        blockLocations)
-    }.collect()
+          case _ =>
+            Array.empty[FakeBlockLocation]
+        }
+
+        FakeFileStatus(status.getPath.toString,
+                       status.getLen,
+                       status.isDirectory,
+                       status.getReplication,
+                       status.getBlockSize,
+                       status.getModificationTime,
+                       status.getAccessTime,
+                       blockLocations)
+      }
+      .collect()
 
     val hadoopFakeStatuses = fakeStatuses.map { f =>
       val blockLocations = f.blockLocations.map { loc =>
         new BlockLocation(loc.names, loc.hosts, loc.offset, loc.length)
       }
-      new LocatedFileStatus(
-        new FileStatus(
-          f.length, f.isDir, f.blockReplication, f.blockSize, f.modificationTime, new Path(f.path)),
-        blockLocations)
+      new LocatedFileStatus(new FileStatus(f.length,
+                                           f.isDir,
+                                           f.blockReplication,
+                                           f.blockSize,
+                                           f.modificationTime,
+                                           new Path(f.path)),
+                            blockLocations)
     }
     mutable.LinkedHashSet(hadoopFakeStatuses: _*)
   }

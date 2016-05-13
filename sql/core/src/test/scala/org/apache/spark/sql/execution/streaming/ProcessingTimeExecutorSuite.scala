@@ -52,7 +52,8 @@ class ProcessingTimeExecutorSuite extends SparkFunSuite {
   private def testBatchTermination(intervalMs: Long): Unit = {
     var batchCounts = 0
     val processingTimeExecutor = ProcessingTimeExecutor(ProcessingTime(intervalMs))
-    processingTimeExecutor.execute(() => {
+    processingTimeExecutor.execute(
+        () => {
       batchCounts += 1
       // If the batch termination works well, batchCounts should be 3 after `execute`
       batchCounts < 3
@@ -76,7 +77,8 @@ class ProcessingTimeExecutorSuite extends SparkFunSuite {
             batchFallingBehindCalled = true
           }
         }
-        processingTimeExecutor.execute(() => {
+        processingTimeExecutor.execute(
+            () => {
           latch.countDown()
           clock.waitTillTime(200)
           false

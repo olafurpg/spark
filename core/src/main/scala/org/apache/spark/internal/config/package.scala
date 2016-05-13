@@ -34,37 +34,34 @@ package object config {
   private[spark] val DRIVER_USER_CLASS_PATH_FIRST =
     ConfigBuilder("spark.driver.userClassPathFirst").booleanConf.createWithDefault(false)
 
-  private[spark] val DRIVER_MEMORY = ConfigBuilder("spark.driver.memory")
-    .bytesConf(ByteUnit.MiB)
-    .createWithDefaultString("1g")
+  private[spark] val DRIVER_MEMORY =
+    ConfigBuilder("spark.driver.memory").bytesConf(ByteUnit.MiB).createWithDefaultString("1g")
 
   private[spark] val EXECUTOR_CLASS_PATH =
     ConfigBuilder(SparkLauncher.EXECUTOR_EXTRA_CLASSPATH).stringConf.createOptional
 
-  private[spark] val EXECUTOR_JAVA_OPTIONS =
-    ConfigBuilder(SparkLauncher.EXECUTOR_EXTRA_JAVA_OPTIONS).stringConf.createOptional
+  private[spark] val EXECUTOR_JAVA_OPTIONS = ConfigBuilder(
+      SparkLauncher.EXECUTOR_EXTRA_JAVA_OPTIONS).stringConf.createOptional
 
-  private[spark] val EXECUTOR_LIBRARY_PATH =
-    ConfigBuilder(SparkLauncher.EXECUTOR_EXTRA_LIBRARY_PATH).stringConf.createOptional
+  private[spark] val EXECUTOR_LIBRARY_PATH = ConfigBuilder(
+      SparkLauncher.EXECUTOR_EXTRA_LIBRARY_PATH).stringConf.createOptional
 
   private[spark] val EXECUTOR_USER_CLASS_PATH_FIRST =
     ConfigBuilder("spark.executor.userClassPathFirst").booleanConf.createWithDefault(false)
 
-  private[spark] val EXECUTOR_MEMORY = ConfigBuilder("spark.executor.memory")
-    .bytesConf(ByteUnit.MiB)
-    .createWithDefaultString("1g")
+  private[spark] val EXECUTOR_MEMORY =
+    ConfigBuilder("spark.executor.memory").bytesConf(ByteUnit.MiB).createWithDefaultString("1g")
 
-  private[spark] val IS_PYTHON_APP = ConfigBuilder("spark.yarn.isPython").internal()
-    .booleanConf.createWithDefault(false)
+  private[spark] val IS_PYTHON_APP =
+    ConfigBuilder("spark.yarn.isPython").internal().booleanConf.createWithDefault(false)
 
   private[spark] val CPUS_PER_TASK = ConfigBuilder("spark.task.cpus").intConf.createWithDefault(1)
 
   private[spark] val DYN_ALLOCATION_MIN_EXECUTORS =
     ConfigBuilder("spark.dynamicAllocation.minExecutors").intConf.createWithDefault(0)
 
-  private[spark] val DYN_ALLOCATION_INITIAL_EXECUTORS =
-    ConfigBuilder("spark.dynamicAllocation.initialExecutors")
-      .fallbackConf(DYN_ALLOCATION_MIN_EXECUTORS)
+  private[spark] val DYN_ALLOCATION_INITIAL_EXECUTORS = ConfigBuilder(
+      "spark.dynamicAllocation.initialExecutors").fallbackConf(DYN_ALLOCATION_MIN_EXECUTORS)
 
   private[spark] val DYN_ALLOCATION_MAX_EXECUTORS =
     ConfigBuilder("spark.dynamicAllocation.maxExecutors").intConf.createWithDefault(Int.MaxValue)
@@ -72,23 +69,19 @@ package object config {
   private[spark] val SHUFFLE_SERVICE_ENABLED =
     ConfigBuilder("spark.shuffle.service.enabled").booleanConf.createWithDefault(false)
 
-  private[spark] val KEYTAB = ConfigBuilder("spark.yarn.keytab")
-    .doc("Location of user's keytab.")
-    .stringConf.createOptional
+  private[spark] val KEYTAB =
+    ConfigBuilder("spark.yarn.keytab").doc("Location of user's keytab.").stringConf.createOptional
 
   private[spark] val PRINCIPAL = ConfigBuilder("spark.yarn.principal")
     .doc("Name of the Kerberos principal.")
-    .stringConf.createOptional
-
-  private[spark] val EXECUTOR_INSTANCES = ConfigBuilder("spark.executor.instances")
-    .intConf
+    .stringConf
     .createOptional
 
-  private[spark] val PY_FILES = ConfigBuilder("spark.submit.pyFiles")
-    .internal()
-    .stringConf
-    .toSequence
-    .createWithDefault(Nil)
+  private[spark] val EXECUTOR_INSTANCES =
+    ConfigBuilder("spark.executor.instances").intConf.createOptional
+
+  private[spark] val PY_FILES =
+    ConfigBuilder("spark.submit.pyFiles").internal().stringConf.toSequence.createWithDefault(Nil)
 
   // Note: This is a SQL config but needs to be in core because the REPL depends on it
   private[spark] val CATALOG_IMPLEMENTATION = ConfigBuilder("spark.sql.catalogImplementation")

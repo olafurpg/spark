@@ -62,8 +62,7 @@ object GenerateMIMAIgnore {
         val classSymbol = mirror.classSymbol(Class.forName(className, false, classLoader))
         val moduleSymbol = mirror.staticModule(className)
         val directlyPrivateSpark =
-          isPackagePrivate(classSymbol) ||
-          isPackagePrivateModule(moduleSymbol) ||
+          isPackagePrivate(classSymbol) || isPackagePrivateModule(moduleSymbol) ||
           classSymbol.isPrivate
         /* Inner classes defined within a private[spark] class or object are effectively
          invisible, so we account for them as package private. */
@@ -71,7 +70,7 @@ object GenerateMIMAIgnore {
           val maybeOuter = className.toString.takeWhile(_ != '$')
           if (maybeOuter != className) {
             isPackagePrivate(mirror.classSymbol(Class.forName(maybeOuter, false, classLoader))) ||
-              isPackagePrivateModule(mirror.staticModule(maybeOuter))
+            isPackagePrivateModule(mirror.staticModule(maybeOuter))
           } else {
             false
           }
@@ -81,7 +80,6 @@ object GenerateMIMAIgnore {
         }
         // check if this class has package-private/annotated members.
         ignoredMembers ++= getAnnotatedOrPackagePrivateMembers(classSymbol)
-
       } catch {
         // scalastyle:off println
         case _: Throwable => println("Error instrumenting class:" + className)
@@ -98,8 +96,12 @@ object GenerateMIMAIgnore {
    */
   def getInnerFunctions(classSymbol: unv.ClassSymbol): Seq[String] = {
     try {
-      Class.forName(classSymbol.fullName, false, classLoader).getMethods.map(_.getName)
-        .filter(_.contains("$$")).map(classSymbol.fullName + "." + _)
+      Class
+        .forName(classSymbol.fullName, false, classLoader)
+        .getMethods
+        .map(_.getName)
+        .filter(_.contains("$$"))
+        .map(classSymbol.fullName + "." + _)
     } catch {
       case t: Throwable =>
         // scalastyle:off println
@@ -110,35 +112,33 @@ object GenerateMIMAIgnore {
   }
 
   private def getAnnotatedOrPackagePrivateMembers(classSymbol: unv.ClassSymbol) = {
-    classSymbol.typeSignature.members.filterNot(x =>
-      x.fullName.startsWith("java") || x.fullName.startsWith("scala")
-    ).filter(x => isPackagePrivate(x)).map(_.fullName) ++ getInnerFunctions(classSymbol)
+    classSymbol.typeSignature.members
+      .filterNot(x => x.fullName.startsWith("java") || x.fullName.startsWith("scala"))
+      .filter(x => isPackagePrivate(x))
+      .map(_.fullName) ++ getInnerFunctions(classSymbol)
   }
 
   def main(args: Array[String]) {
     import scala.tools.nsc.io.File
     val (privateClasses, privateMembers) = privateWithin("org.apache.spark")
-    val previousContents = Try(File(".generated-mima-class-excludes").lines()).
-      getOrElse(Iterator.empty).mkString("\n")
-    File(".generated-mima-class-excludes")
-      .writeAll(previousContents + privateClasses.mkString("\n"))
+    val previousContents =
+      Try(File(".generated-mima-class-excludes").lines()).getOrElse(Iterator.empty).mkString("\n")
+    File(".generated-mima-class-excludes").writeAll(
+        previousContents + privateClasses.mkString("\n"))
     // scalastyle:off println
     println("Created : .generated-mima-class-excludes in current directory.")
-    val previousMembersContents = Try(File(".generated-mima-member-excludes").lines)
-      .getOrElse(Iterator.empty).mkString("\n")
-    File(".generated-mima-member-excludes").writeAll(previousMembersContents +
-      privateMembers.mkString("\n"))
+    val previousMembersContents =
+      Try(File(".generated-mima-member-excludes").lines).getOrElse(Iterator.empty).mkString("\n")
+    File(".generated-mima-member-excludes").writeAll(
+        previousMembersContents + privateMembers.mkString("\n"))
     println("Created : .generated-mima-member-excludes in current directory.")
     // scalastyle:on println
   }
 
   private def shouldExclude(name: String) = {
     // Heuristic to remove JVM classes that do not correspond to user-facing classes in Scala
-    name.contains("anon") ||
-    name.endsWith("$class") ||
-    name.contains("$sp") ||
-    name.contains("hive") ||
-    name.contains("Hive")
+    name.contains("anon") || name.endsWith("$class") || name.contains("$sp") ||
+    name.contains("hive") || name.contains("Hive")
   }
 
   /**
@@ -147,12 +147,7 @@ object GenerateMIMAIgnore {
    */
   private def getClasses(packageName: String): Set[String] = {
     val finder = ClassFinder()
-    finder
-      .getClasses
-      .map(_.name)
-      .filter(_.startsWith(packageName))
-      .filterNot(shouldExclude)
-      .toSet
+    finder.getClasses.map(_.name).filter(_.startsWith(packageName)).filterNot(shouldExclude).toSet
   }
 }
 // scalastyle:on classforname

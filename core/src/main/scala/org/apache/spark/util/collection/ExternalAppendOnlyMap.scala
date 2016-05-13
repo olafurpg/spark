@@ -61,23 +61,22 @@ class ExternalAppendOnlyMap[K, V, C](
     blockManager: BlockManager = SparkEnv.get.blockManager,
     context: TaskContext = TaskContext.get(),
     serializerManager: SerializerManager = SparkEnv.get.serializerManager)
-  extends Spillable[SizeTracker](context.taskMemoryManager())
-  with Serializable
-  with Logging
-  with Iterable[(K, C)] {
+    extends Spillable[SizeTracker](context.taskMemoryManager())
+    with Serializable
+    with Logging
+    with Iterable[(K, C)] {
 
   if (context == null) {
     throw new IllegalStateException(
-      "Spillable collections should not be instantiated outside of tasks")
+        "Spillable collections should not be instantiated outside of tasks")
   }
 
   // Backwards-compatibility constructor for binary compatibility
-  def this(
-      createCombiner: V => C,
-      mergeValue: (C, V) => C,
-      mergeCombiners: (C, C) => C,
-      serializer: Serializer,
-      blockManager: BlockManager) {
+  def this(createCombiner: V => C,
+           mergeValue: (C, V) => C,
+           mergeCombiners: (C, C) => C,
+           serializer: Serializer,
+           blockManager: BlockManager) {
     this(createCombiner, mergeValue, mergeCombiners, serializer, blockManager, TaskContext.get())
   }
 
@@ -142,7 +141,7 @@ class ExternalAppendOnlyMap[K, V, C](
   def insertAll(entries: Iterator[Product2[K, V]]): Unit = {
     if (currentMap == null) {
       throw new IllegalStateException(
-        "Cannot insert new elements into a map after calling iterator")
+          "Cannot insert new elements into a map after calling iterator")
     }
     // An update function for the map that we reuse across entries to avoid allocating
     // a new closure each time
@@ -203,8 +202,8 @@ class ExternalAppendOnlyMap[K, V, C](
   /**
    * Spill the in-memory Iterator to a temporary file on disk.
    */
-  private[this] def spillMemoryIteratorToDisk(inMemoryIterator: Iterator[(K, C)])
-      : DiskMapIterator = {
+  private[this] def spillMemoryIteratorToDisk(
+      inMemoryIterator: Iterator[(K, C)]): DiskMapIterator = {
     val (blockId, file) = diskBlockManager.createTempLocalBlock()
     curWriteMetrics = new ShuffleWriteMetrics()
     var writer = blockManager.getDiskWriter(blockId, file, ser, fileBufferSize, curWriteMetrics)
@@ -279,11 +278,11 @@ class ExternalAppendOnlyMap[K, V, C](
   override def iterator: Iterator[(K, C)] = {
     if (currentMap == null) {
       throw new IllegalStateException(
-        "ExternalAppendOnlyMap.iterator is destructive and should only be called once.")
+          "ExternalAppendOnlyMap.iterator is destructive and should only be called once.")
     }
     if (spilledMaps.isEmpty) {
       CompletionIterator[(K, C), Iterator[(K, C)]](
-        destructiveIterator(currentMap.iterator), freeCurrentMap())
+          destructiveIterator(currentMap.iterator), freeCurrentMap())
     } else {
       new ExternalIterator()
     }
@@ -307,8 +306,8 @@ class ExternalAppendOnlyMap[K, V, C](
 
     // Input streams are derived both from the in-memory map and spilled maps on disk
     // The in-memory map is sorted in place, while the spilled maps are already in sorted order
-    private val sortedMap = CompletionIterator[(K, C), Iterator[(K, C)]](destructiveIterator(
-      currentMap.destructiveSortedIterator(keyComparator)), freeCurrentMap())
+    private val sortedMap = CompletionIterator[(K, C), Iterator[(K, C)]](
+        destructiveIterator(currentMap.destructiveSortedIterator(keyComparator)), freeCurrentMap())
     private val inputStreams = (Seq(sortedMap) ++ spilledMaps).map(it => it.buffered)
 
     inputStreams.foreach { it =>
@@ -367,7 +366,7 @@ class ExternalAppendOnlyMap[K, V, C](
      */
     private def removeFromBuffer[T](buffer: ArrayBuffer[T], index: Int): T = {
       val elem = buffer(index)
-      buffer(index) = buffer(buffer.size - 1)  // This also works if index == buffer.size - 1
+      buffer(index) = buffer(buffer.size - 1) // This also works if index == buffer.size - 1
       buffer.reduceToSize(buffer.size - 1)
       elem
     }
@@ -427,9 +426,8 @@ class ExternalAppendOnlyMap[K, V, C](
      * that we can put them into a heap and sort that.
      */
     private class StreamBuffer(
-        val iterator: BufferedIterator[(K, C)],
-        val pairs: ArrayBuffer[(K, C)])
-      extends Comparable[StreamBuffer] {
+        val iterator: BufferedIterator[(K, C)], val pairs: ArrayBuffer[(K, C)])
+        extends Comparable[StreamBuffer] {
 
       def isEmpty: Boolean = pairs.length == 0
 
@@ -450,17 +448,15 @@ class ExternalAppendOnlyMap[K, V, C](
    * An iterator that returns (K, C) pairs in sorted order from an on-disk map
    */
   private class DiskMapIterator(file: File, blockId: BlockId, batchSizes: ArrayBuffer[Long])
-    extends Iterator[(K, C)]
-  {
-    private val batchOffsets = batchSizes.scanLeft(0L)(_ + _)  // Size will be batchSize.length + 1
-    assert(file.length() == batchOffsets.last,
-      "File length is not equal to the last batch offset:\n" +
-      s"    file length = ${file.length}\n" +
-      s"    last batch offset = ${batchOffsets.last}\n" +
-      s"    all batch offsets = ${batchOffsets.mkString(",")}"
-    )
+      extends Iterator[(K, C)] {
+    private val batchOffsets = batchSizes.scanLeft(0L)(_ + _) // Size will be batchSize.length + 1
+    assert(
+        file.length() == batchOffsets.last,
+        "File length is not equal to the last batch offset:\n" +
+        s"    file length = ${file.length}\n" + s"    last batch offset = ${batchOffsets.last}\n" +
+        s"    all batch offsets = ${batchOffsets.mkString(",")}")
 
-    private var batchIndex = 0  // Which batch we're in
+    private var batchIndex = 0 // Which batch we're in
     private var fileStream: FileInputStream = null
 
     // An intermediate stream that reads from exactly one batch
@@ -490,8 +486,9 @@ class ExternalAppendOnlyMap[K, V, C](
 
         val end = batchOffsets(batchIndex)
 
-        assert(end >= start, "start = " + start + ", end = " + end +
-          ", batchOffsets = " + batchOffsets.mkString("[", ", ", "]"))
+        assert(end >= start,
+               "start = " + start + ", end = " + end + ", batchOffsets = " +
+               batchOffsets.mkString("[", ", ", "]"))
 
         val bufferedStream = new BufferedInputStream(ByteStreams.limit(fileStream, end - start))
         val compressedStream = serializerManager.wrapForCompression(blockId, bufferedStream)
@@ -547,7 +544,7 @@ class ExternalAppendOnlyMap[K, V, C](
     }
 
     private def cleanup() {
-      batchIndex = batchOffsets.length  // Prevent reading any other batch
+      batchIndex = batchOffsets.length // Prevent reading any other batch
       val ds = deserializeStream
       if (ds != null) {
         ds.close()
@@ -567,8 +564,7 @@ class ExternalAppendOnlyMap[K, V, C](
     context.addTaskCompletionListener(context => cleanup())
   }
 
-  private[this] class SpillableIterator(var upstream: Iterator[(K, C)])
-    extends Iterator[(K, C)] {
+  private[this] class SpillableIterator(var upstream: Iterator[(K, C)]) extends Iterator[(K, C)] {
 
     private val SPILL_LOCK = new Object()
 
@@ -583,7 +579,7 @@ class ExternalAppendOnlyMap[K, V, C](
         false
       } else {
         logInfo(s"Task ${context.taskAttemptId} force spilling in-memory map to disk and " +
-          s"it will release ${org.apache.spark.util.Utils.bytesToString(getUsed())} memory")
+            s"it will release ${org.apache.spark.util.Utils.bytesToString(getUsed())} memory")
         nextUpstream = spillMemoryIteratorToDisk(upstream)
         hasSpilled = true
         true

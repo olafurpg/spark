@@ -35,13 +35,12 @@ import org.apache.spark.sql.types.{Metadata, MetadataBuilder, StructField}
  */
 @DeveloperApi
 class AttributeGroup private (
-    val name: String,
-    val numAttributes: Option[Int],
-    attrs: Option[Array[Attribute]]) extends Serializable {
+    val name: String, val numAttributes: Option[Int], attrs: Option[Array[Attribute]])
+    extends Serializable {
 
   require(name.nonEmpty, "Cannot have an empty string for name.")
   require(!(numAttributes.isDefined && attrs.isDefined),
-    "Cannot have both numAttributes and attrs defined.")
+          "Cannot have both numAttributes and attrs defined.")
 
   /**
    * Creates an attribute group without attribute info.
@@ -67,14 +66,18 @@ class AttributeGroup private (
   /**
    * Optional array of attributes. At most one of `numAttributes` and `attributes` can be defined.
    */
-  val attributes: Option[Array[Attribute]] = attrs.map(_.view.zipWithIndex.map { case (attr, i) =>
-    attr.withIndex(i)
+  val attributes: Option[Array[Attribute]] = attrs.map(
+      _.view.zipWithIndex.map {
+    case (attr, i) =>
+      attr.withIndex(i)
   }.toArray)
 
   private lazy val nameToIndex: Map[String, Int] = {
-    attributes.map(_.view.flatMap { attr =>
-      attr.name.map(_ -> attr.index.get)
-    }.toMap).getOrElse(Map.empty)
+    attributes
+      .map(_.view.flatMap { attr =>
+        attr.name.map(_ -> attr.index.get)
+      }.toMap)
+      .getOrElse(Map.empty)
   }
 
   /** Size of the attribute group. Returns -1 if the size is unknown. */
@@ -168,9 +171,8 @@ class AttributeGroup private (
   override def equals(other: Any): Boolean = {
     other match {
       case o: AttributeGroup =>
-        (name == o.name) &&
-          (numAttributes == o.numAttributes) &&
-          (attributes.map(_.toSeq) == o.attributes.map(_.toSeq))
+        (name == o.name) && (numAttributes == o.numAttributes) &&
+        (attributes.map(_.toSeq) == o.attributes.map(_.toSeq))
       case _ =>
         false
     }
@@ -204,24 +206,21 @@ object AttributeGroup {
       val attributes = new Array[Attribute](numAttrs)
       val attrMetadata = metadata.getMetadata(ATTRIBUTES)
       if (attrMetadata.contains(Numeric.name)) {
-        attrMetadata.getMetadataArray(Numeric.name)
-          .map(NumericAttribute.fromMetadata)
-          .foreach { attr =>
-          attributes(attr.index.get) = attr
+        attrMetadata.getMetadataArray(Numeric.name).map(NumericAttribute.fromMetadata).foreach {
+          attr =>
+            attributes(attr.index.get) = attr
         }
       }
       if (attrMetadata.contains(Nominal.name)) {
-        attrMetadata.getMetadataArray(Nominal.name)
-          .map(NominalAttribute.fromMetadata)
-          .foreach { attr =>
-          attributes(attr.index.get) = attr
+        attrMetadata.getMetadataArray(Nominal.name).map(NominalAttribute.fromMetadata).foreach {
+          attr =>
+            attributes(attr.index.get) = attr
         }
       }
       if (attrMetadata.contains(Binary.name)) {
-        attrMetadata.getMetadataArray(Binary.name)
-          .map(BinaryAttribute.fromMetadata)
-          .foreach { attr =>
-          attributes(attr.index.get) = attr
+        attrMetadata.getMetadataArray(Binary.name).map(BinaryAttribute.fromMetadata).foreach {
+          attr =>
+            attributes(attr.index.get) = attr
         }
       }
       var i = 0

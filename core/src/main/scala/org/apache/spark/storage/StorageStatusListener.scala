@@ -47,12 +47,13 @@ class StorageStatusListener(conf: SparkConf) extends SparkListener {
   /** Update storage status list to reflect updated block statuses */
   private def updateStorageStatus(execId: String, updatedBlocks: Seq[(BlockId, BlockStatus)]) {
     executorIdToStorageStatus.get(execId).foreach { storageStatus =>
-      updatedBlocks.foreach { case (blockId, updatedStatus) =>
-        if (updatedStatus.storageLevel == StorageLevel.NONE) {
-          storageStatus.removeBlock(blockId)
-        } else {
-          storageStatus.updateBlock(blockId, updatedStatus)
-        }
+      updatedBlocks.foreach {
+        case (blockId, updatedStatus) =>
+          if (updatedStatus.storageLevel == StorageLevel.NONE) {
+            storageStatus.removeBlock(blockId)
+          } else {
+            storageStatus.updateBlock(blockId, updatedStatus)
+          }
       }
     }
   }
@@ -60,8 +61,9 @@ class StorageStatusListener(conf: SparkConf) extends SparkListener {
   /** Update storage status list to reflect the removal of an RDD from the cache */
   private def updateStorageStatus(unpersistedRDDId: Int) {
     storageStatusList.foreach { storageStatus =>
-      storageStatus.rddBlocksById(unpersistedRDDId).foreach { case (blockId, _) =>
-        storageStatus.removeBlock(blockId)
+      storageStatus.rddBlocksById(unpersistedRDDId).foreach {
+        case (blockId, _) =>
+          storageStatus.removeBlock(blockId)
       }
     }
   }

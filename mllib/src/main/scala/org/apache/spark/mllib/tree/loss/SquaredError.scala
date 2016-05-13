@@ -19,7 +19,6 @@ package org.apache.spark.mllib.tree.loss
 
 import org.apache.spark.annotation.{DeveloperApi, Since}
 
-
 /**
  * :: DeveloperApi ::
  * Class for squared error loss calculation.
@@ -42,7 +41,7 @@ object SquaredError extends Loss {
    */
   @Since("1.2.0")
   override def gradient(prediction: Double, label: Double): Double = {
-    - 2.0 * (label - prediction)
+    -2.0 * (label - prediction)
   }
 
   override private[spark] def computeError(prediction: Double, label: Double): Double = {

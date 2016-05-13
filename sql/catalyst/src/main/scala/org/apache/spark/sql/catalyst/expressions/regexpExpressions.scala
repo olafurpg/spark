@@ -26,9 +26,7 @@ import org.apache.spark.sql.catalyst.util.{GenericArrayData, StringUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
-
-trait StringRegexExpression extends ImplicitCastInputTypes {
-  self: BinaryExpression =>
+trait StringRegexExpression extends ImplicitCastInputTypes { self: BinaryExpression =>
 
   def escape(v: String): String
   def matches(regex: Pattern, str: String): Boolean
@@ -42,18 +40,19 @@ trait StringRegexExpression extends ImplicitCastInputTypes {
     case _ => null
   }
 
-  protected def compile(str: String): Pattern = if (str == null) {
-    null
-  } else {
-    // Let it raise exception if couldn't compile the regex string
-    Pattern.compile(escape(str))
-  }
+  protected def compile(str: String): Pattern =
+    if (str == null) {
+      null
+    } else {
+      // Let it raise exception if couldn't compile the regex string
+      Pattern.compile(escape(str))
+    }
 
   protected def pattern(str: String) = if (cache == null) compile(str) else cache
 
   protected override def nullSafeEval(input1: Any, input2: Any): Any = {
     val regex = pattern(input2.asInstanceOf[UTF8String].toString)
-    if(regex == null) {
+    if (regex == null) {
       null
     } else {
       matches(regex, input1.asInstanceOf[UTF8String].toString)
@@ -63,14 +62,14 @@ trait StringRegexExpression extends ImplicitCastInputTypes {
   override def sql: String = s"${left.sql} ${prettyName.toUpperCase} ${right.sql}"
 }
 
-
 /**
  * Simple RegEx pattern matching function
  */
 @ExpressionDescription(
-  usage = "str _FUNC_ pattern - Returns true if str matches pattern and false otherwise.")
+    usage = "str _FUNC_ pattern - Returns true if str matches pattern and false otherwise.")
 case class Like(left: Expression, right: Expression)
-  extends BinaryExpression with StringRegexExpression {
+    extends BinaryExpression
+    with StringRegexExpression {
 
   override def escape(v: String): String = StringUtils.escapeLikeRegex(v)
 
@@ -88,8 +87,8 @@ case class Like(left: Expression, right: Expression)
       if (rVal != null) {
         val regexStr =
           StringEscapeUtils.escapeJava(escape(rVal.asInstanceOf[UTF8String].toString()))
-        ctx.addMutableState(patternClass, pattern,
-          s"""$pattern = ${patternClass}.compile("$regexStr");""")
+        ctx.addMutableState(
+            patternClass, pattern, s"""$pattern = ${patternClass}.compile("$regexStr");""")
 
         // We don't use nullSafeCodeGen here because we don't want to re-evaluate right again.
         val eval = left.genCode(ctx)
@@ -120,9 +119,10 @@ case class Like(left: Expression, right: Expression)
 }
 
 @ExpressionDescription(
-  usage = "str _FUNC_ regexp - Returns true if str matches regexp and false otherwise.")
+    usage = "str _FUNC_ regexp - Returns true if str matches regexp and false otherwise.")
 case class RLike(left: Expression, right: Expression)
-  extends BinaryExpression with StringRegexExpression {
+    extends BinaryExpression
+    with StringRegexExpression {
 
   override def escape(v: String): String = v
   override def matches(regex: Pattern, str: String): Boolean = regex.matcher(str).find(0)
@@ -135,10 +135,9 @@ case class RLike(left: Expression, right: Expression)
     if (right.foldable) {
       val rVal = right.eval()
       if (rVal != null) {
-        val regexStr =
-          StringEscapeUtils.escapeJava(rVal.asInstanceOf[UTF8String].toString())
-        ctx.addMutableState(patternClass, pattern,
-          s"""$pattern = ${patternClass}.compile("$regexStr");""")
+        val regexStr = StringEscapeUtils.escapeJava(rVal.asInstanceOf[UTF8String].toString())
+        ctx.addMutableState(
+            patternClass, pattern, s"""$pattern = ${patternClass}.compile("$regexStr");""")
 
         // We don't use nullSafeCodeGen here because we don't want to re-evaluate right again.
         val eval = left.genCode(ctx)
@@ -168,15 +167,15 @@ case class RLike(left: Expression, right: Expression)
   }
 }
 
-
 /**
  * Splits str around pat (pattern is a regular expression).
  */
 @ExpressionDescription(
-  usage = "_FUNC_(str, regex) - Splits str around occurrences that match regex",
-  extended = "> SELECT _FUNC_('oneAtwoBthreeC', '[ABC]');\n ['one', 'two', 'three']")
+    usage = "_FUNC_(str, regex) - Splits str around occurrences that match regex",
+    extended = "> SELECT _FUNC_('oneAtwoBthreeC', '[ABC]');\n ['one', 'two', 'three']")
 case class StringSplit(str: Expression, pattern: Expression)
-  extends BinaryExpression with ImplicitCastInputTypes {
+    extends BinaryExpression
+    with ImplicitCastInputTypes {
 
   override def left: Expression = str
   override def right: Expression = pattern
@@ -190,14 +189,15 @@ case class StringSplit(str: Expression, pattern: Expression)
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val arrayClass = classOf[GenericArrayData].getName
-    nullSafeCodeGen(ctx, ev, (str, pattern) =>
-      // Array in java is covariant, so we don't need to cast UTF8String[] to Object[].
-      s"""${ev.value} = new $arrayClass($str.split($pattern, -1));""")
+    nullSafeCodeGen(ctx,
+                    ev,
+                    (str, pattern) =>
+                      // Array in java is covariant, so we don't need to cast UTF8String[] to Object[].
+                      s"""${ev.value} = new $arrayClass($str.split($pattern, -1));""")
   }
 
   override def prettyName: String = "split"
 }
-
 
 /**
  * Replace all substrings of str that match regexp with rep.
@@ -205,10 +205,11 @@ case class StringSplit(str: Expression, pattern: Expression)
  * NOTE: this expression is not THREAD-SAFE, as it has some internal mutable status.
  */
 @ExpressionDescription(
-  usage = "_FUNC_(str, regexp, rep) - replace all substrings of str that match regexp with rep.",
-  extended = "> SELECT _FUNC_('100-200', '(\\d+)', 'num');\n 'num-num'")
+    usage = "_FUNC_(str, regexp, rep) - replace all substrings of str that match regexp with rep.",
+    extended = "> SELECT _FUNC_('100-200', '(\\d+)', 'num');\n 'num-num'")
 case class RegExpReplace(subject: Expression, regexp: Expression, rep: Expression)
-  extends TernaryExpression with ImplicitCastInputTypes {
+    extends TernaryExpression
+    with ImplicitCastInputTypes {
 
   // last regex in string, we will update the pattern iff regexp value changed.
   @transient private var lastRegex: UTF8String = _
@@ -262,13 +263,13 @@ case class RegExpReplace(subject: Expression, regexp: Expression, rep: Expressio
     ctx.addMutableState("UTF8String", termLastRegex, s"${termLastRegex} = null;")
     ctx.addMutableState(classNamePattern, termPattern, s"${termPattern} = null;")
     ctx.addMutableState("String", termLastReplacement, s"${termLastReplacement} = null;")
-    ctx.addMutableState("UTF8String",
-      termLastReplacementInUTF8, s"${termLastReplacementInUTF8} = null;")
-    ctx.addMutableState(classNameStringBuffer,
-      termResult, s"${termResult} = new $classNameStringBuffer();")
+    ctx.addMutableState(
+        "UTF8String", termLastReplacementInUTF8, s"${termLastReplacementInUTF8} = null;")
+    ctx.addMutableState(
+        classNameStringBuffer, termResult, s"${termResult} = new $classNameStringBuffer();")
 
     nullSafeCodeGen(ctx, ev, (subject, regexp, rep) => {
-    s"""
+      s"""
       if (!$regexp.equals(${termLastRegex})) {
         // regex value changed
         ${termLastRegex} = $regexp.clone();
@@ -299,10 +300,11 @@ case class RegExpReplace(subject: Expression, regexp: Expression, rep: Expressio
  * NOTE: this expression is not THREAD-SAFE, as it has some internal mutable status.
  */
 @ExpressionDescription(
-  usage = "_FUNC_(str, regexp[, idx]) - extracts a group that matches regexp.",
-  extended = "> SELECT _FUNC_('100-200', '(\\d+)-(\\d+)', 1);\n '100'")
+    usage = "_FUNC_(str, regexp[, idx]) - extracts a group that matches regexp.",
+    extended = "> SELECT _FUNC_('100-200', '(\\d+)-(\\d+)', 1);\n '100'")
 case class RegExpExtract(subject: Expression, regexp: Expression, idx: Expression)
-  extends TernaryExpression with ImplicitCastInputTypes {
+    extends TernaryExpression
+    with ImplicitCastInputTypes {
   def this(s: Expression, r: Expression) = this(s, r, Literal(1))
 
   // last regex in string, we will update the pattern iff regexp value changed.

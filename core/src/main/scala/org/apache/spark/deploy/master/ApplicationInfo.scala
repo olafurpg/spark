@@ -26,14 +26,13 @@ import org.apache.spark.deploy.ApplicationDescription
 import org.apache.spark.rpc.RpcEndpointRef
 import org.apache.spark.util.Utils
 
-private[spark] class ApplicationInfo(
-    val startTime: Long,
-    val id: String,
-    val desc: ApplicationDescription,
-    val submitDate: Date,
-    val driver: RpcEndpointRef,
-    defaultCores: Int)
-  extends Serializable {
+private[spark] class ApplicationInfo(val startTime: Long,
+                                     val id: String,
+                                     val desc: ApplicationDescription,
+                                     val submitDate: Date,
+                                     val driver: RpcEndpointRef,
+                                     defaultCores: Int)
+    extends Serializable {
 
   @transient var state: ApplicationState.Value = _
   @transient var executors: mutable.HashMap[Int, ExecutorDesc] = _
@@ -80,10 +79,9 @@ private[spark] class ApplicationInfo(
   }
 
   private[master] def addExecutor(
-      worker: WorkerInfo,
-      cores: Int,
-      useID: Option[Int] = None): ExecutorDesc = {
-    val exec = new ExecutorDesc(newExecutorId(useID), this, worker, cores, desc.memoryPerExecutorMB)
+      worker: WorkerInfo, cores: Int, useID: Option[Int] = None): ExecutorDesc = {
+    val exec = new ExecutorDesc(
+        newExecutorId(useID), this, worker, cores, desc.memoryPerExecutorMB)
     executors(exec.id) = exec
     coresGranted += cores
     exec

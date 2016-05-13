@@ -226,14 +226,14 @@ private[hive] trait HiveInspectors {
     // java list type unsupported
     case c: Class[_] if c == classOf[java.util.List[_]] =>
       throw new AnalysisException(
-        "List type in java is unsupported because " +
-        "JVM type erasure makes spark fail to catch a component type in List<>")
+          "List type in java is unsupported because " +
+          "JVM type erasure makes spark fail to catch a component type in List<>")
 
     // java map type unsupported
     case c: Class[_] if c == classOf[java.util.Map[_, _]] =>
       throw new AnalysisException(
-        "Map type in java is unsupported because " +
-        "JVM type erasure makes spark fail to catch key and value types in Map<>")
+          "Map type in java is unsupported because " +
+          "JVM type erasure makes spark fail to catch key and value types in Map<>")
 
     case c => throw new AnalysisException(s"Unsupported java type $c")
   }
@@ -267,9 +267,8 @@ private[hive] trait HiveInspectors {
     case poi: WritableConstantHiveCharObjectInspector =>
       UTF8String.fromString(poi.getWritableConstantValue.getHiveChar.getValue)
     case poi: WritableConstantHiveDecimalObjectInspector =>
-      HiveShim.toCatalystDecimal(
-        PrimitiveObjectInspectorFactory.javaHiveDecimalObjectInspector,
-        poi.getWritableConstantValue.getHiveDecimal)
+      HiveShim.toCatalystDecimal(PrimitiveObjectInspectorFactory.javaHiveDecimalObjectInspector,
+                                 poi.getWritableConstantValue.getHiveDecimal)
     case poi: WritableConstantTimestampObjectInspector =>
       val t = poi.getWritableConstantValue
       t.getSeconds * 1000000L + t.getNanos / 1000L
@@ -309,56 +308,55 @@ private[hive] trait HiveInspectors {
     // if the value is null, we don't care about the object inspector type
     case _ if data == null => null
     case poi: VoidObjectInspector => null // always be null for void object inspector
-    case pi: PrimitiveObjectInspector => pi match {
-      // We think HiveVarchar/HiveChar is also a String
-      case hvoi: HiveVarcharObjectInspector if hvoi.preferWritable() =>
-        UTF8String.fromString(hvoi.getPrimitiveWritableObject(data).getHiveVarchar.getValue)
-      case hvoi: HiveVarcharObjectInspector =>
-        UTF8String.fromString(hvoi.getPrimitiveJavaObject(data).getValue)
-      case hvoi: HiveCharObjectInspector if hvoi.preferWritable() =>
-        UTF8String.fromString(hvoi.getPrimitiveWritableObject(data).getHiveChar.getValue)
-      case hvoi: HiveCharObjectInspector =>
-        UTF8String.fromString(hvoi.getPrimitiveJavaObject(data).getValue)
-      case x: StringObjectInspector if x.preferWritable() =>
-        // Text is in UTF-8 already. No need to convert again via fromString. Copy bytes
-        val wObj = x.getPrimitiveWritableObject(data)
-        val result = wObj.copyBytes()
-        UTF8String.fromBytes(result, 0, result.length)
-      case x: StringObjectInspector =>
-        UTF8String.fromString(x.getPrimitiveJavaObject(data))
-      case x: IntObjectInspector if x.preferWritable() => x.get(data)
-      case x: BooleanObjectInspector if x.preferWritable() => x.get(data)
-      case x: FloatObjectInspector if x.preferWritable() => x.get(data)
-      case x: DoubleObjectInspector if x.preferWritable() => x.get(data)
-      case x: LongObjectInspector if x.preferWritable() => x.get(data)
-      case x: ShortObjectInspector if x.preferWritable() => x.get(data)
-      case x: ByteObjectInspector if x.preferWritable() => x.get(data)
-      case x: HiveDecimalObjectInspector => HiveShim.toCatalystDecimal(x, data)
-      case x: BinaryObjectInspector if x.preferWritable() =>
-        // BytesWritable.copyBytes() only available since Hadoop2
-        // In order to keep backward-compatible, we have to copy the
-        // bytes with old apis
-        val bw = x.getPrimitiveWritableObject(data)
-        val result = new Array[Byte](bw.getLength())
-        System.arraycopy(bw.getBytes(), 0, result, 0, bw.getLength())
-        result
-      case x: DateObjectInspector if x.preferWritable() =>
-        DateTimeUtils.fromJavaDate(x.getPrimitiveWritableObject(data).get())
-      case x: DateObjectInspector => DateTimeUtils.fromJavaDate(x.getPrimitiveJavaObject(data))
-      case x: TimestampObjectInspector if x.preferWritable() =>
-        val t = x.getPrimitiveWritableObject(data)
-        t.getSeconds * 1000000L + t.getNanos / 1000L
-      case ti: TimestampObjectInspector =>
-        DateTimeUtils.fromJavaTimestamp(ti.getPrimitiveJavaObject(data))
-      case _ => pi.getPrimitiveJavaObject(data)
-    }
+    case pi: PrimitiveObjectInspector =>
+      pi match {
+        // We think HiveVarchar/HiveChar is also a String
+        case hvoi: HiveVarcharObjectInspector if hvoi.preferWritable() =>
+          UTF8String.fromString(hvoi.getPrimitiveWritableObject(data).getHiveVarchar.getValue)
+        case hvoi: HiveVarcharObjectInspector =>
+          UTF8String.fromString(hvoi.getPrimitiveJavaObject(data).getValue)
+        case hvoi: HiveCharObjectInspector if hvoi.preferWritable() =>
+          UTF8String.fromString(hvoi.getPrimitiveWritableObject(data).getHiveChar.getValue)
+        case hvoi: HiveCharObjectInspector =>
+          UTF8String.fromString(hvoi.getPrimitiveJavaObject(data).getValue)
+        case x: StringObjectInspector if x.preferWritable() =>
+          // Text is in UTF-8 already. No need to convert again via fromString. Copy bytes
+          val wObj = x.getPrimitiveWritableObject(data)
+          val result = wObj.copyBytes()
+          UTF8String.fromBytes(result, 0, result.length)
+        case x: StringObjectInspector =>
+          UTF8String.fromString(x.getPrimitiveJavaObject(data))
+        case x: IntObjectInspector if x.preferWritable() => x.get(data)
+        case x: BooleanObjectInspector if x.preferWritable() => x.get(data)
+        case x: FloatObjectInspector if x.preferWritable() => x.get(data)
+        case x: DoubleObjectInspector if x.preferWritable() => x.get(data)
+        case x: LongObjectInspector if x.preferWritable() => x.get(data)
+        case x: ShortObjectInspector if x.preferWritable() => x.get(data)
+        case x: ByteObjectInspector if x.preferWritable() => x.get(data)
+        case x: HiveDecimalObjectInspector => HiveShim.toCatalystDecimal(x, data)
+        case x: BinaryObjectInspector if x.preferWritable() =>
+          // BytesWritable.copyBytes() only available since Hadoop2
+          // In order to keep backward-compatible, we have to copy the
+          // bytes with old apis
+          val bw = x.getPrimitiveWritableObject(data)
+          val result = new Array[Byte](bw.getLength())
+          System.arraycopy(bw.getBytes(), 0, result, 0, bw.getLength())
+          result
+        case x: DateObjectInspector if x.preferWritable() =>
+          DateTimeUtils.fromJavaDate(x.getPrimitiveWritableObject(data).get())
+        case x: DateObjectInspector => DateTimeUtils.fromJavaDate(x.getPrimitiveJavaObject(data))
+        case x: TimestampObjectInspector if x.preferWritable() =>
+          val t = x.getPrimitiveWritableObject(data)
+          t.getSeconds * 1000000L + t.getNanos / 1000L
+        case ti: TimestampObjectInspector =>
+          DateTimeUtils.fromJavaTimestamp(ti.getPrimitiveJavaObject(data))
+        case _ => pi.getPrimitiveJavaObject(data)
+      }
     case li: ListObjectInspector =>
-      Option(li.getList(data))
-        .map { l =>
-          val values = l.asScala.map(unwrap(_, li.getListElementObjectInspector)).toArray
-          new GenericArrayData(values)
-        }
-        .orNull
+      Option(li.getList(data)).map { l =>
+        val values = l.asScala.map(unwrap(_, li.getListElementObjectInspector)).toArray
+        new GenericArrayData(values)
+      }.orNull
     case mi: MapObjectInspector =>
       val map = mi.getMap(data)
       if (map == null) {
@@ -373,9 +371,8 @@ private[hive] trait HiveInspectors {
     case si: StructObjectInspector =>
       val allRefs = si.getAllStructFieldRefs
       InternalRow.fromSeq(allRefs.asScala.map(
-        r => unwrap(si.getStructFieldData(data, r), r.getFieldObjectInspector)))
+              r => unwrap(si.getStructFieldData(data, r), r.getFieldObjectInspector)))
   }
-
 
   /**
    * Wraps with Hive types based on object inspector.
@@ -391,7 +388,7 @@ private[hive] trait HiveInspectors {
           null
         }
 
-    case _: JavaHiveCharObjectInspector =>
+      case _: JavaHiveCharObjectInspector =>
       (o: Any) =>
         if (o != null) {
           val s = o.asInstanceOf[UTF8String].toString
@@ -400,7 +397,7 @@ private[hive] trait HiveInspectors {
           null
         }
 
-    case _: JavaHiveDecimalObjectInspector =>
+      case _: JavaHiveDecimalObjectInspector =>
       (o: Any) =>
         if (o != null) {
           HiveDecimal.create(o.asInstanceOf[Decimal].toJavaBigDecimal)
@@ -408,7 +405,7 @@ private[hive] trait HiveInspectors {
           null
         }
 
-    case _: JavaDateObjectInspector =>
+      case _: JavaDateObjectInspector =>
       (o: Any) =>
         if (o != null) {
           DateTimeUtils.toJavaDate(o.asInstanceOf[Int])
@@ -416,7 +413,7 @@ private[hive] trait HiveInspectors {
           null
         }
 
-    case _: JavaTimestampObjectInspector =>
+      case _: JavaTimestampObjectInspector =>
       (o: Any) =>
         if (o != null) {
           DateTimeUtils.toJavaTimestamp(o.asInstanceOf[Long])
@@ -424,57 +421,60 @@ private[hive] trait HiveInspectors {
           null
         }
 
-    case soi: StandardStructObjectInspector =>
+      case soi: StandardStructObjectInspector =>
       val schema = dataType.asInstanceOf[StructType]
       val wrappers = soi.getAllStructFieldRefs.asScala.zip(schema.fields).map {
         case (ref, field) => wrapperFor(ref.getFieldObjectInspector, field.dataType)
       }
-      (o: Any) => {
-        if (o != null) {
-          val struct = soi.create()
-          val row = o.asInstanceOf[InternalRow]
-          soi.getAllStructFieldRefs.asScala.zip(wrappers).zipWithIndex.foreach {
-            case ((field, wrapper), i) =>
-              soi.setStructFieldData(struct, field, wrapper(row.get(i, schema(i).dataType)))
+      (o: Any) =>
+        {
+          if (o != null) {
+            val struct = soi.create()
+            val row = o.asInstanceOf[InternalRow]
+            soi.getAllStructFieldRefs.asScala.zip(wrappers).zipWithIndex.foreach {
+              case ((field, wrapper), i) =>
+                soi.setStructFieldData(struct, field, wrapper(row.get(i, schema(i).dataType)))
+            }
+            struct
+          } else {
+            null
           }
-          struct
-        } else {
-          null
         }
-      }
 
-    case loi: ListObjectInspector =>
+      case loi: ListObjectInspector =>
       val elementType = dataType.asInstanceOf[ArrayType].elementType
       val wrapper = wrapperFor(loi.getListElementObjectInspector, elementType)
-      (o: Any) => {
-        if (o != null) {
-          val array = o.asInstanceOf[ArrayData]
-          val values = new java.util.ArrayList[Any](array.numElements())
-          array.foreach(elementType, (_, e) => values.add(wrapper(e)))
-          values
-        } else {
-          null
+      (o: Any) =>
+        {
+          if (o != null) {
+            val array = o.asInstanceOf[ArrayData]
+            val values = new java.util.ArrayList[Any](array.numElements())
+            array.foreach(elementType, (_, e) => values.add(wrapper(e)))
+            values
+          } else {
+            null
+          }
         }
-      }
 
-    case moi: MapObjectInspector =>
+      case moi: MapObjectInspector =>
       val mt = dataType.asInstanceOf[MapType]
       val keyWrapper = wrapperFor(moi.getMapKeyObjectInspector, mt.keyType)
       val valueWrapper = wrapperFor(moi.getMapValueObjectInspector, mt.valueType)
 
-      (o: Any) => {
-        if (o != null) {
-          val map = o.asInstanceOf[MapData]
-          val jmap = new java.util.HashMap[Any, Any](map.numElements())
-          map.foreach(mt.keyType, mt.valueType, (k, v) =>
-            jmap.put(keyWrapper(k), valueWrapper(v)))
-          jmap
-        } else {
-          null
+      (o: Any) =>
+        {
+          if (o != null) {
+            val map = o.asInstanceOf[MapData]
+            val jmap = new java.util.HashMap[Any, Any](map.numElements())
+            map.foreach(
+                mt.keyType, mt.valueType, (k, v) => jmap.put(keyWrapper(k), valueWrapper(v)))
+            jmap
+          } else {
+            null
+          }
         }
-      }
 
-    case _ =>
+      case _ =>
       identity[Any]
   }
 
@@ -485,21 +485,29 @@ private[hive] trait HiveInspectors {
   def unwrapperFor(field: HiveStructField): (Any, MutableRow, Int) => Unit =
     field.getFieldObjectInspector match {
       case oi: BooleanObjectInspector =>
-        (value: Any, row: MutableRow, ordinal: Int) => row.setBoolean(ordinal, oi.get(value))
-      case oi: ByteObjectInspector =>
-        (value: Any, row: MutableRow, ordinal: Int) => row.setByte(ordinal, oi.get(value))
-      case oi: ShortObjectInspector =>
-        (value: Any, row: MutableRow, ordinal: Int) => row.setShort(ordinal, oi.get(value))
-      case oi: IntObjectInspector =>
-        (value: Any, row: MutableRow, ordinal: Int) => row.setInt(ordinal, oi.get(value))
-      case oi: LongObjectInspector =>
-        (value: Any, row: MutableRow, ordinal: Int) => row.setLong(ordinal, oi.get(value))
-      case oi: FloatObjectInspector =>
-        (value: Any, row: MutableRow, ordinal: Int) => row.setFloat(ordinal, oi.get(value))
-      case oi: DoubleObjectInspector =>
-        (value: Any, row: MutableRow, ordinal: Int) => row.setDouble(ordinal, oi.get(value))
-      case oi =>
-        (value: Any, row: MutableRow, ordinal: Int) => row(ordinal) = unwrap(value, oi)
+        (value: Any, row: MutableRow, ordinal: Int) =>
+          row.setBoolean(ordinal, oi.get(value))
+        case oi: ByteObjectInspector =>
+        (value: Any, row: MutableRow, ordinal: Int) =>
+          row.setByte(ordinal, oi.get(value))
+        case oi: ShortObjectInspector =>
+        (value: Any, row: MutableRow, ordinal: Int) =>
+          row.setShort(ordinal, oi.get(value))
+        case oi: IntObjectInspector =>
+        (value: Any, row: MutableRow, ordinal: Int) =>
+          row.setInt(ordinal, oi.get(value))
+        case oi: LongObjectInspector =>
+        (value: Any, row: MutableRow, ordinal: Int) =>
+          row.setLong(ordinal, oi.get(value))
+        case oi: FloatObjectInspector =>
+        (value: Any, row: MutableRow, ordinal: Int) =>
+          row.setFloat(ordinal, oi.get(value))
+        case oi: DoubleObjectInspector =>
+        (value: Any, row: MutableRow, ordinal: Int) =>
+          row.setDouble(ordinal, oi.get(value))
+        case oi =>
+        (value: Any, row: MutableRow, ordinal: Int) =>
+          row(ordinal) = unwrap(value, oi)
     }
 
   /**
@@ -521,35 +529,36 @@ private[hive] trait HiveInspectors {
   def wrap(a: Any, oi: ObjectInspector, dataType: DataType): AnyRef = oi match {
     case x: ConstantObjectInspector => x.getWritableConstantValue
     case _ if a == null => null
-    case x: PrimitiveObjectInspector => x match {
-      // TODO we don't support the HiveVarcharObjectInspector yet.
-      case _: StringObjectInspector if x.preferWritable() => getStringWritable(a)
-      case _: StringObjectInspector => a.asInstanceOf[UTF8String].toString()
-      case _: IntObjectInspector if x.preferWritable() => getIntWritable(a)
-      case _: IntObjectInspector => a.asInstanceOf[java.lang.Integer]
-      case _: BooleanObjectInspector if x.preferWritable() => getBooleanWritable(a)
-      case _: BooleanObjectInspector => a.asInstanceOf[java.lang.Boolean]
-      case _: FloatObjectInspector if x.preferWritable() => getFloatWritable(a)
-      case _: FloatObjectInspector => a.asInstanceOf[java.lang.Float]
-      case _: DoubleObjectInspector if x.preferWritable() => getDoubleWritable(a)
-      case _: DoubleObjectInspector => a.asInstanceOf[java.lang.Double]
-      case _: LongObjectInspector if x.preferWritable() => getLongWritable(a)
-      case _: LongObjectInspector => a.asInstanceOf[java.lang.Long]
-      case _: ShortObjectInspector if x.preferWritable() => getShortWritable(a)
-      case _: ShortObjectInspector => a.asInstanceOf[java.lang.Short]
-      case _: ByteObjectInspector if x.preferWritable() => getByteWritable(a)
-      case _: ByteObjectInspector => a.asInstanceOf[java.lang.Byte]
-      case _: HiveDecimalObjectInspector if x.preferWritable() =>
-        getDecimalWritable(a.asInstanceOf[Decimal])
-      case _: HiveDecimalObjectInspector =>
-        HiveDecimal.create(a.asInstanceOf[Decimal].toJavaBigDecimal)
-      case _: BinaryObjectInspector if x.preferWritable() => getBinaryWritable(a)
-      case _: BinaryObjectInspector => a.asInstanceOf[Array[Byte]]
-      case _: DateObjectInspector if x.preferWritable() => getDateWritable(a)
-      case _: DateObjectInspector => DateTimeUtils.toJavaDate(a.asInstanceOf[Int])
-      case _: TimestampObjectInspector if x.preferWritable() => getTimestampWritable(a)
-      case _: TimestampObjectInspector => DateTimeUtils.toJavaTimestamp(a.asInstanceOf[Long])
-    }
+    case x: PrimitiveObjectInspector =>
+      x match {
+        // TODO we don't support the HiveVarcharObjectInspector yet.
+        case _: StringObjectInspector if x.preferWritable() => getStringWritable(a)
+        case _: StringObjectInspector => a.asInstanceOf[UTF8String].toString()
+        case _: IntObjectInspector if x.preferWritable() => getIntWritable(a)
+        case _: IntObjectInspector => a.asInstanceOf[java.lang.Integer]
+        case _: BooleanObjectInspector if x.preferWritable() => getBooleanWritable(a)
+        case _: BooleanObjectInspector => a.asInstanceOf[java.lang.Boolean]
+        case _: FloatObjectInspector if x.preferWritable() => getFloatWritable(a)
+        case _: FloatObjectInspector => a.asInstanceOf[java.lang.Float]
+        case _: DoubleObjectInspector if x.preferWritable() => getDoubleWritable(a)
+        case _: DoubleObjectInspector => a.asInstanceOf[java.lang.Double]
+        case _: LongObjectInspector if x.preferWritable() => getLongWritable(a)
+        case _: LongObjectInspector => a.asInstanceOf[java.lang.Long]
+        case _: ShortObjectInspector if x.preferWritable() => getShortWritable(a)
+        case _: ShortObjectInspector => a.asInstanceOf[java.lang.Short]
+        case _: ByteObjectInspector if x.preferWritable() => getByteWritable(a)
+        case _: ByteObjectInspector => a.asInstanceOf[java.lang.Byte]
+        case _: HiveDecimalObjectInspector if x.preferWritable() =>
+          getDecimalWritable(a.asInstanceOf[Decimal])
+        case _: HiveDecimalObjectInspector =>
+          HiveDecimal.create(a.asInstanceOf[Decimal].toJavaBigDecimal)
+        case _: BinaryObjectInspector if x.preferWritable() => getBinaryWritable(a)
+        case _: BinaryObjectInspector => a.asInstanceOf[Array[Byte]]
+        case _: DateObjectInspector if x.preferWritable() => getDateWritable(a)
+        case _: DateObjectInspector => DateTimeUtils.toJavaDate(a.asInstanceOf[Int])
+        case _: TimestampObjectInspector if x.preferWritable() => getTimestampWritable(a)
+        case _: TimestampObjectInspector => DateTimeUtils.toJavaTimestamp(a.asInstanceOf[Long])
+      }
     case x: SettableStructObjectInspector =>
       val fieldRefs = x.getAllStructFieldRefs
       val structType = dataType.asInstanceOf[StructType]
@@ -560,10 +569,9 @@ private[hive] trait HiveInspectors {
       while (i < fieldRefs.size) {
         // 2. set the property for the pojo
         val tpe = structType(i).dataType
-        x.setStructFieldData(
-          result,
-          fieldRefs.get(i),
-          wrap(row.get(i, tpe), fieldRefs.get(i).getFieldObjectInspector, tpe))
+        x.setStructFieldData(result,
+                             fieldRefs.get(i),
+                             wrap(row.get(i, tpe), fieldRefs.get(i).getFieldObjectInspector, tpe))
         i += 1
       }
 
@@ -584,9 +592,8 @@ private[hive] trait HiveInspectors {
     case x: ListObjectInspector =>
       val list = new java.util.ArrayList[Object]
       val tpe = dataType.asInstanceOf[ArrayType].elementType
-      a.asInstanceOf[ArrayData].foreach(tpe, (_, e) =>
-        list.add(wrap(e, x.getListElementObjectInspector, tpe))
-      )
+      a.asInstanceOf[ArrayData]
+        .foreach(tpe, (_, e) => list.add(wrap(e, x.getListElementObjectInspector, tpe)))
       list
     case x: MapObjectInspector =>
       val keyType = dataType.asInstanceOf[MapType].keyType
@@ -596,19 +603,19 @@ private[hive] trait HiveInspectors {
       // Some UDFs seem to assume we pass in a HashMap.
       val hashMap = new java.util.HashMap[Any, Any](map.numElements())
 
-      map.foreach(keyType, valueType, (k, v) =>
-        hashMap.put(wrap(k, x.getMapKeyObjectInspector, keyType),
-          wrap(v, x.getMapValueObjectInspector, valueType))
-      )
+      map.foreach(keyType,
+                  valueType,
+                  (k, v) =>
+                    hashMap.put(wrap(k, x.getMapKeyObjectInspector, keyType),
+                                wrap(v, x.getMapValueObjectInspector, valueType)))
 
       hashMap
   }
 
-  def wrap(
-      row: InternalRow,
-      inspectors: Seq[ObjectInspector],
-      cache: Array[AnyRef],
-      dataTypes: Array[DataType]): Array[AnyRef] = {
+  def wrap(row: InternalRow,
+           inspectors: Seq[ObjectInspector],
+           cache: Array[AnyRef],
+           dataTypes: Array[DataType]): Array[AnyRef] = {
     var i = 0
     while (i < inspectors.length) {
       cache(i) = wrap(row.get(i, dataTypes(i)), inspectors(i), dataTypes(i))
@@ -617,11 +624,10 @@ private[hive] trait HiveInspectors {
     cache
   }
 
-  def wrap(
-      row: Seq[Any],
-      inspectors: Seq[ObjectInspector],
-      cache: Array[AnyRef],
-      dataTypes: Array[DataType]): Array[AnyRef] = {
+  def wrap(row: Seq[Any],
+           inspectors: Seq[ObjectInspector],
+           cache: Array[AnyRef],
+           dataTypes: Array[DataType]): Array[AnyRef] = {
     var i = 0
     while (i < inspectors.length) {
       cache(i) = wrap(row(i), inspectors(i), dataTypes(i))
@@ -640,7 +646,7 @@ private[hive] trait HiveInspectors {
       ObjectInspectorFactory.getStandardListObjectInspector(toInspector(tpe))
     case MapType(keyType, valueType, _) =>
       ObjectInspectorFactory.getStandardMapObjectInspector(
-        toInspector(keyType), toInspector(valueType))
+          toInspector(keyType), toInspector(valueType))
     case StringType => PrimitiveObjectInspectorFactory.javaStringObjectInspector
     case IntegerType => PrimitiveObjectInspectorFactory.javaIntObjectInspector
     case DoubleType => PrimitiveObjectInspectorFactory.javaDoubleObjectInspector
@@ -657,8 +663,8 @@ private[hive] trait HiveInspectors {
     case DecimalType() => PrimitiveObjectInspectorFactory.javaHiveDecimalObjectInspector
     case StructType(fields) =>
       ObjectInspectorFactory.getStandardStructObjectInspector(
-        java.util.Arrays.asList(fields.map(f => f.name) : _*),
-        java.util.Arrays.asList(fields.map(f => toInspector(f.dataType)) : _*))
+          java.util.Arrays.asList(fields.map(f => f.name): _*),
+          java.util.Arrays.asList(fields.map(f => toInspector(f.dataType)): _*))
   }
 
   /**
@@ -701,8 +707,9 @@ private[hive] trait HiveInspectors {
         ObjectInspectorFactory.getStandardConstantListObjectInspector(listObjectInspector, null)
       } else {
         val list = new java.util.ArrayList[Object]()
-        value.asInstanceOf[ArrayData].foreach(dt, (_, e) =>
-          list.add(wrap(e, listObjectInspector, dt)))
+        value
+          .asInstanceOf[ArrayData]
+          .foreach(dt, (_, e) => list.add(wrap(e, listObjectInspector, dt)))
         ObjectInspectorFactory.getStandardConstantListObjectInspector(listObjectInspector, list)
       }
     case Literal(value, MapType(keyType, valueType, _)) =>
@@ -714,8 +721,9 @@ private[hive] trait HiveInspectors {
         val map = value.asInstanceOf[MapData]
         val jmap = new java.util.HashMap[Any, Any](map.numElements())
 
-        map.foreach(keyType, valueType, (k, v) =>
-          jmap.put(wrap(k, keyOI, keyType), wrap(v, valueOI, valueType)))
+        map.foreach(keyType,
+                    valueType,
+                    (k, v) => jmap.put(wrap(k, keyOI, keyType), wrap(v, valueOI, valueType)))
 
         ObjectInspectorFactory.getStandardConstantMapObjectInspector(keyOI, valueOI, jmap)
       }
@@ -730,15 +738,15 @@ private[hive] trait HiveInspectors {
 
   def inspectorToDataType(inspector: ObjectInspector): DataType = inspector match {
     case s: StructObjectInspector =>
-      StructType(s.getAllStructFieldRefs.asScala.map(f =>
-        types.StructField(
-          f.getFieldName, inspectorToDataType(f.getFieldObjectInspector), nullable = true)
-      ))
+      StructType(
+          s.getAllStructFieldRefs.asScala.map(f =>
+                types.StructField(f.getFieldName,
+                                  inspectorToDataType(f.getFieldObjectInspector),
+                                  nullable = true)))
     case l: ListObjectInspector => ArrayType(inspectorToDataType(l.getListElementObjectInspector))
     case m: MapObjectInspector =>
-      MapType(
-        inspectorToDataType(m.getMapKeyObjectInspector),
-        inspectorToDataType(m.getMapValueObjectInspector))
+      MapType(inspectorToDataType(m.getMapKeyObjectInspector),
+              inspectorToDataType(m.getMapValueObjectInspector))
     case _: WritableStringObjectInspector => StringType
     case _: JavaStringObjectInspector => StringType
     case _: WritableHiveVarcharObjectInspector => StringType
@@ -778,55 +786,55 @@ private[hive] trait HiveInspectors {
 
   private def getStringWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.stringTypeInfo, getStringWritable(value))
+        TypeInfoFactory.stringTypeInfo, getStringWritable(value))
 
   private def getIntWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.intTypeInfo, getIntWritable(value))
+        TypeInfoFactory.intTypeInfo, getIntWritable(value))
 
   private def getDoubleWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.doubleTypeInfo, getDoubleWritable(value))
+        TypeInfoFactory.doubleTypeInfo, getDoubleWritable(value))
 
   private def getBooleanWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.booleanTypeInfo, getBooleanWritable(value))
+        TypeInfoFactory.booleanTypeInfo, getBooleanWritable(value))
 
   private def getLongWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.longTypeInfo, getLongWritable(value))
+        TypeInfoFactory.longTypeInfo, getLongWritable(value))
 
   private def getFloatWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.floatTypeInfo, getFloatWritable(value))
+        TypeInfoFactory.floatTypeInfo, getFloatWritable(value))
 
   private def getShortWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.shortTypeInfo, getShortWritable(value))
+        TypeInfoFactory.shortTypeInfo, getShortWritable(value))
 
   private def getByteWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.byteTypeInfo, getByteWritable(value))
+        TypeInfoFactory.byteTypeInfo, getByteWritable(value))
 
   private def getBinaryWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.binaryTypeInfo, getBinaryWritable(value))
+        TypeInfoFactory.binaryTypeInfo, getBinaryWritable(value))
 
   private def getDateWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.dateTypeInfo, getDateWritable(value))
+        TypeInfoFactory.dateTypeInfo, getDateWritable(value))
 
   private def getTimestampWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.timestampTypeInfo, getTimestampWritable(value))
+        TypeInfoFactory.timestampTypeInfo, getTimestampWritable(value))
 
   private def getDecimalWritableConstantObjectInspector(value: Any): ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.decimalTypeInfo, getDecimalWritable(value))
+        TypeInfoFactory.decimalTypeInfo, getDecimalWritable(value))
 
   private def getPrimitiveNullWritableConstantObjectInspector: ObjectInspector =
     PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-      TypeInfoFactory.voidTypeInfo, null)
+        TypeInfoFactory.voidTypeInfo, null)
 
   private def getStringWritable(value: Any): hadoopIo.Text =
     if (value == null) null else new hadoopIo.Text(value.asInstanceOf[UTF8String].getBytes)
@@ -887,7 +895,7 @@ private[hive] trait HiveInspectors {
     } else {
       // TODO precise, scale?
       new hiveIo.HiveDecimalWritable(
-        HiveDecimal.create(value.asInstanceOf[Decimal].toJavaBigDecimal))
+          HiveDecimal.create(value.asInstanceOf[Decimal].toJavaBigDecimal))
     }
 
   implicit class typeInfoConversions(dt: DataType) {
@@ -902,9 +910,8 @@ private[hive] trait HiveInspectors {
       case ArrayType(elemType, _) =>
         getListTypeInfo(elemType.toTypeInfo)
       case StructType(fields) =>
-        getStructTypeInfo(
-          java.util.Arrays.asList(fields.map(_.name) : _*),
-          java.util.Arrays.asList(fields.map(_.dataType.toTypeInfo) : _*))
+        getStructTypeInfo(java.util.Arrays.asList(fields.map(_.name): _*),
+                          java.util.Arrays.asList(fields.map(_.dataType.toTypeInfo): _*))
       case MapType(keyType, valueType, _) =>
         getMapTypeInfo(keyType.toTypeInfo, valueType.toTypeInfo)
       case BinaryType => binaryTypeInfo

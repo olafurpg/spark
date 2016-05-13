@@ -25,10 +25,8 @@ import org.apache.spark.sql.catalyst.trees.TreeNode
 package object errors {
 
   class TreeNodeException[TreeType <: TreeNode[_]](
-      @transient val tree: TreeType,
-      msg: String,
-      cause: Throwable)
-    extends Exception(msg, cause) {
+      @transient val tree: TreeType, msg: String, cause: Throwable)
+      extends Exception(msg, cause) {
 
     val treeString = tree.toString
 

@@ -37,8 +37,8 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.hive.thriftserver.ReflectionUtils._
 
 private[hive] class SparkSQLCLIService(hiveServer: HiveServer2, sqlContext: SQLContext)
-  extends CLIService(hiveServer)
-  with ReflectedCompositeService {
+    extends CLIService(hiveServer)
+    with ReflectedCompositeService {
 
   override def init(hiveConf: HiveConf) {
     setSuperField(this, "hiveConf", hiveConf)
@@ -72,7 +72,8 @@ private[hive] class SparkSQLCLIService(hiveServer: HiveServer2, sqlContext: SQLC
   }
 }
 
-private[thriftserver] trait ReflectedCompositeService { this: AbstractService =>
+private[thriftserver] trait ReflectedCompositeService {
+  this: AbstractService =>
   def initCompositeService(hiveConf: HiveConf) {
     // Emulating `CompositeService.init(hiveConf)`
     val serviceList = getAncestorField[JList[Service]](this, 2, "serviceList")

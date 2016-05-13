@@ -61,9 +61,7 @@ private[spark] object SerDe {
     readTypedObject(dis, dataType)
   }
 
-  def readTypedObject(
-      dis: DataInputStream,
-      dataType: Char): Object = {
+  def readTypedObject(dis: DataInputStream, dataType: Char): Object = {
     dataType match {
       case 'n' => null
       case 'i' => new java.lang.Integer(readInt(dis))
@@ -79,11 +77,11 @@ private[spark] object SerDe {
       case 'j' => JVMObjectTracker.getObject(readString(dis))
       case _ =>
         if (sqlSerDe == null || sqlSerDe._1 == null) {
-          throw new IllegalArgumentException (s"Invalid type $dataType")
+          throw new IllegalArgumentException(s"Invalid type $dataType")
         } else {
           val obj = (sqlSerDe._1)(dis, dataType)
           if (obj == null) {
-            throw new IllegalArgumentException (s"Invalid type $dataType")
+            throw new IllegalArgumentException(s"Invalid type $dataType")
           } else {
             obj
           }
@@ -179,13 +177,13 @@ private[spark] object SerDe {
         (0 until len).map(_ => readList(dis)).toArray
       case _ =>
         if (sqlSerDe == null || sqlSerDe._1 == null) {
-          throw new IllegalArgumentException (s"Invalid array type $arrType")
+          throw new IllegalArgumentException(s"Invalid array type $arrType")
         } else {
           val len = readInt(dis)
           (0 until len).map { _ =>
             val obj = (sqlSerDe._1)(dis, arrType)
             if (obj == null) {
-              throw new IllegalArgumentException (s"Invalid array type $arrType")
+              throw new IllegalArgumentException(s"Invalid array type $arrType")
             } else {
               obj
             }
@@ -368,7 +366,7 @@ private[spark] object SerDe {
           writeType(dos, "map")
           writeInt(dos, v.size)
           val iter = v.entrySet.iterator
-          while(iter.hasNext) {
+          while (iter.hasNext) {
             val entry = iter.next
             val key = entry.getKey
             val value = entry.getValue
@@ -378,8 +376,9 @@ private[spark] object SerDe {
         case v: scala.collection.Map[_, _] =>
           writeType(dos, "map")
           writeInt(dos, v.size)
-          v.foreach { case (key, value) =>
-            writeKeyValue(dos, key.asInstanceOf[Object], value.asInstanceOf[Object])
+          v.foreach {
+            case (key, value) =>
+              writeKeyValue(dos, key.asInstanceOf[Object], value.asInstanceOf[Object])
           }
 
         case _ =>
@@ -456,7 +455,6 @@ private[spark] object SerDe {
     out.writeInt(value.length)
     value.foreach(v => writeString(out, v))
   }
-
 }
 
 private[spark] object SerializationFormats {

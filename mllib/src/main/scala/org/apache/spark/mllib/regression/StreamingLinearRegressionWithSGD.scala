@@ -40,13 +40,12 @@ import org.apache.spark.mllib.linalg.Vector
  *    .trainOn(DStream)
  */
 @Since("1.1.0")
-class StreamingLinearRegressionWithSGD private[mllib] (
-    private var stepSize: Double,
-    private var numIterations: Int,
-    private var regParam: Double,
-    private var miniBatchFraction: Double)
-  extends StreamingLinearAlgorithm[LinearRegressionModel, LinearRegressionWithSGD]
-  with Serializable {
+class StreamingLinearRegressionWithSGD private[mllib](private var stepSize: Double,
+                                                      private var numIterations: Int,
+                                                      private var regParam: Double,
+                                                      private var miniBatchFraction: Double)
+    extends StreamingLinearAlgorithm[LinearRegressionModel, LinearRegressionWithSGD]
+    with Serializable {
 
   /**
    * Construct a StreamingLinearRegression object with default parameters:

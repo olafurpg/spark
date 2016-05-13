@@ -45,10 +45,8 @@ import org.apache.spark.util.{ShutdownHookManager, Utils}
  * a daemon to launch drivers as Mesos frameworks upon request. The dispatcher is also started and
  * stopped by sbin/start-mesos-dispatcher and sbin/stop-mesos-dispatcher respectively.
  */
-private[mesos] class MesosClusterDispatcher(
-    args: MesosClusterDispatcherArguments,
-    conf: SparkConf)
-  extends Logging {
+private[mesos] class MesosClusterDispatcher(args: MesosClusterDispatcherArguments, conf: SparkConf)
+    extends Logging {
 
   private val publicAddress = Option(conf.getenv("SPARK_PUBLIC_DNS")).getOrElse(args.host)
   private val recoveryMode = conf.get("spark.deploy.recoveryMode", "NONE").toUpperCase()
@@ -64,11 +62,7 @@ private[mesos] class MesosClusterDispatcher(
 
   private val server = new MesosRestServer(args.host, args.port, conf, scheduler)
   private val webUi = new MesosClusterUI(
-    new SecurityManager(conf),
-    args.webUiPort,
-    conf,
-    publicAddress,
-    scheduler)
+      new SecurityManager(conf), args.webUiPort, conf, publicAddress, scheduler)
 
   private val shutdownLatch = new CountDownLatch(1)
 

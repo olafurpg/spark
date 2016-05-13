@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution.exchange.ShuffleExchange
 
-
 /**
  * Take the first `limit` elements and collect them to a single partition.
  *
@@ -39,8 +38,8 @@ case class CollectLimitExec(limit: Int, child: SparkPlan) extends UnaryExecNode 
   private val serializer: Serializer = new UnsafeRowSerializer(child.output.size)
   protected override def doExecute(): RDD[InternalRow] = {
     val shuffled = new ShuffledRowRDD(
-      ShuffleExchange.prepareShuffleDependency(
-        child.execute(), child.output, SinglePartition, serializer))
+        ShuffleExchange.prepareShuffleDependency(
+            child.execute(), child.output, SinglePartition, serializer))
     shuffled.mapPartitionsInternal(_.take(limit))
   }
 }
@@ -70,7 +69,8 @@ trait BaseLimitExec extends UnaryExecNode with CodegenSupport {
     val stopEarly = ctx.freshName("stopEarly")
     ctx.addMutableState("boolean", stopEarly, s"$stopEarly = false;")
 
-    ctx.addNewFunction("shouldStop", s"""
+    ctx.addNewFunction("shouldStop",
+                       s"""
       @Override
       protected boolean shouldStop() {
         return !currentRows.isEmpty() || $stopEarly;
@@ -110,11 +110,11 @@ case class GlobalLimitExec(limit: Int, child: SparkPlan) extends BaseLimitExec {
  * This could have been named TopK, but Spark's top operator does the opposite in ordering
  * so we name it TakeOrdered to avoid confusion.
  */
-case class TakeOrderedAndProjectExec(
-    limit: Int,
-    sortOrder: Seq[SortOrder],
-    projectList: Option[Seq[NamedExpression]],
-    child: SparkPlan) extends UnaryExecNode {
+case class TakeOrderedAndProjectExec(limit: Int,
+                                     sortOrder: Seq[SortOrder],
+                                     projectList: Option[Seq[NamedExpression]],
+                                     child: SparkPlan)
+    extends UnaryExecNode {
 
   override def output: Seq[Attribute] = {
     projectList.map(_.map(_.toAttribute)).getOrElse(child.output)
@@ -143,8 +143,8 @@ case class TakeOrderedAndProjectExec(
       }
     }
     val shuffled = new ShuffledRowRDD(
-      ShuffleExchange.prepareShuffleDependency(
-        localTopK, child.output, SinglePartition, serializer))
+        ShuffleExchange.prepareShuffleDependency(
+            localTopK, child.output, SinglePartition, serializer))
     shuffled.mapPartitions { iter =>
       val topK = org.apache.spark.util.collection.Utils.takeOrdered(iter.map(_.copy()), limit)(ord)
       if (projectList.isDefined) {

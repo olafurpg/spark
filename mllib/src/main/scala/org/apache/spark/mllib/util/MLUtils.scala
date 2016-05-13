@@ -63,28 +63,28 @@ object MLUtils {
    */
   @Since("1.0.0")
   def loadLibSVMFile(
-      sc: SparkContext,
-      path: String,
-      numFeatures: Int,
-      minPartitions: Int): RDD[LabeledPoint] = {
+      sc: SparkContext, path: String, numFeatures: Int, minPartitions: Int): RDD[LabeledPoint] = {
     val parsed = parseLibSVMFile(sc, path, minPartitions)
 
     // Determine number of features.
-    val d = if (numFeatures > 0) {
-      numFeatures
-    } else {
-      parsed.persist(StorageLevel.MEMORY_ONLY)
-      computeNumFeatures(parsed)
-    }
+    val d =
+      if (numFeatures > 0) {
+        numFeatures
+      } else {
+        parsed.persist(StorageLevel.MEMORY_ONLY)
+        computeNumFeatures(parsed)
+      }
 
-    parsed.map { case (label, indices, values) =>
-      LabeledPoint(label, Vectors.sparse(d, indices, values))
+    parsed.map {
+      case (label, indices, values) =>
+        LabeledPoint(label, Vectors.sparse(d, indices, values))
     }
   }
 
   private[spark] def computeNumFeatures(rdd: RDD[(Double, Array[Int], Array[Double])]): Int = {
-    rdd.map { case (label, indices, values) =>
-      indices.lastOption.getOrElse(0)
+    rdd.map {
+      case (label, indices, values) =>
+        indices.lastOption.getOrElse(0)
     }.reduce(math.max) + 1
   }
 
@@ -101,12 +101,15 @@ object MLUtils {
   private[spark] def parseLibSVMRecord(line: String): (Double, Array[Int], Array[Double]) = {
     val items = line.split(' ')
     val label = items.head.toDouble
-    val (indices, values) = items.tail.filter(_.nonEmpty).map { item =>
-      val indexAndValue = item.split(':')
-      val index = indexAndValue(0).toInt - 1 // Convert 1-based indices to 0-based.
-      val value = indexAndValue(1).toDouble
-      (index, value)
-    }.unzip
+    val (indices, values) = items.tail
+      .filter(_.nonEmpty)
+      .map { item =>
+        val indexAndValue = item.split(':')
+        val index = indexAndValue(0).toInt - 1 // Convert 1-based indices to 0-based.
+        val value = indexAndValue(1).toDouble
+        (index, value)
+      }
+      .unzip
 
     // check if indices are one-based and in ascending order
     var previous = -1
@@ -114,8 +117,9 @@ object MLUtils {
     val indicesLength = indices.length
     while (i < indicesLength) {
       val current = indices(i)
-      require(current > previous, s"indices should be one-based and in ascending order;"
-        + " found current=$current, previous=$previous; line=\"$line\"")
+      require(current > previous,
+              s"indices should be one-based and in ascending order;" +
+              " found current=$current, previous=$previous; line=\"$line\"")
       previous = current
       i += 1
     }
@@ -127,10 +131,7 @@ object MLUtils {
    * partitions.
    */
   @Since("1.0.0")
-  def loadLibSVMFile(
-      sc: SparkContext,
-      path: String,
-      numFeatures: Int): RDD[LabeledPoint] =
+  def loadLibSVMFile(sc: SparkContext, path: String, numFeatures: Int): RDD[LabeledPoint] =
     loadLibSVMFile(sc, path, numFeatures, sc.defaultMinPartitions)
 
   /**
@@ -151,13 +152,15 @@ object MLUtils {
   @Since("1.0.0")
   def saveAsLibSVMFile(data: RDD[LabeledPoint], dir: String) {
     // TODO: allow to specify label precision and feature precision.
-    val dataStr = data.map { case LabeledPoint(label, features) =>
-      val sb = new StringBuilder(label.toString)
-      features.foreachActive { case (i, v) =>
-        sb += ' '
-        sb ++= s"${i + 1}:$v"
-      }
-      sb.mkString
+    val dataStr = data.map {
+      case LabeledPoint(label, features) =>
+        val sb = new StringBuilder(label.toString)
+        features.foreachActive {
+          case (i, v) =>
+            sb += ' '
+            sb ++= s"${i + 1}:$v"
+        }
+        sb.mkString
     }
     dataStr.saveAsTextFile(dir)
   }
@@ -216,8 +219,8 @@ object MLUtils {
   def kFold[T: ClassTag](rdd: RDD[T], numFolds: Int, seed: Long): Array[(RDD[T], RDD[T])] = {
     val numFoldsF = numFolds.toFloat
     (1 to numFolds).map { fold =>
-      val sampler = new BernoulliCellSampler[T]((fold - 1) / numFoldsF, fold / numFoldsF,
-        complement = false)
+      val sampler =
+        new BernoulliCellSampler[T]((fold - 1) / numFoldsF, fold / numFoldsF, complement = false)
       val validation = new PartitionwiseSampledRDD(rdd, sampler, true, seed)
       val training = new PartitionwiseSampledRDD(rdd, sampler.cloneComplement(), true, seed)
       (training, validation)
@@ -249,7 +252,8 @@ object MLUtils {
         outputValues(inputValuesLength) = 1.0
         outputIndices(inputValuesLength) = dim
         Vectors.sparse(dim + 1, outputIndices, outputValues)
-      case _ => throw new IllegalArgumentException(s"Do not support vector type ${vector.getClass}")
+      case _ =>
+        throw new IllegalArgumentException(s"Do not support vector type ${vector.getClass}")
     }
   }
 
@@ -269,12 +273,11 @@ object MLUtils {
    * @param precision desired relative precision for the squared distance
    * @return squared distance between v1 and v2 within the specified precision
    */
-  private[mllib] def fastSquaredDistance(
-      v1: Vector,
-      norm1: Double,
-      v2: Vector,
-      norm2: Double,
-      precision: Double = 1e-6): Double = {
+  private[mllib] def fastSquaredDistance(v1: Vector,
+                                         norm1: Double,
+                                         v2: Vector,
+                                         norm2: Double,
+                                         precision: Double = 1e-6): Double = {
     val n = v1.size
     require(v2.size == n)
     require(norm1 >= 0.0 && norm2 >= 0.0)
@@ -299,7 +302,8 @@ object MLUtils {
     } else if (v1.isInstanceOf[SparseVector] || v2.isInstanceOf[SparseVector]) {
       val dotValue = dot(v1, v2)
       sqDist = math.max(sumSquaredNorm - 2.0 * dotValue, 0.0)
-      val precisionBound2 = EPSILON * (sumSquaredNorm + 2.0 * math.abs(dotValue)) /
+      val precisionBound2 =
+        EPSILON * (sumSquaredNorm + 2.0 * math.abs(dotValue)) /
         (sqDist + EPSILON)
       if (precisionBound2 > precision) {
         sqDist = Vectors.sqdist(v1, v2)

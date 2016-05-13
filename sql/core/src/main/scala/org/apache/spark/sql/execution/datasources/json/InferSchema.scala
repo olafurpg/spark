@@ -35,18 +35,18 @@ private[sql] object InferSchema {
    *   2. Merge types by choosing the lowest type necessary to cover equal keys
    *   3. Replace any remaining null fields with string, the top type
    */
-  def infer(
-      json: RDD[String],
-      columnNameOfCorruptRecords: String,
-      configOptions: JSONOptions): StructType = {
+  def infer(json: RDD[String],
+            columnNameOfCorruptRecords: String,
+            configOptions: JSONOptions): StructType = {
     require(configOptions.samplingRatio > 0,
-      s"samplingRatio (${configOptions.samplingRatio}) should be greater than 0")
+            s"samplingRatio (${configOptions.samplingRatio}) should be greater than 0")
     val shouldHandleCorruptRecord = configOptions.permissive
-    val schemaData = if (configOptions.samplingRatio > 0.99) {
-      json
-    } else {
-      json.sample(withReplacement = false, configOptions.samplingRatio, 1)
-    }
+    val schemaData =
+      if (configOptions.samplingRatio > 0.99) {
+        json
+      } else {
+        json.sample(withReplacement = false, configOptions.samplingRatio, 1)
+      }
 
     // perform schema inference on each row and merge afterwards
     val rootType = schemaData.mapPartitions { iter =>
@@ -65,8 +65,8 @@ private[sql] object InferSchema {
             None
         }
       }
-    }.fold(StructType(Seq()))(
-      compatibleRootType(columnNameOfCorruptRecords, shouldHandleCorruptRecord))
+    }.fold(StructType(Seq()))(compatibleRootType(
+            columnNameOfCorruptRecords, shouldHandleCorruptRecord))
 
     canonicalizeType(rootType) match {
       case Some(st: StructType) => st
@@ -118,10 +118,9 @@ private[sql] object InferSchema {
       case START_OBJECT =>
         val builder = Array.newBuilder[StructField]
         while (nextUntil(parser, END_OBJECT)) {
-          builder += StructField(
-            parser.getCurrentName,
-            inferField(parser, configOptions),
-            nullable = true)
+          builder += StructField(parser.getCurrentName,
+                                 inferField(parser, configOptions),
+                                 nullable = true)
         }
         val fields: Array[StructField] = builder.result()
         // Note: other code relies on this sorting for correctness, so don't remove it!
@@ -134,13 +133,13 @@ private[sql] object InferSchema {
         // the type as we pass through all JSON objects.
         var elementType: DataType = NullType
         while (nextUntil(parser, END_ARRAY)) {
-          elementType = compatibleType(
-            elementType, inferField(parser, configOptions))
+          elementType = compatibleType(elementType, inferField(parser, configOptions))
         }
 
         ArrayType(elementType)
 
-      case (VALUE_NUMBER_INT | VALUE_NUMBER_FLOAT) if configOptions.primitivesAsString => StringType
+      case (VALUE_NUMBER_INT | VALUE_NUMBER_FLOAT) if configOptions.primitivesAsString =>
+        StringType
 
       case (VALUE_TRUE | VALUE_FALSE) if configOptions.primitivesAsString => StringType
 
@@ -205,8 +204,7 @@ private[sql] object InferSchema {
   }
 
   private def withCorruptField(
-      struct: StructType,
-      columnNameOfCorruptRecords: String): StructType = {
+      struct: StructType, columnNameOfCorruptRecords: String): StructType = {
     if (!struct.fieldNames.contains(columnNameOfCorruptRecords)) {
       // If this given struct does not have a column used for corrupt records,
       // add this field.
@@ -291,10 +289,12 @@ private[sql] object InferSchema {
               newFields.add(StructField(f1Name, dataType, nullable = true))
               f1Idx += 1
               f2Idx += 1
-            } else if (comp < 0) { // f1Name < f2Name
+            } else if (comp < 0) {
+              // f1Name < f2Name
               newFields.add(fields1(f1Idx))
               f1Idx += 1
-            } else { // f1Name > f2Name
+            } else {
+              // f1Name > f2Name
               newFields.add(fields2(f2Idx))
               f2Idx += 1
             }

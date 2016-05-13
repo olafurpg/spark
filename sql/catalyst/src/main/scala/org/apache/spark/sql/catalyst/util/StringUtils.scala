@@ -27,21 +27,24 @@ object StringUtils {
   // replace the % with .*, match 0 or more times with any character
   def escapeLikeRegex(v: String): String = {
     if (!v.isEmpty) {
-      "(?s)" + (' ' +: v.init).zip(v).flatMap {
-        case (prev, '\\') => ""
-        case ('\\', c) =>
-          c match {
-            case '_' => "_"
-            case '%' => "%"
-            case _ => Pattern.quote("\\" + c)
-          }
-        case (prev, c) =>
-          c match {
-            case '_' => "."
-            case '%' => ".*"
-            case _ => Pattern.quote(Character.toString(c))
-          }
-      }.mkString
+      "(?s)" + (' ' +: v.init)
+        .zip(v)
+        .flatMap {
+          case (prev, '\\') => ""
+          case ('\\', c) =>
+            c match {
+              case '_' => "_"
+              case '%' => "%"
+              case _ => Pattern.quote("\\" + c)
+            }
+          case (prev, c) =>
+            c match {
+              case '_' => "."
+              case '%' => ".*"
+              case _ => Pattern.quote(Character.toString(c))
+            }
+        }
+        .mkString
     } else {
       v
     }
@@ -66,7 +69,9 @@ object StringUtils {
     pattern.trim().split("\\|").foreach { subPattern =>
       try {
         val regex = ("(?i)" + subPattern.replaceAll("\\*", ".*")).r
-        funcNames ++= names.filter{ name => regex.pattern.matcher(name).matches() }
+        funcNames ++= names.filter { name =>
+          regex.pattern.matcher(name).matches()
+        }
       } catch {
         case _: PatternSyntaxException =>
       }

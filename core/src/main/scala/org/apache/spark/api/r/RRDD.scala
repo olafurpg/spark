@@ -28,20 +28,20 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 
-private abstract class BaseRRDD[T: ClassTag, U: ClassTag](
-    parent: RDD[T],
-    numPartitions: Int,
-    func: Array[Byte],
-    deserializer: String,
-    serializer: String,
-    packageNames: Array[Byte],
-    broadcastVars: Array[Broadcast[Object]])
-  extends RDD[U](parent) with Logging {
+private abstract class BaseRRDD[T: ClassTag, U: ClassTag](parent: RDD[T],
+                                                          numPartitions: Int,
+                                                          func: Array[Byte],
+                                                          deserializer: String,
+                                                          serializer: String,
+                                                          packageNames: Array[Byte],
+                                                          broadcastVars: Array[Broadcast[Object]])
+    extends RDD[U](parent)
+    with Logging {
   override def getPartitions: Array[Partition] = parent.partitions
 
   override def compute(partition: Partition, context: TaskContext): Iterator[U] = {
-    val runner = new RRunner[U](
-      func, deserializer, serializer, packageNames, broadcastVars, numPartitions)
+    val runner =
+      new RRunner[U](func, deserializer, serializer, packageNames, broadcastVars, numPartitions)
 
     // The parent may be also an RRDD, so we should launch it first.
     val parentIterator = firstParent[T].iterator(partition, context)
@@ -54,61 +54,68 @@ private abstract class BaseRRDD[T: ClassTag, U: ClassTag](
  * Form an RDD[(Int, Array[Byte])] from key-value pairs returned from R.
  * This is used by SparkR's shuffle operations.
  */
-private class PairwiseRRDD[T: ClassTag](
-    parent: RDD[T],
-    numPartitions: Int,
-    hashFunc: Array[Byte],
-    deserializer: String,
-    packageNames: Array[Byte],
-    broadcastVars: Array[Object])
-  extends BaseRRDD[T, (Int, Array[Byte])](
-    parent, numPartitions, hashFunc, deserializer,
-    SerializationFormats.BYTE, packageNames,
-    broadcastVars.map(x => x.asInstanceOf[Broadcast[Object]])) {
-  lazy val asJavaPairRDD : JavaPairRDD[Int, Array[Byte]] = JavaPairRDD.fromRDD(this)
+private class PairwiseRRDD[T: ClassTag](parent: RDD[T],
+                                        numPartitions: Int,
+                                        hashFunc: Array[Byte],
+                                        deserializer: String,
+                                        packageNames: Array[Byte],
+                                        broadcastVars: Array[Object])
+    extends BaseRRDD[T, (Int, Array[Byte])](
+        parent,
+        numPartitions,
+        hashFunc,
+        deserializer,
+        SerializationFormats.BYTE,
+        packageNames,
+        broadcastVars.map(x => x.asInstanceOf[Broadcast[Object]])) {
+  lazy val asJavaPairRDD: JavaPairRDD[Int, Array[Byte]] = JavaPairRDD.fromRDD(this)
 }
 
 /**
  * An RDD that stores serialized R objects as Array[Byte].
  */
-private class RRDD[T: ClassTag](
-    parent: RDD[T],
-    func: Array[Byte],
-    deserializer: String,
-    serializer: String,
-    packageNames: Array[Byte],
-    broadcastVars: Array[Object])
-  extends BaseRRDD[T, Array[Byte]](
-    parent, -1, func, deserializer, serializer, packageNames,
-    broadcastVars.map(x => x.asInstanceOf[Broadcast[Object]])) {
-  lazy val asJavaRDD : JavaRDD[Array[Byte]] = JavaRDD.fromRDD(this)
+private class RRDD[T: ClassTag](parent: RDD[T],
+                                func: Array[Byte],
+                                deserializer: String,
+                                serializer: String,
+                                packageNames: Array[Byte],
+                                broadcastVars: Array[Object])
+    extends BaseRRDD[T, Array[Byte]](parent,
+                                     -1,
+                                     func,
+                                     deserializer,
+                                     serializer,
+                                     packageNames,
+                                     broadcastVars.map(x => x.asInstanceOf[Broadcast[Object]])) {
+  lazy val asJavaRDD: JavaRDD[Array[Byte]] = JavaRDD.fromRDD(this)
 }
 
 /**
  * An RDD that stores R objects as Array[String].
  */
-private class StringRRDD[T: ClassTag](
-    parent: RDD[T],
-    func: Array[Byte],
-    deserializer: String,
-    packageNames: Array[Byte],
-    broadcastVars: Array[Object])
-  extends BaseRRDD[T, String](
-    parent, -1, func, deserializer, SerializationFormats.STRING, packageNames,
-    broadcastVars.map(x => x.asInstanceOf[Broadcast[Object]])) {
-  lazy val asJavaRDD : JavaRDD[String] = JavaRDD.fromRDD(this)
+private class StringRRDD[T: ClassTag](parent: RDD[T],
+                                      func: Array[Byte],
+                                      deserializer: String,
+                                      packageNames: Array[Byte],
+                                      broadcastVars: Array[Object])
+    extends BaseRRDD[T, String](parent,
+                                -1,
+                                func,
+                                deserializer,
+                                SerializationFormats.STRING,
+                                packageNames,
+                                broadcastVars.map(x => x.asInstanceOf[Broadcast[Object]])) {
+  lazy val asJavaRDD: JavaRDD[String] = JavaRDD.fromRDD(this)
 }
 
 private[r] object RRDD {
-  def createSparkContext(
-      master: String,
-      appName: String,
-      sparkHome: String,
-      jars: Array[String],
-      sparkEnvirMap: JMap[Object, Object],
-      sparkExecutorEnvMap: JMap[Object, Object]): JavaSparkContext = {
-    val sparkConf = new SparkConf().setAppName(appName)
-                                   .setSparkHome(sparkHome)
+  def createSparkContext(master: String,
+                         appName: String,
+                         sparkHome: String,
+                         jars: Array[String],
+                         sparkEnvirMap: JMap[Object, Object],
+                         sparkExecutorEnvMap: JMap[Object, Object]): JavaSparkContext = {
+    val sparkConf = new SparkConf().setAppName(appName).setSparkHome(sparkHome)
 
     // Override `master` if we have a user-specified value
     if (master != "") {

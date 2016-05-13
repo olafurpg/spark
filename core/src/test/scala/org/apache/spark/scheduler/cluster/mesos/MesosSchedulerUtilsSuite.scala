@@ -30,12 +30,12 @@ class MesosSchedulerUtilsSuite extends SparkFunSuite with Matchers with MockitoS
 
   // scalastyle:off structural.type
   // this is the documented way of generating fixtures in scalatest
-  def fixture: Object {val sc: SparkContext; val sparkConf: SparkConf} = new {
+  def fixture: Object { val sc: SparkContext; val sparkConf: SparkConf } = new {
     val sparkConf = new SparkConf
     val sc = mock[SparkContext]
     when(sc.conf).thenReturn(sparkConf)
   }
-  val utils = new MesosSchedulerUtils { }
+  val utils = new MesosSchedulerUtils {}
   // scalastyle:on structural.type
 
   test("use at-least minimum overhead") {
@@ -59,10 +59,10 @@ class MesosSchedulerUtilsSuite extends SparkFunSuite with Matchers with MockitoS
 
   test("parse a non-empty constraint string correctly") {
     val expectedMap = Map(
-      "os" -> Set("centos7"),
-      "zone" -> Set("us-east-1a", "us-east-1b")
+        "os" -> Set("centos7"),
+        "zone" -> Set("us-east-1a", "us-east-1b")
     )
-    utils.parseConstraintString("os:centos7;zone:us-east-1a,us-east-1b") should be (expectedMap)
+    utils.parseConstraintString("os:centos7;zone:us-east-1a,us-east-1b") should be(expectedMap)
   }
 
   test("parse an empty constraint string correctly") {
@@ -71,7 +71,7 @@ class MesosSchedulerUtilsSuite extends SparkFunSuite with Matchers with MockitoS
 
   test("throw an exception when the input is malformed") {
     an[IllegalArgumentException] should be thrownBy
-      utils.parseConstraintString("os;zone:us-east")
+    utils.parseConstraintString("os;zone:us-east")
   }
 
   test("empty values for attributes' constraints matches all values") {
@@ -91,13 +91,13 @@ class MesosSchedulerUtilsSuite extends SparkFunSuite with Matchers with MockitoS
   }
 
   test("subset match is performed for set attributes") {
-    val supersetConstraint = Map(
-      "os" -> Value.Text.newBuilder().setValue("ubuntu").build(),
-      "zone" -> Value.Set.newBuilder()
-        .addItem("us-east-1a")
-        .addItem("us-east-1b")
-        .addItem("us-east-1c")
-        .build())
+    val supersetConstraint = Map("os" -> Value.Text.newBuilder().setValue("ubuntu").build(),
+                                 "zone" -> Value.Set
+                                   .newBuilder()
+                                   .addItem("us-east-1a")
+                                   .addItem("us-east-1b")
+                                   .addItem("us-east-1c")
+                                   .build())
 
     val zoneConstraintStr = "os:;zone:us-east-1a,us-east-1c"
     val parsedConstraints = utils.parseConstraintString(zoneConstraintStr)
@@ -139,5 +139,4 @@ class MesosSchedulerUtilsSuite extends SparkFunSuite with Matchers with MockitoS
     utils.matchesAttributeRequirements(trueConstraint, offerAttribs) shouldBe true
     utils.matchesAttributeRequirements(falseConstraint, offerAttribs) shouldBe false
   }
-
 }

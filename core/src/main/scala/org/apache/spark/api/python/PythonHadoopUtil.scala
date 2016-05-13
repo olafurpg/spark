@@ -33,7 +33,7 @@ import org.apache.spark.util.{SerializableConfiguration, Utils}
  * A trait for use with reading custom classes in PySpark. Implement this trait and add custom
  * transformation code by overriding the convert method.
  */
-trait Converter[T, + U] extends Serializable {
+trait Converter[T, +U] extends Serializable {
   def convert(obj: T): U
 }
 
@@ -60,8 +60,8 @@ private[python] object Converter extends Logging {
  * A converter that handles conversion of common [[org.apache.hadoop.io.Writable]] objects.
  * Other objects are passed through without conversion.
  */
-private[python] class WritableToJavaConverter(
-    conf: Broadcast[SerializableConfiguration]) extends Converter[Any, Any] {
+private[python] class WritableToJavaConverter(conf: Broadcast[SerializableConfiguration])
+    extends Converter[Any, Any] {
 
   /**
    * Converts a [[org.apache.hadoop.io.Writable]] to the underlying primitive, String or
@@ -130,16 +130,17 @@ private[python] class JavaToWritableConverter extends Converter[Any, Writable] {
       case null => NullWritable.get()
       case map: java.util.Map[_, _] =>
         val mapWritable = new MapWritable()
-        map.asScala.foreach { case (k, v) =>
-          mapWritable.put(convertToWritable(k), convertToWritable(v))
+        map.asScala.foreach {
+          case (k, v) =>
+            mapWritable.put(convertToWritable(k), convertToWritable(v))
         }
         mapWritable
       case array: Array[Any] =>
         val arrayWriteable = new ArrayWritable(classOf[Writable])
         arrayWriteable.set(array.map(convertToWritable(_)))
         arrayWriteable
-      case other => throw new SparkException(
-        s"Data of type ${other.getClass.getName} cannot be used")
+      case other =>
+        throw new SparkException(s"Data of type ${other.getClass.getName} cannot be used")
     }
   }
 
@@ -180,5 +181,4 @@ private[python] object PythonHadoopUtil {
                        valueConverter: Converter[Any, Any]): RDD[(Any, Any)] = {
     rdd.map { case (k, v) => (keyConverter.convert(k), valueConverter.convert(v)) }
   }
-
 }

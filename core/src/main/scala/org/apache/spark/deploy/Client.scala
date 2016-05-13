@@ -37,28 +37,29 @@ import org.apache.spark.util.{SparkExitCode, ThreadUtils, Utils}
  * We currently don't support retry if submission fails. In HA mode, client will submit request to
  * all masters and see which one could handle it.
  */
-private class ClientEndpoint(
-    override val rpcEnv: RpcEnv,
-    driverArgs: ClientArguments,
-    masterEndpoints: Seq[RpcEndpointRef],
-    conf: SparkConf)
-  extends ThreadSafeRpcEndpoint with Logging {
+private class ClientEndpoint(override val rpcEnv: RpcEnv,
+                             driverArgs: ClientArguments,
+                             masterEndpoints: Seq[RpcEndpointRef],
+                             conf: SparkConf)
+    extends ThreadSafeRpcEndpoint
+    with Logging {
 
   // A scheduled executor used to send messages at the specified time.
   private val forwardMessageThread =
     ThreadUtils.newDaemonSingleThreadScheduledExecutor("client-forward-message")
   // Used to provide the implicit parameter of `Future` methods.
-  private val forwardMessageExecutionContext =
-    ExecutionContext.fromExecutor(forwardMessageThread,
-      t => t match {
-        case ie: InterruptedException => // Exit normally
-        case e: Throwable =>
-          logError(e.getMessage, e)
-          System.exit(SparkExitCode.UNCAUGHT_EXCEPTION)
+  private val forwardMessageExecutionContext = ExecutionContext.fromExecutor(
+      forwardMessageThread,
+      t =>
+        t match {
+          case ie: InterruptedException => // Exit normally
+          case e: Throwable =>
+            logError(e.getMessage, e)
+            System.exit(SparkExitCode.UNCAUGHT_EXCEPTION)
       })
 
-   private val lostMasters = new HashSet[RpcAddress]
-   private var activeMasterEndpoint: RpcEndpointRef = null
+  private val lostMasters = new HashSet[RpcAddress]
+  private var activeMasterEndpoint: RpcEndpointRef = null
 
   override def onStart(): Unit = {
     driverArgs.cmd match {
@@ -79,22 +80,25 @@ private class ClientEndpoint(
         }
 
         val extraJavaOptsConf = "spark.driver.extraJavaOptions"
-        val extraJavaOpts = sys.props.get(extraJavaOptsConf)
-          .map(Utils.splitCommandString).getOrElse(Seq.empty)
+        val extraJavaOpts =
+          sys.props.get(extraJavaOptsConf).map(Utils.splitCommandString).getOrElse(Seq.empty)
         val sparkJavaOpts = Utils.sparkJavaOpts(conf)
         val javaOpts = sparkJavaOpts ++ extraJavaOpts
-        val command = new Command(mainClass,
-          Seq("{{WORKER_URL}}", "{{USER_JAR}}", driverArgs.mainClass) ++ driverArgs.driverOptions,
-          sys.env, classPathEntries, libraryPathEntries, javaOpts)
+        val command = new Command(
+            mainClass,
+            Seq("{{WORKER_URL}}", "{{USER_JAR}}", driverArgs.mainClass) ++ driverArgs.driverOptions,
+            sys.env,
+            classPathEntries,
+            libraryPathEntries,
+            javaOpts)
 
-        val driverDescription = new DriverDescription(
-          driverArgs.jarUrl,
-          driverArgs.memory,
-          driverArgs.cores,
-          driverArgs.supervise,
-          command)
+        val driverDescription = new DriverDescription(driverArgs.jarUrl,
+                                                      driverArgs.memory,
+                                                      driverArgs.cores,
+                                                      driverArgs.supervise,
+                                                      command)
         ayncSendToMasterAndForwardReply[SubmitDriverResponse](
-          RequestSubmitDriver(driverDescription))
+            RequestSubmitDriver(driverDescription))
 
       case "kill" =>
         val driverId = driverArgs.driverId
@@ -107,11 +111,13 @@ private class ClientEndpoint(
    */
   private def ayncSendToMasterAndForwardReply[T: ClassTag](message: Any): Unit = {
     for (masterEndpoint <- masterEndpoints) {
-      masterEndpoint.ask[T](message).onComplete {
-        case Success(v) => self.send(v)
-        case Failure(e) =>
-          logWarning(s"Error sending messages to master $masterEndpoint", e)
-      }(forwardMessageExecutionContext)
+      masterEndpoint
+        .ask[T](message)
+        .onComplete {
+          case Success(v) => self.send(v)
+          case Failure(e) =>
+            logWarning(s"Error sending messages to master $masterEndpoint", e)
+        }(forwardMessageExecutionContext)
     }
   }
 
@@ -156,7 +162,6 @@ private class ClientEndpoint(
       } else if (!Utils.responseFromBackup(message)) {
         System.exit(-1)
       }
-
 
     case KillDriverResponse(master, driverId, success, message) =>
       logInfo(message)
@@ -212,7 +217,8 @@ object Client {
   def main(args: Array[String]) {
     // scalastyle:off println
     if (!sys.props.contains("SPARK_SUBMIT")) {
-      println("WARNING: This client is deprecated and will be removed in a future version of Spark")
+      println(
+          "WARNING: This client is deprecated and will be removed in a future version of Spark")
       println("Use ./bin/spark-submit with \"--master spark://host:port\"")
     }
     // scalastyle:on println
@@ -226,8 +232,9 @@ object Client {
     val rpcEnv =
       RpcEnv.create("driverClient", Utils.localHostName(), 0, conf, new SecurityManager(conf))
 
-    val masterEndpoints = driverArgs.masters.map(RpcAddress.fromSparkURL).
-      map(rpcEnv.setupEndpointRef(_, Master.ENDPOINT_NAME))
+    val masterEndpoints = driverArgs.masters
+      .map(RpcAddress.fromSparkURL)
+      .map(rpcEnv.setupEndpointRef(_, Master.ENDPOINT_NAME))
     rpcEnv.setupEndpoint("client", new ClientEndpoint(rpcEnv, driverArgs, masterEndpoints, conf))
 
     rpcEnv.awaitTermination()

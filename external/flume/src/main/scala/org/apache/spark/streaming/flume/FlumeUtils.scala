@@ -41,12 +41,12 @@ object FlumeUtils {
    * @param port     Port of the slave machine to which the flume data will be sent
    * @param storageLevel  Storage level to use for storing the received objects
    */
-  def createStream (
+  def createStream(
       ssc: StreamingContext,
       hostname: String,
       port: Int,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK_SER_2
-    ): ReceiverInputDStream[SparkFlumeEvent] = {
+  ): ReceiverInputDStream[SparkFlumeEvent] = {
     createStream(ssc, hostname, port, storageLevel, false)
   }
 
@@ -58,13 +58,13 @@ object FlumeUtils {
    * @param storageLevel  Storage level to use for storing the received objects
    * @param enableDecompression  should netty server decompress input stream
    */
-  def createStream (
+  def createStream(
       ssc: StreamingContext,
       hostname: String,
       port: Int,
       storageLevel: StorageLevel,
       enableDecompression: Boolean
-    ): ReceiverInputDStream[SparkFlumeEvent] = {
+  ): ReceiverInputDStream[SparkFlumeEvent] = {
     val inputStream = new FlumeInputDStream[SparkFlumeEvent](
         ssc, hostname, port, storageLevel, enableDecompression)
 
@@ -81,7 +81,7 @@ object FlumeUtils {
       jssc: JavaStreamingContext,
       hostname: String,
       port: Int
-    ): JavaReceiverInputDStream[SparkFlumeEvent] = {
+  ): JavaReceiverInputDStream[SparkFlumeEvent] = {
     createStream(jssc.ssc, hostname, port)
   }
 
@@ -96,7 +96,7 @@ object FlumeUtils {
       hostname: String,
       port: Int,
       storageLevel: StorageLevel
-    ): JavaReceiverInputDStream[SparkFlumeEvent] = {
+  ): JavaReceiverInputDStream[SparkFlumeEvent] = {
     createStream(jssc.ssc, hostname, port, storageLevel, false)
   }
 
@@ -113,7 +113,7 @@ object FlumeUtils {
       port: Int,
       storageLevel: StorageLevel,
       enableDecompression: Boolean
-    ): JavaReceiverInputDStream[SparkFlumeEvent] = {
+  ): JavaReceiverInputDStream[SparkFlumeEvent] = {
     createStream(jssc.ssc, hostname, port, storageLevel, enableDecompression)
   }
 
@@ -130,7 +130,7 @@ object FlumeUtils {
       hostname: String,
       port: Int,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK_SER_2
-    ): ReceiverInputDStream[SparkFlumeEvent] = {
+  ): ReceiverInputDStream[SparkFlumeEvent] = {
     createPollingStream(ssc, Seq(new InetSocketAddress(hostname, port)), storageLevel)
   }
 
@@ -145,9 +145,9 @@ object FlumeUtils {
       ssc: StreamingContext,
       addresses: Seq[InetSocketAddress],
       storageLevel: StorageLevel
-    ): ReceiverInputDStream[SparkFlumeEvent] = {
-    createPollingStream(ssc, addresses, storageLevel,
-      DEFAULT_POLLING_BATCH_SIZE, DEFAULT_POLLING_PARALLELISM)
+  ): ReceiverInputDStream[SparkFlumeEvent] = {
+    createPollingStream(
+        ssc, addresses, storageLevel, DEFAULT_POLLING_BATCH_SIZE, DEFAULT_POLLING_PARALLELISM)
   }
 
   /**
@@ -167,9 +167,9 @@ object FlumeUtils {
       storageLevel: StorageLevel,
       maxBatchSize: Int,
       parallelism: Int
-    ): ReceiverInputDStream[SparkFlumeEvent] = {
-    new FlumePollingInputDStream[SparkFlumeEvent](ssc, addresses, maxBatchSize,
-      parallelism, storageLevel)
+  ): ReceiverInputDStream[SparkFlumeEvent] = {
+    new FlumePollingInputDStream[SparkFlumeEvent](
+        ssc, addresses, maxBatchSize, parallelism, storageLevel)
   }
 
   /**
@@ -183,7 +183,7 @@ object FlumeUtils {
       jssc: JavaStreamingContext,
       hostname: String,
       port: Int
-    ): JavaReceiverInputDStream[SparkFlumeEvent] = {
+  ): JavaReceiverInputDStream[SparkFlumeEvent] = {
     createPollingStream(jssc, hostname, port, StorageLevel.MEMORY_AND_DISK_SER_2)
   }
 
@@ -200,7 +200,7 @@ object FlumeUtils {
       hostname: String,
       port: Int,
       storageLevel: StorageLevel
-    ): JavaReceiverInputDStream[SparkFlumeEvent] = {
+  ): JavaReceiverInputDStream[SparkFlumeEvent] = {
     createPollingStream(jssc, Array(new InetSocketAddress(hostname, port)), storageLevel)
   }
 
@@ -215,9 +215,9 @@ object FlumeUtils {
       jssc: JavaStreamingContext,
       addresses: Array[InetSocketAddress],
       storageLevel: StorageLevel
-    ): JavaReceiverInputDStream[SparkFlumeEvent] = {
-    createPollingStream(jssc, addresses, storageLevel,
-      DEFAULT_POLLING_BATCH_SIZE, DEFAULT_POLLING_PARALLELISM)
+  ): JavaReceiverInputDStream[SparkFlumeEvent] = {
+    createPollingStream(
+        jssc, addresses, storageLevel, DEFAULT_POLLING_BATCH_SIZE, DEFAULT_POLLING_PARALLELISM)
   }
 
   /**
@@ -237,7 +237,7 @@ object FlumeUtils {
       storageLevel: StorageLevel,
       maxBatchSize: Int,
       parallelism: Int
-    ): JavaReceiverInputDStream[SparkFlumeEvent] = {
+  ): JavaReceiverInputDStream[SparkFlumeEvent] = {
     createPollingStream(jssc.ssc, addresses, storageLevel, maxBatchSize, parallelism)
   }
 }
@@ -254,7 +254,7 @@ private[flume] class FlumeUtilsPythonHelper {
       port: Int,
       storageLevel: StorageLevel,
       enableDecompression: Boolean
-    ): JavaPairDStream[Array[Byte], Array[Byte]] = {
+  ): JavaPairDStream[Array[Byte], Array[Byte]] = {
     val dstream = FlumeUtils.createStream(jssc, hostname, port, storageLevel, enableDecompression)
     FlumeUtilsPythonHelper.toByteArrayPairDStream(dstream)
   }
@@ -266,16 +266,15 @@ private[flume] class FlumeUtilsPythonHelper {
       storageLevel: StorageLevel,
       maxBatchSize: Int,
       parallelism: Int
-    ): JavaPairDStream[Array[Byte], Array[Byte]] = {
+  ): JavaPairDStream[Array[Byte], Array[Byte]] = {
     assert(hosts.size() == ports.size())
     val addresses = hosts.asScala.zip(ports.asScala).map {
       case (host, port) => new InetSocketAddress(host, port)
     }
-    val dstream = FlumeUtils.createPollingStream(
-      jssc.ssc, addresses, storageLevel, maxBatchSize, parallelism)
+    val dstream =
+      FlumeUtils.createPollingStream(jssc.ssc, addresses, storageLevel, maxBatchSize, parallelism)
     FlumeUtilsPythonHelper.toByteArrayPairDStream(dstream)
   }
-
 }
 
 private object FlumeUtilsPythonHelper {
@@ -290,14 +289,13 @@ private object FlumeUtilsPythonHelper {
         PythonRDD.writeUTF(kv._2.toString, output)
       }
       byteStream.toByteArray
-    }
-    finally {
+    } finally {
       output.close()
     }
   }
 
-  private def toByteArrayPairDStream(dstream: JavaReceiverInputDStream[SparkFlumeEvent]):
-    JavaPairDStream[Array[Byte], Array[Byte]] = {
+  private def toByteArrayPairDStream(dstream: JavaReceiverInputDStream[SparkFlumeEvent])
+    : JavaPairDStream[Array[Byte], Array[Byte]] = {
     dstream.mapToPair(new PairFunction[SparkFlumeEvent, Array[Byte], Array[Byte]] {
       override def call(sparkEvent: SparkFlumeEvent): (Array[Byte], Array[Byte]) = {
         val event = sparkEvent.event

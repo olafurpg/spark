@@ -28,5 +28,4 @@ class SparkConfWithEnv(env: Map[String, String]) extends SparkConf(false) {
   override def clone: SparkConf = {
     new SparkConfWithEnv(env).setAll(getAll)
   }
-
 }

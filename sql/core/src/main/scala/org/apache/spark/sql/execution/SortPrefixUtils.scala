@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.spark.sql.execution
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -39,7 +38,8 @@ object SortPrefixUtils {
         if (sortOrder.isAscending) PrefixComparators.STRING else PrefixComparators.STRING_DESC
       case BinaryType =>
         if (sortOrder.isAscending) PrefixComparators.BINARY else PrefixComparators.BINARY_DESC
-      case BooleanType | ByteType | ShortType | IntegerType | LongType | DateType | TimestampType =>
+      case BooleanType | ByteType | ShortType | IntegerType | LongType | DateType |
+          TimestampType =>
         if (sortOrder.isAscending) PrefixComparators.LONG else PrefixComparators.LONG_DESC
       case dt: DecimalType if dt.precision - dt.scale <= Decimal.MAX_LONG_DIGITS =>
         if (sortOrder.isAscending) PrefixComparators.LONG else PrefixComparators.LONG_DESC
@@ -74,8 +74,8 @@ object SortPrefixUtils {
       // the lowest possible long value. Handle this special case outside radix sort.
       case LongType if sortOrder.nullable =>
         false
-      case BooleanType | ByteType | ShortType | IntegerType | LongType | DateType |
-           TimestampType | FloatType | DoubleType =>
+      case BooleanType | ByteType | ShortType | IntegerType | LongType | DateType | TimestampType |
+          FloatType | DoubleType =>
         true
       case dt: DecimalType if dt.precision <= Decimal.MAX_LONG_DIGITS =>
         true
@@ -97,8 +97,8 @@ object SortPrefixUtils {
   def createPrefixGenerator(schema: StructType): UnsafeExternalRowSorter.PrefixComputer = {
     if (schema.nonEmpty) {
       val boundReference = BoundReference(0, schema.head.dataType, nullable = true)
-      val prefixProjection = UnsafeProjection.create(
-        SortPrefix(SortOrder(boundReference, Ascending)))
+      val prefixProjection =
+        UnsafeProjection.create(SortPrefix(SortOrder(boundReference, Ascending)))
       new UnsafeExternalRowSorter.PrefixComputer {
         override def computePrefix(row: InternalRow): Long = {
           prefixProjection.apply(row).getLong(0)

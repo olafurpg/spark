@@ -30,11 +30,9 @@ import org.apache.spark.util.Utils
  * function).  This can be ensured by using the Python id() function and maintaining a reference
  * to the Python partitioning function so that its id() is not reused.
  */
-
 private[spark] class PythonPartitioner(
-  override val numPartitions: Int,
-  val pyPartitionFunctionId: Long)
-  extends Partitioner {
+    override val numPartitions: Int, val pyPartitionFunctionId: Long)
+    extends Partitioner {
 
   override def getPartition(key: Any): Int = key match {
     case null => 0

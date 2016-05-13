@@ -64,10 +64,9 @@ trait SchedulerExtensionService {
  * @param attemptId YARN attemptID. This will always be unset in client mode, and always set in
  *                  cluster mode.
  */
-case class SchedulerExtensionServiceBinding(
-    sparkContext: SparkContext,
-    applicationId: ApplicationId,
-    attemptId: Option[ApplicationAttemptId] = None)
+case class SchedulerExtensionServiceBinding(sparkContext: SparkContext,
+                                            applicationId: ApplicationId,
+                                            attemptId: Option[ApplicationAttemptId] = None)
 
 /**
  * Container for [[SchedulerExtensionService]] instances.
@@ -79,8 +78,7 @@ case class SchedulerExtensionServiceBinding(
  * The order in which child extension services are started and stopped
  * is undefined.
  */
-private[spark] class SchedulerExtensionServices extends SchedulerExtensionService
-    with Logging {
+private[spark] class SchedulerExtensionServices extends SchedulerExtensionService with Logging {
   private var serviceOption: Option[String] = None
   private var services: List[SchedulerExtensionService] = Nil
   private val started = new AtomicBoolean(false)
@@ -105,15 +103,17 @@ private[spark] class SchedulerExtensionServices extends SchedulerExtensionServic
     val attemptId = binding.attemptId
     logInfo(s"Starting Yarn extension services with app $appId and attemptId $attemptId")
 
-    services = sparkContext.conf.get(SCHEDULER_SERVICES).map { sClass =>
-      val instance = Utils.classForName(sClass)
-        .newInstance()
-        .asInstanceOf[SchedulerExtensionService]
-      // bind this service
-      instance.start(binding)
-      logInfo(s"Service $sClass started")
-      instance
-    }.toList
+    services = sparkContext.conf
+      .get(SCHEDULER_SERVICES)
+      .map { sClass =>
+        val instance =
+          Utils.classForName(sClass).newInstance().asInstanceOf[SchedulerExtensionService]
+        // bind this service
+        instance.start(binding)
+        logInfo(s"Service $sClass started")
+        instance
+      }
+      .toList
   }
 
   /**

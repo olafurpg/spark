@@ -43,8 +43,7 @@ private[ui] class WorkerPage(parent: WorkerWebUI) extends WebUIPage("") {
 
     val executorHeaders = Seq("ExecutorID", "Cores", "State", "Memory", "Job Details", "Logs")
     val runningExecutors = workerState.executors
-    val runningExecutorTable =
-      UIUtils.listingTable(executorHeaders, executorRow, runningExecutors)
+    val runningExecutorTable = UIUtils.listingTable(executorHeaders, executorRow, runningExecutors)
     val finishedExecutors = workerState.finishedExecutors
     val finishedExecutorTable =
       UIUtils.listingTable(executorHeaders, executorRow, finishedExecutors)
@@ -58,8 +57,7 @@ private[ui] class WorkerPage(parent: WorkerWebUI) extends WebUIPage("") {
     // For now we only show driver information if the user has submitted drivers to the cluster.
     // This is until we integrate the notion of drivers and applications in the UI.
 
-    val content =
-      <div class="row-fluid"> <!-- Worker Details -->
+    val content = <div class="row-fluid"> <!-- Worker Details -->
         <div class="span12">
           <ul class="unstyled">
             <li><strong>ID:</strong> {workerState.workerId}</li>
@@ -97,8 +95,8 @@ private[ui] class WorkerPage(parent: WorkerWebUI) extends WebUIPage("") {
           }
         </div>
       </div>;
-    UIUtils.basicSparkPage(content, "Spark Worker at %s:%s".format(
-      workerState.host, workerState.port))
+    UIUtils.basicSparkPage(
+        content, "Spark Worker at %s:%s".format(workerState.host, workerState.port))
   }
 
   def executorRow(executor: ExecutorRunner): Seq[Node] = {
@@ -123,7 +121,6 @@ private[ui] class WorkerPage(parent: WorkerWebUI) extends WebUIPage("") {
         .format(executor.appId, executor.execId)}>stderr</a>
       </td>
     </tr>
-
   }
 
   def driverRow(driver: DriverRunner): Seq[Node] = {

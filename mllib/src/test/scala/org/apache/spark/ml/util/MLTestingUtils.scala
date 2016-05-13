@@ -29,33 +29,34 @@ import org.apache.spark.sql.types._
 
 object MLTestingUtils extends SparkFunSuite {
   def checkCopy(model: Model[_]): Unit = {
-    val copied = model.copy(ParamMap.empty)
-      .asInstanceOf[Model[_]]
+    val copied = model.copy(ParamMap.empty).asInstanceOf[Model[_]]
     assert(copied.parent.uid == model.parent.uid)
     assert(copied.parent == model.parent)
   }
 
   def checkNumericTypes[M <: Model[M], T <: Estimator[M]](
-      estimator: T,
-      spark: SparkSession,
-      isClassification: Boolean = true)(check: (M, M) => Unit): Unit = {
-    val dfs = if (isClassification) {
-      genClassifDFWithNumericLabelCol(spark)
-    } else {
-      genRegressionDFWithNumericLabelCol(spark)
-    }
+      estimator: T, spark: SparkSession, isClassification: Boolean = true)(
+      check: (M, M) => Unit): Unit = {
+    val dfs =
+      if (isClassification) {
+        genClassifDFWithNumericLabelCol(spark)
+      } else {
+        genRegressionDFWithNumericLabelCol(spark)
+      }
     val expected = estimator.fit(dfs(DoubleType))
     val actuals = dfs.keys.filter(_ != DoubleType).map(t => estimator.fit(dfs(t)))
     actuals.foreach(actual => check(expected, actual))
 
-    val dfWithStringLabels = spark.createDataFrame(Seq(
-      ("0", Vectors.dense(0, 2, 3), 0.0)
-    )).toDF("label", "features", "censor")
+    val dfWithStringLabels = spark
+      .createDataFrame(Seq(
+              ("0", Vectors.dense(0, 2, 3), 0.0)
+          ))
+      .toDF("label", "features", "censor")
     val thrown = intercept[IllegalArgumentException] {
       estimator.fit(dfWithStringLabels)
     }
     assert(thrown.getMessage.contains(
-      "Column label must be of type NumericType but was actually of type StringType"))
+            "Column label must be of type NumericType but was actually of type StringType"))
   }
 
   def checkNumericTypes[T <: Evaluator](evaluator: T, spark: SparkSession): Unit = {
@@ -64,34 +65,39 @@ object MLTestingUtils extends SparkFunSuite {
     val actuals = dfs.keys.filter(_ != DoubleType).map(t => evaluator.evaluate(dfs(t)))
     actuals.foreach(actual => assert(expected === actual))
 
-    val dfWithStringLabels = spark.createDataFrame(Seq(
-      ("0", 0d)
-    )).toDF("label", "prediction")
+    val dfWithStringLabels = spark
+      .createDataFrame(Seq(
+              ("0", 0d)
+          ))
+      .toDF("label", "prediction")
     val thrown = intercept[IllegalArgumentException] {
       evaluator.evaluate(dfWithStringLabels)
     }
     assert(thrown.getMessage.contains(
-      "Column label must be of type NumericType but was actually of type StringType"))
+            "Column label must be of type NumericType but was actually of type StringType"))
   }
 
   def genClassifDFWithNumericLabelCol(
       spark: SparkSession,
       labelColName: String = "label",
       featuresColName: String = "features"): Map[NumericType, DataFrame] = {
-    val df = spark.createDataFrame(Seq(
-      (0, Vectors.dense(0, 2, 3)),
-      (1, Vectors.dense(0, 3, 1)),
-      (0, Vectors.dense(0, 2, 2)),
-      (1, Vectors.dense(0, 3, 9)),
-      (0, Vectors.dense(0, 2, 6))
-    )).toDF(labelColName, featuresColName)
+    val df = spark
+      .createDataFrame(
+          Seq(
+              (0, Vectors.dense(0, 2, 3)),
+              (1, Vectors.dense(0, 3, 1)),
+              (0, Vectors.dense(0, 2, 2)),
+              (1, Vectors.dense(0, 3, 9)),
+              (0, Vectors.dense(0, 2, 6))
+          ))
+      .toDF(labelColName, featuresColName)
 
-    val types =
-      Seq(ShortType, LongType, IntegerType, FloatType, ByteType, DoubleType, DecimalType(10, 0))
+    val types = Seq(
+        ShortType, LongType, IntegerType, FloatType, ByteType, DoubleType, DecimalType(10, 0))
     types.map { t =>
-        val castDF = df.select(col(labelColName).cast(t), col(featuresColName))
-        t -> TreeTests.setMetadata(castDF, 2, labelColName, featuresColName)
-      }.toMap
+      val castDF = df.select(col(labelColName).cast(t), col(featuresColName))
+      t -> TreeTests.setMetadata(castDF, 2, labelColName, featuresColName)
+    }.toMap
   }
 
   def genRegressionDFWithNumericLabelCol(
@@ -99,39 +105,44 @@ object MLTestingUtils extends SparkFunSuite {
       labelColName: String = "label",
       featuresColName: String = "features",
       censorColName: String = "censor"): Map[NumericType, DataFrame] = {
-    val df = spark.createDataFrame(Seq(
-      (0, Vectors.dense(0)),
-      (1, Vectors.dense(1)),
-      (2, Vectors.dense(2)),
-      (3, Vectors.dense(3)),
-      (4, Vectors.dense(4))
-    )).toDF(labelColName, featuresColName)
+    val df = spark
+      .createDataFrame(
+          Seq(
+              (0, Vectors.dense(0)),
+              (1, Vectors.dense(1)),
+              (2, Vectors.dense(2)),
+              (3, Vectors.dense(3)),
+              (4, Vectors.dense(4))
+          ))
+      .toDF(labelColName, featuresColName)
 
-    val types =
-      Seq(ShortType, LongType, IntegerType, FloatType, ByteType, DoubleType, DecimalType(10, 0))
+    val types = Seq(
+        ShortType, LongType, IntegerType, FloatType, ByteType, DoubleType, DecimalType(10, 0))
     types.map { t =>
-        val castDF = df.select(col(labelColName).cast(t), col(featuresColName))
-        t -> TreeTests.setMetadata(castDF, 0, labelColName, featuresColName)
-          .withColumn(censorColName, lit(0.0))
-      }.toMap
+      val castDF = df.select(col(labelColName).cast(t), col(featuresColName))
+      t -> TreeTests
+        .setMetadata(castDF, 0, labelColName, featuresColName)
+        .withColumn(censorColName, lit(0.0))
+    }.toMap
   }
 
   def genEvaluatorDFWithNumericLabelCol(
       spark: SparkSession,
       labelColName: String = "label",
       predictionColName: String = "prediction"): Map[NumericType, DataFrame] = {
-    val df = spark.createDataFrame(Seq(
-      (0, 0d),
-      (1, 1d),
-      (2, 2d),
-      (3, 3d),
-      (4, 4d)
-    )).toDF(labelColName, predictionColName)
+    val df = spark
+      .createDataFrame(
+          Seq(
+              (0, 0d),
+              (1, 1d),
+              (2, 2d),
+              (3, 3d),
+              (4, 4d)
+          ))
+      .toDF(labelColName, predictionColName)
 
-    val types =
-      Seq(ShortType, LongType, IntegerType, FloatType, ByteType, DoubleType, DecimalType(10, 0))
-    types
-      .map(t => t -> df.select(col(labelColName).cast(t), col(predictionColName)))
-      .toMap
+    val types = Seq(
+        ShortType, LongType, IntegerType, FloatType, ByteType, DoubleType, DecimalType(10, 0))
+    types.map(t => t -> df.select(col(labelColName).cast(t), col(predictionColName))).toMap
   }
 }

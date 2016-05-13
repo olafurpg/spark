@@ -51,12 +51,10 @@ private[spark] class SubtractedRDD[K: ClassTag, V: ClassTag, W: ClassTag](
     @transient var rdd1: RDD[_ <: Product2[K, V]],
     @transient var rdd2: RDD[_ <: Product2[K, W]],
     part: Partitioner)
-  extends RDD[(K, V)](rdd1.context, Nil) {
-
+    extends RDD[(K, V)](rdd1.context, Nil) {
 
   override def getDependencies: Seq[Dependency[_]] = {
-    def rddDependency[T1: ClassTag, T2: ClassTag](rdd: RDD[_ <: Product2[T1, T2]])
-      : Dependency[_] = {
+    def rddDependency[T1: ClassTag, T2: ClassTag](rdd: RDD[_ <: Product2[T1, T2]]): Dependency[_] = {
       if (rdd.partitioner == Some(part)) {
         logDebug("Adding one-to-one dependency with " + rdd)
         new OneToOneDependency(rdd)
@@ -72,13 +70,14 @@ private[spark] class SubtractedRDD[K: ClassTag, V: ClassTag, W: ClassTag](
     val array = new Array[Partition](part.numPartitions)
     for (i <- 0 until array.length) {
       // Each CoGroupPartition will depend on rdd1 and rdd2
-      array(i) = new CoGroupPartition(i, Seq(rdd1, rdd2).zipWithIndex.map { case (rdd, j) =>
-        dependencies(j) match {
-          case s: ShuffleDependency[_, _, _] =>
-            None
-          case _ =>
-            Some(new NarrowCoGroupSplitDep(rdd, i, rdd.partitions(i)))
-        }
+      array(i) = new CoGroupPartition(i, Seq(rdd1, rdd2).zipWithIndex.map {
+        case (rdd, j) =>
+          dependencies(j) match {
+            case s: ShuffleDependency[_, _, _] =>
+              None
+            case _ =>
+              Some(new NarrowCoGroupSplitDep(rdd, i, rdd.partitions(i)))
+          }
       }.toArray)
     }
     array
@@ -103,13 +102,15 @@ private[spark] class SubtractedRDD[K: ClassTag, V: ClassTag, W: ClassTag](
       dependencies(depNum) match {
         case oneToOneDependency: OneToOneDependency[_] =>
           val dependencyPartition = partition.narrowDeps(depNum).get.split
-          oneToOneDependency.rdd.iterator(dependencyPartition, context)
-            .asInstanceOf[Iterator[Product2[K, V]]].foreach(op)
+          oneToOneDependency.rdd
+            .iterator(dependencyPartition, context)
+            .asInstanceOf[Iterator[Product2[K, V]]]
+            .foreach(op)
 
         case shuffleDependency: ShuffleDependency[_, _, _] =>
           val iter = SparkEnv.get.shuffleManager
             .getReader(
-              shuffleDependency.shuffleHandle, partition.index, partition.index + 1, context)
+                shuffleDependency.shuffleHandle, partition.index, partition.index + 1, context)
             .read()
           iter.foreach(op)
       }
@@ -127,5 +128,4 @@ private[spark] class SubtractedRDD[K: ClassTag, V: ClassTag, W: ClassTag](
     rdd1 = null
     rdd2 = null
   }
-
 }

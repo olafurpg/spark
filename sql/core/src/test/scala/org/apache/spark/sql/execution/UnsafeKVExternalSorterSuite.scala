@@ -47,7 +47,6 @@ class UnsafeKVExternalSorterSuite extends SparkFunSuite with SharedSQLContext {
     testKVSorter(keySchema, valueSchema, spill = i > 3)
   }
 
-
   /**
    * Create a test case using randomly generated data for the given key and value schema.
    *
@@ -82,11 +81,11 @@ class UnsafeKVExternalSorterSuite extends SparkFunSuite with SharedSQLContext {
 
     test(s"kv sorting key schema $keySchemaStr and value schema $valueSchemaStr") {
       testKVSorter(
-        keySchema,
-        valueSchema,
-        inputData,
-        pageSize = 16 * 1024 * 1024,
-        spill
+          keySchema,
+          valueSchema,
+          inputData,
+          pageSize = 16 * 1024 * 1024,
+          spill
       )
     }
   }
@@ -104,35 +103,38 @@ class UnsafeKVExternalSorterSuite extends SparkFunSuite with SharedSQLContext {
    *
    * If spill is set to true, the sorter will spill probabilistically roughly every 100 records.
    */
-  private def testKVSorter(
-      keySchema: StructType,
-      valueSchema: StructType,
-      inputData: Seq[(InternalRow, InternalRow)],
-      pageSize: Long,
-      spill: Boolean): Unit = {
-    val memoryManager =
-      new TestMemoryManager(new SparkConf().set("spark.memory.offHeap.enabled", "false"))
+  private def testKVSorter(keySchema: StructType,
+                           valueSchema: StructType,
+                           inputData: Seq[(InternalRow, InternalRow)],
+                           pageSize: Long,
+                           spill: Boolean): Unit = {
+    val memoryManager = new TestMemoryManager(
+        new SparkConf().set("spark.memory.offHeap.enabled", "false"))
     val taskMemMgr = new TaskMemoryManager(memoryManager, 0)
-    TaskContext.setTaskContext(new TaskContextImpl(
-      stageId = 0,
-      partitionId = 0,
-      taskAttemptId = 98456,
-      attemptNumber = 0,
-      taskMemoryManager = taskMemMgr,
-      localProperties = new Properties,
-      metricsSystem = null))
+    TaskContext.setTaskContext(
+        new TaskContextImpl(stageId = 0,
+                            partitionId = 0,
+                            taskAttemptId = 98456,
+                            attemptNumber = 0,
+                            taskMemoryManager = taskMemMgr,
+                            localProperties = new Properties,
+                            metricsSystem = null))
 
-    val sorter = new UnsafeKVExternalSorter(
-      keySchema, valueSchema, SparkEnv.get.blockManager, SparkEnv.get.serializerManager, pageSize)
+    val sorter = new UnsafeKVExternalSorter(keySchema,
+                                            valueSchema,
+                                            SparkEnv.get.blockManager,
+                                            SparkEnv.get.serializerManager,
+                                            pageSize)
 
     // Insert the keys and values into the sorter
-    inputData.foreach { case (k, v) =>
-      sorter.insertKV(k.asInstanceOf[UnsafeRow], v.asInstanceOf[UnsafeRow])
-      // 1% chance we will spill
-      if (rand.nextDouble() < 0.01 && spill) {
-        memoryManager.markExecutionAsOutOfMemoryOnce()
-        sorter.closeCurrentPage()
-      }
+    inputData.foreach {
+      case (k, v) =>
+        sorter.insertKV(k.asInstanceOf[UnsafeRow], v.asInstanceOf[UnsafeRow])
+        // 1% chance we will spill
+        if (rand.nextDouble() < 0.01 && spill) {
+          memoryManager.markExecutionAsOutOfMemoryOnce()
+          sorter.closeCurrentPage()
+        }
     }
 
     // Collect the sorted output
@@ -156,16 +158,17 @@ class UnsafeKVExternalSorterSuite extends SparkFunSuite with SharedSQLContext {
 
     // Testing to make sure output from the sorter is sorted by key
     var prevK: InternalRow = null
-    out.zipWithIndex.foreach { case ((k, v), i) =>
-      if (prevK != null) {
-        assert(keyOrdering.compare(prevK, k) <= 0,
-          s"""
+    out.zipWithIndex.foreach {
+      case ((k, v), i) =>
+        if (prevK != null) {
+          assert(keyOrdering.compare(prevK, k) <= 0,
+                 s"""
              |key is not in sorted order:
              |previous key: $prevK
              |current key : $k
              """.stripMargin)
-      }
-      prevK = k
+        }
+        prevK = k
     }
 
     // Testing to make sure the key/value in output matches input
@@ -195,11 +198,11 @@ class UnsafeKVExternalSorterSuite extends SparkFunSuite with SharedSQLContext {
     }
 
     testKVSorter(
-      schema,
-      schema,
-      inputData,
-      pageSize,
-      spill = true
+        schema,
+        schema,
+        inputData,
+        pageSize,
+        spill = true
     )
   }
 }

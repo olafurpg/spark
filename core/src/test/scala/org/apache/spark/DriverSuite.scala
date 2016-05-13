@@ -32,9 +32,9 @@ class DriverSuite extends SparkFunSuite with Timeouts {
     val masters = Table("master", "local", "local-cluster[2,1,1024]")
     forAll(masters) { (master: String) =>
       val process = Utils.executeCommand(
-        Seq(s"$sparkHome/bin/spark-class", "org.apache.spark.DriverWithoutCleanup", master),
-        new File(sparkHome),
-        Map("SPARK_TESTING" -> "1", "SPARK_HOME" -> sparkHome))
+          Seq(s"$sparkHome/bin/spark-class", "org.apache.spark.DriverWithoutCleanup", master),
+          new File(sparkHome),
+          Map("SPARK_TESTING" -> "1", "SPARK_HOME" -> sparkHome))
       failAfter(60 seconds) { process.waitFor() }
       // Ensure we still kill the process in case it timed out
       process.destroy()

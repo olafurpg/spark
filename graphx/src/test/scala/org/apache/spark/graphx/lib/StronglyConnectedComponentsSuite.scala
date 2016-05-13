@@ -20,7 +20,6 @@ package org.apache.spark.graphx.lib
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.graphx._
 
-
 class StronglyConnectedComponentsSuite extends SparkFunSuite with LocalSparkContext {
 
   test("Island Strongly Connected Components") {
@@ -66,5 +65,4 @@ class StronglyConnectedComponentsSuite extends SparkFunSuite with LocalSparkCont
       }
     }
   }
-
 }

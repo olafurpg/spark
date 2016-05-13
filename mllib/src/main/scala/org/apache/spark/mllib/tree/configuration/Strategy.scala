@@ -67,7 +67,7 @@ import org.apache.spark.mllib.tree.impurity.{Entropy, Gini, Impurity, Variance}
  *                           [[org.apache.spark.SparkContext]], this setting is ignored.
  */
 @Since("1.0.0")
-class Strategy @Since("1.3.0") (
+class Strategy @Since("1.3.0")(
     @Since("1.0.0") @BeanProperty var algo: Algo,
     @Since("1.0.0") @BeanProperty var impurity: Impurity,
     @Since("1.0.0") @BeanProperty var maxDepth: Int,
@@ -80,7 +80,8 @@ class Strategy @Since("1.3.0") (
     @Since("1.0.0") @BeanProperty var maxMemoryInMB: Int = 256,
     @Since("1.2.0") @BeanProperty var subsamplingRate: Double = 1,
     @Since("1.2.0") @BeanProperty var useNodeIdCache: Boolean = false,
-    @Since("1.2.0") @BeanProperty var checkpointInterval: Int = 10) extends Serializable {
+    @Since("1.2.0") @BeanProperty var checkpointInterval: Int = 10)
+    extends Serializable {
 
   /**
    */
@@ -100,15 +101,19 @@ class Strategy @Since("1.3.0") (
    * Java-friendly constructor for [[org.apache.spark.mllib.tree.configuration.Strategy]]
    */
   @Since("1.1.0")
-  def this(
-      algo: Algo,
-      impurity: Impurity,
-      maxDepth: Int,
-      numClasses: Int,
-      maxBins: Int,
-      categoricalFeaturesInfo: java.util.Map[java.lang.Integer, java.lang.Integer]) {
-    this(algo, impurity, maxDepth, numClasses, maxBins, Sort,
-      categoricalFeaturesInfo.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap)
+  def this(algo: Algo,
+           impurity: Impurity,
+           maxDepth: Int,
+           numClasses: Int,
+           maxBins: Int,
+           categoricalFeaturesInfo: java.util.Map[java.lang.Integer, java.lang.Integer]) {
+    this(algo,
+         impurity,
+         maxDepth,
+         numClasses,
+         maxBins,
+         Sort,
+         categoricalFeaturesInfo.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap)
   }
 
   /**
@@ -138,31 +143,34 @@ class Strategy @Since("1.3.0") (
     algo match {
       case Classification =>
         require(numClasses >= 2,
-          s"DecisionTree Strategy for Classification must have numClasses >= 2," +
-          s" but numClasses = $numClasses.")
+                s"DecisionTree Strategy for Classification must have numClasses >= 2," +
+                s" but numClasses = $numClasses.")
         require(Set(Gini, Entropy).contains(impurity),
-          s"DecisionTree Strategy given invalid impurity for Classification: $impurity." +
-          s"  Valid settings: Gini, Entropy")
+                s"DecisionTree Strategy given invalid impurity for Classification: $impurity." +
+                s"  Valid settings: Gini, Entropy")
       case Regression =>
         require(impurity == Variance,
-          s"DecisionTree Strategy given invalid impurity for Regression: $impurity." +
-          s"  Valid settings: Variance")
+                s"DecisionTree Strategy given invalid impurity for Regression: $impurity." +
+                s"  Valid settings: Variance")
       case _ =>
         throw new IllegalArgumentException(
-          s"DecisionTree Strategy given invalid algo parameter: $algo." +
-          s"  Valid settings are: Classification, Regression.")
+            s"DecisionTree Strategy given invalid algo parameter: $algo." +
+            s"  Valid settings are: Classification, Regression.")
     }
-    require(maxDepth >= 0, s"DecisionTree Strategy given invalid maxDepth parameter: $maxDepth." +
-      s"  Valid values are integers >= 0.")
-    require(maxBins >= 2, s"DecisionTree Strategy given invalid maxBins parameter: $maxBins." +
-      s"  Valid values are integers >= 2.")
-    require(minInstancesPerNode >= 1,
-      s"DecisionTree Strategy requires minInstancesPerNode >= 1 but was given $minInstancesPerNode")
+    require(maxDepth >= 0,
+            s"DecisionTree Strategy given invalid maxDepth parameter: $maxDepth." +
+            s"  Valid values are integers >= 0.")
+    require(maxBins >= 2,
+            s"DecisionTree Strategy given invalid maxBins parameter: $maxBins." +
+            s"  Valid values are integers >= 2.")
+    require(
+        minInstancesPerNode >= 1,
+        s"DecisionTree Strategy requires minInstancesPerNode >= 1 but was given $minInstancesPerNode")
     require(maxMemoryInMB <= 10240,
-      s"DecisionTree Strategy requires maxMemoryInMB <= 10240, but was given $maxMemoryInMB")
+            s"DecisionTree Strategy requires maxMemoryInMB <= 10240, but was given $maxMemoryInMB")
     require(subsamplingRate > 0 && subsamplingRate <= 1,
-      s"DecisionTree Strategy requires subsamplingRate <=1 and >0, but was given " +
-      s"$subsamplingRate")
+            s"DecisionTree Strategy requires subsamplingRate <=1 and >0, but was given " +
+            s"$subsamplingRate")
   }
 
   /**
@@ -170,9 +178,19 @@ class Strategy @Since("1.3.0") (
    */
   @Since("1.2.0")
   def copy: Strategy = {
-    new Strategy(algo, impurity, maxDepth, numClasses, maxBins,
-      quantileCalculationStrategy, categoricalFeaturesInfo, minInstancesPerNode, minInfoGain,
-      maxMemoryInMB, subsamplingRate, useNodeIdCache, checkpointInterval)
+    new Strategy(algo,
+                 impurity,
+                 maxDepth,
+                 numClasses,
+                 maxBins,
+                 quantileCalculationStrategy,
+                 categoricalFeaturesInfo,
+                 minInstancesPerNode,
+                 minInfoGain,
+                 maxMemoryInMB,
+                 subsamplingRate,
+                 useNodeIdCache,
+                 checkpointInterval)
   }
 }
 
@@ -195,11 +213,8 @@ object Strategy {
   @Since("1.3.0")
   def defaultStrategy(algo: Algo): Strategy = algo match {
     case Algo.Classification =>
-      new Strategy(algo = Classification, impurity = Gini, maxDepth = 10,
-        numClasses = 2)
+      new Strategy(algo = Classification, impurity = Gini, maxDepth = 10, numClasses = 2)
     case Algo.Regression =>
-      new Strategy(algo = Regression, impurity = Variance, maxDepth = 10,
-        numClasses = 0)
+      new Strategy(algo = Regression, impurity = Variance, maxDepth = 10, numClasses = 0)
   }
-
 }

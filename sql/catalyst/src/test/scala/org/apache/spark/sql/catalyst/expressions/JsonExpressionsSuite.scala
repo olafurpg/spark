@@ -22,8 +22,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.unsafe.types.UTF8String
 
 class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
-  val json =
-    """
+  val json = """
       |{"store":{"fruit":[{"weight":8,"type":"apple"},{"weight":9,"type":"pear"}],
       |"basket":[[1,2,{"b":"y","a":"x"}],[3,4],[5,6]],"book":[{"author":"Nigel Rees",
       |"title":"Sayings of the Century","category":"reference","price":8.95},
@@ -36,15 +35,14 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
       |""".stripMargin
 
   test("$.store.bicycle") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.bicycle")),
-      """{"price":19.95,"color":"red"}""")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.bicycle")),
+                    """{"price":19.95,"color":"red"}""")
   }
 
   test("$.store.book") {
     checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book")),
-      """[{"author":"Nigel Rees","title":"Sayings of the Century","category":"reference",
+        GetJsonObject(Literal(json), Literal("$.store.book")),
+        """[{"author":"Nigel Rees","title":"Sayings of the Century","category":"reference",
         |"price":8.95},{"author":"Herman Melville","title":"Moby Dick","category":"fiction",
         |"price":8.99,"isbn":"0-553-21311-3"},{"author":"J. R. R. Tolkien","title":
         |"The Lord of the Rings","category":"fiction","reader":[{"age":25,"name":"bob"},
@@ -53,16 +51,15 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
   }
 
   test("$.store.book[0]") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book[0]")),
-      """{"author":"Nigel Rees","title":"Sayings of the Century",
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.book[0]")),
+                    """{"author":"Nigel Rees","title":"Sayings of the Century",
         |"category":"reference","price":8.95}""".stripMargin.replace("\n", ""))
   }
 
   test("$.store.book[*]") {
     checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book[*]")),
-      """[{"author":"Nigel Rees","title":"Sayings of the Century","category":"reference",
+        GetJsonObject(Literal(json), Literal("$.store.book[*]")),
+        """[{"author":"Nigel Rees","title":"Sayings of the Century","category":"reference",
         |"price":8.95},{"author":"Herman Melville","title":"Moby Dick","category":"fiction",
         |"price":8.99,"isbn":"0-553-21311-3"},{"author":"J. R. R. Tolkien","title":
         |"The Lord of the Rings","category":"fiction","reader":[{"age":25,"name":"bob"},
@@ -71,138 +68,102 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
   }
 
   test("$") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$")),
-      json.replace("\n", ""))
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$")), json.replace("\n", ""))
   }
 
   test("$.store.book[0].category") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book[0].category")),
-      "reference")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.book[0].category")), "reference")
   }
 
   test("$.store.book[*].category") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book[*].category")),
-      """["reference","fiction","fiction"]""")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.book[*].category")),
+                    """["reference","fiction","fiction"]""")
   }
 
   test("$.store.book[*].isbn") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book[*].isbn")),
-      """["0-553-21311-3","0-395-19395-8"]""")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.book[*].isbn")),
+                    """["0-553-21311-3","0-395-19395-8"]""")
   }
 
   test("$.store.book[*].reader") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book[*].reader")),
-      """[{"age":25,"name":"bob"},{"age":26,"name":"jack"}]""")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.book[*].reader")),
+                    """[{"age":25,"name":"bob"},{"age":26,"name":"jack"}]""")
   }
 
   test("$.store.basket[0][1]") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.basket[0][1]")),
-      "2")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.basket[0][1]")), "2")
   }
 
   test("$.store.basket[*]") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.basket[*]")),
-      """[[1,2,{"b":"y","a":"x"}],[3,4],[5,6]]""")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.basket[*]")),
+                    """[[1,2,{"b":"y","a":"x"}],[3,4],[5,6]]""")
   }
 
   test("$.store.basket[*][0]") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.basket[*][0]")),
-      "[1,3,5]")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.basket[*][0]")), "[1,3,5]")
   }
 
   test("$.store.basket[0][*]") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.basket[0][*]")),
-      """[1,2,{"b":"y","a":"x"}]""")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.basket[0][*]")),
+                    """[1,2,{"b":"y","a":"x"}]""")
   }
 
   test("$.store.basket[*][*]") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.basket[*][*]")),
-      """[1,2,{"b":"y","a":"x"},3,4,5,6]""")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.basket[*][*]")),
+                    """[1,2,{"b":"y","a":"x"},3,4,5,6]""")
   }
 
   test("$.store.basket[0][2].b") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.basket[0][2].b")),
-      "y")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.basket[0][2].b")), "y")
   }
 
   test("$.store.basket[0][*].b") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.basket[0][*].b")),
-      """["y"]""")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.basket[0][*].b")), """["y"]""")
   }
 
   test("$.zip code") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.zip code")),
-      "94025")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.zip code")), "94025")
   }
 
   test("$.fb:testid") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.fb:testid")),
-      "1234")
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.fb:testid")), "1234")
   }
 
   test("preserve newlines") {
-    checkEvaluation(
-      GetJsonObject(Literal("""{"a":"b\nc"}"""), Literal("$.a")),
-      "b\nc")
+    checkEvaluation(GetJsonObject(Literal("""{"a":"b\nc"}"""), Literal("$.a")), "b\nc")
   }
 
   test("escape") {
-    checkEvaluation(
-      GetJsonObject(Literal("""{"a":"b\"c"}"""), Literal("$.a")),
-      "b\"c")
+    checkEvaluation(GetJsonObject(Literal("""{"a":"b\"c"}"""), Literal("$.a")), "b\"c")
   }
 
   test("$.non_exist_key") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.non_exist_key")),
-      null)
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.non_exist_key")), null)
   }
 
   test("$..no_recursive") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$..no_recursive")),
-      null)
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$..no_recursive")), null)
   }
 
   test("$.store.book[10]") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book[10]")),
-      null)
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.book[10]")), null)
   }
 
   test("$.store.book[0].non_exist_key") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.book[0].non_exist_key")),
-      null)
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.book[0].non_exist_key")), null)
   }
 
   test("$.store.basket[*].non_exist_key") {
-    checkEvaluation(
-      GetJsonObject(Literal(json), Literal("$.store.basket[*].non_exist_key")),
-      null)
+    checkEvaluation(GetJsonObject(Literal(json), Literal("$.store.basket[*].non_exist_key")), null)
   }
 
   test("non foldable literal") {
     checkEvaluation(
-      GetJsonObject(NonFoldableLiteral(json), NonFoldableLiteral("$.fb:testid")),
-      "1234")
+        GetJsonObject(NonFoldableLiteral(json), NonFoldableLiteral("$.fb:testid")), "1234")
   }
 
-  val jsonTupleQuery = Literal("f1") ::
+  val jsonTupleQuery =
+    Literal("f1") ::
     Literal("f2") ::
     Literal("f3") ::
     Literal("f4") ::
@@ -215,106 +176,96 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
 
   test("json_tuple - hive key 1") {
     checkJsonTuple(
-      JsonTuple(
-        Literal("""{"f1": "value1", "f2": "value2", "f3": 3, "f5": 5.23}""") ::
-          jsonTupleQuery),
-      InternalRow.fromSeq(Seq("value1", "value2", "3", null, "5.23").map(UTF8String.fromString)))
+        JsonTuple(Literal("""{"f1": "value1", "f2": "value2", "f3": 3, "f5": 5.23}""") ::
+            jsonTupleQuery),
+        InternalRow.fromSeq(Seq("value1", "value2", "3", null, "5.23").map(UTF8String.fromString)))
   }
 
   test("json_tuple - hive key 2") {
     checkJsonTuple(
-      JsonTuple(
-        Literal("""{"f1": "value12", "f3": "value3", "f2": 2, "f4": 4.01}""") ::
-          jsonTupleQuery),
-      InternalRow.fromSeq(Seq("value12", "2", "value3", "4.01", null).map(UTF8String.fromString)))
+        JsonTuple(Literal("""{"f1": "value12", "f3": "value3", "f2": 2, "f4": 4.01}""") ::
+            jsonTupleQuery),
+        InternalRow.fromSeq(
+            Seq("value12", "2", "value3", "4.01", null).map(UTF8String.fromString)))
   }
 
   test("json_tuple - hive key 2 (mix of foldable fields)") {
-    checkJsonTuple(
-      JsonTuple(Literal("""{"f1": "value12", "f3": "value3", "f2": 2, "f4": 4.01}""") ::
-        Literal("f1") ::
-        NonFoldableLiteral("f2") ::
-        NonFoldableLiteral("f3") ::
-        Literal("f4") ::
-        Literal("f5") ::
-        Nil),
-      InternalRow.fromSeq(Seq("value12", "2", "value3", "4.01", null).map(UTF8String.fromString)))
+    checkJsonTuple(JsonTuple(
+                       Literal("""{"f1": "value12", "f3": "value3", "f2": 2, "f4": 4.01}""") ::
+                       Literal("f1") ::
+                       NonFoldableLiteral("f2") ::
+                       NonFoldableLiteral("f3") ::
+                       Literal("f4") ::
+                       Literal("f5") ::
+                       Nil),
+                   InternalRow.fromSeq(
+                       Seq("value12", "2", "value3", "4.01", null).map(UTF8String.fromString)))
   }
 
   test("json_tuple - hive key 3") {
     checkJsonTuple(
-      JsonTuple(
-        Literal("""{"f1": "value13", "f4": "value44", "f3": "value33", "f2": 2, "f5": 5.01}""") ::
-          jsonTupleQuery),
-      InternalRow.fromSeq(
-        Seq("value13", "2", "value33", "value44", "5.01").map(UTF8String.fromString)))
+        JsonTuple(Literal(
+                """{"f1": "value13", "f4": "value44", "f3": "value33", "f2": 2, "f5": 5.01}""") ::
+            jsonTupleQuery),
+        InternalRow.fromSeq(
+            Seq("value13", "2", "value33", "value44", "5.01").map(UTF8String.fromString)))
   }
 
   test("json_tuple - hive key 3 (nonfoldable json)") {
     checkJsonTuple(
-      JsonTuple(
-        NonFoldableLiteral(
-          """{"f1": "value13", "f4": "value44",
-            | "f3": "value33", "f2": 2, "f5": 5.01}""".stripMargin)
-          :: jsonTupleQuery),
-      InternalRow.fromSeq(
-        Seq("value13", "2", "value33", "value44", "5.01").map(UTF8String.fromString)))
+        JsonTuple(NonFoldableLiteral("""{"f1": "value13", "f4": "value44",
+            | "f3": "value33", "f2": 2, "f5": 5.01}""".stripMargin) :: jsonTupleQuery),
+        InternalRow.fromSeq(
+            Seq("value13", "2", "value33", "value44", "5.01").map(UTF8String.fromString)))
   }
 
   test("json_tuple - hive key 3 (nonfoldable fields)") {
     checkJsonTuple(
-      JsonTuple(Literal(
-        """{"f1": "value13", "f4": "value44",
+        JsonTuple(
+            Literal("""{"f1": "value13", "f4": "value44",
           | "f3": "value33", "f2": 2, "f5": 5.01}""".stripMargin) ::
-        NonFoldableLiteral("f1") ::
-        NonFoldableLiteral("f2") ::
-        NonFoldableLiteral("f3") ::
-        NonFoldableLiteral("f4") ::
-        NonFoldableLiteral("f5") ::
-        Nil),
-      InternalRow.fromSeq(
-        Seq("value13", "2", "value33", "value44", "5.01").map(UTF8String.fromString)))
+            NonFoldableLiteral("f1") ::
+            NonFoldableLiteral("f2") ::
+            NonFoldableLiteral("f3") ::
+            NonFoldableLiteral("f4") ::
+            NonFoldableLiteral("f5") ::
+            Nil),
+        InternalRow.fromSeq(
+            Seq("value13", "2", "value33", "value44", "5.01").map(UTF8String.fromString)))
   }
 
   test("json_tuple - hive key 4 - null json") {
-    checkJsonTuple(
-      JsonTuple(Literal(null) :: jsonTupleQuery),
-      InternalRow.fromSeq(Seq(null, null, null, null, null)))
+    checkJsonTuple(JsonTuple(Literal(null) :: jsonTupleQuery),
+                   InternalRow.fromSeq(Seq(null, null, null, null, null)))
   }
 
   test("json_tuple - hive key 5 - null and empty fields") {
-    checkJsonTuple(
-      JsonTuple(Literal("""{"f1": "", "f5": null}""") :: jsonTupleQuery),
-      InternalRow.fromSeq(Seq(UTF8String.fromString(""), null, null, null, null)))
+    checkJsonTuple(JsonTuple(Literal("""{"f1": "", "f5": null}""") :: jsonTupleQuery),
+                   InternalRow.fromSeq(Seq(UTF8String.fromString(""), null, null, null, null)))
   }
 
   test("json_tuple - hive key 6 - invalid json (array)") {
-    checkJsonTuple(
-      JsonTuple(Literal("[invalid JSON string]") :: jsonTupleQuery),
-      InternalRow.fromSeq(Seq(null, null, null, null, null)))
+    checkJsonTuple(JsonTuple(Literal("[invalid JSON string]") :: jsonTupleQuery),
+                   InternalRow.fromSeq(Seq(null, null, null, null, null)))
   }
 
   test("json_tuple - invalid json (object start only)") {
-    checkJsonTuple(
-      JsonTuple(Literal("{") :: jsonTupleQuery),
-      InternalRow.fromSeq(Seq(null, null, null, null, null)))
+    checkJsonTuple(JsonTuple(Literal("{") :: jsonTupleQuery),
+                   InternalRow.fromSeq(Seq(null, null, null, null, null)))
   }
 
   test("json_tuple - invalid json (no object end)") {
-    checkJsonTuple(
-      JsonTuple(Literal("""{"foo": "bar"""") :: jsonTupleQuery),
-      InternalRow.fromSeq(Seq(null, null, null, null, null)))
+    checkJsonTuple(JsonTuple(Literal("""{"foo": "bar"""") :: jsonTupleQuery),
+                   InternalRow.fromSeq(Seq(null, null, null, null, null)))
   }
 
   test("json_tuple - invalid json (invalid json)") {
-    checkJsonTuple(
-      JsonTuple(Literal("\\") :: jsonTupleQuery),
-      InternalRow.fromSeq(Seq(null, null, null, null, null)))
+    checkJsonTuple(JsonTuple(Literal("\\") :: jsonTupleQuery),
+                   InternalRow.fromSeq(Seq(null, null, null, null, null)))
   }
 
   test("json_tuple - preserve newlines") {
-    checkJsonTuple(
-      JsonTuple(Literal("{\"a\":\"b\nc\"}") :: Literal("a") :: Nil),
-      InternalRow.fromSeq(Seq(UTF8String.fromString("b\nc"))))
+    checkJsonTuple(JsonTuple(Literal("{\"a\":\"b\nc\"}") :: Literal("a") :: Nil),
+                   InternalRow.fromSeq(Seq(UTF8String.fromString("b\nc"))))
   }
 }

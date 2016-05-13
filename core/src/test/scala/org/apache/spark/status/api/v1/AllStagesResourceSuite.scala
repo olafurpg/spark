@@ -29,16 +29,16 @@ class AllStagesResourceSuite extends SparkFunSuite {
 
   def getFirstTaskLaunchTime(taskLaunchTimes: Seq[Long]): Option[Date] = {
     val tasks = new HashMap[Long, TaskUIData]
-    taskLaunchTimes.zipWithIndex.foreach { case (time, idx) =>
-      tasks(idx.toLong) = new TaskUIData(
-        new TaskInfo(idx, idx, 1, time, "", "", TaskLocality.ANY, false), None, None)
+    taskLaunchTimes.zipWithIndex.foreach {
+      case (time, idx) =>
+        tasks(idx.toLong) = new TaskUIData(
+            new TaskInfo(idx, idx, 1, time, "", "", TaskLocality.ANY, false), None, None)
     }
 
     val stageUiData = new StageUIData()
     stageUiData.taskData = tasks
     val status = StageStatus.ACTIVE
-    val stageInfo = new StageInfo(
-      1, 1, "stage 1", 10, Seq.empty, Seq.empty, "details abc")
+    val stageInfo = new StageInfo(1, 1, "stage 1", 10, Seq.empty, Seq.empty, "details abc")
     val stageData = AllStagesResource.stageUiToStageData(status, stageInfo, stageUiData, false)
 
     stageData.firstTaskLaunchedTime
@@ -58,5 +58,4 @@ class AllStagesResourceSuite extends SparkFunSuite {
     val result = getFirstTaskLaunchTime(Seq(-100L, 1449255596000L, 1449255597000L))
     assert(result == Some(new Date(1449255596000L)))
   }
-
 }

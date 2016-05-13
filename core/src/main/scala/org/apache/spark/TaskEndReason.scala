@@ -51,6 +51,7 @@ case object Success extends TaskEndReason
  */
 @DeveloperApi
 sealed trait TaskFailedReason extends TaskEndReason {
+
   /** Error message displayed in the web UI. */
   def toErrorString: String
 
@@ -80,17 +81,16 @@ case object Resubmitted extends TaskFailedReason {
  * executors the task is trying to fetch from, and thus need to rerun the previous stage.
  */
 @DeveloperApi
-case class FetchFailed(
-    bmAddress: BlockManagerId,  // Note that bmAddress can be null
-    shuffleId: Int,
-    mapId: Int,
-    reduceId: Int,
-    message: String)
-  extends TaskFailedReason {
+case class FetchFailed(bmAddress: BlockManagerId, // Note that bmAddress can be null
+                       shuffleId: Int,
+                       mapId: Int,
+                       reduceId: Int,
+                       message: String)
+    extends TaskFailedReason {
   override def toErrorString: String = {
     val bmAddressString = if (bmAddress == null) "null" else bmAddress.toString
     s"FetchFailed($bmAddressString, shuffleId=$shuffleId, mapId=$mapId, reduceId=$reduceId, " +
-      s"message=\n$message\n)"
+    s"message=\n$message\n)"
   }
 }
 
@@ -111,15 +111,14 @@ case class FetchFailed(
  * once (due to retries), `exception` is that one that caused the last failure.
  */
 @DeveloperApi
-case class ExceptionFailure(
-    className: String,
-    description: String,
-    stackTrace: Array[StackTraceElement],
-    fullStackTrace: String,
-    private val exceptionWrapper: Option[ThrowableSerializationWrapper],
-    accumUpdates: Seq[AccumulableInfo] = Seq.empty,
-    private[spark] var accums: Seq[AccumulatorV2[_, _]] = Nil)
-  extends TaskFailedReason {
+case class ExceptionFailure(className: String,
+                            description: String,
+                            stackTrace: Array[StackTraceElement],
+                            fullStackTrace: String,
+                            private val exceptionWrapper: Option[ThrowableSerializationWrapper],
+                            accumUpdates: Seq[AccumulableInfo] = Seq.empty,
+                            private[spark] var accums: Seq[AccumulatorV2[_, _]] = Nil)
+    extends TaskFailedReason {
 
   /**
    * `preserveCause` is used to keep the exception itself so it is available to the
@@ -127,11 +126,13 @@ case class ExceptionFailure(
    * serializable.
    */
   private[spark] def this(
-      e: Throwable,
-      accumUpdates: Seq[AccumulableInfo],
-      preserveCause: Boolean) {
-    this(e.getClass.getName, e.getMessage, e.getStackTrace, Utils.exceptionString(e),
-      if (preserveCause) Some(new ThrowableSerializationWrapper(e)) else None, accumUpdates)
+      e: Throwable, accumUpdates: Seq[AccumulableInfo], preserveCause: Boolean) {
+    this(e.getClass.getName,
+         e.getMessage,
+         e.getStackTrace,
+         Utils.exceptionString(e),
+         if (preserveCause) Some(new ThrowableSerializationWrapper(e)) else None,
+         accumUpdates)
   }
 
   private[spark] def this(e: Throwable, accumUpdates: Seq[AccumulableInfo]) {
@@ -159,9 +160,7 @@ case class ExceptionFailure(
    * Note: It does not include the exception's causes, and is only used for backward compatibility.
    */
   private def exceptionString(
-      className: String,
-      description: String,
-      stackTrace: Array[StackTraceElement]): String = {
+      className: String, description: String, stackTrace: Array[StackTraceElement]): String = {
     val desc = if (description == null) "" else description
     val st = if (stackTrace == null) "" else stackTrace.map("        " + _).mkString("\n")
     s"$className: $desc\n$st"
@@ -173,8 +172,9 @@ case class ExceptionFailure(
  * thrown in user task code. If the Throwable cannot be deserialized it will be null,
  * but the stacktrace and message will be preserved correctly in SparkException.
  */
-private[spark] class ThrowableSerializationWrapper(var exception: Throwable) extends
-    Serializable with Logging {
+private[spark] class ThrowableSerializationWrapper(var exception: Throwable)
+    extends Serializable
+    with Logging {
   private def writeObject(out: ObjectOutputStream): Unit = {
     out.writeObject(exception)
   }
@@ -182,7 +182,7 @@ private[spark] class ThrowableSerializationWrapper(var exception: Throwable) ext
     try {
       exception = in.readObject().asInstanceOf[Throwable]
     } catch {
-      case e : Exception => log.warn("Task exception could not be deserialized", e)
+      case e: Exception => log.warn("Task exception could not be deserialized", e)
     }
   }
 }
@@ -211,12 +211,12 @@ case object TaskKilled extends TaskFailedReason {
  * Task requested the driver to commit, but was denied.
  */
 @DeveloperApi
-case class TaskCommitDenied(
-    jobID: Int,
-    partitionID: Int,
-    attemptNumber: Int) extends TaskFailedReason {
-  override def toErrorString: String = s"TaskCommitDenied (Driver denied task commit)" +
+case class TaskCommitDenied(jobID: Int, partitionID: Int, attemptNumber: Int)
+    extends TaskFailedReason {
+  override def toErrorString: String =
+    s"TaskCommitDenied (Driver denied task commit)" +
     s" for job: $jobID, partition: $partitionID, attemptNumber: $attemptNumber"
+
   /**
    * If a task failed because its attempt to commit was denied, do not count this failure
    * towards failing the stage. This is intended to prevent spurious stage failures in cases
@@ -232,17 +232,18 @@ case class TaskCommitDenied(
  */
 @DeveloperApi
 case class ExecutorLostFailure(
-    execId: String,
-    exitCausedByApp: Boolean = true,
-    reason: Option[String]) extends TaskFailedReason {
+    execId: String, exitCausedByApp: Boolean = true, reason: Option[String])
+    extends TaskFailedReason {
   override def toErrorString: String = {
-    val exitBehavior = if (exitCausedByApp) {
-      "caused by one of the running tasks"
-    } else {
-      "unrelated to the running tasks"
-    }
-    s"ExecutorLostFailure (executor ${execId} exited ${exitBehavior})" +
-      reason.map { r => s" Reason: $r" }.getOrElse("")
+    val exitBehavior =
+      if (exitCausedByApp) {
+        "caused by one of the running tasks"
+      } else {
+        "unrelated to the running tasks"
+      }
+    s"ExecutorLostFailure (executor ${execId} exited ${exitBehavior})" + reason.map { r =>
+      s" Reason: $r"
+    }.getOrElse("")
   }
 
   override def countTowardsTaskFailures: Boolean = exitCausedByApp

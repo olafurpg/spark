@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, LogicalPlan}
 
-
 /**
  * A function defined in the catalog.
  *
@@ -34,34 +33,27 @@ import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, LogicalPlan}
  * @param resources resource types and Uris used by the function
  */
 case class CatalogFunction(
-    identifier: FunctionIdentifier,
-    className: String,
-    resources: Seq[FunctionResource])
-
+    identifier: FunctionIdentifier, className: String, resources: Seq[FunctionResource])
 
 /**
  * Storage format, used to describe how a partition or a table is stored.
  */
-case class CatalogStorageFormat(
-    locationUri: Option[String],
-    inputFormat: Option[String],
-    outputFormat: Option[String],
-    serde: Option[String],
-    compressed: Boolean,
-    serdeProperties: Map[String, String])
-
+case class CatalogStorageFormat(locationUri: Option[String],
+                                inputFormat: Option[String],
+                                outputFormat: Option[String],
+                                serde: Option[String],
+                                compressed: Boolean,
+                                serdeProperties: Map[String, String])
 
 /**
  * A column in a table.
  */
-case class CatalogColumn(
-    name: String,
-    // This may be null when used to create views. TODO: make this type-safe; this is left
-    // as a string due to issues in converting Hive varchars to and from SparkSQL strings.
-    @Nullable dataType: String,
-    nullable: Boolean = true,
-    comment: Option[String] = None)
-
+case class CatalogColumn(name: String,
+                         // This may be null when used to create views. TODO: make this type-safe; this is left
+                         // as a string due to issues in converting Hive varchars to and from SparkSQL strings.
+                         @Nullable dataType: String,
+                         nullable: Boolean = true,
+                         comment: Option[String] = None)
 
 /**
  * A partition (Hive style) defined in the catalog.
@@ -70,9 +62,7 @@ case class CatalogColumn(
  * @param storage storage format of the partition
  */
 case class CatalogTablePartition(
-    spec: CatalogTypes.TablePartitionSpec,
-    storage: CatalogStorageFormat)
-
+    spec: CatalogTypes.TablePartitionSpec, storage: CatalogStorageFormat)
 
 /**
  * A table defined in the catalog.
@@ -80,28 +70,28 @@ case class CatalogTablePartition(
  * Note that Hive's metastore also tracks skewed columns. We should consider adding that in the
  * future once we have a better understanding of how we want to handle skewed columns.
  */
-case class CatalogTable(
-    identifier: TableIdentifier,
-    tableType: CatalogTableType,
-    storage: CatalogStorageFormat,
-    schema: Seq[CatalogColumn],
-    partitionColumnNames: Seq[String] = Seq.empty,
-    sortColumnNames: Seq[String] = Seq.empty,
-    bucketColumnNames: Seq[String] = Seq.empty,
-    numBuckets: Int = -1,
-    owner: String = "",
-    createTime: Long = System.currentTimeMillis,
-    lastAccessTime: Long = -1,
-    properties: Map[String, String] = Map.empty,
-    viewOriginalText: Option[String] = None,
-    viewText: Option[String] = None,
-    comment: Option[String] = None) {
+case class CatalogTable(identifier: TableIdentifier,
+                        tableType: CatalogTableType,
+                        storage: CatalogStorageFormat,
+                        schema: Seq[CatalogColumn],
+                        partitionColumnNames: Seq[String] = Seq.empty,
+                        sortColumnNames: Seq[String] = Seq.empty,
+                        bucketColumnNames: Seq[String] = Seq.empty,
+                        numBuckets: Int = -1,
+                        owner: String = "",
+                        createTime: Long = System.currentTimeMillis,
+                        lastAccessTime: Long = -1,
+                        properties: Map[String, String] = Map.empty,
+                        viewOriginalText: Option[String] = None,
+                        viewText: Option[String] = None,
+                        comment: Option[String] = None) {
 
   // Verify that the provided columns are part of the schema
   private val colNames = schema.map(_.name).toSet
   private def requireSubsetOfSchema(cols: Seq[String], colType: String): Unit = {
-    require(cols.toSet.subsetOf(colNames), s"$colType columns (${cols.mkString(", ")}) " +
-      s"must be a subset of schema (${colNames.mkString(", ")}) in table '$identifier'")
+    require(cols.toSet.subsetOf(colNames),
+            s"$colType columns (${cols.mkString(", ")}) " +
+            s"must be a subset of schema (${colNames.mkString(", ")}) in table '$identifier'")
   }
   requireSubsetOfSchema(partitionColumnNames, "partition")
   requireSubsetOfSchema(sortColumnNames, "sort")
@@ -109,7 +99,9 @@ case class CatalogTable(
 
   /** Columns this table is partitioned by. */
   def partitionColumns: Seq[CatalogColumn] =
-    schema.filter { c => partitionColumnNames.contains(c.name) }
+    schema.filter { c =>
+      partitionColumnNames.contains(c.name)
+    }
 
   /** Return the database this table was specified to belong to, assuming it exists. */
   def database: String = identifier.database.getOrElse {
@@ -128,13 +120,11 @@ case class CatalogTable(
       serde: Option[String] = storage.serde,
       serdeProperties: Map[String, String] = storage.serdeProperties): CatalogTable = {
     copy(storage = CatalogStorageFormat(
-      locationUri, inputFormat, outputFormat, serde, compressed, serdeProperties))
+              locationUri, inputFormat, outputFormat, serde, compressed, serdeProperties))
   }
-
 }
 
-
-case class CatalogTableType private(name: String)
+case class CatalogTableType private (name: String)
 object CatalogTableType {
   val EXTERNAL = new CatalogTableType("EXTERNAL")
   val MANAGED = new CatalogTableType("MANAGED")
@@ -142,24 +132,21 @@ object CatalogTableType {
   val VIEW = new CatalogTableType("VIEW")
 }
 
-
 /**
  * A database defined in the catalog.
  */
-case class CatalogDatabase(
-    name: String,
-    description: String,
-    locationUri: String,
-    properties: Map[String, String])
-
+case class CatalogDatabase(name: String,
+                           description: String,
+                           locationUri: String,
+                           properties: Map[String, String])
 
 object CatalogTypes {
+
   /**
    * Specifications of a table partition. Mapping column name to column value.
    */
   type TablePartitionSpec = Map[String, String]
 }
-
 
 /**
  * An interface that is implemented by logical plans to return the underlying catalog table.
@@ -171,35 +158,34 @@ trait CatalogRelation {
   def output: Seq[Attribute]
 }
 
-
 /**
  * A [[LogicalPlan]] that wraps [[CatalogTable]].
  *
  * Note that in the future we should consolidate this and HiveCatalogRelation.
  */
 case class SimpleCatalogRelation(
-    databaseName: String,
-    metadata: CatalogTable,
-    alias: Option[String] = None)
-  extends LeafNode with CatalogRelation {
+    databaseName: String, metadata: CatalogTable, alias: Option[String] = None)
+    extends LeafNode
+    with CatalogRelation {
 
   override def catalogTable: CatalogTable = metadata
 
   override lazy val resolved: Boolean = false
 
   override val output: Seq[Attribute] = {
-    val cols = catalogTable.schema
-      .filter { c => !catalogTable.partitionColumnNames.contains(c.name) }
+    val cols = catalogTable.schema.filter { c =>
+      !catalogTable.partitionColumnNames.contains(c.name)
+    }
     (cols ++ catalogTable.partitionColumns).map { f =>
       AttributeReference(
-        f.name,
-        CatalystSqlParser.parseDataType(f.dataType),
-        // Since data can be dumped in randomly with no validation, everything is nullable.
-        nullable = true
+          f.name,
+          CatalystSqlParser.parseDataType(f.dataType),
+          // Since data can be dumped in randomly with no validation, everything is nullable.
+          nullable = true
       )(qualifier = Some(alias.getOrElse(metadata.identifier.table)))
     }
   }
 
   require(metadata.identifier.database == Some(databaseName),
-    "provided database does not match the one specified in the table definition")
+          "provided database does not match the one specified in the table definition")
 }

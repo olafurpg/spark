@@ -30,7 +30,8 @@ import org.apache.spark.util.ListenerBus
  * dispatch them to ContinuousQueryListener.
  */
 class ContinuousQueryListenerBus(sparkListenerBus: LiveListenerBus)
-  extends SparkListener with ListenerBus[ContinuousQueryListener, ContinuousQueryListener.Event] {
+    extends SparkListener
+    with ListenerBus[ContinuousQueryListener, ContinuousQueryListener.Event] {
 
   sparkListenerBus.addListener(this)
 
@@ -56,8 +57,7 @@ class ContinuousQueryListenerBus(sparkListenerBus: LiveListenerBus)
   }
 
   override protected def doPostEvent(
-      listener: ContinuousQueryListener,
-      event: ContinuousQueryListener.Event): Unit = {
+      listener: ContinuousQueryListener, event: ContinuousQueryListener.Event): Unit = {
     event match {
       case queryStarted: QueryStarted =>
         listener.onQueryStarted(queryStarted)
@@ -74,7 +74,8 @@ class ContinuousQueryListenerBus(sparkListenerBus: LiveListenerBus)
    * listener bus.
    */
   private case class WrappedContinuousQueryListenerEvent(
-      streamingListenerEvent: ContinuousQueryListener.Event) extends SparkListenerEvent {
+      streamingListenerEvent: ContinuousQueryListener.Event)
+      extends SparkListenerEvent {
 
     // Do not log streaming events in event log as history server does not support these events.
     protected[spark] override def logEvent: Boolean = false

@@ -24,7 +24,6 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.hive.test.TestHiveSingleton
 
-
 abstract class SQLBuilderTest extends QueryTest with TestHiveSingleton {
   protected def checkSQL(e: Expression, expectedSQL: String): Unit = {
     val actualSQL = e.sql
@@ -32,8 +31,7 @@ abstract class SQLBuilderTest extends QueryTest with TestHiveSingleton {
       assert(actualSQL === expectedSQL)
     } catch {
       case cause: Throwable =>
-        fail(
-          s"""Wrong SQL generated for the following expression:
+        fail(s"""Wrong SQL generated for the following expression:
              |
              |${e.prettyName}
              |
@@ -43,9 +41,9 @@ abstract class SQLBuilderTest extends QueryTest with TestHiveSingleton {
   }
 
   protected def checkSQL(plan: LogicalPlan, expectedSQL: String): Unit = {
-    val generatedSQL = try new SQLBuilder(plan).toSQL catch { case NonFatal(e) =>
-      fail(
-        s"""Cannot convert the following logical query plan to SQL:
+    val generatedSQL = try new SQLBuilder(plan).toSQL catch {
+      case NonFatal(e) =>
+        fail(s"""Cannot convert the following logical query plan to SQL:
            |
            |${plan.treeString}
          """.stripMargin)
@@ -55,8 +53,7 @@ abstract class SQLBuilderTest extends QueryTest with TestHiveSingleton {
       assert(generatedSQL === expectedSQL)
     } catch {
       case cause: Throwable =>
-        fail(
-          s"""Wrong SQL generated for the following logical query plan:
+        fail(s"""Wrong SQL generated for the following logical query plan:
              |
              |${plan.treeString}
              |

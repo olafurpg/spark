@@ -26,7 +26,6 @@ import org.apache.spark.scheduler.AccumulableInfo
 import org.apache.spark.serializer.JavaSerializer
 import org.apache.spark.util.{AccumulatorContext, AccumulatorMetadata, LegacyAccumulatorWrapper}
 
-
 /**
  * A data type that can be accumulated, i.e. has an commutative and associative "add" operation,
  * but where the result type, `R`, may be different from the element type being added, `T`.
@@ -50,25 +49,23 @@ import org.apache.spark.util.{AccumulatorContext, AccumulatorMetadata, LegacyAcc
  * @tparam T partial data that can be added in
  */
 @deprecated("use AccumulatorV2", "2.0.0")
-class Accumulable[R, T] private (
-    val id: Long,
-    // SI-8813: This must explicitly be a private val, or else scala 2.11 doesn't compile
-    @transient private val initialValue: R,
-    param: AccumulableParam[R, T],
-    val name: Option[String],
-    private[spark] val countFailedValues: Boolean)
-  extends Serializable {
+class Accumulable[R, T] private (val id: Long,
+                                 // SI-8813: This must explicitly be a private val, or else scala 2.11 doesn't compile
+                                 @transient private val initialValue: R,
+                                 param: AccumulableParam[R, T],
+                                 val name: Option[String],
+                                 private[spark] val countFailedValues: Boolean)
+    extends Serializable {
 
-  private[spark] def this(
-      initialValue: R,
-      param: AccumulableParam[R, T],
-      name: Option[String],
-      countFailedValues: Boolean) = {
+  private[spark] def this(initialValue: R,
+                          param: AccumulableParam[R, T],
+                          name: Option[String],
+                          countFailedValues: Boolean) = {
     this(AccumulatorContext.newId(), initialValue, param, name, countFailedValues)
   }
 
   private[spark] def this(initialValue: R, param: AccumulableParam[R, T], name: Option[String]) = {
-    this(initialValue, param, name, false /* countFailedValues */)
+    this(initialValue, param, name, false /* countFailedValues */ )
   }
 
   def this(initialValue: R, param: AccumulableParam[R, T]) = this(initialValue, param, None)
@@ -83,7 +80,7 @@ class Accumulable[R, T] private (
    * Add more data to this accumulator / accumulable
    * @param term the data to add
    */
-  def += (term: T) { newAcc.add(term) }
+  def +=(term: T) { newAcc.add(term) }
 
   /**
    * Add more data to this accumulator / accumulable
@@ -97,7 +94,7 @@ class Accumulable[R, T] private (
    * Normally, a user will not want to use this version, but will instead call `+=`.
    * @param term the other `R` that will get merged with this
    */
-  def ++= (term: R) { newAcc._value = param.addInPlace(newAcc._value, term) }
+  def ++=(term: R) { newAcc._value = param.addInPlace(newAcc._value, term) }
 
   /**
    * Merge two accumulable objects together
@@ -132,7 +129,7 @@ class Accumulable[R, T] private (
   /**
    * Set the accumulator's value; only allowed on driver.
    */
-  def value_= (newValue: R) {
+  def value_=(newValue: R) {
     if (newAcc.isAtDriverSide) {
       newAcc._value = newValue
     } else {
@@ -161,7 +158,6 @@ class Accumulable[R, T] private (
   override def toString: String = if (newAcc._value == null) "null" else newAcc._value.toString
 }
 
-
 /**
  * Helper object defining how to accumulate values of a particular type. An implicit
  * AccumulableParam needs to be available when you create [[Accumulable]]s of a specific type.
@@ -171,6 +167,7 @@ class Accumulable[R, T] private (
  */
 @deprecated("use AccumulatorV2", "2.0.0")
 trait AccumulableParam[R, T] extends Serializable {
+
   /**
    * Add additional data to the accumulator value. Is allowed to modify and return `r`
    * for efficiency (to avoid allocating objects).
@@ -198,11 +195,10 @@ trait AccumulableParam[R, T] extends Serializable {
   def zero(initialValue: R): R
 }
 
-
 @deprecated("use AccumulatorV2", "2.0.0")
-private[spark] class
-GrowableAccumulableParam[R <% Growable[T] with TraversableOnce[T] with Serializable: ClassTag, T]
-  extends AccumulableParam[R, T] {
+private[spark] class GrowableAccumulableParam[
+    R <% Growable[T] with TraversableOnce[T] with Serializable: ClassTag, T]
+    extends AccumulableParam[R, T] {
 
   def addAccumulator(growable: R, elem: T): R = {
     growable += elem
@@ -219,7 +215,7 @@ GrowableAccumulableParam[R <% Growable[T] with TraversableOnce[T] with Serializa
     // Instead we'll serialize it to a buffer and load it back.
     val ser = new JavaSerializer(new SparkConf(false)).newInstance()
     val copy = ser.deserialize[R](ser.serialize(initialValue))
-    copy.clear()   // In case it contained stuff
+    copy.clear() // In case it contained stuff
     copy
   }
 }

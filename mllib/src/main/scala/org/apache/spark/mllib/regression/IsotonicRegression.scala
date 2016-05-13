@@ -47,10 +47,11 @@ import org.apache.spark.sql.SQLContext
  *
  */
 @Since("1.3.0")
-class IsotonicRegressionModel @Since("1.3.0") (
-    @Since("1.3.0") val boundaries: Array[Double],
-    @Since("1.3.0") val predictions: Array[Double],
-    @Since("1.3.0") val isotonic: Boolean) extends Serializable with Saveable {
+class IsotonicRegressionModel @Since("1.3.0")(@Since("1.3.0") val boundaries: Array[Double],
+                                              @Since("1.3.0") val predictions: Array[Double],
+                                              @Since("1.3.0") val isotonic: Boolean)
+    extends Serializable
+    with Saveable {
 
   private val predictionOrd = if (isotonic) Ordering[Double] else Ordering[Double].reverse
 
@@ -63,8 +64,8 @@ class IsotonicRegressionModel @Since("1.3.0") (
    */
   @Since("1.4.0")
   def this(boundaries: java.lang.Iterable[Double],
-      predictions: java.lang.Iterable[Double],
-      isotonic: java.lang.Boolean) = {
+           predictions: java.lang.Iterable[Double],
+           isotonic: java.lang.Boolean) = {
     this(boundaries.asScala.toArray, predictions.asScala.toArray, isotonic)
   }
 
@@ -74,7 +75,7 @@ class IsotonicRegressionModel @Since("1.3.0") (
     val len = xs.length
     while (i < len) {
       require(ord.compare(xs(i - 1), xs(i)) <= 0,
-        s"Elements (${xs(i - 1)}, ${xs(i)}) are not ordered.")
+              s"Elements (${xs(i - 1)}, ${xs(i)}) are not ordered.")
       i += 1
     }
   }
@@ -139,12 +140,11 @@ class IsotonicRegressionModel @Since("1.3.0") (
     } else if (insertIndex == boundaries.length) {
       predictions.last
     } else if (foundIndex < 0) {
-      linearInterpolation(
-        boundaries(insertIndex - 1),
-        predictions(insertIndex - 1),
-        boundaries(insertIndex),
-        predictions(insertIndex),
-        testData)
+      linearInterpolation(boundaries(insertIndex - 1),
+                          predictions(insertIndex - 1),
+                          boundaries(insertIndex),
+                          predictions(insertIndex),
+                          testData)
     } else {
       predictions(foundIndex)
     }
@@ -179,22 +179,23 @@ object IsotonicRegressionModel extends Loader[IsotonicRegressionModel] {
     /** Model data for model import/export */
     case class Data(boundary: Double, prediction: Double)
 
-    def save(
-        sc: SparkContext,
-        path: String,
-        boundaries: Array[Double],
-        predictions: Array[Double],
-        isotonic: Boolean): Unit = {
+    def save(sc: SparkContext,
+             path: String,
+             boundaries: Array[Double],
+             predictions: Array[Double],
+             isotonic: Boolean): Unit = {
       val sqlContext = SQLContext.getOrCreate(sc)
 
-      val metadata = compact(render(
-        ("class" -> thisClassName) ~ ("version" -> thisFormatVersion) ~
-          ("isotonic" -> isotonic)))
+      val metadata = compact(render(("class" -> thisClassName) ~ ("version" -> thisFormatVersion) ~
+              ("isotonic" -> isotonic)))
       sc.parallelize(Seq(metadata), 1).saveAsTextFile(metadataPath(path))
 
-      sqlContext.createDataFrame(
-        boundaries.toSeq.zip(predictions).map { case (b, p) => Data(b, p) }
-      ).write.parquet(dataPath(path))
+      sqlContext
+        .createDataFrame(
+            boundaries.toSeq.zip(predictions).map { case (b, p) => Data(b, p) }
+        )
+        .write
+        .parquet(dataPath(path))
     }
 
     def load(sc: SparkContext, path: String): (Array[Double], Array[Double]) = {
@@ -220,11 +221,11 @@ object IsotonicRegressionModel extends Loader[IsotonicRegressionModel] {
       case (className, "1.0") if className == classNameV1_0 =>
         val (boundaries, predictions) = SaveLoadV1_0.load(sc, path)
         new IsotonicRegressionModel(boundaries, predictions, isotonic)
-      case _ => throw new Exception(
-        s"IsotonicRegressionModel.load did not recognize model with (className, format version):" +
-        s"($loadedClassName, $version).  Supported:\n" +
-        s"  ($classNameV1_0, 1.0)"
-      )
+      case _ =>
+        throw new Exception(
+            s"IsotonicRegressionModel.load did not recognize model with (className, format version):" +
+            s"($loadedClassName, $version).  Supported:\n" + s"  ($classNameV1_0, 1.0)"
+        )
     }
   }
 }
@@ -282,11 +283,12 @@ class IsotonicRegression private (private var isotonic: Boolean) extends Seriali
    */
   @Since("1.3.0")
   def run(input: RDD[(Double, Double, Double)]): IsotonicRegressionModel = {
-    val preprocessedInput = if (isotonic) {
-      input
-    } else {
-      input.map(x => (-x._1, x._2, x._3))
-    }
+    val preprocessedInput =
+      if (isotonic) {
+        input
+      } else {
+        input.map(x => (-x._1, x._2, x._3))
+      }
 
     val pooled = parallelPoolAdjacentViolators(preprocessedInput)
 

@@ -40,25 +40,24 @@ import org.apache.spark.unsafe.Platform
  *
  * @param numFields the number of fields in the row being serialized.
  */
-private[sql] class UnsafeRowSerializer(
-    numFields: Int,
-    dataSize: SQLMetric = null) extends Serializer with Serializable {
+private[sql] class UnsafeRowSerializer(numFields: Int, dataSize: SQLMetric = null)
+    extends Serializer
+    with Serializable {
   override def newInstance(): SerializerInstance =
     new UnsafeRowSerializerInstance(numFields, dataSize)
   override private[spark] def supportsRelocationOfSerializedObjects: Boolean = true
 }
 
-private class UnsafeRowSerializerInstance(
-    numFields: Int,
-    dataSize: SQLMetric) extends SerializerInstance {
+private class UnsafeRowSerializerInstance(numFields: Int, dataSize: SQLMetric)
+    extends SerializerInstance {
+
   /**
    * Serializes a stream of UnsafeRows. Within the stream, each record consists of a record
    * length (stored as a 4-byte integer, written high byte first), followed by the record's bytes.
    */
   override def serializeStream(out: OutputStream): SerializationStream = new SerializationStream {
     private[this] var writeBuffer: Array[Byte] = new Array[Byte](4096)
-    private[this] val dOut: DataOutputStream =
-      new DataOutputStream(new BufferedOutputStream(out))
+    private[this] val dOut: DataOutputStream = new DataOutputStream(new BufferedOutputStream(out))
 
     override def writeValue[T: ClassTag](value: T): SerializationStream = {
       val row = value.asInstanceOf[UnsafeRow]
@@ -109,13 +108,14 @@ private class UnsafeRowSerializerInstance(
       override def asKeyValueIterator: Iterator[(Int, UnsafeRow)] = {
         new Iterator[(Int, UnsafeRow)] {
 
-          private[this] def readSize(): Int = try {
-            dIn.readInt()
-          } catch {
-            case e: EOFException =>
-              dIn.close()
-              EOF
-          }
+          private[this] def readSize(): Int =
+            try {
+              dIn.readInt()
+            } catch {
+              case e: EOFException =>
+                dIn.close()
+                EOF
+            }
 
           private[this] var rowSize: Int = readSize()
           override def hasNext: Boolean = rowSize != EOF
@@ -127,7 +127,8 @@ private class UnsafeRowSerializerInstance(
             ByteStreams.readFully(dIn, rowBuffer, 0, rowSize)
             row.pointTo(rowBuffer, Platform.BYTE_ARRAY_OFFSET, rowSize)
             rowSize = readSize()
-            if (rowSize == EOF) { // We are returning the last row in this stream
+            if (rowSize == EOF) {
+              // We are returning the last row in this stream
               dIn.close()
               val _rowTuple = rowTuple
               // Null these out so that the byte array can be garbage collected once the entire

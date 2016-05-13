@@ -45,18 +45,17 @@ import org.apache.spark.internal.Logging
  * @param protocol            SSL protocol (remember that SSLv3 was compromised) supported by Java
  * @param enabledAlgorithms   a set of encryption algorithms that may be used
  */
-private[spark] case class SSLOptions(
-    enabled: Boolean = false,
-    keyStore: Option[File] = None,
-    keyStorePassword: Option[String] = None,
-    keyPassword: Option[String] = None,
-    keyStoreType: Option[String] = None,
-    needClientAuth: Boolean = false,
-    trustStore: Option[File] = None,
-    trustStorePassword: Option[String] = None,
-    trustStoreType: Option[String] = None,
-    protocol: Option[String] = None,
-    enabledAlgorithms: Set[String] = Set.empty)
+private[spark] case class SSLOptions(enabled: Boolean = false,
+                                     keyStore: Option[File] = None,
+                                     keyStorePassword: Option[String] = None,
+                                     keyPassword: Option[String] = None,
+                                     keyStoreType: Option[String] = None,
+                                     needClientAuth: Boolean = false,
+                                     trustStore: Option[File] = None,
+                                     trustStorePassword: Option[String] = None,
+                                     trustStoreType: Option[String] = None,
+                                     protocol: Option[String] = None,
+                                     enabledAlgorithms: Set[String] = Set.empty)
     extends Logging {
 
   /**
@@ -90,44 +89,45 @@ private[spark] case class SSLOptions(
    * The supportedAlgorithms set is a subset of the enabledAlgorithms that
    * are supported by the current Java security provider for this protocol.
    */
-  private val supportedAlgorithms: Set[String] = if (enabledAlgorithms.isEmpty) {
-    Set()
-  } else {
-    var context: SSLContext = null
-    try {
-      context = SSLContext.getInstance(protocol.orNull)
-      /* The set of supported algorithms does not depend upon the keys, trust, or
+  private val supportedAlgorithms: Set[String] =
+    if (enabledAlgorithms.isEmpty) {
+      Set()
+    } else {
+      var context: SSLContext = null
+      try {
+        context = SSLContext.getInstance(protocol.orNull)
+        /* The set of supported algorithms does not depend upon the keys, trust, or
          rng, although they will influence which algorithms are eventually used. */
-      context.init(null, null, null)
-    } catch {
-      case npe: NullPointerException =>
-        logDebug("No SSL protocol specified")
-        context = SSLContext.getDefault
-      case nsa: NoSuchAlgorithmException =>
-        logDebug(s"No support for requested SSL protocol ${protocol.get}")
-        context = SSLContext.getDefault
+        context.init(null, null, null)
+      } catch {
+        case npe: NullPointerException =>
+          logDebug("No SSL protocol specified")
+          context = SSLContext.getDefault
+        case nsa: NoSuchAlgorithmException =>
+          logDebug(s"No support for requested SSL protocol ${protocol.get}")
+          context = SSLContext.getDefault
+      }
+
+      val providerAlgorithms = context.getServerSocketFactory.getSupportedCipherSuites.toSet
+
+      // Log which algorithms we are discarding
+      (enabledAlgorithms &~ providerAlgorithms).foreach { cipher =>
+        logDebug(s"Discarding unsupported cipher $cipher")
+      }
+
+      val supported = enabledAlgorithms & providerAlgorithms
+      require(supported.nonEmpty || sys.env.contains("SPARK_TESTING"),
+              "SSLContext does not support any of the enabled algorithms: " +
+              enabledAlgorithms.mkString(","))
+      supported
     }
-
-    val providerAlgorithms = context.getServerSocketFactory.getSupportedCipherSuites.toSet
-
-    // Log which algorithms we are discarding
-    (enabledAlgorithms &~ providerAlgorithms).foreach { cipher =>
-      logDebug(s"Discarding unsupported cipher $cipher")
-    }
-
-    val supported = enabledAlgorithms & providerAlgorithms
-    require(supported.nonEmpty || sys.env.contains("SPARK_TESTING"),
-      "SSLContext does not support any of the enabled algorithms: " +
-        enabledAlgorithms.mkString(","))
-    supported
-  }
 
   /** Returns a string representation of this SSLOptions with all the passwords masked. */
-  override def toString: String = s"SSLOptions{enabled=$enabled, " +
-      s"keyStore=$keyStore, keyStorePassword=${keyStorePassword.map(_ => "xxx")}, " +
-      s"trustStore=$trustStore, trustStorePassword=${trustStorePassword.map(_ => "xxx")}, " +
-      s"protocol=$protocol, enabledAlgorithms=$enabledAlgorithms}"
-
+  override def toString: String =
+    s"SSLOptions{enabled=$enabled, " +
+    s"keyStore=$keyStore, keyStorePassword=${keyStorePassword.map(_ => "xxx")}, " +
+    s"trustStore=$trustStore, trustStorePassword=${trustStorePassword.map(_ => "xxx")}, " +
+    s"protocol=$protocol, enabledAlgorithms=$enabledAlgorithms}"
 }
 
 private[spark] object SSLOptions extends Logging {
@@ -164,51 +164,46 @@ private[spark] object SSLOptions extends Logging {
   def parse(conf: SparkConf, ns: String, defaults: Option[SSLOptions] = None): SSLOptions = {
     val enabled = conf.getBoolean(s"$ns.enabled", defaultValue = defaults.exists(_.enabled))
 
-    val keyStore = conf.getOption(s"$ns.keyStore").map(new File(_))
-        .orElse(defaults.flatMap(_.keyStore))
+    val keyStore =
+      conf.getOption(s"$ns.keyStore").map(new File(_)).orElse(defaults.flatMap(_.keyStore))
 
-    val keyStorePassword = conf.getOption(s"$ns.keyStorePassword")
-        .orElse(defaults.flatMap(_.keyStorePassword))
+    val keyStorePassword =
+      conf.getOption(s"$ns.keyStorePassword").orElse(defaults.flatMap(_.keyStorePassword))
 
-    val keyPassword = conf.getOption(s"$ns.keyPassword")
-        .orElse(defaults.flatMap(_.keyPassword))
+    val keyPassword = conf.getOption(s"$ns.keyPassword").orElse(defaults.flatMap(_.keyPassword))
 
-    val keyStoreType = conf.getOption(s"$ns.keyStoreType")
-        .orElse(defaults.flatMap(_.keyStoreType))
+    val keyStoreType = conf.getOption(s"$ns.keyStoreType").orElse(defaults.flatMap(_.keyStoreType))
 
     val needClientAuth =
       conf.getBoolean(s"$ns.needClientAuth", defaultValue = defaults.exists(_.needClientAuth))
 
-    val trustStore = conf.getOption(s"$ns.trustStore").map(new File(_))
-        .orElse(defaults.flatMap(_.trustStore))
+    val trustStore =
+      conf.getOption(s"$ns.trustStore").map(new File(_)).orElse(defaults.flatMap(_.trustStore))
 
-    val trustStorePassword = conf.getOption(s"$ns.trustStorePassword")
-        .orElse(defaults.flatMap(_.trustStorePassword))
+    val trustStorePassword =
+      conf.getOption(s"$ns.trustStorePassword").orElse(defaults.flatMap(_.trustStorePassword))
 
-    val trustStoreType = conf.getOption(s"$ns.trustStoreType")
-        .orElse(defaults.flatMap(_.trustStoreType))
+    val trustStoreType =
+      conf.getOption(s"$ns.trustStoreType").orElse(defaults.flatMap(_.trustStoreType))
 
-    val protocol = conf.getOption(s"$ns.protocol")
-        .orElse(defaults.flatMap(_.protocol))
+    val protocol = conf.getOption(s"$ns.protocol").orElse(defaults.flatMap(_.protocol))
 
-    val enabledAlgorithms = conf.getOption(s"$ns.enabledAlgorithms")
-        .map(_.split(",").map(_.trim).filter(_.nonEmpty).toSet)
-        .orElse(defaults.map(_.enabledAlgorithms))
-        .getOrElse(Set.empty)
+    val enabledAlgorithms = conf
+      .getOption(s"$ns.enabledAlgorithms")
+      .map(_.split(",").map(_.trim).filter(_.nonEmpty).toSet)
+      .orElse(defaults.map(_.enabledAlgorithms))
+      .getOrElse(Set.empty)
 
-    new SSLOptions(
-      enabled,
-      keyStore,
-      keyStorePassword,
-      keyPassword,
-      keyStoreType,
-      needClientAuth,
-      trustStore,
-      trustStorePassword,
-      trustStoreType,
-      protocol,
-      enabledAlgorithms)
+    new SSLOptions(enabled,
+                   keyStore,
+                   keyStorePassword,
+                   keyPassword,
+                   keyStoreType,
+                   needClientAuth,
+                   trustStore,
+                   trustStorePassword,
+                   trustStoreType,
+                   protocol,
+                   enabledAlgorithms)
   }
-
 }
-

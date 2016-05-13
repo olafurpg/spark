@@ -29,10 +29,7 @@ import org.apache.spark.sql.SparkSession
 
 object DecisionTreeRegressionExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("DecisionTreeRegressionExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("DecisionTreeRegressionExample").getOrCreate()
 
     // $example on$
     // Load the data stored in LIBSVM format as a DataFrame.
@@ -50,13 +47,10 @@ object DecisionTreeRegressionExample {
     val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
 
     // Train a DecisionTree model.
-    val dt = new DecisionTreeRegressor()
-      .setLabelCol("label")
-      .setFeaturesCol("indexedFeatures")
+    val dt = new DecisionTreeRegressor().setLabelCol("label").setFeaturesCol("indexedFeatures")
 
     // Chain indexer and tree in a Pipeline.
-    val pipeline = new Pipeline()
-      .setStages(Array(featureIndexer, dt))
+    val pipeline = new Pipeline().setStages(Array(featureIndexer, dt))
 
     // Train model. This also runs the indexer.
     val model = pipeline.fit(trainingData)

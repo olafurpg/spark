@@ -32,8 +32,8 @@ import org.apache.spark.util.{JsonProtocol, JsonProtocolSuite, Utils}
  * Test whether ReplayListenerBus replays events from logs correctly.
  */
 class ReplayListenerSuite extends SparkFunSuite with BeforeAndAfter {
-  private val fileSystem = Utils.getHadoopFileSystem("/",
-    SparkHadoopUtil.get.newConfiguration(new SparkConf()))
+  private val fileSystem =
+    Utils.getHadoopFileSystem("/", SparkHadoopUtil.get.newConfiguration(new SparkConf()))
   private var testDir: File = _
 
   before {
@@ -48,8 +48,8 @@ class ReplayListenerSuite extends SparkFunSuite with BeforeAndAfter {
     val logFilePath = Utils.getFilePath(testDir, "events.txt")
     val fstream = fileSystem.create(logFilePath)
     val writer = new PrintWriter(fstream)
-    val applicationStart = SparkListenerApplicationStart("Greatest App (N)ever", None,
-      125L, "Mickey", None)
+    val applicationStart =
+      SparkListenerApplicationStart("Greatest App (N)ever", None, 125L, "Mickey", None)
     val applicationEnd = SparkListenerApplicationEnd(1000L)
     // scalastyle:off println
     writer.println(compact(render(JsonProtocol.sparkEventToJson(applicationStart))))
@@ -83,7 +83,6 @@ class ReplayListenerSuite extends SparkFunSuite with BeforeAndAfter {
       testApplicationReplay(Some(codec))
     }
   }
-
 
   /* ----------------- *
    * Actual test logic *
@@ -131,10 +130,11 @@ class ReplayListenerSuite extends SparkFunSuite with BeforeAndAfter {
     assert(sc.eventLogger.isDefined)
     val originalEvents = sc.eventLogger.get.loggedEvents
     val replayedEvents = eventMonster.loggedEvents
-    originalEvents.zip(replayedEvents).foreach { case (e1, e2) =>
-      // Don't compare the JSON here because accumulators in StageInfo may be out of order
-      JsonProtocolSuite.assertEquals(
-        JsonProtocol.sparkEventFromJson(e1), JsonProtocol.sparkEventFromJson(e2))
+    originalEvents.zip(replayedEvents).foreach {
+      case (e1, e2) =>
+        // Don't compare the JSON here because accumulators in StageInfo may be out of order
+        JsonProtocolSuite.assertEquals(
+            JsonProtocol.sparkEventFromJson(e1), JsonProtocol.sparkEventFromJson(e2))
     }
   }
 
@@ -151,9 +151,8 @@ class ReplayListenerSuite extends SparkFunSuite with BeforeAndAfter {
    * log the events.
    */
   private class EventMonster(conf: SparkConf)
-    extends EventLoggingListener("test", None, new URI("testdir"), conf) {
+      extends EventLoggingListener("test", None, new URI("testdir"), conf) {
 
-    override def start() { }
-
+    override def start() {}
   }
 }

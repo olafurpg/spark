@@ -23,7 +23,9 @@ import org.apache.spark.ml.util.{DefaultReadWriteTest, MLTestingUtils}
 import org.apache.spark.mllib.util.MLlibTestSparkContext
 
 class MulticlassClassificationEvaluatorSuite
-  extends SparkFunSuite with MLlibTestSparkContext with DefaultReadWriteTest {
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   test("params") {
     ParamsSuite.checkParams(new MulticlassClassificationEvaluator)

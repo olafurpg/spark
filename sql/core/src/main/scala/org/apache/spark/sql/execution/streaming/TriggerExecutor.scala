@@ -33,7 +33,8 @@ trait TriggerExecutor {
  * A trigger executor that runs a batch every `intervalMs` milliseconds.
  */
 case class ProcessingTimeExecutor(processingTime: ProcessingTime, clock: Clock = new SystemClock())
-  extends TriggerExecutor with Logging {
+    extends TriggerExecutor
+    with Logging {
 
   private val intervalMs = processingTime.intervalMs
 
@@ -61,8 +62,9 @@ case class ProcessingTimeExecutor(processingTime: ProcessingTime, clock: Clock =
 
   /** Called when a batch falls behind. Expose for test only */
   def notifyBatchFallingBehind(realElapsedTimeMs: Long): Unit = {
-    logWarning("Current batch is falling behind. The trigger interval is " +
-      s"${intervalMs} milliseconds, but spent ${realElapsedTimeMs} milliseconds")
+    logWarning(
+        "Current batch is falling behind. The trigger interval is " +
+        s"${intervalMs} milliseconds, but spent ${realElapsedTimeMs} milliseconds")
   }
 
   /**

@@ -24,8 +24,10 @@ import org.apache.spark.util.AccumulatorV2
 
 class ExternalClusterManagerSuite extends SparkFunSuite with LocalSparkContext {
   test("launch of backend and scheduler") {
-    val conf = new SparkConf().setMaster("myclusterManager").
-        setAppName("testcm").set("spark.driver.allowMultipleContexts", "true")
+    val conf = new SparkConf()
+      .setMaster("myclusterManager")
+      .setAppName("testcm")
+      .set("spark.driver.allowMultipleContexts", "true")
     sc = new SparkContext(conf)
     // check if the scheduler components are created
     assert(sc.schedulerBackend.isInstanceOf[DummySchedulerBackend])
@@ -37,15 +39,14 @@ private class DummyExternalClusterManager extends ExternalClusterManager {
 
   def canCreate(masterURL: String): Boolean = masterURL == "myclusterManager"
 
-  def createTaskScheduler(sc: SparkContext,
-      masterURL: String): TaskScheduler = new DummyTaskScheduler
+  def createTaskScheduler(sc: SparkContext, masterURL: String): TaskScheduler =
+    new DummyTaskScheduler
 
-  def createSchedulerBackend(sc: SparkContext,
-      masterURL: String,
-      scheduler: TaskScheduler): SchedulerBackend = new DummySchedulerBackend()
+  def createSchedulerBackend(
+      sc: SparkContext, masterURL: String, scheduler: TaskScheduler): SchedulerBackend =
+    new DummySchedulerBackend()
 
   def initialize(scheduler: TaskScheduler, backend: SchedulerBackend): Unit = {}
-
 }
 
 private class DummySchedulerBackend extends SchedulerBackend {
@@ -66,8 +67,7 @@ private class DummyTaskScheduler extends TaskScheduler {
   override def defaultParallelism(): Int = 2
   override def executorLost(executorId: String, reason: ExecutorLossReason): Unit = {}
   override def applicationAttemptId(): Option[String] = None
-  def executorHeartbeatReceived(
-      execId: String,
-      accumUpdates: Array[(Long, Seq[AccumulatorV2[_, _]])],
-      blockManagerId: BlockManagerId): Boolean = true
+  def executorHeartbeatReceived(execId: String,
+                                accumUpdates: Array[(Long, Seq[AccumulatorV2[_, _]])],
+                                blockManagerId: BlockManagerId): Boolean = true
 }

@@ -21,40 +21,33 @@ import scala.collection.JavaConverters._
 
 import org.apache.spark.sql.test.SharedSQLContext
 
-
 class DataFrameNaFunctionsSuite extends QueryTest with SharedSQLContext {
   import testImplicits._
 
   def createDF(): DataFrame = {
     Seq[(String, java.lang.Integer, java.lang.Double)](
-      ("Bob", 16, 176.5),
-      ("Alice", null, 164.3),
-      ("David", 60, null),
-      ("Nina", 25, Double.NaN),
-      ("Amy", null, null),
-      (null, null, null)
-      ).toDF("name", "age", "height")
+        ("Bob", 16, 176.5),
+        ("Alice", null, 164.3),
+        ("David", 60, null),
+        ("Nina", 25, Double.NaN),
+        ("Amy", null, null),
+        (null, null, null)
+    ).toDF("name", "age", "height")
   }
 
   test("drop") {
     val input = createDF()
     val rows = input.collect()
 
-    checkAnswer(
-      input.na.drop("name" :: Nil).select("name"),
-      Row("Bob") :: Row("Alice") :: Row("David") :: Row("Nina") :: Row("Amy") :: Nil)
+    checkAnswer(input.na.drop("name" :: Nil).select("name"),
+                Row("Bob") :: Row("Alice") :: Row("David") :: Row("Nina") :: Row("Amy") :: Nil)
 
-    checkAnswer(
-      input.na.drop("age" :: Nil).select("name"),
-      Row("Bob") :: Row("David") :: Row("Nina") :: Nil)
+    checkAnswer(input.na.drop("age" :: Nil).select("name"),
+                Row("Bob") :: Row("David") :: Row("Nina") :: Nil)
 
-    checkAnswer(
-      input.na.drop("age" :: "height" :: Nil),
-      rows(0) :: Nil)
+    checkAnswer(input.na.drop("age" :: "height" :: Nil), rows(0) :: Nil)
 
-    checkAnswer(
-      input.na.drop(),
-      rows(0))
+    checkAnswer(input.na.drop(), rows(0))
 
     // dropna on an a dataframe with no column should return an empty data frame.
     val empty = input.sparkSession.emptyDataFrame.select()
@@ -68,34 +61,24 @@ class DataFrameNaFunctionsSuite extends QueryTest with SharedSQLContext {
     val input = createDF()
     val rows = input.collect()
 
-    checkAnswer(
-      input.na.drop("all").select("name"),
-      Row("Bob") :: Row("Alice") :: Row("David") :: Row("Nina") :: Row("Amy") :: Nil)
+    checkAnswer(input.na.drop("all").select("name"),
+                Row("Bob") :: Row("Alice") :: Row("David") :: Row("Nina") :: Row("Amy") :: Nil)
 
-    checkAnswer(
-      input.na.drop("any"),
-      rows(0) :: Nil)
+    checkAnswer(input.na.drop("any"), rows(0) :: Nil)
 
-    checkAnswer(
-      input.na.drop("any", Seq("age", "height")),
-      rows(0) :: Nil)
+    checkAnswer(input.na.drop("any", Seq("age", "height")), rows(0) :: Nil)
 
-    checkAnswer(
-      input.na.drop("all", Seq("age", "height")).select("name"),
-      Row("Bob") :: Row("Alice") :: Row("David") :: Row("Nina") :: Nil)
+    checkAnswer(input.na.drop("all", Seq("age", "height")).select("name"),
+                Row("Bob") :: Row("Alice") :: Row("David") :: Row("Nina") :: Nil)
   }
 
   test("drop with threshold") {
     val input = createDF()
     val rows = input.collect()
 
-    checkAnswer(
-      input.na.drop(2, Seq("age", "height")),
-      rows(0) :: Nil)
+    checkAnswer(input.na.drop(2, Seq("age", "height")), rows(0) :: Nil)
 
-    checkAnswer(
-      input.na.drop(3, Seq("name", "age", "height")),
-      rows(0))
+    checkAnswer(input.na.drop(3, Seq("name", "age", "height")), rows(0))
 
     // Make sure the columns are properly named.
     assert(input.na.drop(2, Seq("age", "height")).columns.toSeq === input.columns.toSeq)
@@ -105,55 +88,55 @@ class DataFrameNaFunctionsSuite extends QueryTest with SharedSQLContext {
     val input = createDF()
 
     val fillNumeric = input.na.fill(50.6)
-    checkAnswer(
-      fillNumeric,
-      Row("Bob", 16, 176.5) ::
-        Row("Alice", 50, 164.3) ::
-        Row("David", 60, 50.6) ::
-        Row("Nina", 25, 50.6) ::
-        Row("Amy", 50, 50.6) ::
-        Row(null, 50, 50.6) :: Nil)
+    checkAnswer(fillNumeric,
+                Row("Bob", 16, 176.5) ::
+                Row("Alice", 50, 164.3) ::
+                Row("David", 60, 50.6) ::
+                Row("Nina", 25, 50.6) ::
+                Row("Amy", 50, 50.6) ::
+                Row(null, 50, 50.6) :: Nil)
 
     // Make sure the columns are properly named.
     assert(fillNumeric.columns.toSeq === input.columns.toSeq)
 
     // string
-    checkAnswer(
-      input.na.fill("unknown").select("name"),
-      Row("Bob") :: Row("Alice") :: Row("David") ::
-        Row("Nina") :: Row("Amy") :: Row("unknown") :: Nil)
+    checkAnswer(input.na.fill("unknown").select("name"),
+                Row("Bob") :: Row("Alice") :: Row("David") ::
+                Row("Nina") :: Row("Amy") :: Row("unknown") :: Nil)
     assert(input.na.fill("unknown").columns.toSeq === input.columns.toSeq)
 
     // fill double with subset columns
-    checkAnswer(
-      input.na.fill(50.6, "age" :: Nil).select("name", "age"),
-      Row("Bob", 16) ::
-        Row("Alice", 50) ::
-        Row("David", 60) ::
-        Row("Nina", 25) ::
-        Row("Amy", 50) ::
-        Row(null, 50) :: Nil)
+    checkAnswer(input.na.fill(50.6, "age" :: Nil).select("name", "age"),
+                Row("Bob", 16) ::
+                Row("Alice", 50) ::
+                Row("David", 60) ::
+                Row("Nina", 25) ::
+                Row("Amy", 50) ::
+                Row(null, 50) :: Nil)
 
     // fill string with subset columns
     checkAnswer(
-      Seq[(String, String)]((null, null)).toDF("col1", "col2").na.fill("test", "col1" :: Nil),
-      Row("test", null))
+        Seq[(String, String)]((null, null)).toDF("col1", "col2").na.fill("test", "col1" :: Nil),
+        Row("test", null))
   }
 
   test("fill with map") {
-    val df = Seq[(String, String, java.lang.Integer, java.lang.Long,
-        java.lang.Float, java.lang.Double, java.lang.Boolean)](
-      (null, null, null, null, null, null, null))
-      .toDF("stringFieldA", "stringFieldB", "integerField", "longField",
-        "floatField", "doubleField", "booleanField")
+    val df = Seq[
+        (String, String, java.lang.Integer, java.lang.Long, java.lang.Float, java.lang.Double, java.lang.Boolean)](
+        (null, null, null, null, null, null, null)).toDF("stringFieldA",
+                                                         "stringFieldB",
+                                                         "integerField",
+                                                         "longField",
+                                                         "floatField",
+                                                         "doubleField",
+                                                         "booleanField")
 
-    val fillMap = Map(
-      "stringFieldA" -> "test",
-      "integerField" -> 1,
-      "longField" -> 2L,
-      "floatField" -> 3.3f,
-      "doubleField" -> 4.4d,
-      "booleanField" -> false)
+    val fillMap = Map("stringFieldA" -> "test",
+                      "integerField" -> 1,
+                      "longField" -> 2L,
+                      "floatField" -> 3.3f,
+                      "doubleField" -> 4.4d,
+                      "booleanField" -> false)
 
     val expectedRow = Row("test", null, 1, 2L, 3.3f, 4.4d, false)
 
@@ -161,12 +144,11 @@ class DataFrameNaFunctionsSuite extends QueryTest with SharedSQLContext {
     checkAnswer(df.na.fill(fillMap.asJava), expectedRow) // Test Java version
 
     // Ensure replacement values are cast to the column data type.
-    checkAnswer(df.na.fill(Map(
-      "integerField" -> 1d,
-      "longField" -> 2d,
-      "floatField" -> 3d,
-      "doubleField" -> 4d)),
-      Row(null, null, 1, 2L, 3f, 4d, null))
+    checkAnswer(df.na.fill(Map("integerField" -> 1d,
+                               "longField" -> 2d,
+                               "floatField" -> 3d,
+                               "doubleField" -> 4d)),
+                Row(null, null, 1, 2L, 3f, 4d, null))
 
     // Ensure column types do not change. Columns that have null values replaced
     // will no longer be flagged as nullable, so do not compare schemas directly.
@@ -177,11 +159,14 @@ class DataFrameNaFunctionsSuite extends QueryTest with SharedSQLContext {
     val input = createDF()
 
     // Replace two numeric columns: age and height
-    val out = input.na.replace(Seq("age", "height"), Map(
-      16 -> 61,
-      60 -> 6,
-      164.3 -> 461.3  // Alice is really tall
-    )).collect()
+    val out = input.na
+      .replace(Seq("age", "height"),
+               Map(
+                   16 -> 61,
+                   60 -> 6,
+                   164.3 -> 461.3 // Alice is really tall
+               ))
+      .collect()
 
     assert(out(0) === Row("Bob", 61, 176.5))
     assert(out(1) === Row("Alice", null, 461.3))
@@ -191,11 +176,14 @@ class DataFrameNaFunctionsSuite extends QueryTest with SharedSQLContext {
     assert(out(5) === Row(null, null, null))
 
     // Replace only the age column
-    val out1 = input.na.replace("age", Map(
-      16 -> 61,
-      60 -> 6,
-      164.3 -> 461.3  // Alice is really tall
-    )).collect()
+    val out1 = input.na
+      .replace("age",
+               Map(
+                   16 -> 61,
+                   60 -> 6,
+                   164.3 -> 461.3 // Alice is really tall
+               ))
+      .collect()
 
     assert(out1(0) === Row("Bob", 61, 176.5))
     assert(out1(1) === Row("Alice", null, 164.3))

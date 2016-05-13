@@ -19,16 +19,17 @@ private[repl] trait SparkExprTyper extends Logging {
   val repl: SparkIMain
 
   import repl._
-  import global.{ reporter => _, Import => _, _ }
+  import global.{reporter => _, Import => _, _}
   import definitions._
-  import syntaxAnalyzer.{ UnitParser, UnitScanner, token2name }
+  import syntaxAnalyzer.{UnitParser, UnitScanner, token2name}
   import naming.freshInternalVarName
 
-  object codeParser extends { val global: repl.global.type = repl.global } with CodeHandlers[Tree] {
+  object codeParser extends { val global: repl.global.type = repl.global }
+  with CodeHandlers[Tree] {
     def applyRule[T](code: String, rule: UnitParser => T): T = {
       reporter.reset()
       val scanner = newUnitParser(code)
-      val result  = rule(scanner)
+      val result = rule(scanner)
 
       if (!reporter.hasErrors)
         scanner.accept(EOF)
@@ -37,13 +38,13 @@ private[repl] trait SparkExprTyper extends Logging {
     }
 
     def defns(code: String) = stmts(code) collect { case x: DefTree => x }
-    def expr(code: String)  = applyRule(code, _.expr())
+    def expr(code: String) = applyRule(code, _.expr())
     def stmts(code: String) = applyRule(code, _.templateStats())
-    def stmt(code: String)  = stmts(code).last  // guaranteed nonempty
+    def stmt(code: String) = stmts(code).last // guaranteed nonempty
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
-  def parse(line: String): Option[List[Tree]] = debugging(s"""parse("$line")""")  {
+  def parse(line: String): Option[List[Tree]] = debugging(s"""parse("$line")""") {
     var isIncomplete = false
     reporter.withIncompleteHandler((_, _) => isIncomplete = true) {
       val trees = codeParser.stmts(line)
@@ -63,7 +64,7 @@ private[repl] trait SparkExprTyper extends Logging {
 
   def symbolOfLine(code: String): Symbol = {
     def asExpr(): Symbol = {
-      val name  = freshInternalVarName()
+      val name = freshInternalVarName()
       // Typing it with a lazy val would give us the right type, but runs
       // into compiler bugs with things like existentials, so we compile it
       // behind a def and strip the NullaryMethodType which wraps the expr.
@@ -75,7 +76,7 @@ private[repl] trait SparkExprTyper extends Logging {
           // drop NullaryMethodType
           val sym = sym0.cloneSymbol setInfo afterTyper(sym0.info.finalResultType)
           if (sym.info.typeSymbol eq UnitClass) NoSymbol else sym
-        case _          => NoSymbol
+        case _ => NoSymbol
       }
     }
     def asDefn(): Symbol = {
@@ -84,9 +85,9 @@ private[repl] trait SparkExprTyper extends Logging {
       interpretSynthetic(code) match {
         case IR.Success =>
           repl.definedSymbolList filterNot old match {
-            case Nil        => NoSymbol
+            case Nil => NoSymbol
             case sym :: Nil => sym
-            case syms       => NoSymbol.newOverloaded(NoPrefix, syms)
+            case syms => NoSymbol.newOverloaded(NoPrefix, syms)
           }
         case _ => NoSymbol
       }
@@ -107,8 +108,7 @@ private[repl] trait SparkExprTyper extends Logging {
     // to induce the error message.
     try beSilentDuring(symbolOfLine(expr).tpe) match {
       case NoType if !silent => symbolOfLine(expr).tpe // generate error
-      case tpe               => tpe
-    }
-    finally typeOfExpressionDepth -= 1
+      case tpe => tpe
+    } finally typeOfExpressionDepth -= 1
   }
 }

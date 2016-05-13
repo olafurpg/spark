@@ -20,14 +20,12 @@ package org.apache.spark.sql.catalyst.expressions.codegen
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.util._
 
-
 class CodeFormatterSuite extends SparkFunSuite {
 
   def testCase(name: String)(input: String)(expected: String): Unit = {
     test(name) {
       if (CodeFormatter.format(input).trim !== expected.trim) {
-        fail(
-          s"""
+        fail(s"""
              |== FAIL: Formatted code doesn't match ===
              |${sideBySide(CodeFormatter.format(input).trim, expected.trim).mkString("\n")}
            """.stripMargin)
@@ -39,7 +37,7 @@ class CodeFormatterSuite extends SparkFunSuite {
     """class A {
       |blahblah;
       |}""".stripMargin
-  }{
+  } {
     """
       |/* 001 */ class A {
       |/* 002 */   blahblah;
@@ -67,7 +65,7 @@ class CodeFormatterSuite extends SparkFunSuite {
     """class A {
       | if (c) {duh;}
       |}""".stripMargin
-  }{
+  } {
     """
       |/* 001 */ class A {
       |/* 002 */   if (c) {duh;}
@@ -79,7 +77,7 @@ class CodeFormatterSuite extends SparkFunSuite {
     """class A {
       | if (c) {duh;} else {boo;}
       |}""".stripMargin
-  }{
+  } {
     """
       |/* 001 */ class A {
       |/* 002 */   if (c) {duh;} else {boo;}
@@ -92,7 +90,7 @@ class CodeFormatterSuite extends SparkFunSuite {
       |a,
       |b,
       |c)""".stripMargin
-  }{
+  } {
     """
       |/* 001 */ foo(
       |/* 002 */   a,
@@ -106,7 +104,7 @@ class CodeFormatterSuite extends SparkFunSuite {
       |class A {
       |class body;
       |}""".stripMargin
-  }{
+  } {
     """
       |/* 001 */ // This is a comment about class A { { { ( (
       |/* 002 */ class A {
@@ -120,7 +118,7 @@ class CodeFormatterSuite extends SparkFunSuite {
       |class A {
       |class body;
       |}""".stripMargin
-  }{
+  } {
     """
       |/* 001 */ /** This is a comment about class A { { { ( ( */
       |/* 002 */ class A {
@@ -136,7 +134,7 @@ class CodeFormatterSuite extends SparkFunSuite {
       |class A {
       |class body;
       |}""".stripMargin
-  }{
+  } {
     """
       |/* 001 */ /* This is a comment about
       |/* 002 */ class A {

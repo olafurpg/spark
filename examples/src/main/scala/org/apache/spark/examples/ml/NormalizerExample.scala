@@ -25,19 +25,14 @@ import org.apache.spark.sql.SparkSession
 
 object NormalizerExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("NormalizerExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("NormalizerExample").getOrCreate()
 
     // $example on$
     val dataFrame = spark.read.format("libsvm").load("data/mllib/sample_libsvm_data.txt")
 
     // Normalize each Vector using $L^1$ norm.
-    val normalizer = new Normalizer()
-      .setInputCol("features")
-      .setOutputCol("normFeatures")
-      .setP(1.0)
+    val normalizer =
+      new Normalizer().setInputCol("features").setOutputCol("normFeatures").setP(1.0)
 
     val l1NormData = normalizer.transform(dataFrame)
     l1NormData.show()

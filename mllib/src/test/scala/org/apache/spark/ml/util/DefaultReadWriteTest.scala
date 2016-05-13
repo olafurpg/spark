@@ -40,8 +40,7 @@ trait DefaultReadWriteTest extends TempDirectory { self: Suite =>
    * @return  Instance loaded from file
    */
   def testDefaultReadWrite[T <: Params with MLWritable](
-      instance: T,
-      testParams: Boolean = true): T = {
+      instance: T, testParams: Boolean = true): T = {
     val uid = instance.uid
     val subdirName = Identifiable.randomUID("test")
 
@@ -96,29 +95,32 @@ trait DefaultReadWriteTest extends TempDirectory { self: Suite =>
    * @tparam M  Type of [[Model]] produced by estimator
    */
   def testEstimatorAndModelReadWrite[
-    E <: Estimator[M] with MLWritable, M <: Model[M] with MLWritable](
+      E <: Estimator[M] with MLWritable, M <: Model[M] with MLWritable](
       estimator: E,
       dataset: Dataset[_],
       testParams: Map[String, Any],
       checkModelData: (M, M) => Unit): Unit = {
     // Set some Params to make sure set Params are serialized.
-    testParams.foreach { case (p, v) =>
-      estimator.set(estimator.getParam(p), v)
+    testParams.foreach {
+      case (p, v) =>
+        estimator.set(estimator.getParam(p), v)
     }
     val model = estimator.fit(dataset)
 
     // Test Estimator save/load
     val estimator2 = testDefaultReadWrite(estimator)
-    testParams.foreach { case (p, v) =>
-      val param = estimator.getParam(p)
-      assert(estimator.get(param).get === estimator2.get(param).get)
+    testParams.foreach {
+      case (p, v) =>
+        val param = estimator.getParam(p)
+        assert(estimator.get(param).get === estimator2.get(param).get)
     }
 
     // Test Model save/load
     val model2 = testDefaultReadWrite(model)
-    testParams.foreach { case (p, v) =>
-      val param = model.getParam(p)
-      assert(model.get(param).get === model2.get(param).get)
+    testParams.foreach {
+      case (p, v) =>
+        val param = model.getParam(p)
+        assert(model.get(param).get === model2.get(param).get)
     }
 
     checkModelData(model, model2)
@@ -134,10 +136,10 @@ class MyParams(override val uid: String) extends Params with MLWritable {
   final val longParam: LongParam = new LongParam(this, "longParam", "doc")
   final val stringParam: Param[String] = new Param[String](this, "stringParam", "doc")
   final val intArrayParam: IntArrayParam = new IntArrayParam(this, "intArrayParam", "doc")
-  final val doubleArrayParam: DoubleArrayParam =
-    new DoubleArrayParam(this, "doubleArrayParam", "doc")
-  final val stringArrayParam: StringArrayParam =
-    new StringArrayParam(this, "stringArrayParam", "doc")
+  final val doubleArrayParam: DoubleArrayParam = new DoubleArrayParam(
+      this, "doubleArrayParam", "doc")
+  final val stringArrayParam: StringArrayParam = new StringArrayParam(
+      this, "stringArrayParam", "doc")
 
   setDefault(intParamWithDefault -> 0)
   set(intParam -> 1)
@@ -161,8 +163,10 @@ object MyParams extends MLReadable[MyParams] {
   override def load(path: String): MyParams = super.load(path)
 }
 
-class DefaultReadWriteSuite extends SparkFunSuite with MLlibTestSparkContext
-  with DefaultReadWriteTest {
+class DefaultReadWriteSuite
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   test("default read/write") {
     val myParams = new MyParams("my_params")
