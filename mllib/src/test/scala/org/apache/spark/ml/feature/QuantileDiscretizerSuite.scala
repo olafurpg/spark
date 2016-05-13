@@ -24,7 +24,9 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.functions.udf
 
 class QuantileDiscretizerSuite
-  extends SparkFunSuite with MLlibTestSparkContext with DefaultReadWriteTest {
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   test("Test observed number of buckets and their sizes match expected values") {
     val sqlCtx = SQLContext.getOrCreate(sc)
@@ -41,15 +43,15 @@ class QuantileDiscretizerSuite
 
     val observedNumBuckets = result.select("result").distinct.count
     assert(observedNumBuckets === numBuckets,
-      "Observed number of buckets does not equal expected number of buckets.")
+           "Observed number of buckets does not equal expected number of buckets.")
 
     val relativeError = discretizer.getRelativeError
-    val isGoodBucket = udf {
-      (size: Int) => math.abs( size - (datasetSize / numBuckets)) <= (relativeError * datasetSize)
+    val isGoodBucket = udf { (size: Int) =>
+      math.abs(size - (datasetSize / numBuckets)) <= (relativeError * datasetSize)
     }
     val numGoodBuckets = result.groupBy("result").count.filter(isGoodBucket($"count")).count
     assert(numGoodBuckets === numBuckets,
-      "Bucket sizes are not within expected relative error tolerance.")
+           "Bucket sizes are not within expected relative error tolerance.")
   }
 
   test("Test transform method on unseen data") {
@@ -58,19 +60,17 @@ class QuantileDiscretizerSuite
 
     val trainDF = sc.parallelize(1.0 to 100.0 by 1.0).map(Tuple1.apply).toDF("input")
     val testDF = sc.parallelize(-10.0 to 110.0 by 1.0).map(Tuple1.apply).toDF("input")
-    val discretizer = new QuantileDiscretizer()
-      .setInputCol("input")
-      .setOutputCol("result")
-      .setNumBuckets(5)
+    val discretizer =
+      new QuantileDiscretizer().setInputCol("input").setOutputCol("result").setNumBuckets(5)
 
     val result = discretizer.fit(trainDF).transform(testDF)
     val firstBucketSize = result.filter(result("result") === 0.0).count
     val lastBucketSize = result.filter(result("result") === 4.0).count
 
     assert(firstBucketSize === 30L,
-      s"Size of first bucket ${firstBucketSize} did not equal expected value of 30.")
+           s"Size of first bucket ${firstBucketSize} did not equal expected value of 30.")
     assert(lastBucketSize === 31L,
-      s"Size of last bucket ${lastBucketSize} did not equal expected value of 31.")
+           s"Size of last bucket ${lastBucketSize} did not equal expected value of 31.")
   }
 
   test("read/write") {
@@ -86,10 +86,8 @@ class QuantileDiscretizerSuite
     import sqlCtx.implicits._
 
     val df = sc.parallelize(1 to 100).map(Tuple1.apply).toDF("input")
-    val discretizer = new QuantileDiscretizer()
-      .setInputCol("input")
-      .setOutputCol("result")
-      .setNumBuckets(5)
+    val discretizer =
+      new QuantileDiscretizer().setInputCol("input").setOutputCol("result").setNumBuckets(5)
     val model = discretizer.fit(df)
     assert(model.hasParent)
   }

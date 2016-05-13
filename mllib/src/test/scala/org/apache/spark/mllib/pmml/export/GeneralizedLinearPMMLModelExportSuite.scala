@@ -40,8 +40,8 @@ class GeneralizedLinearPMMLModelExportSuite extends SparkFunSuite {
     // one.  It also verifies that the pmml model has a regression table with the same number of
     // predictors of the model weights.
     val pmmlRegressionModel = pmml.getModels.get(0).asInstanceOf[RegressionModel]
-    assert(pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size
-      === linearRegressionModel.weights.size)
+    assert(
+        pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size === linearRegressionModel.weights.size)
   }
 
   test("ridge regression PMML export") {
@@ -59,8 +59,8 @@ class GeneralizedLinearPMMLModelExportSuite extends SparkFunSuite {
     // one.  It also verifies that the pmml model has a regression table with the same number of
     // predictors of the model weights.
     val pmmlRegressionModel = pmml.getModels.get(0).asInstanceOf[RegressionModel]
-    assert(pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size
-      === ridgeRegressionModel.weights.size)
+    assert(
+        pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size === ridgeRegressionModel.weights.size)
   }
 
   test("lasso PMML export") {
@@ -77,8 +77,7 @@ class GeneralizedLinearPMMLModelExportSuite extends SparkFunSuite {
     // one. It also verifies that the pmml model has a regression table with the same number of
     // predictors of the model weights.
     val pmmlRegressionModel = pmml.getModels.get(0).asInstanceOf[RegressionModel]
-    assert(pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size
-      === lassoModel.weights.size)
+    assert(
+        pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size === lassoModel.weights.size)
   }
-
 }

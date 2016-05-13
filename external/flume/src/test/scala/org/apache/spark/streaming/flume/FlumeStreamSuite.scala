@@ -61,12 +61,11 @@ class FlumeStreamSuite extends SparkFunSuite with BeforeAndAfter with Matchers w
 
       eventually(timeout(10 seconds), interval(100 milliseconds)) {
         val outputEvents = outputQueue.asScala.toSeq.flatten.map { _.event }
-        outputEvents.foreach {
-          event =>
-            event.getHeaders.get("test") should be("header")
+        outputEvents.foreach { event =>
+          event.getHeaders.get("test") should be("header")
         }
         val output = outputEvents.map(event => JavaUtils.bytesToString(event.getBody))
-        output should be (input)
+        output should be(input)
       }
     } finally {
       if (ssc != null) {
@@ -81,7 +80,7 @@ class FlumeStreamSuite extends SparkFunSuite with BeforeAndAfter with Matchers w
       testPort: Int, testCompression: Boolean): (ConcurrentLinkedQueue[Seq[SparkFlumeEvent]]) = {
     ssc = new StreamingContext(conf, Milliseconds(200))
     val flumeStream = FlumeUtils.createStream(
-      ssc, "localhost", testPort, StorageLevel.MEMORY_AND_DISK, testCompression)
+        ssc, "localhost", testPort, StorageLevel.MEMORY_AND_DISK, testCompression)
     val outputQueue = new ConcurrentLinkedQueue[Seq[SparkFlumeEvent]]
     val outputStream = new TestOutputStream(flumeStream, outputQueue)
     outputStream.register()
@@ -91,7 +90,7 @@ class FlumeStreamSuite extends SparkFunSuite with BeforeAndAfter with Matchers w
 
   /** Class to create socket channel with compression */
   private class CompressionChannelFactory(compressionLevel: Int)
-    extends NioClientSocketChannelFactory {
+      extends NioClientSocketChannelFactory {
 
     override def newChannel(pipeline: ChannelPipeline): SocketChannel = {
       val encoder = new ZlibEncoder(compressionLevel)

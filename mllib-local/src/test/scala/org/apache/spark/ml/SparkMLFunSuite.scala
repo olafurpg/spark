@@ -23,8 +23,6 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 /**
  * Base abstract class for all unit tests in Spark for handling common functionality.
  */
-private[spark] abstract class SparkMLFunSuite
-  extends FunSuite
-  with BeforeAndAfterAll {
+private[spark] abstract class SparkMLFunSuite extends FunSuite with BeforeAndAfterAll {
   // scalastyle:on
 }

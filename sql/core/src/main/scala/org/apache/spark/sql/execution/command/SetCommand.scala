@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
-
 /**
  * Command that runs
  * {{{
@@ -37,8 +36,7 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType}
 case class SetCommand(kv: Option[(String, Option[String])]) extends RunnableCommand with Logging {
 
   private def keyValueOutput: Seq[Attribute] = {
-    val schema = StructType(
-      StructField("key", StringType, nullable = false) ::
+    val schema = StructType(StructField("key", StringType, nullable = false) ::
         StructField("value", StringType, nullable = false) :: Nil)
     schema.toAttributes
   }
@@ -48,12 +46,12 @@ case class SetCommand(kv: Option[(String, Option[String])]) extends RunnableComm
     case Some((SQLConf.Deprecated.MAPRED_REDUCE_TASKS, Some(value))) =>
       val runFunc = (sparkSession: SparkSession) => {
         logWarning(
-          s"Property ${SQLConf.Deprecated.MAPRED_REDUCE_TASKS} is deprecated, " +
+            s"Property ${SQLConf.Deprecated.MAPRED_REDUCE_TASKS} is deprecated, " +
             s"automatically converted to ${SQLConf.SHUFFLE_PARTITIONS.key} instead.")
         if (value.toInt < 1) {
           val msg =
             s"Setting negative ${SQLConf.Deprecated.MAPRED_REDUCE_TASKS} for automatically " +
-              "determining the number of reducers is not supported."
+            "determining the number of reducers is not supported."
           throw new IllegalArgumentException(msg)
         } else {
           sparkSession.conf.set(SQLConf.SHUFFLE_PARTITIONS.key, value)
@@ -82,12 +80,13 @@ case class SetCommand(kv: Option[(String, Option[String])]) extends RunnableComm
     // SQLConf of the sparkSession.
     case Some(("-v", None)) =>
       val runFunc = (sparkSession: SparkSession) => {
-        sparkSession.sessionState.conf.getAllDefinedConfs.map { case (key, defaultValue, doc) =>
-          Row(key, defaultValue, doc)
+        sparkSession.sessionState.conf.getAllDefinedConfs.map {
+          case (key, defaultValue, doc) =>
+            Row(key, defaultValue, doc)
         }
       }
       val schema = StructType(
-        StructField("key", StringType, nullable = false) ::
+          StructField("key", StringType, nullable = false) ::
           StructField("default", StringType, nullable = false) ::
           StructField("meaning", StringType, nullable = false) :: Nil)
       (schema.toAttributes, runFunc)
@@ -96,11 +95,10 @@ case class SetCommand(kv: Option[(String, Option[String])]) extends RunnableComm
     case Some((SQLConf.Deprecated.MAPRED_REDUCE_TASKS, None)) =>
       val runFunc = (sparkSession: SparkSession) => {
         logWarning(
-          s"Property ${SQLConf.Deprecated.MAPRED_REDUCE_TASKS} is deprecated, " +
+            s"Property ${SQLConf.Deprecated.MAPRED_REDUCE_TASKS} is deprecated, " +
             s"showing ${SQLConf.SHUFFLE_PARTITIONS.key} instead.")
-        Seq(Row(
-          SQLConf.SHUFFLE_PARTITIONS.key,
-          sparkSession.sessionState.conf.numShufflePartitions.toString))
+        Seq(Row(SQLConf.SHUFFLE_PARTITIONS.key,
+                sparkSession.sessionState.conf.numShufflePartitions.toString))
       }
       (keyValueOutput, runFunc)
 
@@ -116,5 +114,4 @@ case class SetCommand(kv: Option[(String, Option[String])]) extends RunnableComm
   override val output: Seq[Attribute] = _output
 
   override def run(sparkSession: SparkSession): Seq[Row] = runFunc(sparkSession)
-
 }

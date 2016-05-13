@@ -35,10 +35,7 @@ object BisectingKMeansExample {
 
   def main(args: Array[String]): Unit = {
     // Creates a SparkSession
-    val spark = SparkSession
-      .builder
-      .appName("BisectingKMeansExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("BisectingKMeansExample").getOrCreate()
 
     // $example on$
     // Loads data.
@@ -62,4 +59,3 @@ object BisectingKMeansExample {
   }
 }
 // scalastyle:on println
-

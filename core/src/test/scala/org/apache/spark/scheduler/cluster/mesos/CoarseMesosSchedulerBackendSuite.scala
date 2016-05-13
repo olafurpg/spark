@@ -36,7 +36,8 @@ import org.apache.spark.network.shuffle.mesos.MesosExternalShuffleClient
 import org.apache.spark.rpc.RpcEndpointRef
 import org.apache.spark.scheduler.TaskSchedulerImpl
 
-class CoarseMesosSchedulerBackendSuite extends SparkFunSuite
+class CoarseMesosSchedulerBackendSuite
+    extends SparkFunSuite
     with LocalSparkContext
     with MockitoSugar
     with BeforeAndAfter {
@@ -152,9 +153,7 @@ class CoarseMesosSchedulerBackendSuite extends SparkFunSuite
     setBackend(Map("spark.cores.max" -> maxCores.toString))
 
     val executorMemory = backend.executorMemory(sc)
-    offerResources(List(
-      (executorMemory, maxCores + 1),
-      (executorMemory, maxCores + 1)))
+    offerResources(List((executorMemory, maxCores + 1), (executorMemory, maxCores + 1)))
 
     verifyTaskLaunched("o1")
     verifyDeclinedOffer(driver, createOfferId("o2"), true)
@@ -164,12 +163,11 @@ class CoarseMesosSchedulerBackendSuite extends SparkFunSuite
     val executorCores = 4
     val maxCores = executorCores * 2
     setBackend(Map("spark.executor.cores" -> executorCores.toString,
-      "spark.cores.max" -> maxCores.toString))
+                   "spark.cores.max" -> maxCores.toString))
 
     val executorMemory = backend.executorMemory(sc)
-    offerResources(List(
-      (executorMemory * 2, executorCores * 2),
-      (executorMemory * 2, executorCores * 2)))
+    offerResources(
+        List((executorMemory * 2, executorCores * 2), (executorMemory * 2, executorCores * 2)))
 
     verifyTaskLaunched("o1")
     verifyTaskLaunched("o2")
@@ -232,15 +230,15 @@ class CoarseMesosSchedulerBackendSuite extends SparkFunSuite
 
     val backend = new CoarseMesosSchedulerBackend(taskScheduler, sc, "master", securityManager) {
       override protected def createSchedulerDriver(
-        masterUrl: String,
-        scheduler: Scheduler,
-        sparkUser: String,
-        appName: String,
-        conf: SparkConf,
-        webuiUrl: Option[String] = None,
-        checkpoint: Option[Boolean] = None,
-        failoverTimeout: Option[Double] = None,
-        frameworkId: Option[String] = None): SchedulerDriver = {
+          masterUrl: String,
+          scheduler: Scheduler,
+          sparkUser: String,
+          appName: String,
+          conf: SparkConf,
+          webuiUrl: Option[String] = None,
+          checkpoint: Option[Boolean] = None,
+          failoverTimeout: Option[Double] = None,
+          frameworkId: Option[String] = None): SchedulerDriver = {
         markRegistered()
         assert(webuiUrl.isDefined)
         assert(webuiUrl.get.equals("http://webui"))
@@ -251,9 +249,8 @@ class CoarseMesosSchedulerBackendSuite extends SparkFunSuite
     backend.start()
   }
 
-  private def verifyDeclinedOffer(driver: SchedulerDriver,
-      offerId: OfferID,
-      filter: Boolean = false): Unit = {
+  private def verifyDeclinedOffer(
+      driver: SchedulerDriver, offerId: OfferID, filter: Boolean = false): Unit = {
     if (filter) {
       verify(driver, times(1)).declineOffer(Matchers.eq(offerId), anyObject[Filters])
     } else {
@@ -262,28 +259,29 @@ class CoarseMesosSchedulerBackendSuite extends SparkFunSuite
   }
 
   private def offerResources(offers: List[(Int, Int)], startId: Int = 1): Unit = {
-    val mesosOffers = offers.zipWithIndex.map {case (offer, i) =>
-      createOffer(s"o${i + startId}", s"s${i + startId}", offer._1, offer._2)}
+    val mesosOffers = offers.zipWithIndex.map {
+      case (offer, i) =>
+        createOffer(s"o${i + startId}", s"s${i + startId}", offer._1, offer._2)
+    }
 
     backend.resourceOffers(driver, mesosOffers.asJava)
   }
 
   private def verifyTaskLaunched(offerId: String): java.util.Collection[TaskInfo] = {
     val captor = ArgumentCaptor.forClass(classOf[java.util.Collection[TaskInfo]])
-    verify(driver, times(1)).launchTasks(
-      Matchers.eq(Collections.singleton(createOfferId(offerId))),
-      captor.capture())
+    verify(driver, times(1))
+      .launchTasks(Matchers.eq(Collections.singleton(createOfferId(offerId))), captor.capture())
     captor.getValue
   }
 
   private def createTaskStatus(taskId: String, slaveId: String, state: TaskState): TaskStatus = {
-    TaskStatus.newBuilder()
+    TaskStatus
+      .newBuilder()
       .setTaskId(TaskID.newBuilder().setValue(taskId).build())
       .setSlaveId(SlaveID.newBuilder().setValue(slaveId).build())
       .setState(state)
       .build
   }
-
 
   private def createOfferId(offerId: String): OfferID = {
     OfferID.newBuilder().setValue(offerId).build()
@@ -303,27 +301,28 @@ class CoarseMesosSchedulerBackendSuite extends SparkFunSuite
 
   private def createOffer(offerId: String, slaveId: String, mem: Int, cpu: Int): Offer = {
     val builder = Offer.newBuilder()
-    builder.addResourcesBuilder()
+    builder
+      .addResourcesBuilder()
       .setName("mem")
       .setType(Value.Type.SCALAR)
       .setScalar(Scalar.newBuilder().setValue(mem))
-    builder.addResourcesBuilder()
+    builder
+      .addResourcesBuilder()
       .setName("cpus")
       .setType(Value.Type.SCALAR)
       .setScalar(Scalar.newBuilder().setValue(cpu))
-    builder.setId(createOfferId(offerId))
-      .setFrameworkId(FrameworkID.newBuilder()
-        .setValue("f1"))
+    builder
+      .setId(createOfferId(offerId))
+      .setFrameworkId(FrameworkID.newBuilder().setValue("f1"))
       .setSlaveId(SlaveID.newBuilder().setValue(slaveId))
       .setHostname(s"host${slaveId}")
       .build()
   }
 
-  private def createSchedulerBackend(
-      taskScheduler: TaskSchedulerImpl,
-      driver: SchedulerDriver,
-      shuffleClient: MesosExternalShuffleClient,
-      endpoint: RpcEndpointRef): CoarseMesosSchedulerBackend = {
+  private def createSchedulerBackend(taskScheduler: TaskSchedulerImpl,
+                                     driver: SchedulerDriver,
+                                     shuffleClient: MesosExternalShuffleClient,
+                                     endpoint: RpcEndpointRef): CoarseMesosSchedulerBackend = {
     val securityManager = mock[SecurityManager]
 
     val backend = new CoarseMesosSchedulerBackend(taskScheduler, sc, "master", securityManager) {

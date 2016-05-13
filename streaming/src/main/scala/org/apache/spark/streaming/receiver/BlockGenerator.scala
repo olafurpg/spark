@@ -29,6 +29,7 @@ import org.apache.spark.util.{Clock, SystemClock}
 
 /** Listener object for BlockGenerator events */
 private[streaming] trait BlockGeneratorListener {
+
   /**
    * Called after a data item is added into the BlockGenerator. The data addition and this
    * callback are synchronized with the block generation and its associated callback,
@@ -79,7 +80,9 @@ private[streaming] class BlockGenerator(
     receiverId: Int,
     conf: SparkConf,
     clock: Clock = new SystemClock()
-  ) extends RateLimiter(conf) with Logging {
+)
+    extends RateLimiter(conf)
+    with Logging {
 
   private case class Block(id: StreamBlockId, buffer: ArrayBuffer[Any])
 
@@ -103,8 +106,8 @@ private[streaming] class BlockGenerator(
   private val blockIntervalMs = conf.getTimeAsMs("spark.streaming.blockInterval", "200ms")
   require(blockIntervalMs > 0, s"'spark.streaming.blockInterval' should be a positive value")
 
-  private val blockIntervalTimer =
-    new RecurringTimer(clock, blockIntervalMs, updateCurrentBuffer, "BlockGenerator")
+  private val blockIntervalTimer = new RecurringTimer(
+      clock, blockIntervalMs, updateCurrentBuffer, "BlockGenerator")
   private val blockQueueSize = conf.getInt("spark.streaming.blockQueueSize", 10)
   private val blocksForPushing = new ArrayBlockingQueue[Block](blockQueueSize)
   private val blockPushingThread = new Thread() { override def run() { keepPushingBlocks() } }
@@ -121,7 +124,7 @@ private[streaming] class BlockGenerator(
       logInfo("Started BlockGenerator")
     } else {
       throw new SparkException(
-        s"Cannot start BlockGenerator as its not in the Initialized state [state = $state]")
+          s"Cannot start BlockGenerator as its not in the Initialized state [state = $state]")
     }
   }
 
@@ -166,12 +169,12 @@ private[streaming] class BlockGenerator(
           currentBuffer += data
         } else {
           throw new SparkException(
-            "Cannot add data as BlockGenerator has not been started or has been stopped")
+              "Cannot add data as BlockGenerator has not been started or has been stopped")
         }
       }
     } else {
       throw new SparkException(
-        "Cannot add data as BlockGenerator has not been started or has been stopped")
+          "Cannot add data as BlockGenerator has not been started or has been stopped")
     }
   }
 
@@ -188,12 +191,12 @@ private[streaming] class BlockGenerator(
           listener.onAddData(data, metadata)
         } else {
           throw new SparkException(
-            "Cannot add data as BlockGenerator has not been started or has been stopped")
+              "Cannot add data as BlockGenerator has not been started or has been stopped")
         }
       }
     } else {
       throw new SparkException(
-        "Cannot add data as BlockGenerator has not been started or has been stopped")
+          "Cannot add data as BlockGenerator has not been started or has been stopped")
     }
   }
 
@@ -216,12 +219,12 @@ private[streaming] class BlockGenerator(
           listener.onAddData(tempBuffer, metadata)
         } else {
           throw new SparkException(
-            "Cannot add data as BlockGenerator has not been started or has been stopped")
+              "Cannot add data as BlockGenerator has not been started or has been stopped")
         }
       }
     } else {
       throw new SparkException(
-        "Cannot add data as BlockGenerator has not been started or has been stopped")
+          "Cannot add data as BlockGenerator has not been started or has been stopped")
     }
   }
 
@@ -244,7 +247,7 @@ private[streaming] class BlockGenerator(
       }
 
       if (newBlock != null) {
-        blocksForPushing.put(newBlock)  // put is blocking when queue is full
+        blocksForPushing.put(newBlock) // put is blocking when queue is full
       }
     } catch {
       case ie: InterruptedException =>

@@ -29,6 +29,7 @@ import org.apache.spark.util.Utils
  * A non-concrete data type, reserved for internal uses.
  */
 private[sql] abstract class AbstractDataType {
+
   /**
    * The default concrete type to use if we want to cast a null literal into this type.
    */
@@ -52,7 +53,6 @@ private[sql] abstract class AbstractDataType {
   private[sql] def simpleString: String
 }
 
-
 /**
  * A collection of types that can be used to specify type constraints. The sequence also specifies
  * precedence: an earlier type takes precedence over a latter type.
@@ -64,7 +64,7 @@ private[sql] abstract class AbstractDataType {
  * This means that we prefer StringType over BinaryType if it is possible to cast to StringType.
  */
 private[sql] class TypeCollection(private val types: Seq[AbstractDataType])
-  extends AbstractDataType {
+    extends AbstractDataType {
 
   require(types.nonEmpty, s"TypeCollection ($types) cannot be empty")
 
@@ -78,7 +78,6 @@ private[sql] class TypeCollection(private val types: Seq[AbstractDataType])
   }
 }
 
-
 private[sql] object TypeCollection {
 
   /**
@@ -86,12 +85,18 @@ private[sql] object TypeCollection {
    * that can be mixed into each data type, and perhaps create an [[AbstractDataType]].
    */
   // TODO: Should we consolidate this with RowOrdering.isOrderable?
-  val Ordered = TypeCollection(
-    BooleanType,
-    ByteType, ShortType, IntegerType, LongType,
-    FloatType, DoubleType, DecimalType,
-    TimestampType, DateType,
-    StringType, BinaryType)
+  val Ordered = TypeCollection(BooleanType,
+                               ByteType,
+                               ShortType,
+                               IntegerType,
+                               LongType,
+                               FloatType,
+                               DoubleType,
+                               DecimalType,
+                               TimestampType,
+                               DateType,
+                               StringType,
+                               BinaryType)
 
   /**
    * Types that include numeric types and interval type. They are only used in unary_minus,
@@ -107,7 +112,6 @@ private[sql] object TypeCollection {
   }
 }
 
-
 /**
  * An [[AbstractDataType]] that matches any concrete data types.
  */
@@ -121,7 +125,6 @@ protected[sql] object AnyDataType extends AbstractDataType {
 
   override private[sql] def acceptsType(other: DataType): Boolean = true
 }
-
 
 /**
  * An internal type used to represent everything that is not null, UDTs, arrays, structs, and maps.
@@ -137,7 +140,6 @@ protected[sql] abstract class AtomicType extends DataType {
   }
 }
 
-
 /**
  * :: DeveloperApi ::
  * Numeric data types.
@@ -152,8 +154,8 @@ abstract class NumericType extends AtomicType {
   private[sql] val numeric: Numeric[InternalType]
 }
 
-
 private[sql] object NumericType extends AbstractDataType {
+
   /**
    * Enables matching against NumericType for expressions:
    * {{{
@@ -170,8 +172,8 @@ private[sql] object NumericType extends AbstractDataType {
   override private[sql] def acceptsType(other: DataType): Boolean = other.isInstanceOf[NumericType]
 }
 
-
 private[sql] object IntegralType extends AbstractDataType {
+
   /**
    * Enables matching against IntegralType for expressions:
    * {{{
@@ -185,16 +187,16 @@ private[sql] object IntegralType extends AbstractDataType {
 
   override private[sql] def simpleString: String = "integral"
 
-  override private[sql] def acceptsType(other: DataType): Boolean = other.isInstanceOf[IntegralType]
+  override private[sql] def acceptsType(other: DataType): Boolean =
+    other.isInstanceOf[IntegralType]
 }
-
 
 private[sql] abstract class IntegralType extends NumericType {
   private[sql] val integral: Integral[InternalType]
 }
 
-
 private[sql] object FractionalType {
+
   /**
    * Enables matching against FractionalType for expressions:
    * {{{
@@ -204,7 +206,6 @@ private[sql] object FractionalType {
    */
   def unapply(e: Expression): Boolean = e.dataType.isInstanceOf[FractionalType]
 }
-
 
 private[sql] abstract class FractionalType extends NumericType {
   private[sql] val fractional: Fractional[InternalType]

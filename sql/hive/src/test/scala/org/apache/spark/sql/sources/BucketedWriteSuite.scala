@@ -79,15 +79,13 @@ class BucketedWriteSuite extends QueryTest with SQLTestUtils with TestHiveSingle
    * files are written to, and the format of data(parquet, json, etc.), and the bucketing
    * information.
    */
-  private def testBucketing(
-      dataDir: File,
-      source: String,
-      numBuckets: Int,
-      bucketCols: Seq[String],
-      sortCols: Seq[String] = Nil): Unit = {
-    val allBucketFiles = dataDir.listFiles().filterNot(f =>
-      f.getName.startsWith(".") || f.getName.startsWith("_")
-    )
+  private def testBucketing(dataDir: File,
+                            source: String,
+                            numBuckets: Int,
+                            bucketCols: Seq[String],
+                            sortCols: Seq[String] = Nil): Unit = {
+    val allBucketFiles =
+      dataDir.listFiles().filterNot(f => f.getName.startsWith(".") || f.getName.startsWith("_"))
 
     for (bucketFile <- allBucketFiles) {
       val bucketId = BucketingUtils.getBucketId(bucketFile.getName).getOrElse {
@@ -105,9 +103,7 @@ class BucketedWriteSuite extends QueryTest with SQLTestUtils with TestHiveSingle
       }
 
       // Read the bucket file into a dataframe, so that it's easier to test.
-      val readBack = spark.read.format(source)
-        .load(bucketFile.getAbsolutePath)
-        .select(columns: _*)
+      val readBack = spark.read.format(source).load(bucketFile.getAbsolutePath).select(columns: _*)
 
       // If we specified sort columns while writing bucket table, make sure the data in this
       // bucket file is already sorted.
@@ -120,8 +116,8 @@ class BucketedWriteSuite extends QueryTest with SQLTestUtils with TestHiveSingle
       val qe = readBack.select(bucketCols.map(col): _*).queryExecution
       val rows = qe.toRdd.map(_.copy()).collect()
       val getBucketId = UnsafeProjection.create(
-        HashPartitioning(qe.analyzed.output, numBuckets).partitionIdExpression :: Nil,
-        qe.analyzed.output)
+          HashPartitioning(qe.analyzed.output, numBuckets).partitionIdExpression :: Nil,
+          qe.analyzed.output)
 
       for (row <- rows) {
         val actualBucketId = getBucketId(row).getInt(0)
@@ -164,27 +160,23 @@ class BucketedWriteSuite extends QueryTest with SQLTestUtils with TestHiveSingle
   }
 
   test("write bucketed data with the overlapping bucketBy and partitionBy columns") {
-    intercept[AnalysisException](df.write
-      .partitionBy("i", "j")
-      .bucketBy(8, "j", "k")
-      .sortBy("k")
-      .saveAsTable("bucketed_table"))
+    intercept[AnalysisException](
+        df.write
+          .partitionBy("i", "j")
+          .bucketBy(8, "j", "k")
+          .sortBy("k")
+          .saveAsTable("bucketed_table"))
   }
 
   test("write bucketed data with the identical bucketBy and partitionBy columns") {
-    intercept[AnalysisException](df.write
-      .partitionBy("i")
-      .bucketBy(8, "i")
-      .saveAsTable("bucketed_table"))
+    intercept[AnalysisException](
+        df.write.partitionBy("i").bucketBy(8, "i").saveAsTable("bucketed_table"))
   }
 
   test("write bucketed data without partitionBy") {
     for (source <- Seq("parquet", "json", "orc")) {
       withTable("bucketed_table") {
-        df.write
-          .format(source)
-          .bucketBy(8, "i", "j")
-          .saveAsTable("bucketed_table")
+        df.write.format(source).bucketBy(8, "i", "j").saveAsTable("bucketed_table")
 
         testBucketing(tableDir, source, 8, Seq("i", "j"))
       }
@@ -194,11 +186,7 @@ class BucketedWriteSuite extends QueryTest with SQLTestUtils with TestHiveSingle
   test("write bucketed data without partitionBy with sortBy") {
     for (source <- Seq("parquet", "json", "orc")) {
       withTable("bucketed_table") {
-        df.write
-          .format(source)
-          .bucketBy(8, "i", "j")
-          .sortBy("k")
-          .saveAsTable("bucketed_table")
+        df.write.format(source).bucketBy(8, "i", "j").sortBy("k").saveAsTable("bucketed_table")
 
         testBucketing(tableDir, source, 8, Seq("i", "j"), Seq("k"))
       }

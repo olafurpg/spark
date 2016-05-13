@@ -45,10 +45,10 @@ import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.util.Utils
 
 class ExecutorClassLoaderSuite
-  extends SparkFunSuite
-  with BeforeAndAfterAll
-  with MockitoSugar
-  with Logging {
+    extends SparkFunSuite
+    with BeforeAndAfterAll
+    with MockitoSugar
+    with Logging {
 
   val childClassNames = List("ReplFakeClass1", "ReplFakeClass2")
   val parentClassNames = List("ReplFakeClass1", "ReplFakeClass2", "ReplFakeClass3")
@@ -145,8 +145,8 @@ class ExecutorClassLoaderSuite
       }
     })
 
-    val classLoader = new ExecutorClassLoader(new SparkConf(), env, "spark://localhost:1234",
-      getClass().getClassLoader(), false)
+    val classLoader = new ExecutorClassLoader(
+        new SparkConf(), env, "spark://localhost:1234", getClass().getClassLoader(), false)
 
     val fakeClass = classLoader.loadClass("ReplFakeClass2").newInstance()
     val fakeClassVersion = fakeClass.toString
@@ -155,5 +155,4 @@ class ExecutorClassLoaderSuite
       classLoader.loadClass("ReplFakeClassDoesNotExist").newInstance()
     }
   }
-
 }

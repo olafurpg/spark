@@ -41,7 +41,7 @@ class MiscBenchmark extends BenchmarkBase {
     ------------------------------------------------------------------------------------------------
     range/filter/sum codegen=false              30663 / 31216         68.4          14.6       1.0X
     range/filter/sum codegen=true                 2399 / 2409        874.1           1.1      12.8X
-    */
+   */
   }
 
   ignore("range/limit/sum") {
@@ -55,7 +55,7 @@ class MiscBenchmark extends BenchmarkBase {
     -------------------------------------------------------------------------------------------
     range/limit/sum codegen=false             609 /  672        861.6           1.2       1.0X
     range/limit/sum codegen=true              561 /  621        935.3           1.1       1.1X
-    */
+   */
   }
 
   ignore("sample") {
@@ -71,7 +71,7 @@ class MiscBenchmark extends BenchmarkBase {
     ------------------------------------------------------------------------------------------------
     sample with replacement codegen=false         7073 / 7227         18.5          54.0       1.0X
     sample with replacement codegen=true          5199 / 5203         25.2          39.7       1.4X
-    */
+     */
 
     runBenchmark("sample without replacement", N) {
       sparkSession.range(N).sample(withReplacement = false, 0.01).groupBy().sum().collect()
@@ -84,7 +84,7 @@ class MiscBenchmark extends BenchmarkBase {
     ------------------------------------------------------------------------------------------------
     sample without replacement codegen=false      1508 / 1529         86.9          11.5       1.0X
     sample without replacement codegen=true        644 /  662        203.5           4.9       2.3X
-    */
+   */
   }
 
   ignore("collect") {
@@ -109,7 +109,7 @@ class MiscBenchmark extends BenchmarkBase {
     collect 1 million                         439 /  654          2.4         418.7       1.0X
     collect 2 millions                        961 / 1907          1.1         916.4       0.5X
     collect 4 millions                       3193 / 3895          0.3        3044.7       0.1X
-     */
+   */
   }
 
   ignore("collect limit") {
@@ -130,6 +130,6 @@ class MiscBenchmark extends BenchmarkBase {
     -------------------------------------------------------------------------------------------
     collect limit 1 million                   833 / 1284          1.3         794.4       1.0X
     collect limit 2 millions                 3348 / 4005          0.3        3193.3       0.2X
-     */
+   */
   }
 }

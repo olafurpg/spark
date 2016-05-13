@@ -27,10 +27,7 @@ import org.apache.spark.sql.execution.streaming.state._
 import org.apache.spark.sql.execution.SparkPlan
 
 /** Used to identify the state store for a given operator. */
-case class OperatorStateId(
-    checkpointLocation: String,
-    operatorId: Long,
-    batchId: Long)
+case class OperatorStateId(checkpointLocation: String, operatorId: Long, batchId: Long)
 
 /**
  * An operator that saves or restores state from the [[StateStore]].  The [[OperatorStateId]] should
@@ -51,27 +48,28 @@ trait StatefulOperator extends SparkPlan {
  * to the stream (in addition to the input tuple) if present.
  */
 case class StateStoreRestoreExec(
-    keyExpressions: Seq[Attribute],
-    stateId: Option[OperatorStateId],
-    child: SparkPlan)
-  extends execution.UnaryExecNode with StatefulOperator {
+    keyExpressions: Seq[Attribute], stateId: Option[OperatorStateId], child: SparkPlan)
+    extends execution.UnaryExecNode
+    with StatefulOperator {
 
   override protected def doExecute(): RDD[InternalRow] = {
-    child.execute().mapPartitionsWithStateStore(
-      getStateId.checkpointLocation,
-      operatorId = getStateId.operatorId,
-      storeVersion = getStateId.batchId,
-      keyExpressions.toStructType,
-      child.output.toStructType,
-      sqlContext.sessionState,
-      Some(sqlContext.streams.stateStoreCoordinator)) { case (store, iter) =>
-        val getKey = GenerateUnsafeProjection.generate(keyExpressions, child.output)
-        iter.flatMap { row =>
-          val key = getKey(row)
-          val savedState = store.get(key)
-          row +: savedState.toSeq
-        }
-    }
+    child
+      .execute()
+      .mapPartitionsWithStateStore(getStateId.checkpointLocation,
+                                   operatorId = getStateId.operatorId,
+                                   storeVersion = getStateId.batchId,
+                                   keyExpressions.toStructType,
+                                   child.output.toStructType,
+                                   sqlContext.sessionState,
+                                   Some(sqlContext.streams.stateStoreCoordinator)) {
+        case (store, iter) =>
+          val getKey = GenerateUnsafeProjection.generate(keyExpressions, child.output)
+          iter.flatMap { row =>
+            val key = getKey(row)
+            val savedState = store.get(key)
+            row +: savedState.toSeq
+          }
+      }
   }
   override def output: Seq[Attribute] = child.output
 }
@@ -80,41 +78,43 @@ case class StateStoreRestoreExec(
  * For each input tuple, the key is calculated and the tuple is `put` into the [[StateStore]].
  */
 case class StateStoreSaveExec(
-    keyExpressions: Seq[Attribute],
-    stateId: Option[OperatorStateId],
-    child: SparkPlan)
-  extends execution.UnaryExecNode with StatefulOperator {
+    keyExpressions: Seq[Attribute], stateId: Option[OperatorStateId], child: SparkPlan)
+    extends execution.UnaryExecNode
+    with StatefulOperator {
 
   override protected def doExecute(): RDD[InternalRow] = {
-    child.execute().mapPartitionsWithStateStore(
-      getStateId.checkpointLocation,
-      operatorId = getStateId.operatorId,
-      storeVersion = getStateId.batchId,
-      keyExpressions.toStructType,
-      child.output.toStructType,
-      sqlContext.sessionState,
-      Some(sqlContext.streams.stateStoreCoordinator)) { case (store, iter) =>
-        new Iterator[InternalRow] {
-          private[this] val baseIterator = iter
-          private[this] val getKey = GenerateUnsafeProjection.generate(keyExpressions, child.output)
+    child
+      .execute()
+      .mapPartitionsWithStateStore(getStateId.checkpointLocation,
+                                   operatorId = getStateId.operatorId,
+                                   storeVersion = getStateId.batchId,
+                                   keyExpressions.toStructType,
+                                   child.output.toStructType,
+                                   sqlContext.sessionState,
+                                   Some(sqlContext.streams.stateStoreCoordinator)) {
+        case (store, iter) =>
+          new Iterator[InternalRow] {
+            private[this] val baseIterator = iter
+            private[this] val getKey =
+              GenerateUnsafeProjection.generate(keyExpressions, child.output)
 
-          override def hasNext: Boolean = {
-            if (!baseIterator.hasNext) {
-              store.commit()
-              false
-            } else {
-              true
+            override def hasNext: Boolean = {
+              if (!baseIterator.hasNext) {
+                store.commit()
+                false
+              } else {
+                true
+              }
+            }
+
+            override def next(): InternalRow = {
+              val row = baseIterator.next().asInstanceOf[UnsafeRow]
+              val key = getKey(row)
+              store.put(key.copy(), row.copy())
+              row
             }
           }
-
-          override def next(): InternalRow = {
-            val row = baseIterator.next().asInstanceOf[UnsafeRow]
-            val key = getKey(row)
-            store.put(key.copy(), row.copy())
-            row
-          }
-        }
-    }
+      }
   }
 
   override def output: Seq[Attribute] = child.output

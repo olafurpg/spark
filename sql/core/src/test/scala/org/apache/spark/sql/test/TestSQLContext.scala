@@ -26,8 +26,8 @@ import org.apache.spark.sql.internal.{SessionState, SQLConf}
  */
 private[sql] class TestSparkSession(sc: SparkContext) extends SparkSession(sc) { self =>
   def this(sparkConf: SparkConf) {
-    this(new SparkContext("local[2]", "test-sql-context",
-      sparkConf.set("spark.sql.testkey", "true")))
+    this(new SparkContext(
+            "local[2]", "test-sql-context", sparkConf.set("spark.sql.testkey", "true")))
   }
 
   def this() {
@@ -58,14 +58,12 @@ private[sql] class TestSparkSession(sc: SparkContext) extends SparkSession(sc) {
   }
 }
 
-
 private[sql] object TestSQLContext {
 
   /**
    * A map used to store all confs that need to be overridden in sql/core unit tests.
    */
-  val overrideConfs: Map[String, String] =
-    Map(
+  val overrideConfs: Map[String, String] = Map(
       // Fewer shuffle partitions to speed up testing.
       SQLConf.SHUFFLE_PARTITIONS.key -> "5")
 }

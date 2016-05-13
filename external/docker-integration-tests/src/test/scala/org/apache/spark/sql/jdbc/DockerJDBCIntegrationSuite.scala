@@ -34,6 +34,7 @@ import org.apache.spark.sql.test.SharedSQLContext
 import org.apache.spark.util.DockerUtils
 
 abstract class DatabaseOnDocker {
+
   /**
    * The docker image to be pulled.
    */
@@ -66,10 +67,10 @@ abstract class DatabaseOnDocker {
 }
 
 abstract class DockerJDBCIntegrationSuite
-  extends SparkFunSuite
-  with BeforeAndAfterAll
-  with Eventually
-  with SharedSQLContext {
+    extends SparkFunSuite
+    with BeforeAndAfterAll
+    with Eventually
+    with SharedSQLContext {
 
   val db: DatabaseOnDocker
 
@@ -105,22 +106,23 @@ abstract class DockerJDBCIntegrationSuite
         port
       }
       val dockerIp = DockerUtils.getDockerIp()
-      val hostConfig: HostConfig = HostConfig.builder()
+      val hostConfig: HostConfig = HostConfig
+        .builder()
         .networkMode("bridge")
         .ipcMode(if (db.usesIpc) "host" else "")
-        .portBindings(
-          Map(s"${db.jdbcPort}/tcp" -> List(PortBinding.of(dockerIp, externalPort)).asJava).asJava)
+        .portBindings(Map(
+                s"${db.jdbcPort}/tcp" -> List(PortBinding.of(dockerIp, externalPort)).asJava).asJava)
         .build()
       // Create the database container:
-      val containerConfigBuilder = ContainerConfig.builder()
+      val containerConfigBuilder = ContainerConfig
+        .builder()
         .image(db.imageName)
         .networkDisabled(false)
         .env(db.env.map { case (k, v) => s"$k=$v" }.toSeq.asJava)
         .hostConfig(hostConfig)
         .exposedPorts(s"${db.jdbcPort}/tcp")
-      if(db.getStartupProcessName.isDefined) {
-        containerConfigBuilder
-        .cmd(db.getStartupProcessName.get)
+      if (db.getStartupProcessName.isDefined) {
+        containerConfigBuilder.cmd(db.getStartupProcessName.get)
       }
       val config = containerConfigBuilder.build()
       // Create the database container:

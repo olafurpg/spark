@@ -187,7 +187,7 @@ object Encoders {
   private def validatePublicClass[T: ClassTag](): Unit = {
     if (!Modifier.isPublic(classTag[T].runtimeClass.getModifiers)) {
       throw new UnsupportedOperationException(
-        s"${classTag[T].runtimeClass.getName} is not a public class. " +
+          s"${classTag[T].runtimeClass.getName} is not a public class. " +
           "Only public classes are supported.")
     }
   }
@@ -201,15 +201,14 @@ object Encoders {
     validatePublicClass[T]()
 
     ExpressionEncoder[T](
-      schema = new StructType().add("value", BinaryType),
-      flat = true,
-      serializer = Seq(
-        EncodeUsingSerializer(
-          BoundReference(0, ObjectType(classOf[AnyRef]), nullable = true), kryo = useKryo)),
-      deserializer =
-        DecodeUsingSerializer[T](
-          BoundReference(0, BinaryType, nullable = true), classTag[T], kryo = useKryo),
-      clsTag = classTag[T]
+        schema = new StructType().add("value", BinaryType),
+        flat = true,
+        serializer = Seq(EncodeUsingSerializer(
+                  BoundReference(0, ObjectType(classOf[AnyRef]), nullable = true),
+                  kryo = useKryo)),
+        deserializer = DecodeUsingSerializer[T](
+              BoundReference(0, BinaryType, nullable = true), classTag[T], kryo = useKryo),
+        clsTag = classTag[T]
     )
   }
 
@@ -218,9 +217,7 @@ object Encoders {
    *
    * @since 1.6.0
    */
-  def tuple[T1, T2](
-    e1: Encoder[T1],
-    e2: Encoder[T2]): Encoder[(T1, T2)] = {
+  def tuple[T1, T2](e1: Encoder[T1], e2: Encoder[T2]): Encoder[(T1, T2)] = {
     ExpressionEncoder.tuple(encoderFor(e1), encoderFor(e2))
   }
 
@@ -229,10 +226,7 @@ object Encoders {
    *
    * @since 1.6.0
    */
-  def tuple[T1, T2, T3](
-    e1: Encoder[T1],
-    e2: Encoder[T2],
-    e3: Encoder[T3]): Encoder[(T1, T2, T3)] = {
+  def tuple[T1, T2, T3](e1: Encoder[T1], e2: Encoder[T2], e3: Encoder[T3]): Encoder[(T1, T2, T3)] = {
     ExpressionEncoder.tuple(encoderFor(e1), encoderFor(e2), encoderFor(e3))
   }
 
@@ -241,11 +235,10 @@ object Encoders {
    *
    * @since 1.6.0
    */
-  def tuple[T1, T2, T3, T4](
-    e1: Encoder[T1],
-    e2: Encoder[T2],
-    e3: Encoder[T3],
-    e4: Encoder[T4]): Encoder[(T1, T2, T3, T4)] = {
+  def tuple[T1, T2, T3, T4](e1: Encoder[T1],
+                            e2: Encoder[T2],
+                            e3: Encoder[T3],
+                            e4: Encoder[T4]): Encoder[(T1, T2, T3, T4)] = {
     ExpressionEncoder.tuple(encoderFor(e1), encoderFor(e2), encoderFor(e3), encoderFor(e4))
   }
 
@@ -254,21 +247,20 @@ object Encoders {
    *
    * @since 1.6.0
    */
-  def tuple[T1, T2, T3, T4, T5](
-    e1: Encoder[T1],
-    e2: Encoder[T2],
-    e3: Encoder[T3],
-    e4: Encoder[T4],
-    e5: Encoder[T5]): Encoder[(T1, T2, T3, T4, T5)] = {
+  def tuple[T1, T2, T3, T4, T5](e1: Encoder[T1],
+                                e2: Encoder[T2],
+                                e3: Encoder[T3],
+                                e4: Encoder[T4],
+                                e5: Encoder[T5]): Encoder[(T1, T2, T3, T4, T5)] = {
     ExpressionEncoder.tuple(
-      encoderFor(e1), encoderFor(e2), encoderFor(e3), encoderFor(e4), encoderFor(e5))
+        encoderFor(e1), encoderFor(e2), encoderFor(e3), encoderFor(e4), encoderFor(e5))
   }
 
   /**
    * An encoder for Scala's product type (tuples, case classes, etc).
    * @since 2.0.0
    */
-  def product[T <: Product : TypeTag]: Encoder[T] = ExpressionEncoder()
+  def product[T <: Product: TypeTag]: Encoder[T] = ExpressionEncoder()
 
   /**
    * An encoder for Scala's primitive int type.
@@ -311,5 +303,4 @@ object Encoders {
    * @since 2.0.0
    */
   def scalaBoolean: Encoder[Boolean] = ExpressionEncoder()
-
 }

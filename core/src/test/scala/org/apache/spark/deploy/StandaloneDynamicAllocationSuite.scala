@@ -38,10 +38,10 @@ import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RegisterE
  * End-to-end tests for dynamic allocation in standalone mode.
  */
 class StandaloneDynamicAllocationSuite
-  extends SparkFunSuite
-  with LocalSparkContext
-  with BeforeAndAfterAll
-  with PrivateMethodTester {
+    extends SparkFunSuite
+    with LocalSparkContext
+    with BeforeAndAfterAll
+    with PrivateMethodTester {
 
   private val numWorkers = 2
   private val conf = new SparkConf()
@@ -293,9 +293,7 @@ class StandaloneDynamicAllocationSuite
   }
 
   test("dynamic allocation with cores per executor AND max cores") {
-    sc = new SparkContext(appConf
-      .set("spark.executor.cores", "2")
-      .set("spark.cores.max", "8"))
+    sc = new SparkContext(appConf.set("spark.executor.cores", "2").set("spark.cores.max", "8"))
     val appId = sc.applicationId
     eventually(timeout(10.seconds), interval(10.millis)) {
       val apps = getApplications()
@@ -489,8 +487,15 @@ class StandaloneDynamicAllocationSuite
   private def makeWorkers(cores: Int, memory: Int): Seq[Worker] = {
     (0 until numWorkers).map { i =>
       val rpcEnv = workerRpcEnvs(i)
-      val worker = new Worker(rpcEnv, 0, cores, memory, Array(masterRpcEnv.address),
-        Worker.ENDPOINT_NAME, null, conf, securityManager)
+      val worker = new Worker(rpcEnv,
+                              0,
+                              cores,
+                              memory,
+                              Array(masterRpcEnv.address),
+                              Worker.ENDPOINT_NAME,
+                              null,
+                              conf,
+                              securityManager)
       rpcEnv.setupEndpoint(Worker.ENDPOINT_NAME, worker)
       worker
     }
@@ -549,9 +554,9 @@ class StandaloneDynamicAllocationSuite
    * we submit a request to kill them. This must be called before each kill request.
    */
   private def syncExecutors(sc: SparkContext): Unit = {
-    val driverExecutors = sc.getExecutorStorageStatus
-      .map(_.blockManagerId.executorId)
-      .filter { _ != SparkContext.DRIVER_IDENTIFIER}
+    val driverExecutors = sc.getExecutorStorageStatus.map(_.blockManagerId.executorId).filter {
+      _ != SparkContext.DRIVER_IDENTIFIER
+    }
     val masterExecutors = getExecutorIds(sc)
     val missingExecutors = masterExecutors.toSet.diff(driverExecutors.toSet).toSeq.sorted
     missingExecutors.foreach { id =>
@@ -564,5 +569,4 @@ class StandaloneDynamicAllocationSuite
       backend.driverEndpoint.askWithRetry[Boolean](message)
     }
   }
-
 }

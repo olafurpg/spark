@@ -138,9 +138,7 @@ class SubexpressionEliminationSuite extends SparkFunSuite {
     equivalence.addExprTree(price, false)
     equivalence.addExprTree(Multiply(price, Subtract(Literal(1), discount)), false)
     equivalence.addExprTree(
-      Multiply(
-        Multiply(price, Subtract(Literal(1), discount)),
-        Add(Literal(1), tax)), false)
+        Multiply(Multiply(price, Subtract(Literal(1), discount)), Add(Literal(1), tax)), false)
     equivalence.addExprTree(price, false)
     equivalence.addExprTree(discount, false)
     // quantity, price, discount and (price * (1 - discount))
@@ -165,6 +163,6 @@ class SubexpressionEliminationSuite extends SparkFunSuite {
     equivalence.addExprTree(add, true)
     // the `two` inside `explode` should not be added
     assert(equivalence.getAllEquivalentExprs.count(_.size > 1) == 0)
-    assert(equivalence.getAllEquivalentExprs.count(_.size == 1) == 3)  // add, two, explode
+    assert(equivalence.getAllEquivalentExprs.count(_.size == 1) == 3) // add, two, explode
   }
 }

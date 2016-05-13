@@ -52,7 +52,7 @@ class TimeStampedHashMapSuite extends SparkFunSuite {
     Thread.sleep(10)
     val threshTime1 = System.currentTimeMillis
     Thread.sleep(10)
-    assert(map1("k2") === "v2")     // access k2 to update its access time to > threshTime
+    assert(map1("k2") === "v2") // access k2 to update its access time to > threshTime
     assert(map1.getTimestamp("k1").isDefined)
     assert(map1.getTimestamp("k1").get < threshTime1)
     assert(map1.getTimestamp("k2").isDefined)
@@ -149,28 +149,29 @@ class TimeStampedHashMapSuite extends SparkFunSuite {
       }
     }
 
-    val threads = (1 to 25).map(i => new Thread() {
-      override def run() {
-        try {
-          for (j <- 1 to 1000) {
-            Random.nextInt(3) match {
-              case 0 =>
-                testMap(Random.nextString(10)) = Random.nextDouble().toString // put
-              case 1 =>
-                getRandomKey(testMap).map(testMap.get) // get
-              case 2 =>
-                getRandomKey(testMap).map(testMap.remove) // remove
+    val threads = (1 to 25).map(i =>
+          new Thread() {
+        override def run() {
+          try {
+            for (j <- 1 to 1000) {
+              Random.nextInt(3) match {
+                case 0 =>
+                  testMap(Random.nextString(10)) = Random.nextDouble().toString // put
+                case 1 =>
+                  getRandomKey(testMap).map(testMap.get) // get
+                case 2 =>
+                  getRandomKey(testMap).map(testMap.remove) // remove
+              }
             }
+          } catch {
+            case t: Throwable =>
+              error = true
+              throw t
           }
-        } catch {
-          case t: Throwable =>
-            error = true
-            throw t
         }
-      }
     })
 
-    test(name + " - threading safety test")  {
+    test(name + " - threading safety test") {
       threads.map(_.start)
       threads.map(_.join)
       assert(!error)

@@ -23,28 +23,27 @@ import org.apache.spark.{NarrowDependency, Partition, TaskContext}
 import org.apache.spark.annotation.DeveloperApi
 
 private[spark] class PartitionPruningRDDPartition(idx: Int, val parentSplit: Partition)
-  extends Partition {
+    extends Partition {
   override val index = idx
 }
-
 
 /**
  * Represents a dependency between the PartitionPruningRDD and its parent. In this
  * case, the child RDD contains a subset of partitions of the parents'.
  */
 private[spark] class PruneDependency[T](rdd: RDD[T], partitionFilterFunc: Int => Boolean)
-  extends NarrowDependency[T](rdd) {
+    extends NarrowDependency[T](rdd) {
 
   @transient
-  val partitions: Array[Partition] = rdd.partitions
-    .filter(s => partitionFilterFunc(s.index)).zipWithIndex
-    .map { case(split, idx) => new PartitionPruningRDDPartition(idx, split) : Partition }
+  val partitions: Array[Partition] =
+    rdd.partitions.filter(s => partitionFilterFunc(s.index)).zipWithIndex.map {
+      case (split, idx) => new PartitionPruningRDDPartition(idx, split): Partition
+    }
 
   override def getParents(partitionId: Int): List[Int] = {
     List(partitions(partitionId).asInstanceOf[PartitionPruningRDDPartition].parentSplit.index)
   }
 }
-
 
 /**
  * :: DeveloperApi ::
@@ -54,20 +53,16 @@ private[spark] class PruneDependency[T](rdd: RDD[T], partitionFilterFunc: Int =>
  * on partitions that don't have the range covering the key.
  */
 @DeveloperApi
-class PartitionPruningRDD[T: ClassTag](
-    prev: RDD[T],
-    partitionFilterFunc: Int => Boolean)
-  extends RDD[T](prev.context, List(new PruneDependency(prev, partitionFilterFunc))) {
+class PartitionPruningRDD[T: ClassTag](prev: RDD[T], partitionFilterFunc: Int => Boolean)
+    extends RDD[T](prev.context, List(new PruneDependency(prev, partitionFilterFunc))) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
-    firstParent[T].iterator(
-      split.asInstanceOf[PartitionPruningRDDPartition].parentSplit, context)
+    firstParent[T].iterator(split.asInstanceOf[PartitionPruningRDDPartition].parentSplit, context)
   }
 
   override protected def getPartitions: Array[Partition] =
     dependencies.head.asInstanceOf[PruneDependency[T]].partitions
 }
-
 
 @DeveloperApi
 object PartitionPruningRDD {

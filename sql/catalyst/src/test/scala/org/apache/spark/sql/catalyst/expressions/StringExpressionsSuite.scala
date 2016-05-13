@@ -21,7 +21,6 @@ import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.types._
 
-
 class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
 
   test("concat") {
@@ -103,83 +102,92 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
 
     // substring from zero position with less-than-full length
     checkEvaluation(
-      Substring(s, Literal.create(0, IntegerType), Literal.create(2, IntegerType)), "ex", row)
+        Substring(s, Literal.create(0, IntegerType), Literal.create(2, IntegerType)), "ex", row)
     checkEvaluation(
-      Substring(s, Literal.create(1, IntegerType), Literal.create(2, IntegerType)), "ex", row)
+        Substring(s, Literal.create(1, IntegerType), Literal.create(2, IntegerType)), "ex", row)
 
     // substring from zero position with full length
-    checkEvaluation(
-      Substring(s, Literal.create(0, IntegerType), Literal.create(7, IntegerType)), "example", row)
-    checkEvaluation(
-      Substring(s, Literal.create(1, IntegerType), Literal.create(7, IntegerType)), "example", row)
+    checkEvaluation(Substring(s, Literal.create(0, IntegerType), Literal.create(7, IntegerType)),
+                    "example",
+                    row)
+    checkEvaluation(Substring(s, Literal.create(1, IntegerType), Literal.create(7, IntegerType)),
+                    "example",
+                    row)
 
     // substring from zero position with greater-than-full length
     checkEvaluation(Substring(s, Literal.create(0, IntegerType), Literal.create(100, IntegerType)),
-      "example", row)
+                    "example",
+                    row)
     checkEvaluation(Substring(s, Literal.create(1, IntegerType), Literal.create(100, IntegerType)),
-      "example", row)
+                    "example",
+                    row)
 
     // substring from nonzero position with less-than-full length
-    checkEvaluation(Substring(s, Literal.create(2, IntegerType), Literal.create(2, IntegerType)),
-      "xa", row)
+    checkEvaluation(
+        Substring(s, Literal.create(2, IntegerType), Literal.create(2, IntegerType)), "xa", row)
 
     // substring from nonzero position with full length
     checkEvaluation(Substring(s, Literal.create(2, IntegerType), Literal.create(6, IntegerType)),
-      "xample", row)
+                    "xample",
+                    row)
 
     // substring from nonzero position with greater-than-full length
     checkEvaluation(Substring(s, Literal.create(2, IntegerType), Literal.create(100, IntegerType)),
-      "xample", row)
+                    "xample",
+                    row)
 
     // zero-length substring (within string bounds)
-    checkEvaluation(Substring(s, Literal.create(0, IntegerType), Literal.create(0, IntegerType)),
-      "", row)
+    checkEvaluation(
+        Substring(s, Literal.create(0, IntegerType), Literal.create(0, IntegerType)), "", row)
 
     // zero-length substring (beyond string bounds)
-    checkEvaluation(Substring(s, Literal.create(100, IntegerType), Literal.create(4, IntegerType)),
-      "", row)
+    checkEvaluation(
+        Substring(s, Literal.create(100, IntegerType), Literal.create(4, IntegerType)), "", row)
 
     // substring(null, _, _) -> null
     checkEvaluation(Substring(s, Literal.create(100, IntegerType), Literal.create(4, IntegerType)),
-      null, create_row(null))
+                    null,
+                    create_row(null))
 
     // substring(_, null, _) -> null
-    checkEvaluation(Substring(s, Literal.create(null, IntegerType), Literal.create(4, IntegerType)),
-      null, row)
+    checkEvaluation(
+        Substring(s, Literal.create(null, IntegerType), Literal.create(4, IntegerType)), null, row)
 
     // substring(_, _, null) -> null
     checkEvaluation(
-      Substring(s, Literal.create(100, IntegerType), Literal.create(null, IntegerType)),
-      null,
-      row)
+        Substring(s, Literal.create(100, IntegerType), Literal.create(null, IntegerType)),
+        null,
+        row)
 
     // 2-arg substring from zero position
-    checkEvaluation(
-      Substring(s, Literal.create(0, IntegerType), Literal.create(Integer.MAX_VALUE, IntegerType)),
-      "example",
-      row)
-    checkEvaluation(
-      Substring(s, Literal.create(1, IntegerType), Literal.create(Integer.MAX_VALUE, IntegerType)),
-      "example",
-      row)
+    checkEvaluation(Substring(s,
+                              Literal.create(0, IntegerType),
+                              Literal.create(Integer.MAX_VALUE, IntegerType)),
+                    "example",
+                    row)
+    checkEvaluation(Substring(s,
+                              Literal.create(1, IntegerType),
+                              Literal.create(Integer.MAX_VALUE, IntegerType)),
+                    "example",
+                    row)
 
     // 2-arg substring from nonzero position
-    checkEvaluation(
-      Substring(s, Literal.create(2, IntegerType), Literal.create(Integer.MAX_VALUE, IntegerType)),
-      "xample",
-      row)
+    checkEvaluation(Substring(s,
+                              Literal.create(2, IntegerType),
+                              Literal.create(Integer.MAX_VALUE, IntegerType)),
+                    "xample",
+                    row)
 
     val s_notNull = 'a.string.notNull.at(0)
 
-    assert(Substring(s, Literal.create(0, IntegerType), Literal.create(2, IntegerType)).nullable
-      === true)
     assert(
-      Substring(s_notNull, Literal.create(0, IntegerType), Literal.create(2, IntegerType)).nullable
-        === false)
-    assert(Substring(s_notNull,
-      Literal.create(null, IntegerType), Literal.create(2, IntegerType)).nullable === true)
-    assert(Substring(s_notNull,
-      Literal.create(0, IntegerType), Literal.create(null, IntegerType)).nullable === true)
+        Substring(s, Literal.create(0, IntegerType), Literal.create(2, IntegerType)).nullable === true)
+    assert(
+        Substring(s_notNull, Literal.create(0, IntegerType), Literal.create(2, IntegerType)).nullable === false)
+    assert(
+        Substring(s_notNull, Literal.create(null, IntegerType), Literal.create(2, IntegerType)).nullable === true)
+    assert(
+        Substring(s_notNull, Literal.create(0, IntegerType), Literal.create(null, IntegerType)).nullable === true)
 
     checkEvaluation(s.substr(0, 2), "ex", row)
     checkEvaluation(s.substr(0), "example", row)
@@ -203,32 +211,28 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
 
   test("string substring_index function") {
     checkEvaluation(
-      SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(3)), "www.apache.org")
+        SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(3)), "www.apache.org")
     checkEvaluation(
-      SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(2)), "www.apache")
+        SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(2)), "www.apache")
+    checkEvaluation(SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(1)), "www")
+    checkEvaluation(SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(0)), "")
     checkEvaluation(
-      SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(1)), "www")
+        SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(-3)), "www.apache.org")
     checkEvaluation(
-      SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(0)), "")
+        SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(-2)), "apache.org")
+    checkEvaluation(SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(-1)), "org")
+    checkEvaluation(SubstringIndex(Literal(""), Literal("."), Literal(-2)), "")
     checkEvaluation(
-      SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(-3)), "www.apache.org")
+        SubstringIndex(Literal.create(null, StringType), Literal("."), Literal(-2)), null)
     checkEvaluation(
-      SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(-2)), "apache.org")
-    checkEvaluation(
-      SubstringIndex(Literal("www.apache.org"), Literal("."), Literal(-1)), "org")
-    checkEvaluation(
-      SubstringIndex(Literal(""), Literal("."), Literal(-2)), "")
-    checkEvaluation(
-      SubstringIndex(Literal.create(null, StringType), Literal("."), Literal(-2)), null)
-    checkEvaluation(SubstringIndex(
-        Literal("www.apache.org"), Literal.create(null, StringType), Literal(-2)), null)
+        SubstringIndex(Literal("www.apache.org"), Literal.create(null, StringType), Literal(-2)),
+        null)
     // non ascii chars
     // scalastyle:off
-    checkEvaluation(
-      SubstringIndex(Literal("大千世界大千世界"), Literal( "千"), Literal(2)), "大千世界大")
+    checkEvaluation(SubstringIndex(Literal("大千世界大千世界"), Literal("千"), Literal(2)), "大千世界大")
     // scalastyle:on
     checkEvaluation(
-      SubstringIndex(Literal("www||apache||org"), Literal( "||"), Literal(2)), "www||apache")
+        SubstringIndex(Literal("www||apache||org"), Literal("||"), Literal(2)), "www||apache")
   }
 
   test("LIKE literal Regular Expression") {
@@ -236,13 +240,13 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation(Literal.create("a", StringType).like(Literal.create(null, StringType)), null)
     checkEvaluation(Literal.create(null, StringType).like(Literal.create(null, StringType)), null)
     checkEvaluation(
-      Literal.create("a", StringType).like(NonFoldableLiteral.create("a", StringType)), true)
+        Literal.create("a", StringType).like(NonFoldableLiteral.create("a", StringType)), true)
     checkEvaluation(
-      Literal.create("a", StringType).like(NonFoldableLiteral.create(null, StringType)), null)
+        Literal.create("a", StringType).like(NonFoldableLiteral.create(null, StringType)), null)
     checkEvaluation(
-      Literal.create(null, StringType).like(NonFoldableLiteral.create("a", StringType)), null)
+        Literal.create(null, StringType).like(NonFoldableLiteral.create("a", StringType)), null)
     checkEvaluation(
-      Literal.create(null, StringType).like(NonFoldableLiteral.create(null, StringType)), null)
+        Literal.create(null, StringType).like(NonFoldableLiteral.create(null, StringType)), null)
 
     checkEvaluation("abdef" like "abdef", true)
     checkEvaluation("a_%b" like "a\\__b", true)
@@ -253,8 +257,8 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation("addb" like "a%", true)
     checkEvaluation("addb" like "**", false)
     checkEvaluation("abc" like "a%", true)
-    checkEvaluation("abc"  like "b%", false)
-    checkEvaluation("abc"  like "bc%", false)
+    checkEvaluation("abc" like "b%", false)
+    checkEvaluation("abc" like "bc%", false)
     checkEvaluation("a\nb" like "a_b", true)
     checkEvaluation("ab" like "a%b", true)
     checkEvaluation("a\nb" like "a%b", true)
@@ -288,9 +292,10 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation("abdef" rlike NonFoldableLiteral.create("abdef", StringType), true)
     checkEvaluation("abdef" rlike NonFoldableLiteral.create(null, StringType), null)
     checkEvaluation(
-      Literal.create(null, StringType) rlike NonFoldableLiteral.create("abdef", StringType), null)
+        Literal.create(null, StringType) rlike NonFoldableLiteral.create("abdef", StringType),
+        null)
     checkEvaluation(
-      Literal.create(null, StringType) rlike NonFoldableLiteral.create(null, StringType), null)
+        Literal.create(null, StringType) rlike NonFoldableLiteral.create(null, StringType), null)
 
     checkEvaluation("abdef" rlike "abdef", true)
     checkEvaluation("abbbbc" rlike "a.*c", true)
@@ -304,10 +309,10 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation("axe" rlike "pi|apa", false)
     checkEvaluation("pip" rlike "^(pi)*$", false)
 
-    checkEvaluation("abc"  rlike "^ab", true)
-    checkEvaluation("abc"  rlike "^bc", false)
-    checkEvaluation("abc"  rlike "^ab", true)
-    checkEvaluation("abc"  rlike "^bc", false)
+    checkEvaluation("abc" rlike "^ab", true)
+    checkEvaluation("abc" rlike "^bc", false)
+    checkEvaluation("abc" rlike "^ab", true)
+    checkEvaluation("abc" rlike "^bc", false)
 
     intercept[java.util.regex.PatternSyntaxException] {
       evaluate("abbbbc" rlike "**")
@@ -362,11 +367,10 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     // scalastyle:off
     // non ascii characters are not allowed in the code, so we disable the scalastyle here.
     checkEvaluation(
-      Decode(Encode(Literal("大千世界"), Literal("UTF-16LE")), Literal("UTF-16LE")), "大千世界")
+        Decode(Encode(Literal("大千世界"), Literal("UTF-16LE")), Literal("UTF-16LE")), "大千世界")
     checkEvaluation(
-      Decode(Encode(a, Literal("utf-8")), Literal("utf-8")), "大千世界", create_row("大千世界"))
-    checkEvaluation(
-      Decode(Encode(a, Literal("utf-8")), Literal("utf-8")), "", create_row(""))
+        Decode(Encode(a, Literal("utf-8")), Literal("utf-8")), "大千世界", create_row("大千世界"))
+    checkEvaluation(Decode(Encode(a, Literal("utf-8")), Literal("utf-8")), "", create_row(""))
     // scalastyle:on
     checkEvaluation(Encode(a, Literal("utf-8")), null, create_row(null))
     checkEvaluation(Encode(Literal.create(null, StringType), Literal("utf-8")), null)
@@ -388,7 +392,6 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation(InitCap(Literal("世界")), "世界")
     // scalastyle:on
   }
-
 
   test("Levenshtein distance") {
     checkEvaluation(Levenshtein(Literal.create(null, StringType), Literal("")), null)
@@ -434,8 +437,9 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
 
   test("translate") {
     checkEvaluation(
-      StringTranslate(Literal("translate"), Literal("rnlt"), Literal("123")), "1a2s3ae")
-    checkEvaluation(StringTranslate(Literal("translate"), Literal(""), Literal("123")), "translate")
+        StringTranslate(Literal("translate"), Literal("rnlt"), Literal("123")), "1a2s3ae")
+    checkEvaluation(
+        StringTranslate(Literal("translate"), Literal(""), Literal("123")), "translate")
     checkEvaluation(StringTranslate(Literal("translate"), Literal("rnlt"), Literal("")), "asae")
     // test for multiple mapping
     checkEvaluation(StringTranslate(Literal("abcd"), Literal("aba"), Literal("123")), "12cd")
@@ -476,9 +480,9 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
 
     checkEvaluation(FormatString(Literal.create(null, StringType), 12, "cc"), null)
     checkEvaluation(
-      FormatString(Literal("aa%d%s"), Literal.create(null, IntegerType), "cc"), "aanullcc")
+        FormatString(Literal("aa%d%s"), Literal.create(null, IntegerType), "cc"), "aanullcc")
     checkEvaluation(
-      FormatString(Literal("aa%d%s"), 12, Literal.create(null, StringType)), "aa12null")
+        FormatString(Literal("aa%d%s"), 12, Literal.create(null, StringType)), "aa12null")
   }
 
   test("INSTR") {
@@ -642,9 +646,8 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     val row3 = create_row("aa2bb3cc", null)
 
     checkEvaluation(
-      StringSplit(Literal("aa2bb3cc"), Literal("[1-9]+")), Seq("aa", "bb", "cc"), row1)
-    checkEvaluation(
-      StringSplit(s1, s2), Seq("aa", "bb", "cc"), row1)
+        StringSplit(Literal("aa2bb3cc"), Literal("[1-9]+")), Seq("aa", "bb", "cc"), row1)
+    checkEvaluation(StringSplit(s1, s2), Seq("aa", "bb", "cc"), row1)
     checkEvaluation(StringSplit(s1, s2), null, row2)
     checkEvaluation(StringSplit(s1, s2), null, row3)
   }
@@ -684,16 +687,15 @@ class StringExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation(FormatNumber(Literal(123123324123L), Literal(3)), "123,123,324,123.000")
     checkEvaluation(FormatNumber(Literal(123123324123L), Literal(-1)), null)
     checkEvaluation(
-      FormatNumber(
-        Literal(Decimal(123123324123L) * Decimal(123123.21234d)), Literal(4)),
-      "15,159,339,180,002,773.2778")
+        FormatNumber(Literal(Decimal(123123324123L) * Decimal(123123.21234d)), Literal(4)),
+        "15,159,339,180,002,773.2778")
     checkEvaluation(FormatNumber(Literal.create(null, IntegerType), Literal(3)), null)
     checkEvaluation(FormatNumber(Literal.create(null, NullType), Literal(3)), null)
   }
 
   test("find in set") {
     checkEvaluation(
-      FindInSet(Literal.create(null, StringType), Literal.create(null, StringType)), null)
+        FindInSet(Literal.create(null, StringType), Literal.create(null, StringType)), null)
     checkEvaluation(FindInSet(Literal("ab"), Literal.create(null, StringType)), null)
     checkEvaluation(FindInSet(Literal.create(null, StringType), Literal("abc,b,ab,c,def")), null)
     checkEvaluation(FindInSet(Literal("ab"), Literal("abc,b,ab,c,def")), 3)

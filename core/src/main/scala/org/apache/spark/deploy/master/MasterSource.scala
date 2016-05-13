@@ -31,7 +31,7 @@ private[spark] class MasterSource(val master: Master) extends Source {
   })
 
   // Gauge for alive worker numbers in cluster
-  metricRegistry.register(MetricRegistry.name("aliveWorkers"), new Gauge[Int]{
+  metricRegistry.register(MetricRegistry.name("aliveWorkers"), new Gauge[Int] {
     override def getValue: Int = master.workers.count(_.state == WorkerState.ALIVE)
   })
 

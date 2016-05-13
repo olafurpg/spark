@@ -72,7 +72,8 @@ class JobGeneratorSuite extends TestSuiteBase {
       val testTimeout = timeout(10 seconds)
       val inputStream = ssc.receiverStream(new TestReceiver)
 
-      inputStream.foreachRDD((rdd: RDD[Int], time: Time) => {
+      inputStream.foreachRDD(
+          (rdd: RDD[Int], time: Time) => {
         if (time.milliseconds == longBatchTime) {
           while (waitLatch.getCount() > 0) {
             waitLatch.await()
@@ -120,7 +121,8 @@ class JobGeneratorSuite extends TestSuiteBase {
       }
 
       // Verify that the 3rd batch's block data is still present while the 3rd batch is incomplete
-      assert(getBlocksOfBatch(longBatchTime).nonEmpty, "blocks of incomplete batch already deleted")
+      assert(getBlocksOfBatch(longBatchTime).nonEmpty,
+             "blocks of incomplete batch already deleted")
       assert(batchCounter.getNumCompletedBatches < longBatchNumber)
       waitLatch.countDown()
     }

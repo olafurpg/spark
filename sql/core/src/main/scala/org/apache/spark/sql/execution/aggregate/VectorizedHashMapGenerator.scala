@@ -39,19 +39,19 @@ import org.apache.spark.sql.types._
  * NOTE: This vectorized hash map currently doesn't support nullable keys and falls back to the
  * `BytesToBytesMap` to store them.
  */
-class VectorizedHashMapGenerator(
-    ctx: CodegenContext,
-    aggregateExpressions: Seq[AggregateExpression],
-    generatedClassName: String,
-    groupingKeySchema: StructType,
-    bufferSchema: StructType) {
+class VectorizedHashMapGenerator(ctx: CodegenContext,
+                                 aggregateExpressions: Seq[AggregateExpression],
+                                 generatedClassName: String,
+                                 groupingKeySchema: StructType,
+                                 bufferSchema: StructType) {
   case class Buffer(dataType: DataType, name: String)
   val groupingKeys = groupingKeySchema.map(k => Buffer(k.dataType, ctx.freshName("key")))
   val bufferValues = bufferSchema.map(k => Buffer(k.dataType, ctx.freshName("value")))
   val groupingKeySignature =
     groupingKeys.map(key => s"${ctx.javaType(key.dataType)} ${key.name}").mkString(", ")
   val buffVars: Seq[ExprCode] = {
-    val functions = aggregateExpressions.map(_.aggregateFunction.asInstanceOf[DeclarativeAggregate])
+    val functions =
+      aggregateExpressions.map(_.aggregateFunction.asInstanceOf[DeclarativeAggregate])
     val initExpr = functions.flatMap(f => f.initialValues)
     initExpr.map { e =>
       val isNull = ctx.freshName("bufIsNull")
@@ -59,8 +59,7 @@ class VectorizedHashMapGenerator(
       ctx.addMutableState("boolean", isNull, "")
       ctx.addMutableState(ctx.javaType(e.dataType), value, "")
       val ev = e.genCode(ctx)
-      val initVars =
-        s"""
+      val initVars = s"""
            | $isNull = ${ev.isNull};
            | $value = ${ev.value};
        """.stripMargin
@@ -88,8 +87,8 @@ class VectorizedHashMapGenerator(
 
   private def initializeAggregateHashMap(): String = {
     val generatedSchema: String =
-      s"new org.apache.spark.sql.types.StructType()" +
-        (groupingKeySchema ++ bufferSchema).map { key =>
+      s"new org.apache.spark.sql.types.StructType()" + (groupingKeySchema ++ bufferSchema).map {
+        key =>
           key.dataType match {
             case d: DecimalType =>
               s""".add("${key.name}", org.apache.spark.sql.types.DataTypes.createDecimalType(
@@ -97,19 +96,18 @@ class VectorizedHashMapGenerator(
             case _ =>
               s""".add("${key.name}", org.apache.spark.sql.types.DataTypes.${key.dataType})"""
           }
-        }.mkString("\n").concat(";")
+      }.mkString("\n").concat(";")
 
     val generatedAggBufferSchema: String =
-      s"new org.apache.spark.sql.types.StructType()" +
-        bufferSchema.map { key =>
-          key.dataType match {
-            case d: DecimalType =>
-              s""".add("${key.name}", org.apache.spark.sql.types.DataTypes.createDecimalType(
+      s"new org.apache.spark.sql.types.StructType()" + bufferSchema.map { key =>
+        key.dataType match {
+          case d: DecimalType =>
+            s""".add("${key.name}", org.apache.spark.sql.types.DataTypes.createDecimalType(
                   |${d.precision}, ${d.scale}))""".stripMargin
-            case _ =>
-              s""".add("${key.name}", org.apache.spark.sql.types.DataTypes.${key.dataType})"""
-          }
-        }.mkString("\n").concat(";")
+          case _ =>
+            s""".add("${key.name}", org.apache.spark.sql.types.DataTypes.${key.dataType})"""
+        }
+      }.mkString("\n").concat(";")
 
     s"""
        |  private org.apache.spark.sql.execution.vectorized.ColumnarBatch batch;
@@ -187,9 +185,11 @@ class VectorizedHashMapGenerator(
   private def generateEquals(): String = {
 
     def genEqualsForKeys(groupingKeys: Seq[Buffer]): String = {
-      groupingKeys.zipWithIndex.map { case (key: Buffer, ordinal: Int) =>
-        s"""(${ctx.genEqual(key.dataType, ctx.getValue("batch", "buckets[idx]",
-          key.dataType, ordinal), key.name)})"""
+      groupingKeys.zipWithIndex.map {
+        case (key: Buffer, ordinal: Int) =>
+          s"""(${ctx.genEqual(key.dataType,
+                              ctx.getValue("batch", "buckets[idx]", key.dataType, ordinal),
+                              key.name)})"""
       }.mkString(" && ")
     }
 
@@ -236,21 +236,26 @@ class VectorizedHashMapGenerator(
   private def generateFindOrInsert(): String = {
 
     def genCodeToSetKeys(groupingKeys: Seq[Buffer]): Seq[String] = {
-      groupingKeys.zipWithIndex.map { case (key: Buffer, ordinal: Int) =>
-        ctx.setValue("batch", "numRows", key.dataType, ordinal, key.name)
+      groupingKeys.zipWithIndex.map {
+        case (key: Buffer, ordinal: Int) =>
+          ctx.setValue("batch", "numRows", key.dataType, ordinal, key.name)
       }
     }
 
     def genCodeToSetAggBuffers(bufferValues: Seq[Buffer]): Seq[String] = {
-      bufferValues.zipWithIndex.map { case (key: Buffer, ordinal: Int) =>
-        ctx.updateColumn("batch", "numRows", key.dataType, groupingKeys.length + ordinal,
-          buffVars(ordinal), nullable = true)
+      bufferValues.zipWithIndex.map {
+        case (key: Buffer, ordinal: Int) =>
+          ctx.updateColumn("batch",
+                           "numRows",
+                           key.dataType,
+                           groupingKeys.length + ordinal,
+                           buffVars(ordinal),
+                           nullable = true)
       }
     }
 
     s"""
-       |public org.apache.spark.sql.execution.vectorized.ColumnarBatch.Row findOrInsert(${
-            groupingKeySignature}) {
+       |public org.apache.spark.sql.execution.vectorized.ColumnarBatch.Row findOrInsert(${groupingKeySignature}) {
        |  long h = hash(${groupingKeys.map(_.name).mkString(", ")});
        |  int step = 0;
        |  int idx = (int) h & (numBuckets - 1);
@@ -305,10 +310,7 @@ class VectorizedHashMapGenerator(
   }
 
   private def genComputeHash(
-      ctx: CodegenContext,
-      input: String,
-      dataType: DataType,
-      result: String): String = {
+      ctx: CodegenContext, input: String, dataType: DataType, result: String): String = {
     def hashInt(i: String): String = s"int $result = $i;"
     def hashLong(l: String): String = s"long $result = $l;"
     def hashBytes(b: String): String = {

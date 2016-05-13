@@ -98,9 +98,8 @@ private[spark] class LocalStopwatch(override val name: String) extends Stopwatch
  * A distributed [[Stopwatch]] using Spark accumulator.
  * @param sc SparkContext
  */
-private[spark] class DistributedStopwatch(
-    sc: SparkContext,
-    override val name: String) extends Stopwatch {
+private[spark] class DistributedStopwatch(sc: SparkContext, override val name: String)
+    extends Stopwatch {
 
   private val elapsedTime: Accumulator[Long] = sc.accumulator(0L, s"DistributedStopwatch($name)")
 
@@ -146,8 +145,6 @@ private[spark] class MultiStopwatch(@transient private val sc: SparkContext) ext
   def apply(name: String): Stopwatch = stopwatches(name)
 
   override def toString: String = {
-    stopwatches.values.toArray.sortBy(_.name)
-      .map(c => s"  $c")
-      .mkString("{\n", ",\n", "\n}")
+    stopwatches.values.toArray.sortBy(_.name).map(c => s"  $c").mkString("{\n", ",\n", "\n}")
   }
 }

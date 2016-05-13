@@ -40,12 +40,11 @@ import org.apache.spark.util.CallSite
  * @param listener A listener to notify if tasks in this job finish or the job fails.
  * @param properties Scheduling properties attached to the job, such as fair scheduler pool name.
  */
-private[spark] class ActiveJob(
-    val jobId: Int,
-    val finalStage: Stage,
-    val callSite: CallSite,
-    val listener: JobListener,
-    val properties: Properties) {
+private[spark] class ActiveJob(val jobId: Int,
+                               val finalStage: Stage,
+                               val callSite: CallSite,
+                               val listener: JobListener,
+                               val properties: Properties) {
 
   /**
    * Number of partitions we need to compute for this job. Note that result stages may not need

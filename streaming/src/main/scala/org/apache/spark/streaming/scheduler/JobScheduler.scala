@@ -31,7 +31,6 @@ import org.apache.spark.streaming._
 import org.apache.spark.streaming.ui.UIUtils
 import org.apache.spark.util.{EventLoop, ThreadUtils}
 
-
 private[scheduler] sealed trait JobSchedulerEvent
 private[scheduler] case class JobStarted(job: Job, startTime: Long) extends JobSchedulerEvent
 private[scheduler] case class JobCompleted(job: Job, completedTime: Long) extends JobSchedulerEvent
@@ -41,8 +40,7 @@ private[scheduler] case class ErrorReported(msg: String, e: Throwable) extends J
  * This class schedules jobs to be run on Spark. It uses the JobGenerator to generate
  * the jobs and runs them using a thread pool.
  */
-private[streaming]
-class JobScheduler(val ssc: StreamingContext) extends Logging {
+private[streaming] class JobScheduler(val ssc: StreamingContext) extends Logging {
 
   // Use of ConcurrentHashMap.keySet later causes an odd runtime problem due to Java 7/8 diff
   // https://gist.github.com/AlainODea/1375759b8720a3f9f094
@@ -84,12 +82,12 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
     listenerBus.start()
     receiverTracker = new ReceiverTracker(ssc)
     inputInfoTracker = new InputInfoTracker(ssc)
-    executorAllocationManager = ExecutorAllocationManager.createIfEnabled(
-      ssc.sparkContext,
-      receiverTracker,
-      ssc.conf,
-      ssc.graph.batchDuration.milliseconds,
-      clock)
+    executorAllocationManager =
+      ExecutorAllocationManager.createIfEnabled(ssc.sparkContext,
+                                                receiverTracker,
+                                                ssc.conf,
+                                                ssc.graph.batchDuration.milliseconds,
+                                                clock)
     executorAllocationManager.foreach(ssc.addStreamingListener)
     receiverTracker.start()
     jobGenerator.start()
@@ -119,11 +117,12 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
     jobExecutor.shutdown()
 
     // Wait for the queued jobs to complete if indicated
-    val terminated = if (processAllReceivedData) {
-      jobExecutor.awaitTermination(1, TimeUnit.HOURS)  // just a very large period of time
-    } else {
-      jobExecutor.awaitTermination(2, TimeUnit.SECONDS)
-    }
+    val terminated =
+      if (processAllReceivedData) {
+        jobExecutor.awaitTermination(1, TimeUnit.HOURS) // just a very large period of time
+      } else {
+        jobExecutor.awaitTermination(2, TimeUnit.SECONDS)
+      }
     if (!terminated) {
       jobExecutor.shutdownNow()
     }
@@ -195,10 +194,12 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
     if (jobSet.hasCompleted) {
       jobSets.remove(jobSet.time)
       jobGenerator.onBatchCompletion(jobSet.time)
-      logInfo("Total delay: %.3f s for time %s (execution: %.3f s)".format(
-        jobSet.totalDelay / 1000.0, jobSet.time.toString,
-        jobSet.processingDelay / 1000.0
-      ))
+      logInfo(
+          "Total delay: %.3f s for time %s (execution: %.3f s)".format(
+              jobSet.totalDelay / 1000.0,
+              jobSet.time.toString,
+              jobSet.processingDelay / 1000.0
+          ))
       listenerBus.post(StreamingListenerBatchCompleted(jobSet.toBatchInfo))
     }
     job.result match {
@@ -220,14 +221,13 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
       val oldProps = ssc.sparkContext.getLocalProperties
       try {
         ssc.sparkContext.setLocalProperties(
-          SerializationUtils.clone(ssc.savedProperties.get()).asInstanceOf[Properties])
+            SerializationUtils.clone(ssc.savedProperties.get()).asInstanceOf[Properties])
         val formattedTime = UIUtils.formatBatchTime(
-          job.time.milliseconds, ssc.graph.batchDuration.milliseconds, showYYYYMMSS = false)
+            job.time.milliseconds, ssc.graph.batchDuration.milliseconds, showYYYYMMSS = false)
         val batchUrl = s"/streaming/batch/?id=${job.time.milliseconds}"
         val batchLinkText = s"[output operation ${job.outputOpId}, batch time ${formattedTime}]"
 
-        ssc.sc.setJobDescription(
-          s"""Streaming job from <a href="$batchUrl">$batchLinkText</a>""")
+        ssc.sc.setJobDescription(s"""Streaming job from <a href="$batchUrl">$batchLinkText</a>""")
         ssc.sc.setLocalProperty(BATCH_TIME_PROPERTY_KEY, job.time.milliseconds.toString)
         ssc.sc.setLocalProperty(OUTPUT_OP_ID_PROPERTY_KEY, job.outputOpId.toString)
         // Checkpoint all RDDs marked for checkpointing to ensure their lineages are

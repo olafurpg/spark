@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.spark.streaming.ui
 
 import scala.collection.mutable
@@ -48,8 +47,7 @@ private[ui] case class BatchUIData(
    */
   def processingDelay: Option[Long] = {
     for (start <- processingStartTime;
-         end <- processingEndTime)
-      yield end - start
+         end <- processingEndTime) yield end - start
   }
 
   /**
@@ -84,9 +82,9 @@ private[ui] case class BatchUIData(
   /**
    * Return the number of completed output operations.
    */
-  def numCompletedOutputOp: Int = outputOperations.values.count {
-      op => op.failureReason.isEmpty && op.endTime.nonEmpty
-    }
+  def numCompletedOutputOp: Int = outputOperations.values.count { op =>
+    op.failureReason.isEmpty && op.endTime.nonEmpty
+  }
 
   /**
    * Return if this batch has any output operations
@@ -100,23 +98,22 @@ private[ui] object BatchUIData {
     val outputOperations = mutable.HashMap[OutputOpId, OutputOperationUIData]()
     outputOperations ++= batchInfo.outputOperationInfos.mapValues(OutputOperationUIData.apply)
     new BatchUIData(
-      batchInfo.batchTime,
-      batchInfo.streamIdToInputInfo,
-      batchInfo.submissionTime,
-      batchInfo.processingStartTime,
-      batchInfo.processingEndTime,
-      outputOperations
+        batchInfo.batchTime,
+        batchInfo.streamIdToInputInfo,
+        batchInfo.submissionTime,
+        batchInfo.processingStartTime,
+        batchInfo.processingEndTime,
+        outputOperations
     )
   }
 }
 
-private[ui] case class OutputOperationUIData(
-    id: OutputOpId,
-    name: String,
-    description: String,
-    startTime: Option[Long],
-    endTime: Option[Long],
-    failureReason: Option[String]) {
+private[ui] case class OutputOperationUIData(id: OutputOpId,
+                                             name: String,
+                                             description: String,
+                                             startTime: Option[Long],
+                                             endTime: Option[Long],
+                                             failureReason: Option[String]) {
 
   def duration: Option[Long] = for (s <- startTime; e <- endTime) yield e - s
 }
@@ -125,12 +122,12 @@ private[ui] object OutputOperationUIData {
 
   def apply(outputOperationInfo: OutputOperationInfo): OutputOperationUIData = {
     OutputOperationUIData(
-      outputOperationInfo.id,
-      outputOperationInfo.name,
-      outputOperationInfo.description,
-      outputOperationInfo.startTime,
-      outputOperationInfo.endTime,
-      outputOperationInfo.failureReason
+        outputOperationInfo.id,
+        outputOperationInfo.name,
+        outputOperationInfo.description,
+        outputOperationInfo.startTime,
+        outputOperationInfo.endTime,
+        outputOperationInfo.failureReason
     )
   }
 }

@@ -204,9 +204,7 @@ class StorageStatus(val blockManagerId: BlockManagerId, val maxMem: Long) {
     // Compute new info from old info
     val (oldMem, oldDisk) = blockId match {
       case RDDBlockId(rddId, _) =>
-        _rddStorageInfo.get(rddId)
-          .map { case (mem, disk, _) => (mem, disk) }
-          .getOrElse((0L, 0L))
+        _rddStorageInfo.get(rddId).map { case (mem, disk, _) => (mem, disk) }.getOrElse((0L, 0L))
       case _ =>
         _nonRddStorageInfo
     }
@@ -226,7 +224,6 @@ class StorageStatus(val blockManagerId: BlockManagerId, val maxMem: Long) {
         _nonRddStorageInfo = (newMem, newDisk)
     }
   }
-
 }
 
 /** Helper methods for storage-related objects. */
@@ -255,8 +252,8 @@ private[spark] object StorageUtils extends Logging {
     rddInfos.foreach { rddInfo =>
       val rddId = rddInfo.id
       // Assume all blocks belonging to the same RDD have the same storage level
-      val storageLevel = statuses
-        .flatMap(_.rddStorageLevel(rddId)).headOption.getOrElse(StorageLevel.NONE)
+      val storageLevel =
+        statuses.flatMap(_.rddStorageLevel(rddId)).headOption.getOrElse(StorageLevel.NONE)
       val numCachedPartitions = statuses.map(_.numRddBlocksById(rddId)).sum
       val memSize = statuses.map(_.memUsedByRdd(rddId)).sum
       val diskSize = statuses.map(_.diskUsedByRdd(rddId)).sum
@@ -274,12 +271,12 @@ private[spark] object StorageUtils extends Logging {
   def getRddBlockLocations(rddId: Int, statuses: Seq[StorageStatus]): Map[BlockId, Seq[String]] = {
     val blockLocations = new mutable.HashMap[BlockId, mutable.ListBuffer[String]]
     statuses.foreach { status =>
-      status.rddBlocksById(rddId).foreach { case (bid, _) =>
-        val location = status.blockManagerId.hostPort
-        blockLocations.getOrElseUpdate(bid, mutable.ListBuffer.empty) += location
+      status.rddBlocksById(rddId).foreach {
+        case (bid, _) =>
+          val location = status.blockManagerId.hostPort
+          blockLocations.getOrElseUpdate(bid, mutable.ListBuffer.empty) += location
       }
     }
     blockLocations
   }
-
 }

@@ -24,14 +24,14 @@ import scala.collection.{immutable, GenTraversableOnce}
  */
 class StreamProgress(
     val baseMap: immutable.Map[Source, Offset] = new immutable.HashMap[Source, Offset])
-  extends scala.collection.immutable.Map[Source, Offset] {
+    extends scala.collection.immutable.Map[Source, Offset] {
 
   private[sql] def toCompositeOffset(source: Seq[Source]): CompositeOffset = {
     CompositeOffset(source.map(get))
   }
 
   override def toString: String =
-    baseMap.map { case (k, v) => s"$k: $v"}.mkString("{", ",", "}")
+    baseMap.map { case (k, v) => s"$k: $v" }.mkString("{", ",", "}")
 
   override def +[B1 >: Offset](kv: (Source, B1)): Map[Source, B1] = baseMap + kv
 

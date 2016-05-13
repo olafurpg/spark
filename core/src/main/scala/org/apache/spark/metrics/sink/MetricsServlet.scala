@@ -30,10 +30,8 @@ import org.apache.spark.{SecurityManager, SparkConf}
 import org.apache.spark.ui.JettyUtils._
 
 private[spark] class MetricsServlet(
-    val property: Properties,
-    val registry: MetricRegistry,
-    securityMgr: SecurityManager)
-  extends Sink {
+    val property: Properties, val registry: MetricRegistry, securityMgr: SecurityManager)
+    extends Sink {
 
   val SERVLET_KEY_PATH = "path"
   val SERVLET_KEY_SAMPLE = "sample"
@@ -42,16 +40,20 @@ private[spark] class MetricsServlet(
 
   val servletPath = property.getProperty(SERVLET_KEY_PATH)
 
-  val servletShowSample = Option(property.getProperty(SERVLET_KEY_SAMPLE)).map(_.toBoolean)
+  val servletShowSample = Option(property.getProperty(SERVLET_KEY_SAMPLE))
+    .map(_.toBoolean)
     .getOrElse(SERVLET_DEFAULT_SAMPLE)
 
-  val mapper = new ObjectMapper().registerModule(
-    new MetricsModule(TimeUnit.SECONDS, TimeUnit.MILLISECONDS, servletShowSample))
+  val mapper = new ObjectMapper()
+    .registerModule(new MetricsModule(TimeUnit.SECONDS, TimeUnit.MILLISECONDS, servletShowSample))
 
   def getHandlers(conf: SparkConf): Array[ServletContextHandler] = {
     Array[ServletContextHandler](
-      createServletHandler(servletPath,
-        new ServletParams(request => getMetricsSnapshot(request), "text/json"), securityMgr, conf)
+        createServletHandler(
+            servletPath,
+            new ServletParams(request => getMetricsSnapshot(request), "text/json"),
+            securityMgr,
+            conf)
     )
   }
 
@@ -59,9 +61,9 @@ private[spark] class MetricsServlet(
     mapper.writeValueAsString(registry)
   }
 
-  override def start() { }
+  override def start() {}
 
-  override def stop() { }
+  override def stop() {}
 
-  override def report() { }
+  override def report() {}
 }

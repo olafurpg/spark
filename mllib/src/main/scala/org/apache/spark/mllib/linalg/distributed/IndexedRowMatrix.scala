@@ -41,10 +41,10 @@ case class IndexedRow(index: Long, vector: Vector)
  *              columns will be determined by the size of the first row.
  */
 @Since("1.0.0")
-class IndexedRowMatrix @Since("1.0.0") (
-    @Since("1.0.0") val rows: RDD[IndexedRow],
-    private var nRows: Long,
-    private var nCols: Int) extends DistributedMatrix {
+class IndexedRowMatrix @Since("1.0.0")(@Since("1.0.0") val rows: RDD[IndexedRow],
+                                       private var nRows: Long,
+                                       private var nCols: Int)
+    extends DistributedMatrix {
 
   /** Alternative constructor leaving matrix dimensions to be determined automatically. */
   @Since("1.0.0")
@@ -67,7 +67,6 @@ class IndexedRowMatrix @Since("1.0.0") (
     }
     nRows
   }
-
 
   /**
    * Compute all cosine similarities between columns of this matrix using the brute-force
@@ -152,23 +151,24 @@ class IndexedRowMatrix @Since("1.0.0") (
    * @return SingularValueDecomposition(U, s, V)
    */
   @Since("1.0.0")
-  def computeSVD(
-      k: Int,
-      computeU: Boolean = false,
-      rCond: Double = 1e-9): SingularValueDecomposition[IndexedRowMatrix, Matrix] = {
+  def computeSVD(k: Int,
+                 computeU: Boolean = false,
+                 rCond: Double = 1e-9): SingularValueDecomposition[IndexedRowMatrix, Matrix] = {
 
     val n = numCols().toInt
     require(k > 0 && k <= n, s"Requested k singular values but got k=$k and numCols=$n.")
     val indices = rows.map(_.index)
     val svd = toRowMatrix().computeSVD(k, computeU, rCond)
-    val U = if (computeU) {
-      val indexedRows = indices.zip(svd.U.rows).map { case (i, v) =>
-        IndexedRow(i, v)
+    val U =
+      if (computeU) {
+        val indexedRows = indices.zip(svd.U.rows).map {
+          case (i, v) =>
+            IndexedRow(i, v)
+        }
+        new IndexedRowMatrix(indexedRows, nRows, svd.U.numCols().toInt)
+      } else {
+        null
       }
-      new IndexedRowMatrix(indexedRows, nRows, svd.U.numCols().toInt)
-    } else {
-      null
-    }
     SingularValueDecomposition(U, svd.s, svd.V)
   }
 
@@ -181,8 +181,9 @@ class IndexedRowMatrix @Since("1.0.0") (
   @Since("1.0.0")
   def multiply(B: Matrix): IndexedRowMatrix = {
     val mat = toRowMatrix().multiply(B)
-    val indexedRows = rows.map(_.index).zip(mat.rows).map { case (i, v) =>
-      IndexedRow(i, v)
+    val indexedRows = rows.map(_.index).zip(mat.rows).map {
+      case (i, v) =>
+        IndexedRow(i, v)
     }
     new IndexedRowMatrix(indexedRows, nRows, B.numCols)
   }
@@ -200,11 +201,13 @@ class IndexedRowMatrix @Since("1.0.0") (
     val m = numRows().toInt
     val n = numCols().toInt
     val mat = BDM.zeros[Double](m, n)
-    rows.collect().foreach { case IndexedRow(rowIndex, vector) =>
-      val i = rowIndex.toInt
-      vector.foreachActive { case (j, v) =>
-        mat(i, j) = v
-      }
+    rows.collect().foreach {
+      case IndexedRow(rowIndex, vector) =>
+        val i = rowIndex.toInt
+        vector.foreachActive {
+          case (j, v) =>
+            mat(i, j) = v
+        }
     }
     mat
   }

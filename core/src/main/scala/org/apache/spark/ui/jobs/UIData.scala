@@ -28,45 +28,45 @@ import org.apache.spark.util.collection.OpenHashSet
 private[spark] object UIData {
 
   class ExecutorSummary {
-    var taskTime : Long = 0
-    var failedTasks : Int = 0
-    var succeededTasks : Int = 0
-    var inputBytes : Long = 0
-    var inputRecords : Long = 0
-    var outputBytes : Long = 0
-    var outputRecords : Long = 0
-    var shuffleRead : Long = 0
-    var shuffleReadRecords : Long = 0
-    var shuffleWrite : Long = 0
-    var shuffleWriteRecords : Long = 0
-    var memoryBytesSpilled : Long = 0
-    var diskBytesSpilled : Long = 0
+    var taskTime: Long = 0
+    var failedTasks: Int = 0
+    var succeededTasks: Int = 0
+    var inputBytes: Long = 0
+    var inputRecords: Long = 0
+    var outputBytes: Long = 0
+    var outputRecords: Long = 0
+    var shuffleRead: Long = 0
+    var shuffleReadRecords: Long = 0
+    var shuffleWrite: Long = 0
+    var shuffleWriteRecords: Long = 0
+    var memoryBytesSpilled: Long = 0
+    var diskBytesSpilled: Long = 0
   }
 
   class JobUIData(
-    var jobId: Int = -1,
-    var submissionTime: Option[Long] = None,
-    var completionTime: Option[Long] = None,
-    var stageIds: Seq[Int] = Seq.empty,
-    var jobGroup: Option[String] = None,
-    var status: JobExecutionStatus = JobExecutionStatus.UNKNOWN,
-    /* Tasks */
-    // `numTasks` is a potential underestimate of the true number of tasks that this job will run.
-    // This may be an underestimate because the job start event references all of the result
-    // stages' transitive stage dependencies, but some of these stages might be skipped if their
-    // output is available from earlier runs.
-    // See https://github.com/apache/spark/pull/3009 for a more extensive discussion.
-    var numTasks: Int = 0,
-    var numActiveTasks: Int = 0,
-    var numCompletedTasks: Int = 0,
-    var numSkippedTasks: Int = 0,
-    var numFailedTasks: Int = 0,
-    /* Stages */
-    var numActiveStages: Int = 0,
-    // This needs to be a set instead of a simple count to prevent double-counting of rerun stages:
-    var completedStageIndices: mutable.HashSet[Int] = new mutable.HashSet[Int](),
-    var numSkippedStages: Int = 0,
-    var numFailedStages: Int = 0
+      var jobId: Int = -1,
+      var submissionTime: Option[Long] = None,
+      var completionTime: Option[Long] = None,
+      var stageIds: Seq[Int] = Seq.empty,
+      var jobGroup: Option[String] = None,
+      var status: JobExecutionStatus = JobExecutionStatus.UNKNOWN,
+      /* Tasks */
+      // `numTasks` is a potential underestimate of the true number of tasks that this job will run.
+      // This may be an underestimate because the job start event references all of the result
+      // stages' transitive stage dependencies, but some of these stages might be skipped if their
+      // output is available from earlier runs.
+      // See https://github.com/apache/spark/pull/3009 for a more extensive discussion.
+      var numTasks: Int = 0,
+      var numActiveTasks: Int = 0,
+      var numCompletedTasks: Int = 0,
+      var numSkippedTasks: Int = 0,
+      var numFailedTasks: Int = 0,
+      /* Stages */
+      var numActiveStages: Int = 0,
+      // This needs to be a set instead of a simple count to prevent double-counting of rerun stages:
+      var completedStageIndices: mutable.HashSet[Int] = new mutable.HashSet[Int](),
+      var numSkippedStages: Int = 0,
+      var numFailedStages: Int = 0
   )
 
   class StageUIData {
@@ -82,7 +82,7 @@ private[spark] object UIData {
     var outputBytes: Long = _
     var outputRecords: Long = _
     var shuffleReadTotalBytes: Long = _
-    var shuffleReadRecords : Long = _
+    var shuffleReadRecords: Long = _
     var shuffleWriteBytes: Long = _
     var shuffleWriteRecords: Long = _
     var memoryBytesSpilled: Long = _
@@ -105,13 +105,11 @@ private[spark] object UIData {
   /**
    * These are kept mutable and reused throughout a task's lifetime to avoid excessive reallocation.
    */
-  class TaskUIData(
-      var taskInfo: TaskInfo,
-      var metrics: Option[TaskMetrics] = None,
-      var errorMessage: Option[String] = None)
+  class TaskUIData(var taskInfo: TaskInfo,
+                   var metrics: Option[TaskMetrics] = None,
+                   var errorMessage: Option[String] = None)
 
-  class ExecutorUIData(
-      val startTime: Long,
-      var finishTime: Option[Long] = None,
-      var finishReason: Option[String] = None)
+  class ExecutorUIData(val startTime: Long,
+                       var finishTime: Option[Long] = None,
+                       var finishReason: Option[String] = None)
 }

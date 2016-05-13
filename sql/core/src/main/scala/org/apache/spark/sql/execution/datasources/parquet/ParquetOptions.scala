@@ -24,10 +24,9 @@ import org.apache.spark.sql.internal.SQLConf
 /**
  * Options for the Parquet data source.
  */
-private[parquet] class ParquetOptions(
-    @transient private val parameters: Map[String, String],
-    @transient private val sqlConf: SQLConf)
-  extends Serializable {
+private[parquet] class ParquetOptions(@transient private val parameters: Map[String, String],
+                                      @transient private val sqlConf: SQLConf)
+    extends Serializable {
 
   import ParquetOptions._
 
@@ -36,23 +35,24 @@ private[parquet] class ParquetOptions(
    * Acceptable values are defined in [[shortParquetCompressionCodecNames]].
    */
   val compressionCodec: String = {
-    val codecName = parameters.getOrElse("compression", sqlConf.parquetCompressionCodec).toLowerCase
+    val codecName =
+      parameters.getOrElse("compression", sqlConf.parquetCompressionCodec).toLowerCase
     if (!shortParquetCompressionCodecNames.contains(codecName)) {
       val availableCodecs = shortParquetCompressionCodecNames.keys.map(_.toLowerCase)
-      throw new IllegalArgumentException(s"Codec [$codecName] " +
-        s"is not available. Available codecs are ${availableCodecs.mkString(", ")}.")
+      throw new IllegalArgumentException(
+          s"Codec [$codecName] " +
+          s"is not available. Available codecs are ${availableCodecs.mkString(", ")}.")
     }
     shortParquetCompressionCodecNames(codecName).name()
   }
 }
 
-
 private[parquet] object ParquetOptions {
   // The parquet compression short names
   private val shortParquetCompressionCodecNames = Map(
-    "none" -> CompressionCodecName.UNCOMPRESSED,
-    "uncompressed" -> CompressionCodecName.UNCOMPRESSED,
-    "snappy" -> CompressionCodecName.SNAPPY,
-    "gzip" -> CompressionCodecName.GZIP,
-    "lzo" -> CompressionCodecName.LZO)
+      "none" -> CompressionCodecName.UNCOMPRESSED,
+      "uncompressed" -> CompressionCodecName.UNCOMPRESSED,
+      "snappy" -> CompressionCodecName.SNAPPY,
+      "gzip" -> CompressionCodecName.GZIP,
+      "lzo" -> CompressionCodecName.LZO)
 }

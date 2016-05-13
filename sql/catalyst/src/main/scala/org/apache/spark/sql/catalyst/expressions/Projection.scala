@@ -30,7 +30,8 @@ class InterpretedProjection(expressions: Seq[Expression]) extends Projection {
   def this(expressions: Seq[Expression], inputSchema: Seq[Attribute]) =
     this(expressions.map(BindReferences.bindReference(_, inputSchema)))
 
-  expressions.foreach(_.foreach {
+  expressions.foreach(
+      _.foreach {
     case n: Nondeterministic => n.setInitialValues()
     case _ =>
   })
@@ -63,7 +64,8 @@ case class InterpretedMutableProjection(expressions: Seq[Expression]) extends Mu
 
   private[this] val buffer = new Array[Any](expressions.size)
 
-  expressions.foreach(_.foreach {
+  expressions.foreach(
+      _.foreach {
     case n: Nondeterministic => n.setInitialValues()
     case _ =>
   })
@@ -118,7 +120,8 @@ object UnsafeProjection {
    * Returns an UnsafeProjection for given sequence of Expressions (bounded).
    */
   def create(exprs: Seq[Expression]): UnsafeProjection = {
-    val unsafeExprs = exprs.map(_ transform {
+    val unsafeExprs = exprs.map(
+        _ transform {
       case CreateStruct(children) => CreateStructUnsafe(children)
       case CreateNamedStruct(children) => CreateNamedStructUnsafe(children)
     })
@@ -139,15 +142,15 @@ object UnsafeProjection {
    * Same as other create()'s but allowing enabling/disabling subexpression elimination.
    * TODO: refactor the plumbing and clean this up.
    */
-  def create(
-      exprs: Seq[Expression],
-      inputSchema: Seq[Attribute],
-      subexpressionEliminationEnabled: Boolean): UnsafeProjection = {
-    val e = exprs.map(BindReferences.bindReference(_, inputSchema))
+  def create(exprs: Seq[Expression],
+             inputSchema: Seq[Attribute],
+             subexpressionEliminationEnabled: Boolean): UnsafeProjection = {
+    val e = exprs
+      .map(BindReferences.bindReference(_, inputSchema))
       .map(_ transform {
         case CreateStruct(children) => CreateStructUnsafe(children)
         case CreateNamedStruct(children) => CreateNamedStructUnsafe(children)
-    })
+      })
     GenerateUnsafeProjection.generate(e, subexpressionEliminationEnabled)
   }
 }

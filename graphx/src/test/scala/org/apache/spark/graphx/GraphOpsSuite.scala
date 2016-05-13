@@ -30,7 +30,9 @@ class GraphOpsSuite extends SparkFunSuite with LocalSparkContext {
       val g: Graph[String, String] = Graph(vertices, edges)
 
       val tbl = sc.parallelize(Seq[(VertexId, Int)]((1, 10), (2, 20)))
-      val g1 = g.joinVertices(tbl) { (vid: VertexId, attr: String, u: Int) => attr + u }
+      val g1 = g.joinVertices(tbl) { (vid: VertexId, attr: String, u: Int) =>
+        attr + u
+      }
 
       val v = g1.vertices.collect().toSet
       assert(v === Set((1, "one10"), (2, "two20"), (3, "three")))
@@ -55,32 +57,34 @@ class GraphOpsSuite extends SparkFunSuite with LocalSparkContext {
 
   test("removeSelfEdges") {
     withSpark { sc =>
-      val edgeArray = Array((1 -> 2), (2 -> 3), (3 -> 3), (4 -> 3), (1 -> 1))
-        .map {
-          case (a, b) => (a.toLong, b.toLong)
-        }
+      val edgeArray = Array((1 -> 2), (2 -> 3), (3 -> 3), (4 -> 3), (1 -> 1)).map {
+        case (a, b) => (a.toLong, b.toLong)
+      }
       val correctEdges = edgeArray.filter { case (a, b) => a != b }.toSet
       val graph = Graph.fromEdgeTuples(sc.parallelize(edgeArray), 1)
-      val canonicalizedEdges = graph.removeSelfEdges().edges.map(e => (e.srcId, e.dstId))
-        .collect
+      val canonicalizedEdges = graph.removeSelfEdges().edges.map(e => (e.srcId, e.dstId)).collect
       assert(canonicalizedEdges.toSet.size === canonicalizedEdges.size)
       assert(canonicalizedEdges.toSet === correctEdges)
     }
   }
 
-  test ("filter") {
+  test("filter") {
     withSpark { sc =>
       val n = 5
       val vertices = sc.parallelize((0 to n).map(x => (x: VertexId, x)))
       val edges = sc.parallelize((1 to n).map(x => Edge(0, x, x)))
       val graph: Graph[Int, Int] = Graph(vertices, edges).cache()
-      val filteredGraph = graph.filter(
-        graph => {
-          val degrees: VertexRDD[Int] = graph.outDegrees
-          graph.outerJoinVertices(degrees) {(vid, data, deg) => deg.getOrElse(0)}
-        },
-        vpred = (vid: VertexId, deg: Int) => deg > 0
-      ).cache()
+      val filteredGraph = graph
+        .filter(
+            graph => {
+              val degrees: VertexRDD[Int] = graph.outDegrees
+              graph.outerJoinVertices(degrees) { (vid, data, deg) =>
+                deg.getOrElse(0)
+              }
+            },
+            vpred = (vid: VertexId, deg: Int) => deg > 0
+        )
+        .cache()
 
       val v = filteredGraph.vertices.collect().toSet
       assert(v === Set((0, 0)))
@@ -91,12 +95,11 @@ class GraphOpsSuite extends SparkFunSuite with LocalSparkContext {
     }
   }
 
-  test ("convertToCanonicalEdges") {
+  test("convertToCanonicalEdges") {
     withSpark { sc =>
       val vertices =
         sc.parallelize(Seq[(VertexId, String)]((1, "one"), (2, "two"), (3, "three")), 2)
-      val edges =
-        sc.parallelize(Seq(Edge(1, 2, 1), Edge(2, 1, 1), Edge(3, 2, 2)))
+      val edges = sc.parallelize(Seq(Edge(1, 2, 1), Edge(2, 1, 1), Edge(3, 2, 2)))
       val g: Graph[String, Int] = Graph(vertices, edges)
 
       val g1 = g.convertToCanonicalEdges()
@@ -192,19 +195,20 @@ class GraphOpsSuite extends SparkFunSuite with LocalSparkContext {
       // not have any edges in the specified direction.
       assert(edges.count === 50)
       edges.collect.foreach {
-        case (vid, edges) => if (vid > 0 && vid < 49) {
-          assert(edges.size == 2)
-        } else {
-          assert(edges.size == 1)
-        }
+        case (vid, edges) =>
+          if (vid > 0 && vid < 49) {
+            assert(edges.size == 2)
+          } else {
+            assert(edges.size == 1)
+          }
       }
       edges.collect.foreach {
         case (vid, edges) =>
           val s = edges.toSet
           val edgeIds = s.map(e => if (vid != e.srcId) e.srcId else e.dstId)
-          if (vid == 0) { assert(edgeIds.contains(1)) }
-          else if (vid == 49) { assert(edgeIds.contains(48)) }
-          else {
+          if (vid == 0) { assert(edgeIds.contains(1)) } else if (vid == 49) {
+            assert(edgeIds.contains(48))
+          } else {
             assert(edgeIds.contains(vid + 1))
             assert(edgeIds.contains(vid - 1))
           }

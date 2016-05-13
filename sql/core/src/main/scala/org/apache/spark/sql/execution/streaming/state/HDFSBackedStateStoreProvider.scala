@@ -35,7 +35,6 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Utils
 
-
 /**
  * An implementation of [[StateStoreProvider]] and [[StateStore]] in which all the data is backed
  * by files in a HDFS-compatible file system. All updates to the store has to be done in sets
@@ -71,13 +70,14 @@ private[state] class HDFSBackedStateStoreProvider(
     valueSchema: StructType,
     storeConf: StateStoreConf,
     hadoopConf: Configuration
-  ) extends StateStoreProvider with Logging {
+)
+    extends StateStoreProvider
+    with Logging {
 
   type MapType = java.util.HashMap[UnsafeRow, UnsafeRow]
 
   /** Implementation of [[StateStore]] API which is backed by a HDFS-compatible file system */
-  class HDFSBackedStateStore(val version: Long, mapToUpdate: MapType)
-    extends StateStore {
+  class HDFSBackedStateStore(val version: Long, mapToUpdate: MapType) extends StateStore {
 
     /** Trait and classes representing the internal state of the store */
     trait STATE
@@ -139,7 +139,7 @@ private[state] class HDFSBackedStateStoreProvider(
               // Value did not exist in previous version and was added, should not appear in updates
               allUpdates.remove(key)
             case Some(KeyRemoved(_)) =>
-              // Remove already in update map, no need to change
+            // Remove already in update map, no need to change
           }
           writeToDeltaFile(tempDeltaFileStream, KeyRemoved(key))
         }
@@ -159,7 +159,7 @@ private[state] class HDFSBackedStateStoreProvider(
       } catch {
         case NonFatal(e) =>
           throw new IllegalStateException(
-            s"Error committing version $newVersion into ${HDFSBackedStateStoreProvider.this}", e)
+              s"Error committing version $newVersion into ${HDFSBackedStateStoreProvider.this}", e)
       }
     }
 
@@ -183,7 +183,7 @@ private[state] class HDFSBackedStateStoreProvider(
      */
     override def iterator(): Iterator[(UnsafeRow, UnsafeRow)] = {
       verify(state == COMMITTED,
-        "Cannot get iterator of store data before committing or after aborting")
+             "Cannot get iterator of store data before committing or after aborting")
       HDFSBackedStateStoreProvider.this.iterator(newVersion)
     }
 
@@ -192,8 +192,8 @@ private[state] class HDFSBackedStateStoreProvider(
      * This can be called only after committing all the updates made in the current thread.
      */
     override def updates(): Iterator[StoreUpdate] = {
-      verify(state == COMMITTED,
-        "Cannot get iterator of updates before committing or after aborting")
+      verify(
+          state == COMMITTED, "Cannot get iterator of updates before committing or after aborting")
       allUpdates.values().asScala.toIterator
     }
 
@@ -235,8 +235,8 @@ private[state] class HDFSBackedStateStoreProvider(
   /* Internal classes and methods */
 
   private val loadedMaps = new mutable.HashMap[Long, MapType]
-  private val baseDir =
-    new Path(id.checkpointLocation, s"${id.operatorId}/${id.partitionId.toString}")
+  private val baseDir = new Path(
+      id.checkpointLocation, s"${id.operatorId}/${id.partitionId.toString}")
   private val fs = baseDir.getFileSystem(hadoopConf)
   private val sparkConf = Option(SparkEnv.get).map(_.conf).getOrElse(new SparkConf)
 
@@ -283,7 +283,7 @@ private[state] class HDFSBackedStateStoreProvider(
     } else {
       if (!fs.isDirectory(baseDir)) {
         throw new IllegalStateException(
-          s"Cannot use ${id.checkpointLocation} for storing state data for $this as " +
+            s"Cannot use ${id.checkpointLocation} for storing state data for $this as " +
             s"$baseDir already exists and is not a directory")
       }
     }
@@ -334,7 +334,7 @@ private[state] class HDFSBackedStateStoreProvider(
   }
 
   private def finalizeDeltaFile(output: DataOutputStream): Unit = {
-    output.writeInt(-1)  // Write this magic number to signify end of file
+    output.writeInt(-1) // Write this magic number to signify end of file
     output.close()
   }
 
@@ -342,20 +342,20 @@ private[state] class HDFSBackedStateStoreProvider(
     val fileToRead = deltaFile(version)
     if (!fs.exists(fileToRead)) {
       throw new IllegalStateException(
-        s"Error reading delta file $fileToRead of $this: $fileToRead does not exist")
+          s"Error reading delta file $fileToRead of $this: $fileToRead does not exist")
     }
     var input: DataInputStream = null
     try {
       input = decompressStream(fs.open(fileToRead))
       var eof = false
 
-      while(!eof) {
+      while (!eof) {
         val keySize = input.readInt()
         if (keySize == -1) {
           eof = true
         } else if (keySize < 0) {
           throw new IOException(
-            s"Error reading delta file $fileToRead of $this: key size cannot be $keySize")
+              s"Error reading delta file $fileToRead of $this: key size cannot be $keySize")
         } else {
           val keyRowBuffer = new Array[Byte](keySize)
           ByteStreams.readFully(input, keyRowBuffer, 0, keySize)
@@ -387,7 +387,7 @@ private[state] class HDFSBackedStateStoreProvider(
     Utils.tryWithSafeFinally {
       output = compressStream(fs.create(fileToWrite, false))
       val iter = map.entrySet().iterator()
-      while(iter.hasNext) {
+      while (iter.hasNext) {
         val entry = iter.next()
         val keyBytes = entry.getKey.getBytes()
         val valueBytes = entry.getValue.getBytes()
@@ -420,7 +420,7 @@ private[state] class HDFSBackedStateStoreProvider(
           eof = true
         } else if (keySize < 0) {
           throw new IOException(
-            s"Error reading snapshot file $fileToRead of $this: key size cannot be $keySize")
+              s"Error reading snapshot file $fileToRead of $this: key size cannot be $keySize")
         } else {
           val keyRowBuffer = new Array[Byte](keySize)
           ByteStreams.readFully(input, keyRowBuffer, 0, keySize)
@@ -431,7 +431,7 @@ private[state] class HDFSBackedStateStoreProvider(
           val valueSize = input.readInt()
           if (valueSize < 0) {
             throw new IOException(
-              s"Error reading snapshot file $fileToRead of $this: value size cannot be $valueSize")
+                s"Error reading snapshot file $fileToRead of $this: value size cannot be $valueSize")
           } else {
             val valueRowBuffer = new Array[Byte](valueSize)
             ByteStreams.readFully(input, valueRowBuffer, 0, valueSize)
@@ -448,7 +448,6 @@ private[state] class HDFSBackedStateStoreProvider(
     }
   }
 
-
   /** Perform a snapshot of the store to allow delta files to be consolidated */
   private def doSnapshot(): Unit = {
     try {
@@ -463,9 +462,8 @@ private[state] class HDFSBackedStateStoreProvider(
               writeSnapshotFile(lastVersion, map)
             }
           case None =>
-            // The last map is not loaded, probably some other instance is in charge
+          // The last map is not loaded, probably some other instance is in charge
         }
-
       }
     } catch {
       case NonFatal(e) =>
@@ -506,19 +504,16 @@ private[state] class HDFSBackedStateStoreProvider(
     require(version >= 0)
     require(allFiles.exists(_.version == version))
 
-    val latestSnapshotFileBeforeVersion = allFiles
-      .filter(_.isSnapshot == true)
-      .takeWhile(_.version <= version)
-      .lastOption
+    val latestSnapshotFileBeforeVersion =
+      allFiles.filter(_.isSnapshot == true).takeWhile(_.version <= version).lastOption
     val deltaBatchFiles = latestSnapshotFileBeforeVersion match {
       case Some(snapshotFile) =>
-
         val deltaFiles = allFiles.filter { file =>
           file.version > snapshotFile.version && file.version <= version
         }
         verify(
-          deltaFiles.size == version - snapshotFile.version,
-          s"Unexpected list of delta files for version $version for $this: $deltaFiles"
+            deltaFiles.size == version - snapshotFile.version,
+            s"Unexpected list of delta files for version $version for $this: $deltaFiles"
         )
         deltaFiles
 

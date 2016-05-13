@@ -29,20 +29,20 @@ import org.apache.spark.sql.execution.metric.SQLMetrics
 /**
  * Performs a hash join of two child relations by first shuffling the data using the join keys.
  */
-case class ShuffledHashJoinExec(
-    leftKeys: Seq[Expression],
-    rightKeys: Seq[Expression],
-    joinType: JoinType,
-    buildSide: BuildSide,
-    condition: Option[Expression],
-    left: SparkPlan,
-    right: SparkPlan)
-  extends BinaryExecNode with HashJoin {
+case class ShuffledHashJoinExec(leftKeys: Seq[Expression],
+                                rightKeys: Seq[Expression],
+                                joinType: JoinType,
+                                buildSide: BuildSide,
+                                condition: Option[Expression],
+                                left: SparkPlan,
+                                right: SparkPlan)
+    extends BinaryExecNode
+    with HashJoin {
 
   override private[sql] lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
-    "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
-    "buildTime" -> SQLMetrics.createTimingMetric(sparkContext, "time to build hash map"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
+      "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
+      "buildTime" -> SQLMetrics.createTimingMetric(sparkContext, "time to build hash map"))
 
   override def requiredChildDistribution: Seq[Distribution] =
     ClusteredDistribution(leftKeys) :: ClusteredDistribution(rightKeys) :: Nil

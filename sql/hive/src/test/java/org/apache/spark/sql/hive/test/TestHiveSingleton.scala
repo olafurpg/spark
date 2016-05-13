@@ -22,7 +22,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.SparkFunSuite
 
-
 trait TestHiveSingleton extends SparkFunSuite with BeforeAndAfterAll {
   protected val spark: SparkSession = TestHive.sparkSession
   protected val hiveContext: TestHiveContext = TestHive
@@ -34,5 +33,4 @@ trait TestHiveSingleton extends SparkFunSuite with BeforeAndAfterAll {
       super.afterAll()
     }
   }
-
 }

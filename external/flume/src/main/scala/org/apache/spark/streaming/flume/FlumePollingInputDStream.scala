@@ -16,7 +16,6 @@
  */
 package org.apache.spark.streaming.flume
 
-
 import java.net.InetSocketAddress
 import java.util.concurrent.{Executors, LinkedBlockingQueue, TimeUnit}
 
@@ -51,7 +50,8 @@ private[streaming] class FlumePollingInputDStream[T: ClassTag](
     val maxBatchSize: Int,
     val parallelism: Int,
     storageLevel: StorageLevel
-  ) extends ReceiverInputDStream[SparkFlumeEvent](_ssc) {
+)
+    extends ReceiverInputDStream[SparkFlumeEvent](_ssc) {
 
   override def getReceiver(): Receiver[SparkFlumeEvent] = {
     new FlumePollingReceiver(addresses, maxBatchSize, parallelism, storageLevel)
@@ -63,17 +63,25 @@ private[streaming] class FlumePollingReceiver(
     maxBatchSize: Int,
     parallelism: Int,
     storageLevel: StorageLevel
-  ) extends Receiver[SparkFlumeEvent](storageLevel) with Logging {
+)
+    extends Receiver[SparkFlumeEvent](storageLevel)
+    with Logging {
 
-  lazy val channelFactoryExecutor =
-    Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).
-      setNameFormat("Flume Receiver Channel Thread - %d").build())
+  lazy val channelFactoryExecutor = Executors.newCachedThreadPool(
+      new ThreadFactoryBuilder()
+        .setDaemon(true)
+        .setNameFormat("Flume Receiver Channel Thread - %d")
+        .build())
 
-  lazy val channelFactory =
-    new NioClientSocketChannelFactory(channelFactoryExecutor, channelFactoryExecutor)
+  lazy val channelFactory = new NioClientSocketChannelFactory(
+      channelFactoryExecutor, channelFactoryExecutor)
 
-  lazy val receiverExecutor = Executors.newFixedThreadPool(parallelism,
-    new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Flume Receiver Thread - %d").build())
+  lazy val receiverExecutor = Executors.newFixedThreadPool(
+      parallelism,
+      new ThreadFactoryBuilder()
+        .setDaemon(true)
+        .setNameFormat("Flume Receiver Thread - %d")
+        .build())
 
   private lazy val connections = new LinkedBlockingQueue[FlumeConnection]()
 
@@ -116,8 +124,5 @@ private[streaming] class FlumePollingReceiver(
  * @param transceiver The transceiver to use for communication with Flume
  * @param client The client that the callbacks are received on.
  */
-private[flume] class FlumeConnection(val transceiver: NettyTransceiver,
-  val client: SparkFlumeProtocol.Callback)
-
-
-
+private[flume] class FlumeConnection(
+    val transceiver: NettyTransceiver, val client: SparkFlumeProtocol.Callback)

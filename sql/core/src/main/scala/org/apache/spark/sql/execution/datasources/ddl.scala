@@ -25,23 +25,23 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.types._
 
-
 /**
  * Used to represent the operation of create table using a data source.
  *
  * @param allowExisting If it is true, we will do nothing when the table already exists.
  *                      If it is false, an exception will be thrown
  */
-case class CreateTableUsing(
-    tableIdent: TableIdentifier,
-    userSpecifiedSchema: Option[StructType],
-    provider: String,
-    temporary: Boolean,
-    options: Map[String, String],
-    partitionColumns: Array[String],
-    bucketSpec: Option[BucketSpec],
-    allowExisting: Boolean,
-    managedIfNoPath: Boolean) extends LogicalPlan with logical.Command {
+case class CreateTableUsing(tableIdent: TableIdentifier,
+                            userSpecifiedSchema: Option[StructType],
+                            provider: String,
+                            temporary: Boolean,
+                            options: Map[String, String],
+                            partitionColumns: Array[String],
+                            bucketSpec: Option[BucketSpec],
+                            allowExisting: Boolean,
+                            managedIfNoPath: Boolean)
+    extends LogicalPlan
+    with logical.Command {
 
   override def output: Seq[Attribute] = Seq.empty
   override def children: Seq[LogicalPlan] = Seq.empty
@@ -53,77 +53,74 @@ case class CreateTableUsing(
  * analyzer can analyze the logical plan that will be used to populate the table.
  * So, [[PreWriteCheck]] can detect cases that are not allowed.
  */
-case class CreateTableUsingAsSelect(
-    tableIdent: TableIdentifier,
-    provider: String,
-    temporary: Boolean,
-    partitionColumns: Array[String],
-    bucketSpec: Option[BucketSpec],
-    mode: SaveMode,
-    options: Map[String, String],
-    child: LogicalPlan) extends logical.UnaryNode {
+case class CreateTableUsingAsSelect(tableIdent: TableIdentifier,
+                                    provider: String,
+                                    temporary: Boolean,
+                                    partitionColumns: Array[String],
+                                    bucketSpec: Option[BucketSpec],
+                                    mode: SaveMode,
+                                    options: Map[String, String],
+                                    child: LogicalPlan)
+    extends logical.UnaryNode {
   override def output: Seq[Attribute] = Seq.empty[Attribute]
 }
 
-case class CreateTempTableUsing(
-    tableIdent: TableIdentifier,
-    userSpecifiedSchema: Option[StructType],
-    provider: String,
-    options: Map[String, String]) extends RunnableCommand {
+case class CreateTempTableUsing(tableIdent: TableIdentifier,
+                                userSpecifiedSchema: Option[StructType],
+                                provider: String,
+                                options: Map[String, String])
+    extends RunnableCommand {
 
   if (tableIdent.database.isDefined) {
     throw new AnalysisException(
-      s"Temporary table '$tableIdent' should not have specified a database")
+        s"Temporary table '$tableIdent' should not have specified a database")
   }
 
   def run(sparkSession: SparkSession): Seq[Row] = {
-    val dataSource = DataSource(
-      sparkSession,
-      userSpecifiedSchema = userSpecifiedSchema,
-      className = provider,
-      options = options)
+    val dataSource = DataSource(sparkSession,
+                                userSpecifiedSchema = userSpecifiedSchema,
+                                className = provider,
+                                options = options)
     sparkSession.sessionState.catalog.createTempView(
-      tableIdent.table,
-      Dataset.ofRows(sparkSession, LogicalRelation(dataSource.resolveRelation())).logicalPlan,
-      overrideIfExists = true)
+        tableIdent.table,
+        Dataset.ofRows(sparkSession, LogicalRelation(dataSource.resolveRelation())).logicalPlan,
+        overrideIfExists = true)
 
     Seq.empty[Row]
   }
 }
 
-case class CreateTempTableUsingAsSelect(
-    tableIdent: TableIdentifier,
-    provider: String,
-    partitionColumns: Array[String],
-    mode: SaveMode,
-    options: Map[String, String],
-    query: LogicalPlan) extends RunnableCommand {
+case class CreateTempTableUsingAsSelect(tableIdent: TableIdentifier,
+                                        provider: String,
+                                        partitionColumns: Array[String],
+                                        mode: SaveMode,
+                                        options: Map[String, String],
+                                        query: LogicalPlan)
+    extends RunnableCommand {
 
   if (tableIdent.database.isDefined) {
     throw new AnalysisException(
-      s"Temporary table '$tableIdent' should not have specified a database")
+        s"Temporary table '$tableIdent' should not have specified a database")
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val df = Dataset.ofRows(sparkSession, query)
-    val dataSource = DataSource(
-      sparkSession,
-      className = provider,
-      partitionColumns = partitionColumns,
-      bucketSpec = None,
-      options = options)
+    val dataSource = DataSource(sparkSession,
+                                className = provider,
+                                partitionColumns = partitionColumns,
+                                bucketSpec = None,
+                                options = options)
     val result = dataSource.write(mode, df)
     sparkSession.sessionState.catalog.createTempView(
-      tableIdent.table,
-      Dataset.ofRows(sparkSession, LogicalRelation(result)).logicalPlan,
-      overrideIfExists = true)
+        tableIdent.table,
+        Dataset.ofRows(sparkSession, LogicalRelation(result)).logicalPlan,
+        overrideIfExists = true)
 
     Seq.empty[Row]
   }
 }
 
-case class RefreshTable(tableIdent: TableIdentifier)
-  extends RunnableCommand {
+case class RefreshTable(tableIdent: TableIdentifier) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     // Refresh the given table's metadata first.
@@ -151,14 +148,13 @@ case class RefreshTable(tableIdent: TableIdentifier)
 /**
  * Builds a map in which keys are case insensitive
  */
-class CaseInsensitiveMap(map: Map[String, String]) extends Map[String, String]
-  with Serializable {
+class CaseInsensitiveMap(map: Map[String, String]) extends Map[String, String] with Serializable {
 
   val baseMap = map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
 
   override def get(k: String): Option[String] = baseMap.get(k.toLowerCase)
 
-  override def + [B1 >: String](kv: (String, B1)): Map[String, B1] =
+  override def +[B1 >: String](kv: (String, B1)): Map[String, B1] =
     baseMap + kv.copy(_1 = kv._1.toLowerCase)
 
   override def iterator: Iterator[(String, String)] = baseMap.iterator

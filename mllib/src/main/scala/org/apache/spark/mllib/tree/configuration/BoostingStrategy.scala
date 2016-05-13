@@ -46,14 +46,15 @@ import org.apache.spark.mllib.tree.loss.{LogLoss, Loss, SquaredError}
  *                      [[org.apache.spark.mllib.tree.GradientBoostedTrees.run()]] is used.
  */
 @Since("1.2.0")
-case class BoostingStrategy @Since("1.4.0") (
+case class BoostingStrategy @Since("1.4.0")(
     // Required boosting parameters
     @Since("1.2.0") @BeanProperty var treeStrategy: Strategy,
     @Since("1.2.0") @BeanProperty var loss: Loss,
     // Optional boosting parameters
     @Since("1.2.0") @BeanProperty var numIterations: Int = 100,
     @Since("1.2.0") @BeanProperty var learningRate: Double = 0.1,
-    @Since("1.4.0") @BeanProperty var validationTol: Double = 0.001) extends Serializable {
+    @Since("1.4.0") @BeanProperty var validationTol: Double = 0.001)
+    extends Serializable {
 
   /**
    * Check validity of parameters.
@@ -62,17 +63,18 @@ case class BoostingStrategy @Since("1.4.0") (
   private[spark] def assertValid(): Unit = {
     treeStrategy.algo match {
       case Classification =>
-        require(treeStrategy.numClasses == 2,
-          "Only binary classification is supported for boosting.")
+        require(
+            treeStrategy.numClasses == 2, "Only binary classification is supported for boosting.")
       case Regression =>
-        // nothing
+      // nothing
       case _ =>
         throw new IllegalArgumentException(
-          s"BoostingStrategy given invalid algo parameter: ${treeStrategy.algo}." +
+            s"BoostingStrategy given invalid algo parameter: ${treeStrategy.algo}." +
             s"  Valid settings are: Classification, Regression.")
     }
-    require(learningRate > 0 && learningRate <= 1,
-      "Learning rate should be in range (0, 1]. Provided learning rate is " + s"$learningRate.")
+    require(
+        learningRate > 0 && learningRate <= 1,
+        "Learning rate should be in range (0, 1]. Provided learning rate is " + s"$learningRate.")
   }
 }
 

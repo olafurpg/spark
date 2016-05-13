@@ -29,7 +29,7 @@ import org.apache.spark.unsafe.types.UTF8String
  * The data type representing `String` values. Please use the singleton [[DataTypes.StringType]].
  */
 @DeveloperApi
-class StringType private() extends AtomicType {
+class StringType private () extends AtomicType {
   // The companion object and this class is separated so the companion object also subclasses
   // this type. Otherwise, the companion object would be of type "StringType$" in byte code.
   // Defined with a private constructor so the companion object is the only possible instantiation.
@@ -46,4 +46,3 @@ class StringType private() extends AtomicType {
 }
 
 case object StringType extends StringType
-

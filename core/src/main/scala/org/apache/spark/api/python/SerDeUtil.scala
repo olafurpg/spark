@@ -56,15 +56,34 @@ private[spark] object SerDeUtil extends Logging {
     //    {'\0', 0, 0, 0} /* Sentinel */
     //  };
     // TODO: support Py_UNICODE with 2 bytes
-    val machineCodes: Map[Char, Int] = if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN)) {
-      Map('c' -> 1, 'B' -> 0, 'b' -> 1, 'H' -> 3, 'h' -> 5, 'I' -> 7, 'i' -> 9,
-        'L' -> 11, 'l' -> 13, 'f' -> 15, 'd' -> 17, 'u' -> 21
-      )
-    } else {
-      Map('c' -> 1, 'B' -> 0, 'b' -> 1, 'H' -> 2, 'h' -> 4, 'I' -> 6, 'i' -> 8,
-        'L' -> 10, 'l' -> 12, 'f' -> 14, 'd' -> 16, 'u' -> 20
-      )
-    }
+    val machineCodes: Map[Char, Int] =
+      if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN)) {
+        Map('c' -> 1,
+            'B' -> 0,
+            'b' -> 1,
+            'H' -> 3,
+            'h' -> 5,
+            'I' -> 7,
+            'i' -> 9,
+            'L' -> 11,
+            'l' -> 13,
+            'f' -> 15,
+            'd' -> 17,
+            'u' -> 21)
+      } else {
+        Map('c' -> 1,
+            'B' -> 0,
+            'b' -> 1,
+            'H' -> 2,
+            'h' -> 4,
+            'I' -> 6,
+            'i' -> 8,
+            'L' -> 10,
+            'l' -> 12,
+            'f' -> 14,
+            'd' -> 16,
+            'u' -> 20)
+      }
     override def construct(args: Array[Object]): Object = {
       if (args.length == 1) {
         construct(args ++ Array(""))
@@ -83,7 +102,7 @@ private[spark] object SerDeUtil extends Logging {
   // This should be called before trying to unpickle array.array from Python
   // In cluster mode, this should be put in closure
   def initialize(): Unit = {
-    synchronized{
+    synchronized {
       if (!initialized) {
         Unpickler.registerConstructor("array", "array", new ArrayConstructor())
         initialized = true
@@ -91,7 +110,6 @@ private[spark] object SerDeUtil extends Logging {
     }
   }
   initialize()
-
 
   /**
    * Convert an RDD of Java objects to Array (no recursive conversions).
@@ -138,7 +156,9 @@ private[spark] object SerDeUtil extends Logging {
    * PySpark.
    */
   private[spark] def javaToPython(jRDD: JavaRDD[_]): JavaRDD[Array[Byte]] = {
-    jRDD.rdd.mapPartitions { iter => new AutoBatchedPickler(iter) }
+    jRDD.rdd.mapPartitions { iter =>
+      new AutoBatchedPickler(iter)
+    }
   }
 
   /**
@@ -206,10 +226,11 @@ private[spark] object SerDeUtil extends Logging {
     }
 
     rdd.mapPartitions { iter =>
-      val cleaned = iter.map { case (k, v) =>
-        val key = if (keyFailed) k.toString else k
-        val value = if (valueFailed) v.toString else v
-        Array[Any](key, value)
+      val cleaned = iter.map {
+        case (k, v) =>
+          val key = if (keyFailed) k.toString else k
+          val value = if (valueFailed) v.toString else v
+          Array[Any](key, value)
       }
       if (batchSize == 0) {
         new AutoBatchedPickler(cleaned)
@@ -226,17 +247,17 @@ private[spark] object SerDeUtil extends Logging {
   def pythonToPairRDD[K, V](pyRDD: RDD[Array[Byte]], batched: Boolean): RDD[(K, V)] = {
     def isPair(obj: Any): Boolean = {
       Option(obj.getClass.getComponentType).exists(!_.isPrimitive) &&
-        obj.asInstanceOf[Array[_]].length == 2
+      obj.asInstanceOf[Array[_]].length == 2
     }
 
     val rdd = pythonToJava(pyRDD, batched).rdd
     rdd.take(1) match {
       case Array(obj) if isPair(obj) =>
-        // we only accept (K, V)
+      // we only accept (K, V)
       case Array() =>
-        // we also accept empty collections
-      case Array(other) => throw new SparkException(
-        s"RDD element of type ${other.getClass.getName} cannot be used")
+      // we also accept empty collections
+      case Array(other) =>
+        throw new SparkException(s"RDD element of type ${other.getClass.getName} cannot be used")
     }
     rdd.map { obj =>
       val arr = obj.asInstanceOf[Array[_]]

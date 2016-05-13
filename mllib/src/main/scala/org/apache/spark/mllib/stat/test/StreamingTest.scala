@@ -33,9 +33,8 @@ import org.apache.spark.util.StatCounter
  */
 @Since("1.6.0")
 @BeanInfo
-case class BinarySample @Since("1.6.0") (
-    @Since("1.6.0") isExperiment: Boolean,
-    @Since("1.6.0") value: Double) {
+case class BinarySample @Since("1.6.0")(
+    @Since("1.6.0") isExperiment: Boolean, @Since("1.6.0") value: Double) {
   override def toString: String = {
     s"($isExperiment, $value)"
   }
@@ -69,7 +68,7 @@ case class BinarySample @Since("1.6.0") (
  */
 @Experimental
 @Since("1.6.0")
-class StreamingTest @Since("1.6.0") () extends Logging with Serializable {
+class StreamingTest @Since("1.6.0")() extends Logging with Serializable {
   private var peacePeriod: Int = 0
   private var windowSize: Int = 0
   private var testMethod: StreamingTestMethod = WelchTTest
@@ -129,8 +128,7 @@ class StreamingTest @Since("1.6.0") () extends Logging with Serializable {
   }
 
   /** Drop all batches inside the peace period. */
-  private[stat] def dropPeacePeriod(
-      data: DStream[BinarySample]): DStream[BinarySample] = {
+  private[stat] def dropPeacePeriod(data: DStream[BinarySample]): DStream[BinarySample] = {
     data.transform { (rdd, time) =>
       if (time.milliseconds > data.slideDuration.milliseconds * peacePeriod) {
         rdd
@@ -146,20 +144,18 @@ class StreamingTest @Since("1.6.0") () extends Logging with Serializable {
     val categoryValuePair = data.map(sample => (sample.isExperiment, sample.value))
     if (this.windowSize == 0) {
       categoryValuePair.updateStateByKey[StatCounter](
-        (newValues: Seq[Double], oldSummary: Option[StatCounter]) => {
-          val newSummary = oldSummary.getOrElse(new StatCounter())
-          newSummary.merge(newValues)
-          Some(newSummary)
-        })
+          (newValues: Seq[Double], oldSummary: Option[StatCounter]) => {
+        val newSummary = oldSummary.getOrElse(new StatCounter())
+        newSummary.merge(newValues)
+        Some(newSummary)
+      })
     } else {
       val windowDuration = data.slideDuration * this.windowSize
-      categoryValuePair
-        .groupByKeyAndWindow(windowDuration)
-        .mapValues { values =>
-          val summary = new StatCounter()
-          values.foreach(value => summary.merge(value))
-          summary
-        }
+      categoryValuePair.groupByKeyAndWindow(windowDuration).mapValues { values =>
+        val summary = new StatCounter()
+        values.foreach(value => summary.merge(value))
+        summary
+      }
     }
   }
 
@@ -167,11 +163,11 @@ class StreamingTest @Since("1.6.0") () extends Logging with Serializable {
    * Transform a stream of summaries into pairs representing summary statistics for control group
    * and experiment group up to this batch.
    */
-  private[stat] def pairSummaries(summarizedData: DStream[(Boolean, StatCounter)])
-      : DStream[(StatCounter, StatCounter)] = {
+  private[stat] def pairSummaries(
+      summarizedData: DStream[(Boolean, StatCounter)]): DStream[(StatCounter, StatCounter)] = {
     summarizedData
       .map[(Int, StatCounter)](x => (0, x._2))
-      .groupByKey()  // should be length two (control/experiment group)
+      .groupByKey() // should be length two (control/experiment group)
       .map(x => (x._2.head, x._2.last))
   }
 }

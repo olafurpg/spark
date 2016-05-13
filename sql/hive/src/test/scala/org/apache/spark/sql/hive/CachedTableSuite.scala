@@ -50,15 +50,11 @@ class CachedTableSuite extends QueryTest with TestHiveSingleton {
     cacheTable("src")
     assertCached(sql("SELECT * FROM src"))
 
-    checkAnswer(
-      sql("SELECT * FROM src"),
-      preCacheResults)
+    checkAnswer(sql("SELECT * FROM src"), preCacheResults)
 
     assertCached(sql("SELECT * FROM src s"))
 
-    checkAnswer(
-      sql("SELECT * FROM src s"),
-      preCacheResults)
+    checkAnswer(sql("SELECT * FROM src s"), preCacheResults)
 
     uncacheTable("src")
     assertCached(sql("SELECT * FROM src"), 0)
@@ -74,9 +70,8 @@ class CachedTableSuite extends QueryTest with TestHiveSingleton {
     checkAnswer(sql("SELECT * FROM cachedTable"), table("src").collect().toSeq)
 
     sql("INSERT INTO TABLE cachedTable SELECT * FROM src")
-    checkAnswer(
-      sql("SELECT * FROM cachedTable"),
-      table("src").collect().toSeq ++ table("src").collect().toSeq)
+    checkAnswer(sql("SELECT * FROM cachedTable"),
+                table("src").collect().toSeq ++ table("src").collect().toSeq)
 
     sql("DROP TABLE cachedTable")
   }
@@ -116,9 +111,8 @@ class CachedTableSuite extends QueryTest with TestHiveSingleton {
     assertCached(table("testCacheTable"))
 
     val rddId = rddIdOf("testCacheTable")
-    assert(
-      isMaterialized(rddId),
-      "Eagerly cached in-memory table should have already been materialized")
+    assert(isMaterialized(rddId),
+           "Eagerly cached in-memory table should have already been materialized")
 
     uncacheTable("testCacheTable")
     assert(!isMaterialized(rddId), "Uncached in-memory table should have been unpersisted")
@@ -129,9 +123,8 @@ class CachedTableSuite extends QueryTest with TestHiveSingleton {
     assertCached(table("testCacheTable"))
 
     val rddId = rddIdOf("testCacheTable")
-    assert(
-      isMaterialized(rddId),
-      "Eagerly cached in-memory table should have already been materialized")
+    assert(isMaterialized(rddId),
+           "Eagerly cached in-memory table should have already been materialized")
 
     uncacheTable("testCacheTable")
     assert(!isMaterialized(rddId), "Uncached in-memory table should have been unpersisted")
@@ -143,13 +136,10 @@ class CachedTableSuite extends QueryTest with TestHiveSingleton {
 
     val rddId = rddIdOf("src")
     assert(
-      !isMaterialized(rddId),
-      "Lazily cached in-memory table shouldn't be materialized eagerly")
+        !isMaterialized(rddId), "Lazily cached in-memory table shouldn't be materialized eagerly")
 
     sql("SELECT COUNT(*) FROM src").collect()
-    assert(
-      isMaterialized(rddId),
-      "Lazily cached in-memory table should have been materialized")
+    assert(isMaterialized(rddId), "Lazily cached in-memory table should have been materialized")
 
     uncacheTable("src")
     assert(!isMaterialized(rddId), "Uncached in-memory table should have been unpersisted")
@@ -167,9 +157,7 @@ class CachedTableSuite extends QueryTest with TestHiveSingleton {
     table("src").write.mode(SaveMode.Overwrite).parquet(tempPath.toString)
     sql("DROP TABLE IF EXISTS refreshTable")
     sparkSession.catalog.createExternalTable("refreshTable", tempPath.toString, "parquet")
-    checkAnswer(
-      table("refreshTable"),
-      table("src").collect())
+    checkAnswer(table("refreshTable"), table("src").collect())
     // Cache the table.
     sql("CACHE TABLE refreshTable")
     assertCached(table("refreshTable"))
@@ -177,16 +165,12 @@ class CachedTableSuite extends QueryTest with TestHiveSingleton {
     table("src").write.mode(SaveMode.Append).parquet(tempPath.toString)
     // We are still using the old data.
     assertCached(table("refreshTable"))
-    checkAnswer(
-      table("refreshTable"),
-      table("src").collect())
+    checkAnswer(table("refreshTable"), table("src").collect())
     // Refresh the table.
     sql("REFRESH TABLE refreshTable")
     // We are using the new data.
     assertCached(table("refreshTable"))
-    checkAnswer(
-      table("refreshTable"),
-      table("src").union(table("src")).collect())
+    checkAnswer(table("refreshTable"), table("src").union(table("src")).collect())
 
     // Drop the table and create it again.
     sql("DROP TABLE refreshTable")
@@ -196,9 +180,7 @@ class CachedTableSuite extends QueryTest with TestHiveSingleton {
     // Refresh the table. REFRESH TABLE command should not make a uncached
     // table cached.
     sql("REFRESH TABLE refreshTable")
-    checkAnswer(
-      table("refreshTable"),
-      table("src").union(table("src")).collect())
+    checkAnswer(table("refreshTable"), table("src").union(table("src")).collect())
     // It is not cached.
     assert(!isCached("refreshTable"), "refreshTable should not be cached.")
 

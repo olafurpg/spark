@@ -38,33 +38,31 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 object DataFrameExample {
 
   case class Params(input: String = "data/mllib/sample_libsvm_data.txt")
-    extends AbstractParams[Params]
+      extends AbstractParams[Params]
 
   def main(args: Array[String]) {
     val defaultParams = Params()
 
     val parser = new OptionParser[Params]("DataFrameExample") {
       head("DataFrameExample: an example app using DataFrame for ML.")
-      opt[String]("input")
-        .text(s"input path to dataframe")
-        .action((x, c) => c.copy(input = x))
+      opt[String]("input").text(s"input path to dataframe").action((x, c) => c.copy(input = x))
       checkConfig { params =>
         success
       }
     }
 
-    parser.parse(args, defaultParams).map { params =>
-      run(params)
-    }.getOrElse {
-      sys.exit(1)
-    }
+    parser
+      .parse(args, defaultParams)
+      .map { params =>
+        run(params)
+      }
+      .getOrElse {
+        sys.exit(1)
+      }
   }
 
   def run(params: Params) {
-    val spark = SparkSession
-      .builder
-      .appName(s"DataFrameExample with $params")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName(s"DataFrameExample with $params").getOrCreate()
 
     // Load input data
     println(s"Loading LIBSVM file with UDT from ${params.input}.")
@@ -80,8 +78,7 @@ object DataFrameExample {
     // Convert features column to an RDD of vectors.
     val features = df.select("features").rdd.map { case Row(v: Vector) => v }
     val featureSummary = features.aggregate(new MultivariateOnlineSummarizer())(
-      (summary, feat) => summary.add(feat),
-      (sum1, sum2) => sum1.merge(sum2))
+        (summary, feat) => summary.add(feat), (sum1, sum2) => sum1.merge(sum2))
     println(s"Selected features column with average values:\n ${featureSummary.mean.toString}")
 
     // Save the records in a parquet file.

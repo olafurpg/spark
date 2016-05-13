@@ -180,9 +180,7 @@ import org.apache.spark.util.Utils
  *  settings inherited from the worker which spawned that executor. It can be accomplished by
  *  setting `spark.ssl.useNodeLocalConf` to `true`.
  */
-
-private[spark] class SecurityManager(sparkConf: SparkConf)
-  extends Logging with SecretKeyHolder {
+private[spark] class SecurityManager(sparkConf: SparkConf) extends Logging with SecretKeyHolder {
 
   import SecurityManager._
 
@@ -195,12 +193,11 @@ private[spark] class SecurityManager(sparkConf: SparkConf)
     sparkConf.getBoolean("spark.acls.enable", sparkConf.getBoolean("spark.ui.acls.enable", false))
 
   // admin acls should be set before view or modify acls
-  private var adminAcls: Set[String] =
-    stringToSet(sparkConf.get("spark.admin.acls", ""))
+  private var adminAcls: Set[String] = stringToSet(sparkConf.get("spark.admin.acls", ""))
 
   // admin group acls should be set before view or modify group acls
-  private var adminAclsGroups : Set[String] =
-    stringToSet(sparkConf.get("spark.admin.acls.groups", ""))
+  private var adminAclsGroups: Set[String] = stringToSet(
+      sparkConf.get("spark.admin.acls.groups", ""))
 
   private var viewAcls: Set[String] = _
 
@@ -213,8 +210,8 @@ private[spark] class SecurityManager(sparkConf: SparkConf)
   private var modifyAclsGroups: Set[String] = _
 
   // always add the current user and SPARK_USER to the viewAcls
-  private val defaultAclUsers = Set[String](System.getProperty("user.name", ""),
-    Utils.getCurrentUserName())
+  private val defaultAclUsers =
+    Set[String](System.getProperty("user.name", ""), Utils.getCurrentUserName())
 
   setViewAcls(defaultAclUsers, sparkConf.get("spark.ui.view.acls", ""))
   setModifyAcls(defaultAclUsers, sparkConf.get("spark.modify.acls", ""))
@@ -223,29 +220,29 @@ private[spark] class SecurityManager(sparkConf: SparkConf)
   setModifyAclsGroups(sparkConf.get("spark.modify.acls.groups", ""));
 
   private val secretKey = generateSecretKey()
-  logInfo("SecurityManager: authentication " + (if (authOn) "enabled" else "disabled") +
-    "; ui acls " + (if (aclsOn) "enabled" else "disabled") +
-    "; users  with view permissions: " + viewAcls.toString() +
-    "; groups with view permissions: " + viewAclsGroups.toString() +
-    "; users  with modify permissions: " + modifyAcls.toString() +
-    "; groups with modify permissions: " + modifyAclsGroups.toString())
+  logInfo(
+      "SecurityManager: authentication " + (if (authOn) "enabled" else "disabled") +
+      "; ui acls " + (if (aclsOn) "enabled" else "disabled") + "; users  with view permissions: " +
+      viewAcls.toString() + "; groups with view permissions: " +
+      viewAclsGroups.toString() + "; users  with modify permissions: " + modifyAcls.toString() +
+      "; groups with modify permissions: " + modifyAclsGroups.toString())
 
   // Set our own authenticator to properly negotiate user/password for HTTP connections.
   // This is needed by the HTTP client fetching from the HttpServer. Put here so its
   // only set once.
   if (authOn) {
     Authenticator.setDefault(
-      new Authenticator() {
-        override def getPasswordAuthentication(): PasswordAuthentication = {
-          var passAuth: PasswordAuthentication = null
-          val userInfo = getRequestingURL().getUserInfo()
-          if (userInfo != null) {
-            val  parts = userInfo.split(":", 2)
-            passAuth = new PasswordAuthentication(parts(0), parts(1).toCharArray())
+        new Authenticator() {
+          override def getPasswordAuthentication(): PasswordAuthentication = {
+            var passAuth: PasswordAuthentication = null
+            val userInfo = getRequestingURL().getUserInfo()
+            if (userInfo != null) {
+              val parts = userInfo.split(":", 2)
+              passAuth = new PasswordAuthentication(parts(0), parts(1).toCharArray())
+            }
+            return passAuth
           }
-          return passAuth
         }
-      }
     )
   }
 
@@ -254,9 +251,9 @@ private[spark] class SecurityManager(sparkConf: SparkConf)
 
   // SSL configuration for the file server. This is used by Utils.setupSecureURLConnection().
   val fileServerSSLOptions = getSSLOptions("fs")
-  val (sslSocketFactory, hostnameVerifier) = if (fileServerSSLOptions.enabled) {
-    val trustStoreManagers =
-      for (trustStore <- fileServerSSLOptions.trustStore) yield {
+  val (sslSocketFactory, hostnameVerifier) =
+    if (fileServerSSLOptions.enabled) {
+      val trustStoreManagers = for (trustStore <- fileServerSSLOptions.trustStore) yield {
         val input = Files.asByteSource(fileServerSSLOptions.trustStore.get).openStream()
 
         try {
@@ -271,28 +268,28 @@ private[spark] class SecurityManager(sparkConf: SparkConf)
         }
       }
 
-    lazy val credulousTrustStoreManagers = Array({
-      logWarning("Using 'accept-all' trust manager for SSL connections.")
-      new X509TrustManager {
-        override def getAcceptedIssuers: Array[X509Certificate] = null
+      lazy val credulousTrustStoreManagers = Array({
+        logWarning("Using 'accept-all' trust manager for SSL connections.")
+        new X509TrustManager {
+          override def getAcceptedIssuers: Array[X509Certificate] = null
 
-        override def checkClientTrusted(x509Certificates: Array[X509Certificate], s: String) {}
+          override def checkClientTrusted(x509Certificates: Array[X509Certificate], s: String) {}
 
-        override def checkServerTrusted(x509Certificates: Array[X509Certificate], s: String) {}
-      }: TrustManager
-    })
+          override def checkServerTrusted(x509Certificates: Array[X509Certificate], s: String) {}
+        }: TrustManager
+      })
 
-    val sslContext = SSLContext.getInstance(fileServerSSLOptions.protocol.getOrElse("Default"))
-    sslContext.init(null, trustStoreManagers.getOrElse(credulousTrustStoreManagers), null)
+      val sslContext = SSLContext.getInstance(fileServerSSLOptions.protocol.getOrElse("Default"))
+      sslContext.init(null, trustStoreManagers.getOrElse(credulousTrustStoreManagers), null)
 
-    val hostVerifier = new HostnameVerifier {
-      override def verify(s: String, sslSession: SSLSession): Boolean = true
+      val hostVerifier = new HostnameVerifier {
+        override def verify(s: String, sslSession: SSLSession): Boolean = true
+      }
+
+      (Some(sslContext.getSocketFactory), Some(hostVerifier))
+    } else {
+      (None, None)
     }
-
-    (Some(sslContext.getSocketFactory), Some(hostVerifier))
-  } else {
-    (None, None)
-  }
 
   def getSSLOptions(module: String): SSLOptions = {
     val opts = SSLOptions.parse(sparkConf, s"spark.ssl.$module", Some(defaultSSLOptions))
@@ -446,7 +443,7 @@ private[spark] class SecurityManager(sparkConf: SparkConf)
         case Some(value) => value
         case None =>
           throw new IllegalArgumentException(
-            "Error: a secret key must be specified via the " +
+              "Error: a secret key must be specified via the " +
               SecurityManager.SPARK_AUTH_SECRET_CONF + " config")
       }
     }
@@ -469,8 +466,9 @@ private[spark] class SecurityManager(sparkConf: SparkConf)
    * @return true is the user has permission, otherwise false
    */
   def checkUIViewPermissions(user: String): Boolean = {
-    logDebug("user=" + user + " aclsEnabled=" + aclsEnabled() + " viewAcls=" +
-      viewAcls.mkString(",") + " viewAclsGroups=" + viewAclsGroups.mkString(","))
+    logDebug(
+        "user=" + user + " aclsEnabled=" + aclsEnabled() + " viewAcls=" + viewAcls.mkString(",") +
+        " viewAclsGroups=" + viewAclsGroups.mkString(","))
     if (!aclsEnabled || user == null || viewAcls.contains(user) ||
         viewAcls.contains(WILDCARD_ACL) || viewAclsGroups.contains(WILDCARD_ACL)) {
       return true
@@ -492,7 +490,7 @@ private[spark] class SecurityManager(sparkConf: SparkConf)
    */
   def checkModifyPermissions(user: String): Boolean = {
     logDebug("user=" + user + " aclsEnabled=" + aclsEnabled() + " modifyAcls=" +
-      modifyAcls.mkString(",") + " modifyAclsGroups=" + modifyAclsGroups.mkString(","))
+        modifyAcls.mkString(",") + " modifyAclsGroups=" + modifyAclsGroups.mkString(","))
     if (!aclsEnabled || user == null || modifyAcls.contains(user) ||
         modifyAcls.contains(WILDCARD_ACL) || modifyAclsGroups.contains(WILDCARD_ACL)) {
       return true

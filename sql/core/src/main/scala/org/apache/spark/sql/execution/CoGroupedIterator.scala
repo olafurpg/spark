@@ -26,11 +26,10 @@ import org.apache.spark.sql.catalyst.expressions.codegen.GenerateOrdering
  * grouping key with its associated values from all [[GroupedIterator]]s.
  * Note: we assume the output of each [[GroupedIterator]] is ordered by the grouping key.
  */
-class CoGroupedIterator(
-    left: Iterator[(InternalRow, Iterator[InternalRow])],
-    right: Iterator[(InternalRow, Iterator[InternalRow])],
-    groupingSchema: Seq[Attribute])
-  extends Iterator[(InternalRow, Iterator[InternalRow], Iterator[InternalRow])] {
+class CoGroupedIterator(left: Iterator[(InternalRow, Iterator[InternalRow])],
+                        right: Iterator[(InternalRow, Iterator[InternalRow])],
+                        groupingSchema: Seq[Attribute])
+    extends Iterator[(InternalRow, Iterator[InternalRow], Iterator[InternalRow])] {
 
   private val keyOrdering =
     GenerateOrdering.generate(groupingSchema.map(SortOrder(_, Ascending)), groupingSchema)

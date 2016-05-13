@@ -41,9 +41,22 @@ private[ann] object BreezeUtil {
     require(a.cols == b.rows, "A & B Dimension mismatch!")
     require(a.rows == c.rows, "A & C Dimension mismatch!")
     require(b.cols == c.cols, "A & C Dimension mismatch!")
-    NativeBLAS.dgemm(transposeString(a), transposeString(b), c.rows, c.cols, a.cols,
-      alpha, a.data, a.offset, a.majorStride, b.data, b.offset, b.majorStride,
-      beta, c.data, c.offset, c.rows)
+    NativeBLAS.dgemm(transposeString(a),
+                     transposeString(b),
+                     c.rows,
+                     c.cols,
+                     a.cols,
+                     alpha,
+                     a.data,
+                     a.offset,
+                     a.majorStride,
+                     b.data,
+                     b.offset,
+                     b.majorStride,
+                     beta,
+                     c.data,
+                     c.offset,
+                     c.rows)
   }
 
   /**
@@ -56,8 +69,19 @@ private[ann] object BreezeUtil {
    */
   def dgemv(alpha: Double, a: BDM[Double], x: BDV[Double], beta: Double, y: BDV[Double]): Unit = {
     require(a.cols == x.length, "A & b Dimension mismatch!")
-    NativeBLAS.dgemv(transposeString(a), a.rows, a.cols,
-      alpha, a.data, a.offset, a.majorStride, x.data, x.offset, x.stride,
-      beta, y.data, y.offset, y.stride)
+    NativeBLAS.dgemv(transposeString(a),
+                     a.rows,
+                     a.cols,
+                     alpha,
+                     a.data,
+                     a.offset,
+                     a.majorStride,
+                     x.data,
+                     x.offset,
+                     x.stride,
+                     beta,
+                     y.data,
+                     y.offset,
+                     y.stride)
   }
 }

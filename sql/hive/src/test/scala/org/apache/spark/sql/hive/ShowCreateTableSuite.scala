@@ -32,7 +32,7 @@ class ShowCreateTableSuite extends QueryTest with SQLTestUtils with TestHiveSing
       val jsonFilePath = Utils.getSparkClassLoader.getResource("sample.json").getFile
 
       sql(
-        s"""CREATE TABLE ddl_test1 (
+          s"""CREATE TABLE ddl_test1 (
            |  a STRING,
            |  b STRING,
            |  `extra col` ARRAY<INT>,
@@ -52,7 +52,7 @@ class ShowCreateTableSuite extends QueryTest with SQLTestUtils with TestHiveSing
   test("data source table CTAS") {
     withTable("ddl_test2") {
       sql(
-        s"""CREATE TABLE ddl_test2
+          s"""CREATE TABLE ddl_test2
            |USING json
            |AS SELECT 1 AS a, "foo" AS b
          """.stripMargin
@@ -65,7 +65,7 @@ class ShowCreateTableSuite extends QueryTest with SQLTestUtils with TestHiveSing
   test("partitioned data source table") {
     withTable("ddl_test3") {
       sql(
-        s"""CREATE TABLE ddl_test3
+          s"""CREATE TABLE ddl_test3
            |USING json
            |PARTITIONED BY (b)
            |AS SELECT 1 AS a, "foo" AS b
@@ -79,7 +79,7 @@ class ShowCreateTableSuite extends QueryTest with SQLTestUtils with TestHiveSing
   test("bucketed data source table") {
     withTable("ddl_test3") {
       sql(
-        s"""CREATE TABLE ddl_test3
+          s"""CREATE TABLE ddl_test3
            |USING json
            |CLUSTERED BY (a) SORTED BY (b) INTO 2 BUCKETS
            |AS SELECT 1 AS a, "foo" AS b
@@ -93,7 +93,7 @@ class ShowCreateTableSuite extends QueryTest with SQLTestUtils with TestHiveSing
   test("partitioned bucketed data source table") {
     withTable("ddl_test4") {
       sql(
-        s"""CREATE TABLE ddl_test4
+          s"""CREATE TABLE ddl_test4
            |USING json
            |PARTITIONED BY (c)
            |CLUSTERED BY (a) SORTED BY (b) INTO 2 BUCKETS
@@ -140,28 +140,27 @@ class ShowCreateTableSuite extends QueryTest with SQLTestUtils with TestHiveSing
   private def checkCatalogTables(expected: CatalogTable, actual: CatalogTable): Unit = {
     def normalize(table: CatalogTable): CatalogTable = {
       val nondeterministicProps = Set(
-        "CreateTime",
-        "transient_lastDdlTime",
-        "grantTime",
-        "lastUpdateTime",
-        "last_modified_by",
-        "last_modified_time",
-        "Owner:",
-        "COLUMN_STATS_ACCURATE",
-        // The following are hive specific schema parameters which we do not need to match exactly.
-        "numFiles",
-        "numRows",
-        "rawDataSize",
-        "totalSize",
-        "totalNumberFiles",
-        "maxFileSize",
-        "minFileSize"
+          "CreateTime",
+          "transient_lastDdlTime",
+          "grantTime",
+          "lastUpdateTime",
+          "last_modified_by",
+          "last_modified_time",
+          "Owner:",
+          "COLUMN_STATS_ACCURATE",
+          // The following are hive specific schema parameters which we do not need to match exactly.
+          "numFiles",
+          "numRows",
+          "rawDataSize",
+          "totalSize",
+          "totalNumberFiles",
+          "maxFileSize",
+          "minFileSize"
       )
 
-      table.copy(
-        createTime = 0L,
-        lastAccessTime = 0L,
-        properties = table.properties.filterKeys(!nondeterministicProps.contains(_)))
+      table.copy(createTime = 0L,
+                 lastAccessTime = 0L,
+                 properties = table.properties.filterKeys(!nondeterministicProps.contains(_)))
     }
 
     assert(normalize(expected) == normalize(actual))

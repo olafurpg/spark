@@ -41,16 +41,15 @@ import org.apache.spark.sql.types.AtomicType
  * }}}
  */
 private[columnar] trait CompressibleColumnBuilder[T <: AtomicType]
-  extends ColumnBuilder with Logging {
+    extends ColumnBuilder
+    with Logging {
 
   this: NativeColumnBuilder[T] with WithCompressionSchemes =>
 
   var compressionEncoders: Seq[Encoder[T]] = _
 
   abstract override def initialize(
-      initialSize: Int,
-      columnName: String,
-      useCompression: Boolean): Unit = {
+      initialSize: Int, columnName: String, useCompression: Boolean): Unit = {
 
     compressionEncoders =
       if (useCompression) {
@@ -89,14 +88,15 @@ private[columnar] trait CompressibleColumnBuilder[T <: AtomicType]
 
     // Header = null count + null positions
     val headerSize = 4 + nulls.limit()
-    val compressedSize = if (encoder.compressedSize == 0) {
-      nonNullBuffer.remaining()
-    } else {
-      encoder.compressedSize
-    }
+    val compressedSize =
+      if (encoder.compressedSize == 0) {
+        nonNullBuffer.remaining()
+      } else {
+        encoder.compressedSize
+      }
 
     val compressedBuffer = ByteBuffer
-      // Reserves 4 bytes for compression scheme ID
+    // Reserves 4 bytes for compression scheme ID
       .allocate(headerSize + 4 + compressedSize)
       .order(ByteOrder.nativeOrder)
       // Write the header

@@ -31,7 +31,6 @@ import org.apache.spark.mllib.tree.model._
 import org.apache.spark.mllib.util.MLlibTestSparkContext
 import org.apache.spark.util.Utils
 
-
 class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   /////////////////////////////////////////////////////////////////////////////
@@ -42,13 +41,12 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
     val arr = DecisionTreeSuite.generateCategoricalDataPoints()
     assert(arr.length === 1000)
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(
-      Classification,
-      Gini,
-      numClasses = 2,
-      maxDepth = 2,
-      maxBins = 100,
-      categoricalFeaturesInfo = Map(0 -> 3, 1 -> 3))
+    val strategy = new Strategy(Classification,
+                                Gini,
+                                numClasses = 2,
+                                maxDepth = 2,
+                                maxBins = 100,
+                                categoricalFeaturesInfo = Map(0 -> 3, 1 -> 3))
 
     val rootNode = DecisionTree.train(rdd, strategy).topNode
 
@@ -66,12 +64,11 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
     val arr = DecisionTreeSuite.generateCategoricalDataPoints()
     assert(arr.length === 1000)
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(
-      Regression,
-      Variance,
-      maxDepth = 2,
-      maxBins = 100,
-      categoricalFeaturesInfo = Map(0 -> 3, 1 -> 3))
+    val strategy = new Strategy(Regression,
+                                Variance,
+                                maxDepth = 2,
+                                maxBins = 100,
+                                categoricalFeaturesInfo = Map(0 -> 3, 1 -> 3))
 
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(!metadata.isUnordered(featureIndex = 0))
@@ -94,12 +91,11 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
     val arr = DecisionTreeSuite.generateCategoricalDataPoints()
     assert(arr.length === 1000)
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(
-      Regression,
-      Variance,
-      maxDepth = 2,
-      maxBins = 100,
-      categoricalFeaturesInfo = Map(0 -> 2, 1 -> 2))
+    val strategy = new Strategy(Regression,
+                                Variance,
+                                maxDepth = 2,
+                                maxBins = 100,
+                                categoricalFeaturesInfo = Map(0 -> 2, 1 -> 2))
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(!metadata.isUnordered(featureIndex = 0))
     assert(!metadata.isUnordered(featureIndex = 1))
@@ -114,8 +110,7 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
     val arr = DecisionTreeSuite.generateOrderedLabeledPointsWithLabel0()
     assert(arr.length === 1000)
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(Classification, Gini, maxDepth = 3,
-      numClasses = 2, maxBins = 100)
+    val strategy = new Strategy(Classification, Gini, maxDepth = 3, numClasses = 2, maxBins = 100)
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(!metadata.isUnordered(featureIndex = 0))
     assert(!metadata.isUnordered(featureIndex = 1))
@@ -131,8 +126,7 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
     val arr = DecisionTreeSuite.generateOrderedLabeledPointsWithLabel1()
     assert(arr.length === 1000)
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(Classification, Gini, maxDepth = 3,
-      numClasses = 2, maxBins = 100)
+    val strategy = new Strategy(Classification, Gini, maxDepth = 3, numClasses = 2, maxBins = 100)
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(!metadata.isUnordered(featureIndex = 0))
     assert(!metadata.isUnordered(featureIndex = 1))
@@ -148,8 +142,8 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
     val arr = DecisionTreeSuite.generateOrderedLabeledPointsWithLabel0()
     assert(arr.length === 1000)
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(Classification, Entropy, maxDepth = 3,
-      numClasses = 2, maxBins = 100)
+    val strategy =
+      new Strategy(Classification, Entropy, maxDepth = 3, numClasses = 2, maxBins = 100)
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(!metadata.isUnordered(featureIndex = 0))
     assert(!metadata.isUnordered(featureIndex = 1))
@@ -165,8 +159,8 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
     val arr = DecisionTreeSuite.generateOrderedLabeledPointsWithLabel1()
     assert(arr.length === 1000)
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(Classification, Entropy, maxDepth = 3,
-      numClasses = 2, maxBins = 100)
+    val strategy =
+      new Strategy(Classification, Entropy, maxDepth = 3, numClasses = 2, maxBins = 100)
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(!metadata.isUnordered(featureIndex = 0))
     assert(!metadata.isUnordered(featureIndex = 1))
@@ -181,8 +175,11 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   test("Multiclass classification stump with 3-ary (unordered) categorical features") {
     val arr = DecisionTreeSuite.generateCategoricalDataPointsForMulticlass()
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 4,
-      numClasses = 3, categoricalFeaturesInfo = Map(0 -> 3, 1 -> 3))
+    val strategy = new Strategy(algo = Classification,
+                                impurity = Gini,
+                                maxDepth = 4,
+                                numClasses = 3,
+                                categoricalFeaturesInfo = Map(0 -> 3, 1 -> 3))
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(strategy.isMulticlassClassification)
     assert(metadata.isUnordered(featureIndex = 0))
@@ -198,14 +195,13 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("Binary classification stump with 1 continuous feature, to check off-by-1 error") {
-    val arr = Array(
-      LabeledPoint(0.0, Vectors.dense(0.0)),
-      LabeledPoint(1.0, Vectors.dense(1.0)),
-      LabeledPoint(1.0, Vectors.dense(2.0)),
-      LabeledPoint(1.0, Vectors.dense(3.0)))
+    val arr = Array(LabeledPoint(0.0, Vectors.dense(0.0)),
+                    LabeledPoint(1.0, Vectors.dense(1.0)),
+                    LabeledPoint(1.0, Vectors.dense(2.0)),
+                    LabeledPoint(1.0, Vectors.dense(3.0)))
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 4,
-      numClasses = 2)
+    val strategy =
+      new Strategy(algo = Classification, impurity = Gini, maxDepth = 4, numClasses = 2)
 
     val model = DecisionTree.train(rdd, strategy)
     DecisionTreeSuite.validateClassifier(model, arr, 1.0)
@@ -214,15 +210,14 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("Binary classification stump with 2 continuous features") {
-    val arr = Array(
-      LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 0.0)))),
-      LabeledPoint(1.0, Vectors.sparse(2, Seq((1, 1.0)))),
-      LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 0.0)))),
-      LabeledPoint(1.0, Vectors.sparse(2, Seq((1, 2.0)))))
+    val arr = Array(LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 0.0)))),
+                    LabeledPoint(1.0, Vectors.sparse(2, Seq((1, 1.0)))),
+                    LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 0.0)))),
+                    LabeledPoint(1.0, Vectors.sparse(2, Seq((1, 2.0)))))
 
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 4,
-      numClasses = 2)
+    val strategy =
+      new Strategy(algo = Classification, impurity = Gini, maxDepth = 4, numClasses = 2)
 
     val model = DecisionTree.train(rdd, strategy)
     DecisionTreeSuite.validateClassifier(model, arr, 1.0)
@@ -232,13 +227,17 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("Multiclass classification stump with unordered categorical features," +
-    " with just enough bins") {
-    val maxBins = 2 * (math.pow(2, 3 - 1).toInt - 1) // just enough bins to allow unordered features
+      " with just enough bins") {
+    val maxBins =
+      2 * (math.pow(2, 3 - 1).toInt - 1) // just enough bins to allow unordered features
     val arr = DecisionTreeSuite.generateCategoricalDataPointsForMulticlass()
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 4,
-      numClasses = 3, maxBins = maxBins,
-      categoricalFeaturesInfo = Map(0 -> 3, 1 -> 3))
+    val strategy = new Strategy(algo = Classification,
+                                impurity = Gini,
+                                maxDepth = 4,
+                                numClasses = 3,
+                                maxBins = maxBins,
+                                categoricalFeaturesInfo = Map(0 -> 3, 1 -> 3))
     assert(strategy.isMulticlassClassification)
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(metadata.isUnordered(featureIndex = 0))
@@ -265,8 +264,8 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   test("Multiclass classification stump with continuous features") {
     val arr = DecisionTreeSuite.generateContinuousDataPointsForMulticlass()
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 4,
-      numClasses = 3, maxBins = 100)
+    val strategy = new Strategy(
+        algo = Classification, impurity = Gini, maxDepth = 4, numClasses = 3, maxBins = 100)
     assert(strategy.isMulticlassClassification)
 
     val model = DecisionTree.train(rdd, strategy)
@@ -279,14 +278,17 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
     assert(split.featureType === Continuous)
     assert(split.threshold > 1980)
     assert(split.threshold < 2020)
-
   }
 
   test("Multiclass classification stump with continuous + unordered categorical features") {
     val arr = DecisionTreeSuite.generateContinuousDataPointsForMulticlass()
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 4,
-      numClasses = 3, maxBins = 100, categoricalFeaturesInfo = Map(0 -> 3))
+    val strategy = new Strategy(algo = Classification,
+                                impurity = Gini,
+                                maxDepth = 4,
+                                numClasses = 3,
+                                maxBins = 100,
+                                categoricalFeaturesInfo = Map(0 -> 3))
     assert(strategy.isMulticlassClassification)
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(metadata.isUnordered(featureIndex = 0))
@@ -306,9 +308,12 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   test("Multiclass classification stump with 10-ary (ordered) categorical features") {
     val arr = DecisionTreeSuite.generateCategoricalDataPointsForMulticlassForOrderedFeatures()
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 4,
-      numClasses = 3, maxBins = 100,
-      categoricalFeaturesInfo = Map(0 -> 10, 1 -> 10))
+    val strategy = new Strategy(algo = Classification,
+                                impurity = Gini,
+                                maxDepth = 4,
+                                numClasses = 3,
+                                maxBins = 100,
+                                categoricalFeaturesInfo = Map(0 -> 10, 1 -> 10))
     assert(strategy.isMulticlassClassification)
     val metadata = DecisionTreeMetadata.buildMetadata(rdd, strategy)
     assert(!metadata.isUnordered(featureIndex = 0))
@@ -327,9 +332,12 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
       " with just enough bins") {
     val arr = DecisionTreeSuite.generateCategoricalDataPointsForMulticlassForOrderedFeatures()
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 4,
-      numClasses = 3, maxBins = 10,
-      categoricalFeaturesInfo = Map(0 -> 10, 1 -> 10))
+    val strategy = new Strategy(algo = Classification,
+                                impurity = Gini,
+                                maxDepth = 4,
+                                numClasses = 3,
+                                maxBins = 10,
+                                categoricalFeaturesInfo = Map(0 -> 10, 1 -> 10))
     assert(strategy.isMulticlassClassification)
 
     val model = DecisionTree.train(rdd, strategy)
@@ -337,13 +345,15 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("split must satisfy min instances per node requirements") {
-    val arr = Array(
-      LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 0.0)))),
-      LabeledPoint(1.0, Vectors.sparse(2, Seq((1, 1.0)))),
-      LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 1.0)))))
+    val arr = Array(LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 0.0)))),
+                    LabeledPoint(1.0, Vectors.sparse(2, Seq((1, 1.0)))),
+                    LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 1.0)))))
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini,
-      maxDepth = 2, numClasses = 2, minInstancesPerNode = 2)
+    val strategy = new Strategy(algo = Classification,
+                                impurity = Gini,
+                                maxDepth = 2,
+                                numClasses = 2,
+                                minInstancesPerNode = 2)
 
     val model = DecisionTree.train(rdd, strategy)
     assert(model.topNode.isLeaf)
@@ -362,16 +372,19 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   test("do not choose split that does not satisfy min instance per node requirements") {
     // if a split does not satisfy min instances per node requirements,
     // this split is invalid, even though the information gain of split is large.
-    val arr = Array(
-      LabeledPoint(0.0, Vectors.dense(0.0, 1.0)),
-      LabeledPoint(1.0, Vectors.dense(1.0, 1.0)),
-      LabeledPoint(0.0, Vectors.dense(0.0, 0.0)),
-      LabeledPoint(0.0, Vectors.dense(0.0, 0.0)))
+    val arr = Array(LabeledPoint(0.0, Vectors.dense(0.0, 1.0)),
+                    LabeledPoint(1.0, Vectors.dense(1.0, 1.0)),
+                    LabeledPoint(0.0, Vectors.dense(0.0, 0.0)),
+                    LabeledPoint(0.0, Vectors.dense(0.0, 0.0)))
 
     val rdd = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini,
-      maxBins = 2, maxDepth = 2, categoricalFeaturesInfo = Map(0 -> 2, 1 -> 2),
-      numClasses = 2, minInstancesPerNode = 2)
+    val strategy = new Strategy(algo = Classification,
+                                impurity = Gini,
+                                maxBins = 2,
+                                maxDepth = 2,
+                                categoricalFeaturesInfo = Map(0 -> 2, 1 -> 2),
+                                numClasses = 2,
+                                minInstancesPerNode = 2)
 
     val rootNode = DecisionTree.train(rdd, strategy).topNode
 
@@ -383,14 +396,13 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("split must satisfy min info gain requirements") {
-    val arr = Array(
-      LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 0.0)))),
-      LabeledPoint(1.0, Vectors.sparse(2, Seq((1, 1.0)))),
-      LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 1.0)))))
+    val arr = Array(LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 0.0)))),
+                    LabeledPoint(1.0, Vectors.sparse(2, Seq((1, 1.0)))),
+                    LabeledPoint(0.0, Vectors.sparse(2, Seq((0, 1.0)))))
 
     val input = sc.parallelize(arr)
-    val strategy = new Strategy(algo = Classification, impurity = Gini, maxDepth = 2,
-      numClasses = 2, minInfoGain = 1.0)
+    val strategy = new Strategy(
+        algo = Classification, impurity = Gini, maxDepth = 2, numClasses = 2, minInfoGain = 1.0)
 
     val model = DecisionTree.train(input, strategy)
     assert(model.topNode.isLeaf)
@@ -435,27 +447,27 @@ class DecisionTreeSuite extends SparkFunSuite with MLlibTestSparkContext {
 object DecisionTreeSuite extends SparkFunSuite {
 
   def validateClassifier(
-      model: DecisionTreeModel,
-      input: Seq[LabeledPoint],
-      requiredAccuracy: Double) {
+      model: DecisionTreeModel, input: Seq[LabeledPoint], requiredAccuracy: Double) {
     val predictions = input.map(x => model.predict(x.features))
-    val numOffPredictions = predictions.zip(input).count { case (prediction, expected) =>
-      prediction != expected.label
+    val numOffPredictions = predictions.zip(input).count {
+      case (prediction, expected) =>
+        prediction != expected.label
     }
     val accuracy = (input.length - numOffPredictions).toDouble / input.length
     assert(accuracy >= requiredAccuracy,
-      s"validateClassifier calculated accuracy $accuracy but required $requiredAccuracy.")
+           s"validateClassifier calculated accuracy $accuracy but required $requiredAccuracy.")
   }
 
-  def validateRegressor(
-      model: DecisionTreeModel,
-      input: Seq[LabeledPoint],
-      requiredMSE: Double) {
+  def validateRegressor(model: DecisionTreeModel, input: Seq[LabeledPoint], requiredMSE: Double) {
     val predictions = input.map(x => model.predict(x.features))
-    val squaredError = predictions.zip(input).map { case (prediction, expected) =>
-      val err = prediction - expected.label
-      err * err
-    }.sum
+    val squaredError = predictions
+      .zip(input)
+      .map {
+        case (prediction, expected) =>
+          val err = prediction - expected.label
+          err * err
+      }
+      .sum
     val mse = squaredError / input.length
     assert(mse <= requiredMSE, s"validateRegressor calculated MSE $mse but required $requiredMSE.")
   }
@@ -481,15 +493,16 @@ object DecisionTreeSuite extends SparkFunSuite {
   def generateOrderedLabeledPoints(): Array[LabeledPoint] = {
     val arr = new Array[LabeledPoint](1000)
     for (i <- 0 until 1000) {
-      val label = if (i < 100) {
-        0.0
-      } else if (i < 500) {
-        1.0
-      } else if (i < 900) {
-        0.0
-      } else {
-        1.0
-      }
+      val label =
+        if (i < 100) {
+          0.0
+        } else if (i < 500) {
+          1.0
+        } else if (i < 900) {
+          0.0
+        } else {
+          1.0
+        }
       arr(i) = new LabeledPoint(label, Vectors.dense(i.toDouble, 1000.0 - i))
     }
     arr
@@ -537,8 +550,7 @@ object DecisionTreeSuite extends SparkFunSuite {
     arr
   }
 
-  def generateCategoricalDataPointsForMulticlassForOrderedFeatures():
-    Array[LabeledPoint] = {
+  def generateCategoricalDataPointsForMulticlassForOrderedFeatures(): Array[LabeledPoint] = {
     val arr = new Array[LabeledPoint](3000)
     for (i <- 0 until 3000) {
       if (i < 1000) {
@@ -565,15 +577,20 @@ object DecisionTreeSuite extends SparkFunSuite {
     val node = Node(nodeIndex = id, new Predict(0.0, 1.0), impurity = 0.5, isLeaf = false)
     featureType match {
       case Continuous =>
-        node.split = Some(new Split(feature = 0, threshold = 0.5, Continuous,
-          categories = List.empty[Double]))
+        node.split = Some(
+            new Split(feature = 0, threshold = 0.5, Continuous, categories = List.empty[Double]))
       case Categorical =>
-        node.split = Some(new Split(feature = 1, threshold = 0.0, Categorical,
-          categories = List(0.0, 1.0)))
+        node.split = Some(
+            new Split(feature = 1, threshold = 0.0, Categorical, categories = List(0.0, 1.0)))
     }
     // TODO: The information gain stats should be consistent with info in children: SPARK-7131
-    node.stats = Some(new InformationGainStats(gain = 0.1, impurity = 0.2,
-      leftImpurity = 0.3, rightImpurity = 0.4, new Predict(1.0, 0.4), new Predict(0.0, 0.6)))
+    node.stats = Some(
+        new InformationGainStats(gain = 0.1,
+                                 impurity = 0.2,
+                                 leftImpurity = 0.3,
+                                 rightImpurity = 0.4,
+                                 new Predict(1.0, 0.4),
+                                 new Predict(0.0, 0.6)))
     node
   }
 
@@ -607,9 +624,10 @@ object DecisionTreeSuite extends SparkFunSuite {
       checkEqual(a.topNode, b.topNode)
     } catch {
       case ex: Exception =>
-        throw new AssertionError("checkEqual failed since the two trees were not identical.\n" +
-          "TREE A:\n" + a.toDebugString + "\n" +
-          "TREE B:\n" + b.toDebugString + "\n", ex)
+        throw new AssertionError(
+            "checkEqual failed since the two trees were not identical.\n" + "TREE A:\n" +
+            a.toDebugString + "\n" + "TREE B:\n" + b.toDebugString + "\n",
+            ex)
     }
   }
 
@@ -628,20 +646,25 @@ object DecisionTreeSuite extends SparkFunSuite {
       // TODO: Check other fields besides the information gain.
       case (Some(aStats), Some(bStats)) => assert(aStats.gain === bStats.gain)
       case (None, None) =>
-      case _ => throw new AssertionError(
-          s"Only one instance has stats defined. (a.stats: ${a.stats}, b.stats: ${b.stats})")
+      case _ =>
+        throw new AssertionError(
+            s"Only one instance has stats defined. (a.stats: ${a.stats}, b.stats: ${b.stats})")
     }
     (a.leftNode, b.leftNode) match {
       case (Some(aNode), Some(bNode)) => checkEqual(aNode, bNode)
       case (None, None) =>
-      case _ => throw new AssertionError("Only one instance has leftNode defined. " +
-        s"(a.leftNode: ${a.leftNode}, b.leftNode: ${b.leftNode})")
+      case _ =>
+        throw new AssertionError(
+            "Only one instance has leftNode defined. " +
+            s"(a.leftNode: ${a.leftNode}, b.leftNode: ${b.leftNode})")
     }
     (a.rightNode, b.rightNode) match {
       case (Some(aNode: Node), Some(bNode: Node)) => checkEqual(aNode, bNode)
       case (None, None) =>
-      case _ => throw new AssertionError("Only one instance has rightNode defined. " +
-        s"(a.rightNode: ${a.rightNode}, b.rightNode: ${b.rightNode})")
+      case _ =>
+        throw new AssertionError(
+            "Only one instance has rightNode defined. " +
+            s"(a.rightNode: ${a.rightNode}, b.rightNode: ${b.rightNode})")
     }
   }
 }

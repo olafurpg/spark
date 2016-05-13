@@ -67,10 +67,8 @@ import org.apache.spark.util.Utils
  * [options] is the specific property of this source or sink.
  */
 private[spark] class MetricsSystem private (
-    val instance: String,
-    conf: SparkConf,
-    securityMgr: SecurityManager)
-  extends Logging {
+    val instance: String, conf: SparkConf, securityMgr: SecurityManager)
+    extends Logging {
 
   private[this] val metricsConfig = new MetricsConfig(conf)
 
@@ -187,7 +185,8 @@ private[spark] class MetricsSystem private (
       val classPath = kv._2.getProperty("class")
       if (null != classPath) {
         try {
-          val sink = Utils.classForName(classPath)
+          val sink = Utils
+            .classForName(classPath)
             .getConstructor(classOf[Properties], classOf[MetricRegistry], classOf[SecurityManager])
             .newInstance(kv._2, registry, securityMgr)
           if (kv._1 == "servlet") {
@@ -215,8 +214,8 @@ private[spark] object MetricsSystem {
   def checkMinimalPollingPeriod(pollUnit: TimeUnit, pollPeriod: Int) {
     val period = MINIMAL_POLL_UNIT.convert(pollPeriod, pollUnit)
     if (period < MINIMAL_POLL_PERIOD) {
-      throw new IllegalArgumentException("Polling period " + pollPeriod + " " + pollUnit +
-        " below than minimal polling period ")
+      throw new IllegalArgumentException(
+          "Polling period " + pollPeriod + " " + pollUnit + " below than minimal polling period ")
     }
   }
 

@@ -31,12 +31,11 @@ private[repl] object Signaling extends Logging {
   def cancelOnInterrupt(ctx: SparkContext): Unit = SignalUtils.register("INT") {
     if (!ctx.statusTracker.getActiveJobIds().isEmpty) {
       logWarning("Cancelling all active jobs, this can take a while. " +
-        "Press Ctrl+C again to exit now.")
+          "Press Ctrl+C again to exit now.")
       ctx.cancelAllJobs()
       true
     } else {
       false
     }
   }
-
 }

@@ -325,7 +325,7 @@ class UtilsSuite extends SparkFunSuite with ResetSystemProperties with Logging {
   }
 
   test("deserialize long value") {
-    val testval : Long = 9730889947L
+    val testval: Long = 9730889947L
     val bbuf = ByteBuffer.allocate(8)
     assert(bbuf.hasArray)
     bbuf.order(ByteOrder.BIG_ENDIAN)
@@ -413,11 +413,13 @@ class UtilsSuite extends SparkFunSuite with ResetSystemProperties with Logging {
     assertResolves("jar1,jar2", s"file:$cwd/jar1,file:$cwd/jar2")
     assertResolves("file:/jar1,file:/jar2", "file:/jar1,file:/jar2")
     assertResolves("hdfs:/jar1,file:/jar2,jar3", s"hdfs:/jar1,file:/jar2,file:$cwd/jar3")
-    assertResolves("hdfs:/jar1,file:/jar2,jar3,jar4#jar5,path to/jar6",
-      s"hdfs:/jar1,file:/jar2,file:$cwd/jar3,file:$cwd/jar4#jar5,file:$cwd/path%20to/jar6")
+    assertResolves(
+        "hdfs:/jar1,file:/jar2,jar3,jar4#jar5,path to/jar6",
+        s"hdfs:/jar1,file:/jar2,file:$cwd/jar3,file:$cwd/jar4#jar5,file:$cwd/path%20to/jar6")
     if (Utils.isWindows) {
-      assertResolves("""hdfs:/jar1,file:/jar2,jar3,C:\pi.py#py.pi,C:\path to\jar4""",
-        s"hdfs:/jar1,file:/jar2,file:$cwd/jar3,file:/C:/pi.py#py.pi,file:/C:/path%20to/jar4")
+      assertResolves(
+          """hdfs:/jar1,file:/jar2,jar3,C:\pi.py#py.pi,C:\path to\jar4""",
+          s"hdfs:/jar1,file:/jar2,file:$cwd/jar3,file:/C:/pi.py#py.pi,file:/C:/path%20to/jar4")
     }
   }
 
@@ -432,13 +434,13 @@ class UtilsSuite extends SparkFunSuite with ResetSystemProperties with Logging {
     assert(Utils.nonLocalPaths("file:/spark.jar,local:/smart.jar,family.py") === Array.empty)
     assert(Utils.nonLocalPaths("local:/spark.jar,file:/smart.jar,family.py") === Array.empty)
     assert(Utils.nonLocalPaths("hdfs:/spark.jar,s3:/smart.jar") ===
-      Array("hdfs:/spark.jar", "s3:/smart.jar"))
+        Array("hdfs:/spark.jar", "s3:/smart.jar"))
     assert(Utils.nonLocalPaths("hdfs:/spark.jar,path to/a.jar,s3:/smart.jar") ===
-      Array("hdfs:/spark.jar", "s3:/smart.jar"))
+        Array("hdfs:/spark.jar", "s3:/smart.jar"))
     assert(Utils.nonLocalPaths("hdfs:/spark.jar,s3:/smart.jar,local.py,file:/hello/pi.py") ===
-      Array("hdfs:/spark.jar", "s3:/smart.jar"))
+        Array("hdfs:/spark.jar", "s3:/smart.jar"))
     assert(Utils.nonLocalPaths("local.py,hdfs:/spark.jar,file:/hello/pi.py,s3:/smart.jar") ===
-      Array("hdfs:/spark.jar", "s3:/smart.jar"))
+        Array("hdfs:/spark.jar", "s3:/smart.jar"))
 
     // Test Windows paths
     assert(Utils.nonLocalPaths("C:/some/path.jar", testWindows = true) === Array.empty)
@@ -447,11 +449,11 @@ class UtilsSuite extends SparkFunSuite with ResetSystemProperties with Logging {
     assert(Utils.nonLocalPaths("local:/C:/some/path.jar", testWindows = true) === Array.empty)
     assert(Utils.nonLocalPaths("local:///C:/some/path.jar", testWindows = true) === Array.empty)
     assert(Utils.nonLocalPaths("hdfs:/a.jar,C:/my.jar,s3:/another.jar", testWindows = true) ===
-      Array("hdfs:/a.jar", "s3:/another.jar"))
+        Array("hdfs:/a.jar", "s3:/another.jar"))
     assert(Utils.nonLocalPaths("D:/your.jar,hdfs:/a.jar,s3:/another.jar", testWindows = true) ===
-      Array("hdfs:/a.jar", "s3:/another.jar"))
+        Array("hdfs:/a.jar", "s3:/another.jar"))
     assert(Utils.nonLocalPaths("hdfs:/a.jar,s3:/another.jar,e:/our.jar", testWindows = true) ===
-      Array("hdfs:/a.jar", "s3:/another.jar"))
+        Array("hdfs:/a.jar", "s3:/another.jar"))
   }
 
   test("isBindCollision") {
@@ -529,12 +531,13 @@ class UtilsSuite extends SparkFunSuite with ResetSystemProperties with Logging {
     val outFile = File.createTempFile("test-load-spark-properties", "test", tmpDir)
     try {
       System.setProperty("spark.test.fileNameLoadB", "2")
-      Files.write("spark.test.fileNameLoadA true\n" +
-        "spark.test.fileNameLoadB 1\n", outFile, StandardCharsets.UTF_8)
+      Files.write("spark.test.fileNameLoadA true\n" + "spark.test.fileNameLoadB 1\n",
+                  outFile,
+                  StandardCharsets.UTF_8)
       val properties = Utils.getPropertiesFromFile(outFile.getAbsolutePath)
-      properties
-        .filter { case (k, v) => k.startsWith("spark.")}
-        .foreach { case (k, v) => sys.props.getOrElseUpdate(k, v)}
+      properties.filter { case (k, v) => k.startsWith("spark.") }.foreach {
+        case (k, v) => sys.props.getOrElseUpdate(k, v)
+      }
       val sparkConf = new SparkConf
       assert(sparkConf.getBoolean("spark.test.fileNameLoadA", false) === true)
       assert(sparkConf.getInt("spark.test.fileNameLoadB", 1) === 2)
@@ -596,8 +599,13 @@ class UtilsSuite extends SparkFunSuite with ResetSystemProperties with Logging {
     val testFileDir = new File(tempDir, "test-filename")
     val testFileName = "testFName"
     val testFilefs = Utils.getHadoopFileSystem(filePath.toString, conf)
-    Utils.fetchHcfsFile(filePath, testFileDir, testFilefs, new SparkConf(),
-                        conf, false, Some(testFileName))
+    Utils.fetchHcfsFile(filePath,
+                        testFileDir,
+                        testFilefs,
+                        new SparkConf(),
+                        conf,
+                        false,
+                        Some(testFileName))
     val newFileName = new File(testFileDir, testFileName)
     assert(newFileName.isFile())
   }
@@ -725,14 +733,12 @@ class UtilsSuite extends SparkFunSuite with ResetSystemProperties with Logging {
     val conf = new SparkConf()
     conf.set("spark.master", "yarn-client")
     assert(Utils.isDynamicAllocationEnabled(conf) === false)
-    assert(Utils.isDynamicAllocationEnabled(
-      conf.set("spark.dynamicAllocation.enabled", "false")) === false)
-    assert(Utils.isDynamicAllocationEnabled(
-      conf.set("spark.dynamicAllocation.enabled", "true")) === true)
-    assert(Utils.isDynamicAllocationEnabled(
-      conf.set("spark.executor.instances", "1")) === false)
-    assert(Utils.isDynamicAllocationEnabled(
-      conf.set("spark.executor.instances", "0")) === true)
+    assert(
+        Utils.isDynamicAllocationEnabled(conf.set("spark.dynamicAllocation.enabled", "false")) === false)
+    assert(
+        Utils.isDynamicAllocationEnabled(conf.set("spark.dynamicAllocation.enabled", "true")) === true)
+    assert(Utils.isDynamicAllocationEnabled(conf.set("spark.executor.instances", "1")) === false)
+    assert(Utils.isDynamicAllocationEnabled(conf.set("spark.executor.instances", "0")) === true)
     assert(Utils.isDynamicAllocationEnabled(conf.set("spark.master", "local")) === false)
     assert(Utils.isDynamicAllocationEnabled(conf.set("spark.dynamicAllocation.testing", "true")))
   }
@@ -796,8 +802,7 @@ class UtilsSuite extends SparkFunSuite with ResetSystemProperties with Logging {
         // creating a very misbehaving process. It ignores SIGTERM and has been SIGSTOPed. On
         // older versions of java, this will *not* terminate.
         val file = File.createTempFile("temp-file-name", ".tmp")
-        val cmd =
-          s"""
+        val cmd = s"""
              |#!/bin/bash
              |trap "" SIGTERM
              |sleep 10

@@ -23,7 +23,6 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.hive.MetastoreRelation
 
-
 /**
  * Create table and insert the query result into it.
  * @param tableDesc the Table Describe, which may contains serde, storage handler etc.
@@ -31,12 +30,9 @@ import org.apache.spark.sql.hive.MetastoreRelation
  * @param allowExisting allow continue working if it's already exists, otherwise
  *                      raise exception
  */
-private[hive]
-case class CreateTableAsSelect(
-    tableDesc: CatalogTable,
-    query: LogicalPlan,
-    allowExisting: Boolean)
-  extends RunnableCommand {
+private[hive] case class CreateTableAsSelect(
+    tableDesc: CatalogTable, query: LogicalPlan, allowExisting: Boolean)
+    extends RunnableCommand {
 
   private val tableIdentifier = tableDesc.identifier
 
@@ -49,25 +45,25 @@ case class CreateTableAsSelect(
       import org.apache.hadoop.io.Text
       import org.apache.hadoop.mapred.TextInputFormat
 
-      val withFormat =
-        tableDesc.withNewStorage(
-          inputFormat =
-            tableDesc.storage.inputFormat.orElse(Some(classOf[TextInputFormat].getName)),
-          outputFormat =
-            tableDesc.storage.outputFormat
+      val withFormat = tableDesc.withNewStorage(
+          inputFormat = tableDesc.storage.inputFormat
+              .orElse(Some(classOf[TextInputFormat].getName)),
+          outputFormat = tableDesc.storage.outputFormat
               .orElse(Some(classOf[HiveIgnoreKeyTextOutputFormat[Text, Text]].getName)),
           serde = tableDesc.storage.serde.orElse(Some(classOf[LazySimpleSerDe].getName)),
           compressed = tableDesc.storage.compressed)
 
-      val withSchema = if (withFormat.schema.isEmpty) {
-        // Hive doesn't support specifying the column list for target table in CTAS
-        // However we don't think SparkSQL should follow that.
-        tableDesc.copy(schema = query.output.map { c =>
-          CatalogColumn(c.name, c.dataType.catalogString)
-        })
-      } else {
-        withFormat
-      }
+      val withSchema =
+        if (withFormat.schema.isEmpty) {
+          // Hive doesn't support specifying the column list for target table in CTAS
+          // However we don't think SparkSQL should follow that.
+          tableDesc.copy(
+              schema = query.output.map { c =>
+            CatalogColumn(c.name, c.dataType.catalogString)
+          })
+        } else {
+          withFormat
+        }
 
       sparkSession.sessionState.catalog.createTable(withSchema, ignoreIfExists = false)
 
@@ -86,16 +82,17 @@ case class CreateTableAsSelect(
         throw new AnalysisException(s"$tableIdentifier already exists.")
       }
     } else {
-      sparkSession.executePlan(InsertIntoTable(
-        metastoreRelation, Map(), query, overwrite = true, ifNotExists = false)).toRdd
+      sparkSession
+        .executePlan(InsertIntoTable(
+                metastoreRelation, Map(), query, overwrite = true, ifNotExists = false))
+        .toRdd
     }
 
     Seq.empty[Row]
   }
 
   override def argString: String = {
-    s"[Database:${tableDesc.database}}, " +
-    s"TableName: ${tableDesc.identifier.table}, " +
+    s"[Database:${tableDesc.database}}, " + s"TableName: ${tableDesc.identifier.table}, " +
     s"InsertIntoHiveTable]"
   }
 }

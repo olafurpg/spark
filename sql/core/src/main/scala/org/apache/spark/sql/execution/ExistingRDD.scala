@@ -76,9 +76,9 @@ object RDDConversions {
 
 /** Logical plan node for scanning data from an RDD. */
 private[sql] case class LogicalRDD(
-    output: Seq[Attribute],
-    rdd: RDD[InternalRow])(session: SparkSession)
-  extends LogicalPlan with MultiInstanceRelation {
+    output: Seq[Attribute], rdd: RDD[InternalRow])(session: SparkSession)
+    extends LogicalPlan
+    with MultiInstanceRelation {
 
   override def children: Seq[LogicalPlan] = Nil
 
@@ -95,20 +95,19 @@ private[sql] case class LogicalRDD(
   override def producedAttributes: AttributeSet = outputSet
 
   @transient override lazy val statistics: Statistics = Statistics(
-    // TODO: Instead of returning a default value here, find a way to return a meaningful size
-    // estimate for RDDs. See PR 1238 for more discussions.
-    sizeInBytes = BigInt(session.sessionState.conf.defaultSizeInBytes)
+      // TODO: Instead of returning a default value here, find a way to return a meaningful size
+      // estimate for RDDs. See PR 1238 for more discussions.
+      sizeInBytes = BigInt(session.sessionState.conf.defaultSizeInBytes)
   )
 }
 
 /** Physical plan node for scanning data from an RDD. */
 private[sql] case class RDDScanExec(
-    output: Seq[Attribute],
-    rdd: RDD[InternalRow],
-    override val nodeName: String) extends LeafExecNode {
+    output: Seq[Attribute], rdd: RDD[InternalRow], override val nodeName: String)
+    extends LeafExecNode {
 
   private[sql] override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   protected override def doExecute(): RDD[InternalRow] = {
     val numOutputRows = longMetric("numOutputRows")
@@ -150,10 +149,11 @@ private[sql] case class RowDataSourceScanExec(
     override val outputPartitioning: Partitioning,
     override val metadata: Map[String, String],
     override val metastoreTableIdentifier: Option[TableIdentifier])
-  extends DataSourceScanExec with CodegenSupport {
+    extends DataSourceScanExec
+    with CodegenSupport {
 
-  private[sql] override lazy val metrics =
-    Map("numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+  private[sql] override lazy val metrics = Map(
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   val outputUnsafeRows = relation match {
     case r: HadoopFsRelation if r.fileFormat.isInstanceOf[ParquetSource] =>
@@ -163,14 +163,15 @@ private[sql] case class RowDataSourceScanExec(
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
-    val unsafeRow = if (outputUnsafeRows) {
-      rdd
-    } else {
-      rdd.mapPartitionsInternal { iter =>
-        val proj = UnsafeProjection.create(schema)
-        iter.map(proj)
+    val unsafeRow =
+      if (outputUnsafeRows) {
+        rdd
+      } else {
+        rdd.mapPartitionsInternal { iter =>
+          val proj = UnsafeProjection.create(schema)
+          iter.map(proj)
+        }
       }
-    }
 
     val numOutputRows = longMetric("numOutputRows")
     unsafeRow.map { r =>
@@ -196,8 +197,9 @@ private[sql] case class RowDataSourceScanExec(
     // PhysicalRDD always just has one input
     val input = ctx.freshName("input")
     ctx.addMutableState("scala.collection.Iterator", input, s"$input = inputs[0];")
-    val exprRows = output.zipWithIndex.map{ case (a, i) =>
-      new BoundReference(i, a.dataType, a.nullable)
+    val exprRows = output.zipWithIndex.map {
+      case (a, i) =>
+        new BoundReference(i, a.dataType, a.nullable)
     }
     val row = ctx.freshName("row")
     ctx.INPUT_ROW = row
@@ -223,10 +225,11 @@ private[sql] case class BatchedDataSourceScanExec(
     override val outputPartitioning: Partitioning,
     override val metadata: Map[String, String],
     override val metastoreTableIdentifier: Option[TableIdentifier])
-  extends DataSourceScanExec with CodegenSupport {
+    extends DataSourceScanExec
+    with CodegenSupport {
 
-  private[sql] override lazy val metrics =
-    Map("numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
+  private[sql] override lazy val metrics = Map(
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
       "scanTime" -> SQLMetrics.createTimingMetric(sparkContext, "scan time"))
 
   protected override def doExecute(): RDD[InternalRow] = {
@@ -245,21 +248,25 @@ private[sql] case class BatchedDataSourceScanExec(
     rdd :: Nil
   }
 
-  private def genCodeColumnVector(ctx: CodegenContext, columnVar: String, ordinal: String,
-    dataType: DataType, nullable: Boolean): ExprCode = {
+  private def genCodeColumnVector(ctx: CodegenContext,
+                                  columnVar: String,
+                                  ordinal: String,
+                                  dataType: DataType,
+                                  nullable: Boolean): ExprCode = {
     val javaType = ctx.javaType(dataType)
     val value = ctx.getValue(columnVar, dataType, ordinal)
     val isNullVar = if (nullable) { ctx.freshName("isNull") } else { "false" }
     val valueVar = ctx.freshName("value")
     val str = s"columnVector[$columnVar, $ordinal, ${dataType.simpleString}]"
-    val code = s"/* ${toCommentSafeString(str)} */\n" + (if (nullable) {
-      s"""
+    val code =
+      s"/* ${toCommentSafeString(str)} */\n" + (if (nullable) {
+                                                  s"""
         boolean ${isNullVar} = ${columnVar}.isNullAt($ordinal);
         $javaType ${valueVar} = ${isNullVar} ? ${ctx.defaultValue(dataType)} : ($value);
       """
-    } else {
-      s"$javaType ${valueVar} = $value;"
-    }).trim
+                                                } else {
+                                                  s"$javaType ${valueVar} = $value;"
+                                                }).trim
     ExprCode(code, isNullVar, valueVar)
   }
 
@@ -284,14 +291,14 @@ private[sql] case class BatchedDataSourceScanExec(
     val idx = ctx.freshName("batchIdx")
     ctx.addMutableState("int", idx, s"$idx = 0;")
     val colVars = output.indices.map(i => ctx.freshName("colInstance" + i))
-    val columnAssigns = colVars.zipWithIndex.map { case (name, i) =>
-      ctx.addMutableState(columnVectorClz, name, s"$name = null;")
-      s"$name = $batch.column($i);"
+    val columnAssigns = colVars.zipWithIndex.map {
+      case (name, i) =>
+        ctx.addMutableState(columnVectorClz, name, s"$name = null;")
+        s"$name = $batch.column($i);"
     }
 
     val nextBatch = ctx.freshName("nextBatch")
-    ctx.addNewFunction(nextBatch,
-      s"""
+    ctx.addNewFunction(nextBatch, s"""
          |private void $nextBatch() throws java.io.IOException {
          |  long getBatchStart = System.nanoTime();
          |  if ($input.hasNext()) {
@@ -305,8 +312,9 @@ private[sql] case class BatchedDataSourceScanExec(
 
     ctx.currentVars = null
     val rowidx = ctx.freshName("rowIdx")
-    val columnsBatchInput = (output zip colVars).map { case (attr, colVar) =>
-      genCodeColumnVector(ctx, colVar, rowidx, attr.dataType, attr.nullable)
+    val columnsBatchInput = (output zip colVars).map {
+      case (attr, colVar) =>
+        genCodeColumnVector(ctx, colVar, rowidx, attr.dataType, attr.nullable)
     }
     s"""
        |if ($batch == null) {
@@ -333,23 +341,22 @@ private[sql] object DataSourceScanExec {
   val INPUT_PATHS = "InputPaths"
   val PUSHED_FILTERS = "PushedFilters"
 
-  def create(
-      output: Seq[Attribute],
-      rdd: RDD[InternalRow],
-      relation: BaseRelation,
-      metadata: Map[String, String] = Map.empty,
-      metastoreTableIdentifier: Option[TableIdentifier] = None): DataSourceScanExec = {
+  def create(output: Seq[Attribute],
+             rdd: RDD[InternalRow],
+             relation: BaseRelation,
+             metadata: Map[String, String] = Map.empty,
+             metastoreTableIdentifier: Option[TableIdentifier] = None): DataSourceScanExec = {
     val outputPartitioning = {
       val bucketSpec = relation match {
         // TODO: this should be closer to bucket planning.
-        case r: HadoopFsRelation
-          if r.sparkSession.sessionState.conf.bucketingEnabled => r.bucketSpec
+        case r: HadoopFsRelation if r.sparkSession.sessionState.conf.bucketingEnabled =>
+          r.bucketSpec
         case _ => None
       }
 
       def toAttribute(colName: String): Attribute = output.find(_.name == colName).getOrElse {
         throw new AnalysisException(s"bucket column $colName not found in existing columns " +
-          s"(${output.map(_.name).mkString(", ")})")
+            s"(${output.map(_.name).mkString(", ")})")
       }
 
       bucketSpec.map { spec =>
@@ -363,12 +370,12 @@ private[sql] object DataSourceScanExec {
 
     relation match {
       case r: HadoopFsRelation
-        if r.fileFormat.supportBatch(r.sparkSession, StructType.fromAttributes(output)) =>
+          if r.fileFormat.supportBatch(r.sparkSession, StructType.fromAttributes(output)) =>
         BatchedDataSourceScanExec(
-          output, rdd, relation, outputPartitioning, metadata, metastoreTableIdentifier)
+            output, rdd, relation, outputPartitioning, metadata, metastoreTableIdentifier)
       case _ =>
         RowDataSourceScanExec(
-          output, rdd, relation, outputPartitioning, metadata, metastoreTableIdentifier)
+            output, rdd, relation, outputPartitioning, metadata, metastoreTableIdentifier)
     }
   }
 }

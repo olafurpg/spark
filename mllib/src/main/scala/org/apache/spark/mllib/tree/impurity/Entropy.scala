@@ -76,7 +76,6 @@ object Entropy extends Impurity {
    */
   @Since("1.1.0")
   def instance: this.type = this
-
 }
 
 /**
@@ -86,7 +85,8 @@ object Entropy extends Impurity {
  * @param numClasses  Number of classes for label.
  */
 private[spark] class EntropyAggregator(numClasses: Int)
-  extends ImpurityAggregator(numClasses) with Serializable {
+    extends ImpurityAggregator(numClasses)
+    with Serializable {
 
   /**
    * Update stats for one (node, feature, bin) with the given label.
@@ -95,12 +95,13 @@ private[spark] class EntropyAggregator(numClasses: Int)
    */
   def update(allStats: Array[Double], offset: Int, label: Double, instanceWeight: Double): Unit = {
     if (label >= statsSize) {
-      throw new IllegalArgumentException(s"EntropyAggregator given label $label" +
-        s" but requires label < numClasses (= $statsSize).")
+      throw new IllegalArgumentException(
+          s"EntropyAggregator given label $label" +
+          s" but requires label < numClasses (= $statsSize).")
     }
     if (label < 0) {
-      throw new IllegalArgumentException(s"EntropyAggregator given label $label" +
-        s"but requires label is non-negative.")
+      throw new IllegalArgumentException(
+          s"EntropyAggregator given label $label" + s"but requires label is non-negative.")
     }
     allStats(offset + label.toInt) += instanceWeight
   }
@@ -141,11 +142,12 @@ private[spark] class EntropyCalculator(stats: Array[Double]) extends ImpurityCal
   /**
    * Prediction which should be made based on the sufficient statistics.
    */
-  def predict: Double = if (count == 0) {
-    0
-  } else {
-    indexOfLargestArrayElement(stats)
-  }
+  def predict: Double =
+    if (count == 0) {
+      0
+    } else {
+      indexOfLargestArrayElement(stats)
+    }
 
   /**
    * Probability of the label given by [[predict]].
@@ -153,7 +155,7 @@ private[spark] class EntropyCalculator(stats: Array[Double]) extends ImpurityCal
   override def prob(label: Double): Double = {
     val lbl = label.toInt
     require(lbl < stats.length,
-      s"EntropyCalculator.prob given invalid label: $lbl (should be < ${stats.length}")
+            s"EntropyCalculator.prob given invalid label: $lbl (should be < ${stats.length}")
     require(lbl >= 0, "Entropy does not support negative labels")
     val cnt = count
     if (cnt == 0) {
@@ -164,5 +166,4 @@ private[spark] class EntropyCalculator(stats: Array[Double]) extends ImpurityCal
   }
 
   override def toString: String = s"EntropyCalculator(stats = [${stats.mkString(", ")}])"
-
 }

@@ -22,7 +22,6 @@ import breeze.linalg.{diag, eigSym, max, DenseMatrix => BDM, DenseVector => BDV,
 import org.apache.spark.ml.impl.Utils
 import org.apache.spark.ml.linalg.{Matrices, Matrix, Vector, Vectors}
 
-
 /**
  * This class provides basic functionality for a Multivariate Gaussian (Normal) Distribution. In
  * the event that the covariance matrix is singular, the density will be computed in a
@@ -32,9 +31,7 @@ import org.apache.spark.ml.linalg.{Matrices, Matrix, Vector, Vectors}
  * @param mean The mean vector of the distribution
  * @param cov The covariance matrix of the distribution
  */
-class MultivariateGaussian(
-    val mean: Vector,
-    val cov: Matrix) extends Serializable {
+class MultivariateGaussian(val mean: Vector, val cov: Matrix) extends Serializable {
 
   require(cov.numCols == cov.numRows, "Covariance matrix must be square")
   require(mean.size == cov.numCols, "Mean vector length must match covariance matrix size")

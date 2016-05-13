@@ -32,13 +32,10 @@ import org.apache.spark.sql.types.{DataType, DoubleType, StructType}
 /**
  * (private[spark]) Params for classification.
  */
-private[spark] trait ClassifierParams
-  extends PredictorParams with HasRawPredictionCol {
+private[spark] trait ClassifierParams extends PredictorParams with HasRawPredictionCol {
 
   override protected def validateAndTransformSchema(
-      schema: StructType,
-      fitting: Boolean,
-      featuresDataType: DataType): StructType = {
+      schema: StructType, fitting: Boolean, featuresDataType: DataType): StructType = {
     val parentSchema = super.validateAndTransformSchema(schema, fitting, featuresDataType)
     SchemaUtils.appendColumn(parentSchema, $(rawPredictionCol), new VectorUDT)
   }
@@ -56,10 +53,9 @@ private[spark] trait ClassifierParams
  */
 @DeveloperApi
 abstract class Classifier[
-    FeaturesType,
-    E <: Classifier[FeaturesType, E, M],
-    M <: ClassificationModel[FeaturesType, M]]
-  extends Predictor[FeaturesType, E, M] with ClassifierParams {
+    FeaturesType, E <: Classifier[FeaturesType, E, M], M <: ClassificationModel[FeaturesType, M]]
+    extends Predictor[FeaturesType, E, M]
+    with ClassifierParams {
 
   /** @group setParam */
   def setRawPredictionCol(value: String): E = set(rawPredictionCol, value).asInstanceOf[E]
@@ -77,13 +73,15 @@ abstract class Classifier[
    * @throws SparkException  if any label is not an integer >= 0
    */
   protected def extractLabeledPoints(dataset: Dataset[_], numClasses: Int): RDD[LabeledPoint] = {
-    require(numClasses > 0, s"Classifier (in extractLabeledPoints) found numClasses =" +
-      s" $numClasses, but requires numClasses > 0.")
+    require(numClasses > 0,
+            s"Classifier (in extractLabeledPoints) found numClasses =" +
+            s" $numClasses, but requires numClasses > 0.")
     dataset.select(col($(labelCol)).cast(DoubleType), col($(featuresCol))).rdd.map {
       case Row(label: Double, features: Vector) =>
-        require(label % 1 == 0 && label >= 0 && label < numClasses, s"Classifier was given" +
-          s" dataset with invalid label $label.  Labels must be integers in range" +
-          s" [0, 1, ..., $numClasses), where numClasses=$numClasses.")
+        require(label % 1 == 0 && label >= 0 && label < numClasses,
+                s"Classifier was given" +
+                s" dataset with invalid label $label.  Labels must be integers in range" +
+                s" [0, 1, ..., $numClasses), where numClasses=$numClasses.")
         LabeledPoint(label, features)
     }
   }
@@ -113,16 +111,20 @@ abstract class Classifier[
           throw new SparkException("ML algorithm was given empty dataset.")
         }
         val maxDoubleLabel: Double = maxLabelRow.head.getDouble(0)
-        require((maxDoubleLabel + 1).isValidInt, s"Classifier found max label value =" +
-          s" $maxDoubleLabel but requires integers in range [0, ... ${Int.MaxValue})")
+        require((maxDoubleLabel + 1).isValidInt,
+                s"Classifier found max label value =" +
+                s" $maxDoubleLabel but requires integers in range [0, ... ${Int.MaxValue})")
         val numClasses = maxDoubleLabel.toInt + 1
-        require(numClasses <= maxNumClasses, s"Classifier inferred $numClasses from label values" +
-          s" in column $labelCol, but this exceeded the max numClasses ($maxNumClasses) allowed" +
-          s" to be inferred from values.  To avoid this error for labels with > $maxNumClasses" +
-          s" classes, specify numClasses explicitly in the metadata; this can be done by applying" +
-          s" StringIndexer to the label column.")
-        logInfo(this.getClass.getCanonicalName + s" inferred $numClasses classes for" +
-          s" labelCol=$labelCol since numClasses was not specified in the column metadata.")
+        require(
+            numClasses <= maxNumClasses,
+            s"Classifier inferred $numClasses from label values" +
+            s" in column $labelCol, but this exceeded the max numClasses ($maxNumClasses) allowed" +
+            s" to be inferred from values.  To avoid this error for labels with > $maxNumClasses" +
+            s" classes, specify numClasses explicitly in the metadata; this can be done by applying" +
+            s" StringIndexer to the label column.")
+        logInfo(
+            this.getClass.getCanonicalName + s" inferred $numClasses classes for" +
+            s" labelCol=$labelCol since numClasses was not specified in the column metadata.")
         numClasses
     }
   }
@@ -139,7 +141,8 @@ abstract class Classifier[
  */
 @DeveloperApi
 abstract class ClassificationModel[FeaturesType, M <: ClassificationModel[FeaturesType, M]]
-  extends PredictionModel[FeaturesType, M] with ClassifierParams {
+    extends PredictionModel[FeaturesType, M]
+    with ClassifierParams {
 
   /** @group setParam */
   def setRawPredictionCol(value: String): M = set(rawPredictionCol, value).asInstanceOf[M]
@@ -171,21 +174,22 @@ abstract class ClassificationModel[FeaturesType, M <: ClassificationModel[Featur
       numColsOutput += 1
     }
     if (getPredictionCol != "") {
-      val predUDF = if (getRawPredictionCol != "") {
-        udf(raw2prediction _).apply(col(getRawPredictionCol))
-      } else {
-        val predictUDF = udf { (features: Any) =>
-          predict(features.asInstanceOf[FeaturesType])
+      val predUDF =
+        if (getRawPredictionCol != "") {
+          udf(raw2prediction _).apply(col(getRawPredictionCol))
+        } else {
+          val predictUDF = udf { (features: Any) =>
+            predict(features.asInstanceOf[FeaturesType])
+          }
+          predictUDF(col(getFeaturesCol))
         }
-        predictUDF(col(getFeaturesCol))
-      }
       outputData = outputData.withColumn(getPredictionCol, predUDF)
       numColsOutput += 1
     }
 
     if (numColsOutput == 0) {
       logWarning(s"$uid: ClassificationModel.transform() was called as NOOP" +
-        " since no output columns were set.")
+          " since no output columns were set.")
     }
     outputData.toDF
   }

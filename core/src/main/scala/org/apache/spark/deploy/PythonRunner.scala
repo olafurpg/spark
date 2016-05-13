@@ -47,7 +47,8 @@ object PythonRunner {
     // Launch a Py4J gateway server for the process to connect to; this will let it see our
     // Java system properties and such
     val gatewayServer = new py4j.GatewayServer(null, 0)
-    val thread = new Thread(new Runnable() {
+    val thread = new Thread(
+        new Runnable() {
       override def run(): Unit = Utils.logUncaughtExceptions {
         gatewayServer.start()
       }
@@ -101,8 +102,9 @@ object PythonRunner {
    */
   def formatPath(path: String, testWindows: Boolean = false): String = {
     if (Utils.nonLocalPaths(path, testWindows).nonEmpty) {
-      throw new IllegalArgumentException("Launching Python applications through " +
-        s"spark-submit is currently only supported for local files: $path")
+      throw new IllegalArgumentException(
+          "Launching Python applications through " +
+          s"spark-submit is currently only supported for local files: $path")
     }
     // get path when scheme is file.
     val uri = Try(new URI(path)).getOrElse(new File(path).toURI)
@@ -130,10 +132,8 @@ object PythonRunner {
    * added to the PYTHONPATH correctly.
    */
   def formatPaths(paths: String, testWindows: Boolean = false): Array[String] = {
-    Option(paths).getOrElse("")
-      .split(",")
-      .filter(_.nonEmpty)
-      .map { p => formatPath(p, testWindows) }
+    Option(paths).getOrElse("").split(",").filter(_.nonEmpty).map { p =>
+      formatPath(p, testWindows)
+    }
   }
-
 }

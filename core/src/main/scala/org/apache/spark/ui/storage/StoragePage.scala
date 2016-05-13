@@ -30,7 +30,8 @@ private[ui] class StoragePage(parent: StorageTab) extends WebUIPage("") {
   private val listener = parent.listener
 
   def render(request: HttpServletRequest): Seq[Node] = {
-    val content = rddTable(listener.rddInfoList) ++
+    val content =
+      rddTable(listener.rddInfoList) ++
       receiverBlockTables(listener.allExecutorStreamBlockStatus.sortBy(_.executorId))
     UIUtils.headerSparkPage("Storage", content, parent)
   }
@@ -48,13 +49,12 @@ private[ui] class StoragePage(parent: StorageTab) extends WebUIPage("") {
   }
 
   /** Header fields for the RDD table */
-  private val rddHeader = Seq(
-    "RDD Name",
-    "Storage Level",
-    "Cached Partitions",
-    "Fraction Cached",
-    "Size in Memory",
-    "Size on Disk")
+  private val rddHeader = Seq("RDD Name",
+                              "Storage Level",
+                              "Cached Partitions",
+                              "Fraction Cached",
+                              "Size in Memory",
+                              "Size on Disk")
 
   /** Render an HTML row representing an RDD */
   private def rddRow(rdd: RDDInfo): Seq[Node] = {
@@ -98,12 +98,11 @@ private[ui] class StoragePage(parent: StorageTab) extends WebUIPage("") {
     </div>
   }
 
-  private val executorMetricsTableHeader = Seq(
-    "Executor ID",
-    "Address",
-    "Total Size in Memory",
-    "Total Size on Disk",
-    "Stream Blocks")
+  private val executorMetricsTableHeader = Seq("Executor ID",
+                                               "Address",
+                                               "Total Size in Memory",
+                                               "Total Size on Disk",
+                                               "Stream Blocks")
 
   private def executorMetricsTableRow(status: ExecutorStreamBlockStatus): Seq[Node] = {
     <tr>
@@ -142,11 +141,7 @@ private[ui] class StoragePage(parent: StorageTab) extends WebUIPage("") {
   }
 
   private val streamBlockTableHeader = Seq(
-    "Block ID",
-    "Replication Level",
-    "Location",
-    "Storage Level",
-    "Size")
+      "Block ID", "Replication Level", "Location", "Storage Level", "Size")
 
   /** Render a stream block */
   private def streamBlockTableRow(block: (BlockId, Seq[BlockUIData])): Seq[Node] = {
@@ -156,7 +151,7 @@ private[ui] class StoragePage(parent: StorageTab) extends WebUIPage("") {
       streamBlockTableSubrow(block._1, replications.head, replications.size, true)
     } else {
       streamBlockTableSubrow(block._1, replications.head, replications.size, true) ++
-        replications.tail.flatMap(streamBlockTableSubrow(block._1, _, replications.size, false))
+      replications.tail.flatMap(streamBlockTableSubrow(block._1, _, replications.size, false))
     }
   }
 
@@ -193,5 +188,4 @@ private[ui] class StoragePage(parent: StorageTab) extends WebUIPage("") {
       throw new IllegalStateException(s"Invalid Storage Level: ${block.storageLevel}")
     }
   }
-
 }

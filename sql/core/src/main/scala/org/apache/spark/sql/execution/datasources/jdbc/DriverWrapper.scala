@@ -39,7 +39,7 @@ class DriverWrapper(val wrapped: Driver) extends Driver {
 
   def getParentLogger: java.util.logging.Logger = {
     throw new SQLFeatureNotSupportedException(
-      s"${this.getClass.getName}.getParentLogger is not yet implemented.")
+        s"${this.getClass.getName}.getParentLogger is not yet implemented.")
   }
 
   override def connect(url: String, info: Properties): Connection = wrapped.connect(url, info)

@@ -30,19 +30,17 @@ private sealed trait StateStoreCoordinatorMessage extends Serializable
 
 /** Classes representing messages */
 private case class ReportActiveInstance(storeId: StateStoreId, host: String, executorId: String)
-  extends StateStoreCoordinatorMessage
+    extends StateStoreCoordinatorMessage
 
 private case class VerifyIfInstanceActive(storeId: StateStoreId, executorId: String)
-  extends StateStoreCoordinatorMessage
+    extends StateStoreCoordinatorMessage
 
-private case class GetLocation(storeId: StateStoreId)
-  extends StateStoreCoordinatorMessage
+private case class GetLocation(storeId: StateStoreId) extends StateStoreCoordinatorMessage
 
 private case class DeactivateInstances(storeRootLocation: String)
-  extends StateStoreCoordinatorMessage
+    extends StateStoreCoordinatorMessage
 
-private object StopCoordinator
-  extends StateStoreCoordinatorMessage
+private object StopCoordinator extends StateStoreCoordinatorMessage
 
 /** Helper object used to create reference to [[StateStoreCoordinator]]. */
 private[sql] object StateStoreCoordinatorRef extends Logging {
@@ -77,12 +75,10 @@ private[sql] object StateStoreCoordinatorRef extends Logging {
  * Reference to a [[StateStoreCoordinator]] that can be used to coordinate instances of
  * [[StateStore]]s across all the executors, and get their locations for job scheduling.
  */
-private[sql] class StateStoreCoordinatorRef private(rpcEndpointRef: RpcEndpointRef) {
+private[sql] class StateStoreCoordinatorRef private (rpcEndpointRef: RpcEndpointRef) {
 
   private[state] def reportActiveInstance(
-      storeId: StateStoreId,
-      host: String,
-      executorId: String): Unit = {
+      storeId: StateStoreId, host: String, executorId: String): Unit = {
     rpcEndpointRef.send(ReportActiveInstance(storeId, host, executorId))
   }
 
@@ -105,7 +101,6 @@ private[sql] class StateStoreCoordinatorRef private(rpcEndpointRef: RpcEndpointR
     rpcEndpointRef.askWithRetry[Boolean](StopCoordinator)
   }
 }
-
 
 /**
  * Class for coordinating instances of [[StateStore]]s loaded in executors across the cluster,
@@ -131,8 +126,7 @@ private class StateStoreCoordinator(override val rpcEnv: RpcEnv) extends ThreadS
       context.reply(instances.get(id).map(_.toString))
 
     case DeactivateInstances(loc) =>
-      val storeIdsToRemove =
-        instances.keys.filter(_.checkpointLocation == loc).toSeq
+      val storeIdsToRemove = instances.keys.filter(_.checkpointLocation == loc).toSeq
       instances --= storeIdsToRemove
       context.reply(true)
 

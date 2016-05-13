@@ -31,13 +31,11 @@ import org.apache.spark.sql.types.BooleanType
 class TypedFilterOptimizationSuite extends PlanTest {
   object Optimize extends RuleExecutor[LogicalPlan] {
     val batches =
-      Batch("EliminateSerialization", FixedPoint(50),
-        EliminateSerialization) ::
-      Batch("EmbedSerializerInFilter", FixedPoint(50),
-        EmbedSerializerInFilter) :: Nil
+      Batch("EliminateSerialization", FixedPoint(50), EliminateSerialization) ::
+      Batch("EmbedSerializerInFilter", FixedPoint(50), EmbedSerializerInFilter) :: Nil
   }
 
-  implicit private def productEncoder[T <: Product : TypeTag] = ExpressionEncoder[T]()
+  implicit private def productEncoder[T <: Product: TypeTag] = ExpressionEncoder[T]()
 
   test("back to back filter") {
     val input = LocalRelation('_1.int, '_2.int)
@@ -48,11 +46,13 @@ class TypedFilterOptimizationSuite extends PlanTest {
 
     val optimized = Optimize.execute(query)
 
-    val expected = input.deserialize[(Int, Int)]
+    val expected = input
+      .deserialize[(Int, Int)]
       .where(callFunction(f1, BooleanType, 'obj))
       .select('obj.as("obj"))
       .where(callFunction(f2, BooleanType, 'obj))
-      .serialize[(Int, Int)].analyze
+      .serialize[(Int, Int)]
+      .analyze
 
     comparePlans(optimized, expected)
   }

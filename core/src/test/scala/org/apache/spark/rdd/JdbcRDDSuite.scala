@@ -56,7 +56,7 @@ class JdbcRDDSuite extends SparkFunSuite with BeforeAndAfter with LocalSparkCont
         create.close()
         val insert = conn.prepareStatement("INSERT INTO BIGINT_TEST VALUES(?,?)")
         (1 to 100).foreach { i =>
-          insert.setLong(1, 100000000000000000L +  4000000000000000L * i)
+          insert.setLong(1, 100000000000000000L + 4000000000000000L * i)
           insert.setInt(2, i)
           insert.executeUpdate
         }
@@ -65,7 +65,6 @@ class JdbcRDDSuite extends SparkFunSuite with BeforeAndAfter with LocalSparkCont
         case e: SQLException if e.getSQLState == "X0Y32" =>
         // table exists
       }
-
     } finally {
       conn.close()
     }
@@ -73,12 +72,11 @@ class JdbcRDDSuite extends SparkFunSuite with BeforeAndAfter with LocalSparkCont
 
   test("basic functionality") {
     sc = new SparkContext("local", "test")
-    val rdd = new JdbcRDD(
-      sc,
-      () => { DriverManager.getConnection("jdbc:derby:target/JdbcRDDSuiteDb") },
-      "SELECT DATA FROM FOO WHERE ? <= ID AND ID <= ?",
-      1, 100, 3,
-      (r: ResultSet) => { r.getInt(1) } ).cache()
+    val rdd = new JdbcRDD(sc, () => {
+      DriverManager.getConnection("jdbc:derby:target/JdbcRDDSuiteDb")
+    }, "SELECT DATA FROM FOO WHERE ? <= ID AND ID <= ?", 1, 100, 3, (r: ResultSet) => {
+      r.getInt(1)
+    }).cache()
 
     assert(rdd.count === 100)
     assert(rdd.reduce(_ + _) === 10100)
@@ -86,12 +84,14 @@ class JdbcRDDSuite extends SparkFunSuite with BeforeAndAfter with LocalSparkCont
 
   test("large id overflow") {
     sc = new SparkContext("local", "test")
-    val rdd = new JdbcRDD(
-      sc,
-      () => { DriverManager.getConnection("jdbc:derby:target/JdbcRDDSuiteDb") },
-      "SELECT DATA FROM BIGINT_TEST WHERE ? <= ID AND ID <= ?",
-      1131544775L, 567279358897692673L, 20,
-      (r: ResultSet) => { r.getInt(1) } ).cache()
+    val rdd =
+      new JdbcRDD(sc,
+                  () => { DriverManager.getConnection("jdbc:derby:target/JdbcRDDSuiteDb") },
+                  "SELECT DATA FROM BIGINT_TEST WHERE ? <= ID AND ID <= ?",
+                  1131544775L,
+                  567279358897692673L,
+                  20,
+                  (r: ResultSet) => { r.getInt(1) }).cache()
     assert(rdd.count === 100)
     assert(rdd.reduce(_ + _) === 5050)
   }
@@ -101,8 +101,8 @@ class JdbcRDDSuite extends SparkFunSuite with BeforeAndAfter with LocalSparkCont
       DriverManager.getConnection("jdbc:derby:target/JdbcRDDSuiteDb;shutdown=true")
     } catch {
       case se: SQLException if se.getSQLState == "08006" =>
-        // Normal single database shutdown
-        // https://db.apache.org/derby/docs/10.2/ref/rrefexcept71493.html
+      // Normal single database shutdown
+      // https://db.apache.org/derby/docs/10.2/ref/rrefexcept71493.html
     }
   }
 }

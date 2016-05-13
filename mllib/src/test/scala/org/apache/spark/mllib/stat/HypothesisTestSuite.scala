@@ -19,8 +19,7 @@ package org.apache.spark.mllib.stat
 
 import java.util.Random
 
-import org.apache.commons.math3.distribution.{ExponentialDistribution,
-  NormalDistribution, UniformRealDistribution}
+import org.apache.commons.math3.distribution.{ExponentialDistribution, NormalDistribution, UniformRealDistribution}
 import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest
 
 import org.apache.spark.{SparkException, SparkFunSuite}
@@ -112,13 +111,12 @@ class HypothesisTestSuite extends SparkFunSuite with MLlibTestSparkContext {
     // labels: 1.0 (2 / 6), 0.0 (4 / 6)
     // feature1: 0.5 (1 / 6), 1.5 (2 / 6), 3.5 (3 / 6)
     // feature2: 10.0 (1 / 6), 20.0 (1 / 6), 30.0 (2 / 6), 40.0 (2 / 6)
-    val data = Seq(
-      LabeledPoint(0.0, Vectors.dense(0.5, 10.0)),
-      LabeledPoint(0.0, Vectors.dense(1.5, 20.0)),
-      LabeledPoint(1.0, Vectors.dense(1.5, 30.0)),
-      LabeledPoint(0.0, Vectors.dense(3.5, 30.0)),
-      LabeledPoint(0.0, Vectors.dense(3.5, 40.0)),
-      LabeledPoint(1.0, Vectors.dense(3.5, 40.0)))
+    val data = Seq(LabeledPoint(0.0, Vectors.dense(0.5, 10.0)),
+                   LabeledPoint(0.0, Vectors.dense(1.5, 20.0)),
+                   LabeledPoint(1.0, Vectors.dense(1.5, 30.0)),
+                   LabeledPoint(0.0, Vectors.dense(3.5, 30.0)),
+                   LabeledPoint(0.0, Vectors.dense(3.5, 40.0)),
+                   LabeledPoint(1.0, Vectors.dense(3.5, 40.0)))
     for (numParts <- List(2, 4, 6, 8)) {
       val chi = Statistics.chiSqTest(sc.parallelize(data, numParts))
       val feature1 = chi(0)
@@ -137,9 +135,8 @@ class HypothesisTestSuite extends SparkFunSuite with MLlibTestSparkContext {
 
     // Test that the right number of results is returned
     val numCols = 1001
-    val sparseData = Array(
-      new LabeledPoint(0.0, Vectors.sparse(numCols, Seq((100, 2.0)))),
-      new LabeledPoint(0.1, Vectors.sparse(numCols, Seq((200, 1.0)))))
+    val sparseData = Array(new LabeledPoint(0.0, Vectors.sparse(numCols, Seq((100, 2.0)))),
+                           new LabeledPoint(0.1, Vectors.sparse(numCols, Seq((200, 1.0)))))
     val chi = Statistics.chiSqTest(sc.parallelize(sparseData))
     assert(chi.size === numCols)
     assert(chi(1000) != null) // SPARK-3087
@@ -207,8 +204,8 @@ class HypothesisTestSuite extends SparkFunSuite with MLlibTestSparkContext {
     // Comparing an exponential sample with mean X to an exponential distribution with mean Y
     // Where X != Y
     val result3 = Statistics.kolmogorovSmirnovTest(sampledExp, expCDF)
-    val referenceStat3 = ksTest.kolmogorovSmirnovStatistic(new ExponentialDistribution(0.2),
-      sampledExp.collect())
+    val referenceStat3 =
+      ksTest.kolmogorovSmirnovStatistic(new ExponentialDistribution(0.2), sampledExp.collect())
     val referencePVal3 = 1 - ksTest.cdf(referenceStat3, sampledNorm.count().toInt)
     // verify vs apache math commons ks test
     assert(result3.statistic ~== referenceStat3 relTol 1e-4)
@@ -237,18 +234,33 @@ class HypothesisTestSuite extends SparkFunSuite with MLlibTestSparkContext {
       data:  v
       D = 0.18874, p-value = 0.4223
       alternative hypothesis: two-sided
-    */
+     */
 
     val rKSStat = 0.18874
     val rKSPVal = 0.4223
     val rData = sc.parallelize(
-      Array(
-        1.1626852897838, -0.585924465893051, 1.78546500331661, -1.33259371048501,
-        -0.446566766553219, 0.569606122374976, -2.88971761441412, -0.869018343326555,
-        -0.461702683149641, -0.555540910137444, -0.0201353678515895, -0.150382224136063,
-        -0.628126755843964, 1.32322085193283, -1.52135057001199, -0.437427868856691,
-        0.970577579543399, 0.0282226444247749, -0.0857821886527593, 0.389214404984942
-      )
+        Array(
+            1.1626852897838,
+            -0.585924465893051,
+            1.78546500331661,
+            -1.33259371048501,
+            -0.446566766553219,
+            0.569606122374976,
+            -2.88971761441412,
+            -0.869018343326555,
+            -0.461702683149641,
+            -0.555540910137444,
+            -0.0201353678515895,
+            -0.150382224136063,
+            -0.628126755843964,
+            1.32322085193283,
+            -1.52135057001199,
+            -0.437427868856691,
+            0.970577579543399,
+            0.0282226444247749,
+            -0.0857821886527593,
+            0.389214404984942
+        )
     )
     val rCompResult = Statistics.kolmogorovSmirnovTest(rData, "norm", 0, 1)
     assert(rCompResult.statistic ~== rKSStat relTol 1e-4)

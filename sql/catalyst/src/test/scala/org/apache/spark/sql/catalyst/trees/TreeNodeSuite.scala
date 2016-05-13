@@ -34,7 +34,7 @@ case class Dummy(optKey: Option[Expression]) extends Expression with CodegenFall
 }
 
 case class ComplexPlan(exprs: Seq[Seq[Expression]])
-  extends org.apache.spark.sql.catalyst.plans.logical.LeafNode {
+    extends org.apache.spark.sql.catalyst.plans.logical.LeafNode {
   override def output: Seq[Attribute] = Nil
 }
 
@@ -60,7 +60,7 @@ class TreeNodeSuite extends SparkFunSuite {
 
   test("no change") {
     val before = Add(Literal(1), Add(Literal(2), Add(Literal(3), Literal(4))))
-    val after = before transform { case Literal(5, _) => Literal(1)}
+    val after = before transform { case Literal(5, _) => Literal(1) }
 
     assert(before === after)
     // Ensure that the objects after are the same objects before the transformation.
@@ -71,7 +71,7 @@ class TreeNodeSuite extends SparkFunSuite {
 
   test("collect") {
     val tree = Add(Literal(1), Add(Literal(2), Add(Literal(3), Literal(4))))
-    val literals = tree collect {case l: Literal => l}
+    val literals = tree collect { case l: Literal => l }
 
     assert(literals.size === 4)
     (1 to 4).foreach(i => assert(literals contains Literal(i)))
@@ -121,9 +121,10 @@ class TreeNodeSuite extends SparkFunSuite {
     val add = Add(Literal(1), Literal(1))
     CurrentOrigin.reset()
 
-    val transformed = add transform {
-      case Literal(1, _) => Literal(2)
-    }
+    val transformed =
+      add transform {
+        case Literal(1, _) => Literal(2)
+      }
 
     assert(transformed.origin.line.isDefined)
     assert(transformed.origin.startPosition.isDefined)
@@ -193,8 +194,7 @@ class TreeNodeSuite extends SparkFunSuite {
       val actual = expression.collectFirst {
         case add: Add => add
       }
-      val expected =
-        Some(Add(Literal(1), Multiply(Literal(2), Subtract(Literal(3), Literal(4)))))
+      val expected = Some(Add(Literal(1), Multiply(Literal(2), Subtract(Literal(3), Literal(4)))))
       assert(expected === actual)
     }
 

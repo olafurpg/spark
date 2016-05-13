@@ -126,10 +126,11 @@ class SubmitRestProtocolSuite extends SparkFunSuite {
     assert(newMessage.sparkProperties("spark.app.name") === "SparkPie")
     assert(newMessage.sparkProperties("spark.jars") === "mayonnaise.jar,ketchup.jar")
     assert(newMessage.sparkProperties("spark.files") === "fireball.png")
-    assert(newMessage.sparkProperties("spark.driver.memory") === s"${Utils.DEFAULT_DRIVER_MEM_MB}m")
+    assert(
+        newMessage.sparkProperties("spark.driver.memory") === s"${Utils.DEFAULT_DRIVER_MEM_MB}m")
     assert(newMessage.sparkProperties("spark.driver.cores") === "180")
     assert(newMessage.sparkProperties("spark.driver.extraJavaOptions") ===
-      " -Dslices=5 -Dcolor=mostly_red")
+        " -Dslices=5 -Dcolor=mostly_red")
     assert(newMessage.sparkProperties("spark.driver.extraClassPath") === "food-coloring.jar")
     assert(newMessage.sparkProperties("spark.driver.extraLibraryPath") === "pickle.jar")
     assert(newMessage.sparkProperties("spark.driver.supervise") === "false")
@@ -209,8 +210,7 @@ class SubmitRestProtocolSuite extends SparkFunSuite {
     assert(newMessage.message === "Field not found in submit request: X")
   }
 
-  private val dummyRequestJson =
-    """
+  private val dummyRequestJson = """
       |{
       |  "action" : "DummyRequest",
       |  "active" : true,
@@ -220,8 +220,7 @@ class SubmitRestProtocolSuite extends SparkFunSuite {
       |}
     """.stripMargin
 
-  private val dummyResponseJson =
-    """
+  private val dummyResponseJson = """
       |{
       |  "action" : "DummyResponse",
       |  "serverSparkVersion" : "3.3.4",
@@ -229,8 +228,7 @@ class SubmitRestProtocolSuite extends SparkFunSuite {
       |}
     """.stripMargin
 
-  private val submitDriverRequestJson =
-    s"""
+  private val submitDriverRequestJson = s"""
       |{
       |  "action" : "CreateSubmissionRequest",
       |  "appArgs" : [ "two slices", "a hint of cinnamon" ],
@@ -256,8 +254,7 @@ class SubmitRestProtocolSuite extends SparkFunSuite {
       |}
     """.stripMargin
 
-  private val submitDriverResponseJson =
-    """
+  private val submitDriverResponseJson = """
       |{
       |  "action" : "CreateSubmissionResponse",
       |  "serverSparkVersion" : "1.2.3",
@@ -266,8 +263,7 @@ class SubmitRestProtocolSuite extends SparkFunSuite {
       |}
     """.stripMargin
 
-  private val killDriverResponseJson =
-    """
+  private val killDriverResponseJson = """
       |{
       |  "action" : "KillSubmissionResponse",
       |  "serverSparkVersion" : "1.2.3",
@@ -276,8 +272,7 @@ class SubmitRestProtocolSuite extends SparkFunSuite {
       |}
     """.stripMargin
 
-  private val driverStatusResponseJson =
-    """
+  private val driverStatusResponseJson = """
       |{
       |  "action" : "SubmissionStatusResponse",
       |  "driverState" : "RUNNING",
@@ -289,8 +284,7 @@ class SubmitRestProtocolSuite extends SparkFunSuite {
       |}
     """.stripMargin
 
-  private val errorJson =
-    """
+  private val errorJson = """
       |{
       |  "action" : "ErrorResponse",
       |  "message" : "Field not found in submit request: X",

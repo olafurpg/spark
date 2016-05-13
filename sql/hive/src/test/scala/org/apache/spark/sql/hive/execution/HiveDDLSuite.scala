@@ -30,7 +30,10 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.SQLTestUtils
 
 class HiveDDLSuite
-  extends QueryTest with SQLTestUtils with TestHiveSingleton with BeforeAndAfterEach {
+    extends QueryTest
+    with SQLTestUtils
+    with TestHiveSingleton
+    with BeforeAndAfterEach {
   import hiveContext.implicits._
 
   override def afterEach(): Unit = {
@@ -43,8 +46,7 @@ class HiveDDLSuite
   }
   // check if the directory for recording the data of the table exists.
   private def tableDirectoryExists(
-      tableIdentifier: TableIdentifier,
-      dbPath: Option[String] = None): Boolean = {
+      tableIdentifier: TableIdentifier, dbPath: Option[String] = None): Boolean = {
     val expectedTablePath =
       if (dbPath.isEmpty) {
         hiveContext.sessionState.catalog.hiveDefaultTableFilePath(tableIdentifier)
@@ -77,17 +79,15 @@ class HiveDDLSuite
       val tabName = "tab1"
       withTable(tabName) {
         assert(tmpDir.listFiles.isEmpty)
-        sql(
-          s"""
+        sql(s"""
              |create table $tabName
              |stored as parquet
              |location '$tmpDir'
              |as select 1, '3'
           """.stripMargin)
 
-        val hiveTable =
-          hiveContext.sessionState.catalog
-            .getTableMetadata(TableIdentifier(tabName, Some("default")))
+        val hiveTable = hiveContext.sessionState.catalog
+          .getTableMetadata(TableIdentifier(tabName, Some("default")))
         assert(hiveTable.tableType == CatalogTableType.EXTERNAL)
 
         assert(tmpDir.listFiles.nonEmpty)
@@ -104,7 +104,8 @@ class HiveDDLSuite
         assert(tmpDir.listFiles.isEmpty)
 
         withSQLConf(SQLConf.PARQUET_WRITE_LEGACY_FORMAT.key -> "true") {
-          Seq(1 -> "a").toDF("i", "j")
+          Seq(1 -> "a")
+            .toDF("i", "j")
             .write
             .mode(SaveMode.Overwrite)
             .format("parquet")
@@ -112,9 +113,8 @@ class HiveDDLSuite
             .saveAsTable(tabName)
         }
 
-        val hiveTable =
-          hiveContext.sessionState.catalog
-            .getTableMetadata(TableIdentifier(tabName, Some("default")))
+        val hiveTable = hiveContext.sessionState.catalog
+          .getTableMetadata(TableIdentifier(tabName, Some("default")))
         // This data source table is external table
         assert(hiveTable.tableType == CatalogTableType.EXTERNAL)
 
@@ -154,14 +154,13 @@ class HiveDDLSuite
       val partitionPath_part4 = new File(basePath + "/ds=2008-04-09/hr=12")
       val dirSet =
         tmpDir :: partitionPath_1stCol_part1 :: partitionPath_1stCol_part2 ::
-          partitionPath_part1 :: partitionPath_part2 :: partitionPath_part3 ::
-          partitionPath_part4 :: Nil
+        partitionPath_part1 :: partitionPath_part2 :: partitionPath_part3 ::
+        partitionPath_part4 :: Nil
 
       val externalTab = "extTable_with_partitions"
       withTable(externalTab) {
         assert(tmpDir.listFiles.isEmpty)
-        sql(
-          s"""
+        sql(s"""
              |CREATE EXTERNAL TABLE $externalTab (key INT, value STRING)
              |PARTITIONED BY (ds STRING, hr STRING)
              |LOCATION '$basePath'
@@ -171,8 +170,7 @@ class HiveDDLSuite
         assert(dirSet.forall(dir => dir.listFiles == null || dir.listFiles.isEmpty))
 
         for (ds <- Seq("2008-04-08", "2008-04-09"); hr <- Seq("11", "12")) {
-          sql(
-            s"""
+          sql(s"""
                |INSERT OVERWRITE TABLE $externalTab
                |partition (ds='$ds',hr='$hr')
                |SELECT 1, 'a'
@@ -188,22 +186,21 @@ class HiveDDLSuite
           sql(s"ALTER TABLE $externalTab DROP PARTITION (ds='2008-04-09', unknownCol='12')")
         }
         assert(message.getMessage.contains(
-          "Partition spec is invalid. The spec (ds, unknowncol) must be contained within the " +
-            "partition spec (ds, hr) defined in table '`default`.`exttable_with_partitions`'"))
+                "Partition spec is invalid. The spec (ds, unknowncol) must be contained within the " +
+                "partition spec (ds, hr) defined in table '`default`.`exttable_with_partitions`'"))
 
-        sql(
-          s"""
+        sql(s"""
              |ALTER TABLE $externalTab DROP PARTITION (ds='2008-04-08'),
              |PARTITION (hr='12')
           """.stripMargin)
         assert(catalog.listPartitions(TableIdentifier(externalTab)).map(_.spec).toSet ==
-          Set(Map("ds" -> "2008-04-09", "hr" -> "11")))
+            Set(Map("ds" -> "2008-04-09", "hr" -> "11")))
         // drop partition will not delete the data of external table
         assert(dirSet.forall(dir => dir.listFiles.nonEmpty))
 
         sql(s"ALTER TABLE $externalTab ADD PARTITION (ds='2008-04-08', hr='12')")
         assert(catalog.listPartitions(TableIdentifier(externalTab)).map(_.spec).toSet ==
-          Set(Map("ds" -> "2008-04-08", "hr" -> "12"), Map("ds" -> "2008-04-09", "hr" -> "11")))
+            Set(Map("ds" -> "2008-04-08", "hr" -> "12"), Map("ds" -> "2008-04-09", "hr" -> "11")))
         // add partition will not delete the data
         assert(dirSet.forall(dir => dir.listFiles.nonEmpty))
 
@@ -263,31 +260,40 @@ class HiveDDLSuite
         val catalog = hiveContext.sessionState.catalog
         sql(s"CREATE VIEW $viewName AS SELECT * FROM $tabName")
 
-        assert(catalog.getTableMetadata(TableIdentifier(viewName))
-          .properties.filter(_._1 != "transient_lastDdlTime") == Map())
+        assert(catalog
+              .getTableMetadata(TableIdentifier(viewName))
+              .properties
+              .filter(_._1 != "transient_lastDdlTime") == Map())
         sql(s"ALTER VIEW $viewName SET TBLPROPERTIES ('p' = 'an')")
-        assert(catalog.getTableMetadata(TableIdentifier(viewName))
-          .properties.filter(_._1 != "transient_lastDdlTime") == Map("p" -> "an"))
+        assert(catalog
+              .getTableMetadata(TableIdentifier(viewName))
+              .properties
+              .filter(_._1 != "transient_lastDdlTime") == Map("p" -> "an"))
 
         // no exception or message will be issued if we set it again
         sql(s"ALTER VIEW $viewName SET TBLPROPERTIES ('p' = 'an')")
-        assert(catalog.getTableMetadata(TableIdentifier(viewName))
-          .properties.filter(_._1 != "transient_lastDdlTime") == Map("p" -> "an"))
+        assert(catalog
+              .getTableMetadata(TableIdentifier(viewName))
+              .properties
+              .filter(_._1 != "transient_lastDdlTime") == Map("p" -> "an"))
 
         // the value will be updated if we set the same key to a different value
         sql(s"ALTER VIEW $viewName SET TBLPROPERTIES ('p' = 'b')")
-        assert(catalog.getTableMetadata(TableIdentifier(viewName))
-          .properties.filter(_._1 != "transient_lastDdlTime") == Map("p" -> "b"))
+        assert(catalog
+              .getTableMetadata(TableIdentifier(viewName))
+              .properties
+              .filter(_._1 != "transient_lastDdlTime") == Map("p" -> "b"))
 
         sql(s"ALTER VIEW $viewName UNSET TBLPROPERTIES ('p')")
-        assert(catalog.getTableMetadata(TableIdentifier(viewName))
-          .properties.filter(_._1 != "transient_lastDdlTime") == Map())
+        assert(catalog
+              .getTableMetadata(TableIdentifier(viewName))
+              .properties
+              .filter(_._1 != "transient_lastDdlTime") == Map())
 
         val message = intercept[AnalysisException] {
           sql(s"ALTER VIEW $viewName UNSET TBLPROPERTIES ('p')")
         }.getMessage
-        assert(message.contains(
-          "attempted to unset non-existent property 'p' in table '`view1`'"))
+        assert(message.contains("attempted to unset non-existent property 'p' in table '`view1`'"))
       }
     }
   }
@@ -309,37 +315,37 @@ class HiveDDLSuite
           sql(s"ALTER VIEW $tabName RENAME TO $newViewName")
         }.getMessage
         assert(message.contains(
-          "Cannot alter a table with ALTER VIEW. Please use ALTER TABLE instead"))
+                "Cannot alter a table with ALTER VIEW. Please use ALTER TABLE instead"))
 
         message = intercept[AnalysisException] {
           sql(s"ALTER VIEW $tabName SET TBLPROPERTIES ('p' = 'an')")
         }.getMessage
         assert(message.contains(
-          "Cannot alter a table with ALTER VIEW. Please use ALTER TABLE instead"))
+                "Cannot alter a table with ALTER VIEW. Please use ALTER TABLE instead"))
 
         message = intercept[AnalysisException] {
           sql(s"ALTER VIEW $tabName UNSET TBLPROPERTIES ('p')")
         }.getMessage
         assert(message.contains(
-          "Cannot alter a table with ALTER VIEW. Please use ALTER TABLE instead"))
+                "Cannot alter a table with ALTER VIEW. Please use ALTER TABLE instead"))
 
         message = intercept[AnalysisException] {
           sql(s"ALTER TABLE $oldViewName RENAME TO $newViewName")
         }.getMessage
         assert(message.contains(
-          "Cannot alter a view with ALTER TABLE. Please use ALTER VIEW instead"))
+                "Cannot alter a view with ALTER TABLE. Please use ALTER VIEW instead"))
 
         message = intercept[AnalysisException] {
           sql(s"ALTER TABLE $oldViewName SET TBLPROPERTIES ('p' = 'an')")
         }.getMessage
         assert(message.contains(
-          "Cannot alter a view with ALTER TABLE. Please use ALTER VIEW instead"))
+                "Cannot alter a view with ALTER TABLE. Please use ALTER VIEW instead"))
 
         message = intercept[AnalysisException] {
           sql(s"ALTER TABLE $oldViewName UNSET TBLPROPERTIES ('p')")
         }.getMessage
         assert(message.contains(
-          "Cannot alter a view with ALTER TABLE. Please use ALTER VIEW instead"))
+                "Cannot alter a view with ALTER TABLE. Please use ALTER VIEW instead"))
 
         assert(catalog.tableExists(TableIdentifier(tabName)))
         assert(catalog.tableExists(TableIdentifier(oldViewName)))
@@ -365,7 +371,8 @@ class HiveDDLSuite
         val message = intercept[AnalysisException] {
           sql("DROP TABLE view1")
         }.getMessage
-        assert(message.contains("Cannot drop a view with DROP TABLE. Please use DROP VIEW instead"))
+        assert(
+            message.contains("Cannot drop a view with DROP TABLE. Please use DROP VIEW instead"))
       }
     }
   }
@@ -377,13 +384,13 @@ class HiveDDLSuite
 
       assert(sql(s"DESC $tabName").collect().length == 1)
 
-      assert(
-        sql(s"DESC FORMATTED $tabName").collect()
-          .exists(_.getString(0) == "# Storage Information"))
+      assert(sql(s"DESC FORMATTED $tabName")
+            .collect()
+            .exists(_.getString(0) == "# Storage Information"))
 
-      assert(
-        sql(s"DESC EXTENDED $tabName").collect()
-          .exists(_.getString(0) == "# Detailed Table Information"))
+      assert(sql(s"DESC EXTENDED $tabName")
+            .collect()
+            .exists(_.getString(0) == "# Detailed Table Information"))
     }
   }
 
@@ -401,11 +408,12 @@ class HiveDDLSuite
       sql(s"CREATE DATABASE $dbName Location '$tmpDir'")
       val db1 = catalog.getDatabaseMetadata(dbName)
       val dbPath = "file:" + tmpDir
-      assert(db1 == CatalogDatabase(
-        dbName,
-        "",
-        if (dbPath.endsWith(File.separator)) dbPath.dropRight(1) else dbPath,
-        Map.empty))
+      assert(
+          db1 == CatalogDatabase(dbName,
+                                 "",
+                                 if (dbPath.endsWith(File.separator))
+                                   dbPath.dropRight(1) else dbPath,
+                                 Map.empty))
       sql("USE db1")
 
       sql(s"CREATE TABLE $tabName as SELECT 1")
@@ -421,8 +429,8 @@ class HiveDDLSuite
   }
 
   test("create/drop database - location without pre-created directory") {
-     withTempPath { tmpDir =>
-       createDatabaseWithLocation(tmpDir, dirExists = false)
+    withTempPath { tmpDir =>
+      createDatabaseWithLocation(tmpDir, dirExists = false)
     }
   }
 
@@ -450,11 +458,7 @@ class HiveDDLSuite
         val catalog = spark.sessionState.catalog
         val expectedDBLocation = "file:" + appendTrailingSlash(dbPath.toString) + s"$dbName.db"
         val db1 = catalog.getDatabaseMetadata(dbName)
-        assert(db1 == CatalogDatabase(
-          dbName,
-          "",
-          expectedDBLocation,
-          Map.empty))
+        assert(db1 == CatalogDatabase(dbName, "", expectedDBLocation, Map.empty))
         // the database directory was created
         assert(fs.exists(dbPath) && fs.isDirectory(dbPath))
         sql(s"USE $dbName")
@@ -527,13 +531,13 @@ class HiveDDLSuite
 
       assert(sql(s"DESC $tabName").collect().length == 1)
 
-      assert(
-        sql(s"DESC FORMATTED $tabName").collect()
-          .exists(_.getString(0) == "# Storage Information"))
+      assert(sql(s"DESC FORMATTED $tabName")
+            .collect()
+            .exists(_.getString(0) == "# Storage Information"))
 
-      assert(
-        sql(s"DESC EXTENDED $tabName").collect()
-          .exists(_.getString(0) == "# Detailed Table Information"))
+      assert(sql(s"DESC EXTENDED $tabName")
+            .collect()
+            .exists(_.getString(0) == "# Detailed Table Information"))
     }
   }
 
@@ -554,40 +558,47 @@ class HiveDDLSuite
   test("desc table for data source table - partitioned bucketed table") {
     withTable("t1") {
       spark
-        .range(1).select('id as 'a, 'id as 'b, 'id as 'c, 'id as 'd).write
-        .bucketBy(2, "b").sortBy("c").partitionBy("d")
+        .range(1)
+        .select('id as 'a, 'id as 'b, 'id as 'c, 'id as 'd)
+        .write
+        .bucketBy(2, "b")
+        .sortBy("c")
+        .partitionBy("d")
         .saveAsTable("t1")
 
       val formattedDesc = sql("DESC FORMATTED t1").collect()
 
-      assert(formattedDesc.containsSlice(
-        Seq(
-          Row("a", "bigint", ""),
-          Row("b", "bigint", ""),
-          Row("c", "bigint", ""),
-          Row("d", "bigint", ""),
-          Row("# Partition Information", "", ""),
-          Row("# col_name", "", ""),
-          Row("d", "", ""),
-          Row("", "", ""),
-          Row("# Detailed Table Information", "", ""),
-          Row("Database:", "default", "")
-        )
-      ))
+      assert(
+          formattedDesc.containsSlice(
+              Seq(
+                  Row("a", "bigint", ""),
+                  Row("b", "bigint", ""),
+                  Row("c", "bigint", ""),
+                  Row("d", "bigint", ""),
+                  Row("# Partition Information", "", ""),
+                  Row("# col_name", "", ""),
+                  Row("d", "", ""),
+                  Row("", "", ""),
+                  Row("# Detailed Table Information", "", ""),
+                  Row("Database:", "default", "")
+              )
+          ))
 
-      assert(formattedDesc.containsSlice(
-        Seq(
-          Row("Table Type:", "MANAGED", "")
-        )
-      ))
+      assert(
+          formattedDesc.containsSlice(
+              Seq(
+                  Row("Table Type:", "MANAGED", "")
+              )
+          ))
 
-      assert(formattedDesc.containsSlice(
-        Seq(
-          Row("Num Buckets:", "2", ""),
-          Row("Bucket Columns:", "[b]", ""),
-          Row("Sort Columns:", "[c]", "")
-        )
-      ))
+      assert(
+          formattedDesc.containsSlice(
+              Seq(
+                  Row("Num Buckets:", "2", ""),
+                  Row("Bucket Columns:", "[b]", ""),
+                  Row("Sort Columns:", "[c]", "")
+              )
+          ))
     }
   }
 }

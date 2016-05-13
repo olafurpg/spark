@@ -30,14 +30,14 @@ class BinaryComparisonSimplificationSuite extends PlanTest with PredicateHelper 
 
   object Optimize extends RuleExecutor[LogicalPlan] {
     val batches =
-      Batch("AnalysisNodes", Once,
-        EliminateSubqueryAliases) ::
-      Batch("Constant Folding", FixedPoint(50),
-        NullPropagation,
-        ConstantFolding,
-        BooleanSimplification,
-        BinaryComparisonSimplification,
-        PruneFilters) :: Nil
+      Batch("AnalysisNodes", Once, EliminateSubqueryAliases) ::
+      Batch("Constant Folding",
+            FixedPoint(50),
+            NullPropagation,
+            ConstantFolding,
+            BooleanSimplification,
+            BinaryComparisonSimplification,
+            PruneFilters) :: Nil
   }
 
   val nullableRelation = LocalRelation('a.int.withNullability(true))
@@ -53,8 +53,7 @@ class BinaryComparisonSimplificationSuite extends PlanTest with PredicateHelper 
   }
 
   test("Preserve non-deterministic exprs") {
-    val plan = nonNullableRelation
-      .where(Rand(0) === Rand(0) && Rand(1) <=> Rand(1)).analyze
+    val plan = nonNullableRelation.where(Rand(0) === Rand(0) && Rand(1) <=> Rand(1)).analyze
     val actual = Optimize.execute(plan)
     val correctAnswer = plan
     comparePlans(actual, correctAnswer)
@@ -69,24 +68,24 @@ class BinaryComparisonSimplificationSuite extends PlanTest with PredicateHelper 
 
   test("Non-Nullable Simplification Primitive") {
     val plan = nonNullableRelation
-      .select('a === 'a, 'a <=> 'a, 'a <= 'a, 'a >= 'a, 'a < 'a, 'a > 'a).analyze
+      .select('a === 'a, 'a <=> 'a, 'a <= 'a, 'a >= 'a, 'a < 'a, 'a > 'a)
+      .analyze
     val actual = Optimize.execute(plan)
     val correctAnswer = nonNullableRelation
-      .select(
-        Alias(TrueLiteral, "(a = a)")(),
-        Alias(TrueLiteral, "(a <=> a)")(),
-        Alias(TrueLiteral, "(a <= a)")(),
-        Alias(TrueLiteral, "(a >= a)")(),
-        Alias(FalseLiteral, "(a < a)")(),
-        Alias(FalseLiteral, "(a > a)")())
+      .select(Alias(TrueLiteral, "(a = a)")(),
+              Alias(TrueLiteral, "(a <=> a)")(),
+              Alias(TrueLiteral, "(a <= a)")(),
+              Alias(TrueLiteral, "(a >= a)")(),
+              Alias(FalseLiteral, "(a < a)")(),
+              Alias(FalseLiteral, "(a > a)")())
       .analyze
     comparePlans(actual, correctAnswer)
   }
 
   test("Expression Normalization") {
-    val plan = nonNullableRelation.where(
-      'a * Literal(100) + Pi() === Pi() + Literal(100) * 'a &&
-      DateAdd(CurrentDate(), 'a + Literal(2)) <= DateAdd(CurrentDate(), Literal(2) + 'a))
+    val plan = nonNullableRelation
+      .where('a * Literal(100) + Pi() === Pi() + Literal(100) * 'a &&
+          DateAdd(CurrentDate(), 'a + Literal(2)) <= DateAdd(CurrentDate(), Literal(2) + 'a))
       .analyze
     val actual = Optimize.execute(plan)
     val correctAnswer = nonNullableRelation.analyze

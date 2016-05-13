@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types.StructType
 
 object Row {
+
   /**
    * This method can be used to extract fields from a [[Row]] object in a pattern match. Example:
    * {{{
@@ -60,7 +61,6 @@ object Row {
   /** Returns an empty row. */
   val empty = apply()
 }
-
 
 /**
  * Represents one row of output from a relational operator.  Allows both generic access by ordinal,
@@ -120,6 +120,7 @@ object Row {
  * @group row
  */
 trait Row extends Serializable {
+
   /** Number of elements in the Row. */
   def size: Int = length
 
@@ -402,20 +403,21 @@ trait Row extends Serializable {
               return false
             }
           case f1: Float if java.lang.Float.isNaN(f1) =>
-            if (!o2.isInstanceOf[Float] || ! java.lang.Float.isNaN(o2.asInstanceOf[Float])) {
+            if (!o2.isInstanceOf[Float] || !java.lang.Float.isNaN(o2.asInstanceOf[Float])) {
               return false
             }
           case d1: Double if java.lang.Double.isNaN(d1) =>
-            if (!o2.isInstanceOf[Double] || ! java.lang.Double.isNaN(o2.asInstanceOf[Double])) {
+            if (!o2.isInstanceOf[Double] || !java.lang.Double.isNaN(o2.asInstanceOf[Double])) {
               return false
             }
           case d1: java.math.BigDecimal if o2.isInstanceOf[java.math.BigDecimal] =>
             if (d1.compareTo(o2.asInstanceOf[java.math.BigDecimal]) != 0) {
               return false
             }
-          case _ => if (o1 != o2) {
-            return false
-          }
+          case _ =>
+            if (o1 != o2) {
+              return false
+            }
         }
       }
       i += 1

@@ -54,12 +54,14 @@ class RandomDataGeneratorSuite extends SparkFunSuite {
   }
 
   def distributionChecks(gen: RandomDataGenerator[Double],
-      mean: Double = 0.0,
-      stddev: Double = 1.0,
-      epsilon: Double = 0.01) {
+                         mean: Double = 0.0,
+                         stddev: Double = 1.0,
+                         epsilon: Double = 0.01) {
     for (seed <- 0 until 5) {
       gen.setSeed(seed.toLong)
-      val sample = (0 until 100000).map { _ => gen.nextValue()}
+      val sample = (0 until 100000).map { _ =>
+        gen.nextValue()
+      }
       val stats = new StatCounter(sample)
       assert(math.abs(stats.mean - mean) < epsilon)
       assert(math.abs(stats.stdev - stddev) < epsilon)
@@ -144,8 +146,8 @@ class RandomDataGeneratorSuite extends SparkFunSuite {
         apiChecks(weibull)
 
         val expectedMean = math.exp(Gamma.logGamma(1 + (1 / alpha))) * beta
-        val expectedVariance = math.exp(
-          Gamma.logGamma(1 + (2 / alpha))) * beta * beta - expectedMean * expectedMean
+        val expectedVariance =
+          math.exp(Gamma.logGamma(1 + (2 / alpha))) * beta * beta - expectedMean * expectedMean
         val expectedStd = math.sqrt(expectedVariance)
         distributionChecks(weibull, expectedMean, expectedStd, 0.1)
     }

@@ -26,10 +26,7 @@ import org.apache.spark.util.AccumulatorContext
 /**
  * Base abstract class for all unit tests in Spark for handling common functionality.
  */
-private[spark] abstract class SparkFunSuite
-  extends FunSuite
-  with BeforeAndAfterAll
-  with Logging {
+private[spark] abstract class SparkFunSuite extends FunSuite with BeforeAndAfterAll with Logging {
 // scalastyle:on
 
   protected override def afterAll(): Unit = {
@@ -59,5 +56,4 @@ private[spark] abstract class SparkFunSuite
       logInfo(s"\n\n===== FINISHED $shortSuiteName: '$testName' =====\n")
     }
   }
-
 }

@@ -28,25 +28,23 @@ class DefaultSource extends RelationProvider with DataSourceRegister {
 
   /** Returns a new base relation with the given parameters. */
   override def createRelation(
-      sqlContext: SQLContext,
-      parameters: Map[String, String]): BaseRelation = {
+      sqlContext: SQLContext, parameters: Map[String, String]): BaseRelation = {
     val jdbcOptions = new JDBCOptions(parameters)
-    if (jdbcOptions.partitionColumn != null
-      && (jdbcOptions.lowerBound == null
-        || jdbcOptions.upperBound == null
-        || jdbcOptions.numPartitions == null)) {
+    if (jdbcOptions.partitionColumn != null &&
+        (jdbcOptions.lowerBound == null || jdbcOptions.upperBound == null ||
+            jdbcOptions.numPartitions == null)) {
       sys.error("Partitioning incompletely specified")
     }
 
-    val partitionInfo = if (jdbcOptions.partitionColumn == null) {
-      null
-    } else {
-      JDBCPartitioningInfo(
-        jdbcOptions.partitionColumn,
-        jdbcOptions.lowerBound.toLong,
-        jdbcOptions.upperBound.toLong,
-        jdbcOptions.numPartitions.toInt)
-    }
+    val partitionInfo =
+      if (jdbcOptions.partitionColumn == null) {
+        null
+      } else {
+        JDBCPartitioningInfo(jdbcOptions.partitionColumn,
+                             jdbcOptions.lowerBound.toLong,
+                             jdbcOptions.upperBound.toLong,
+                             jdbcOptions.numPartitions.toInt)
+      }
     val parts = JDBCRelation.columnPartition(partitionInfo)
     val properties = new Properties() // Additional properties that we will pass to getConnection
     parameters.foreach(kv => properties.setProperty(kv._1, kv._2))

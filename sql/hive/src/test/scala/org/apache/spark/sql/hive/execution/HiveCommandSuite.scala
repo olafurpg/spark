@@ -27,14 +27,12 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
 
   protected override def beforeAll(): Unit = {
     super.beforeAll()
-    sql(
-      """
+    sql("""
         |CREATE TABLE parquet_tab1 (c1 INT, c2 STRING)
         |USING org.apache.spark.sql.parquet.DefaultSource
       """.stripMargin)
 
-    sql(
-      """
+    sql("""
         |CREATE TABLE parquet_tab2 (c1 INT, c2 STRING)
         |STORED AS PARQUET
         |TBLPROPERTIES('prop1Key'="prop1Val", '`prop2Key`'="prop2Val")
@@ -45,18 +43,15 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
     sql("INSERT INTO parquet_tab4 PARTITION(year = 2015, month = 2) SELECT 2, 2")
     sql("INSERT INTO parquet_tab4 PARTITION(year = 2016, month = 2) SELECT 3, 3")
     sql("INSERT INTO parquet_tab4 PARTITION(year = 2016, month = 3) SELECT 3, 3")
-    sql(
-      """
+    sql("""
         |CREATE TABLE parquet_tab5 (price int, qty int)
         |PARTITIONED BY (year int, month int, hour int, minute int, sec int, extra int)
       """.stripMargin)
-    sql(
-      """
+    sql("""
         |INSERT INTO parquet_tab5
         |PARTITION(year = 2016, month = 3, hour = 10, minute = 10, sec = 10, extra = 1) SELECT 3, 3
       """.stripMargin)
-    sql(
-      """
+    sql("""
         |INSERT INTO parquet_tab5
         |PARTITION(year = 2016, month = 4, hour = 10, minute = 10, sec = 10, extra = 1) SELECT 3, 3
       """.stripMargin)
@@ -80,45 +75,37 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
     withTable("show1a", "show2b") {
       sql("CREATE TABLE show1a(c1 int)")
       sql("CREATE TABLE show2b(c2 int)")
-      checkAnswer(
-        sql("SHOW TABLES IN default 'show1*'"),
-        Row("show1a", false) :: Nil)
-      checkAnswer(
-        sql("SHOW TABLES IN default 'show1*|show2*'"),
-        Row("show1a", false) ::
-          Row("show2b", false) :: Nil)
-      checkAnswer(
-        sql("SHOW TABLES 'show1*|show2*'"),
-        Row("show1a", false) ::
-          Row("show2b", false) :: Nil)
-      assert(
-        sql("SHOW TABLES").count() >= 2)
-      assert(
-        sql("SHOW TABLES IN default").count() >= 2)
+      checkAnswer(sql("SHOW TABLES IN default 'show1*'"), Row("show1a", false) :: Nil)
+      checkAnswer(sql("SHOW TABLES IN default 'show1*|show2*'"),
+                  Row("show1a", false) ::
+                  Row("show2b", false) :: Nil)
+      checkAnswer(sql("SHOW TABLES 'show1*|show2*'"),
+                  Row("show1a", false) ::
+                  Row("show2b", false) :: Nil)
+      assert(sql("SHOW TABLES").count() >= 2)
+      assert(sql("SHOW TABLES IN default").count() >= 2)
     }
   }
 
   test("show tblproperties of data source tables - basic") {
     checkAnswer(
-      sql("SHOW TBLPROPERTIES parquet_tab1")
-        .filter(s"key = 'spark.sql.sources.provider'"),
-      Row("spark.sql.sources.provider", "org.apache.spark.sql.parquet.DefaultSource") :: Nil
+        sql("SHOW TBLPROPERTIES parquet_tab1").filter(s"key = 'spark.sql.sources.provider'"),
+        Row("spark.sql.sources.provider", "org.apache.spark.sql.parquet.DefaultSource") :: Nil
     )
 
     checkAnswer(
-      sql("SHOW TBLPROPERTIES parquet_tab1(spark.sql.sources.provider)"),
-      Row("org.apache.spark.sql.parquet.DefaultSource") :: Nil
+        sql("SHOW TBLPROPERTIES parquet_tab1(spark.sql.sources.provider)"),
+        Row("org.apache.spark.sql.parquet.DefaultSource") :: Nil
     )
 
     checkAnswer(
-      sql("SHOW TBLPROPERTIES parquet_tab1")
-        .filter(s"key = 'spark.sql.sources.schema.numParts'"),
-      Row("spark.sql.sources.schema.numParts", "1") :: Nil
+        sql("SHOW TBLPROPERTIES parquet_tab1").filter(
+            s"key = 'spark.sql.sources.schema.numParts'"),
+        Row("spark.sql.sources.schema.numParts", "1") :: Nil
     )
 
     checkAnswer(
-      sql("SHOW TBLPROPERTIES parquet_tab1('spark.sql.sources.schema.numParts')"),
-      Row("1"))
+        sql("SHOW TBLPROPERTIES parquet_tab1('spark.sql.sources.schema.numParts')"), Row("1"))
   }
 
   test("show tblproperties for datasource table - errors") {
@@ -129,8 +116,8 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
 
     // When key is not found, a row containing the error is returned.
     checkAnswer(
-      sql("SHOW TBLPROPERTIES parquet_tab1('invalid.prop.key')"),
-      Row("Table default.parquet_tab1 does not have property: invalid.prop.key") :: Nil
+        sql("SHOW TBLPROPERTIES parquet_tab1('invalid.prop.key')"),
+        Row("Table default.parquet_tab1 does not have property: invalid.prop.key") :: Nil
     )
   }
 
@@ -141,8 +128,7 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
 
   test("show tblproperties for spark temporary table - empty row") {
     withTempTable("parquet_temp") {
-      sql(
-        """
+      sql("""
           |CREATE TEMPORARY TABLE parquet_temp (c1 INT, c2 STRING)
           |USING org.apache.spark.sql.parquet.DefaultSource
         """.stripMargin)
@@ -154,8 +140,7 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
 
   test("LOAD DATA") {
     withTable("non_part_table", "part_table") {
-      sql(
-        """
+      sql("""
           |CREATE TABLE non_part_table (employeeID INT, employeeName STRING)
           |ROW FORMAT DELIMITED
           |FIELDS TERMINATED BY '|'
@@ -174,12 +159,10 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
       }
 
       sql(s"""LOAD DATA LOCAL INPATH "$testData" INTO TABLE non_part_table""")
-      checkAnswer(
-        sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
-        Row(16, "john") :: Nil)
+      checkAnswer(sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
+                  Row(16, "john") :: Nil)
 
-      sql(
-        """
+      sql("""
           |CREATE TABLE part_table (employeeID INT, employeeName STRING)
           |PARTITIONED BY (c STRING, d STRING)
           |ROW FORMAT DELIMITED
@@ -203,22 +186,19 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
       }
 
       sql(s"""LOAD DATA LOCAL INPATH "$testData" INTO TABLE part_table PARTITION(c="1", d="2")""")
-      checkAnswer(
-        sql("SELECT employeeID, employeeName FROM part_table WHERE c = '1' AND d = '2'"),
-        sql("SELECT * FROM non_part_table").collect())
+      checkAnswer(sql("SELECT employeeID, employeeName FROM part_table WHERE c = '1' AND d = '2'"),
+                  sql("SELECT * FROM non_part_table").collect())
 
       // Different order of partition columns.
       sql(s"""LOAD DATA LOCAL INPATH "$testData" INTO TABLE part_table PARTITION(d="1", c="2")""")
-      checkAnswer(
-        sql("SELECT employeeID, employeeName FROM part_table WHERE c = '2' AND d = '1'"),
-        sql("SELECT * FROM non_part_table").collect())
+      checkAnswer(sql("SELECT employeeID, employeeName FROM part_table WHERE c = '2' AND d = '1'"),
+                  sql("SELECT * FROM non_part_table").collect())
     }
   }
 
   test("LOAD DATA: input path") {
     withTable("non_part_table") {
-      sql(
-        """
+      sql("""
           |CREATE TABLE non_part_table (employeeID INT, employeeName STRING)
           |ROW FORMAT DELIMITED
           |FIELDS TERMINATED BY '|'
@@ -234,31 +214,27 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
 
       // Non-local inpath: without URI Scheme and Authority
       sql(s"""LOAD DATA INPATH "$testData" INTO TABLE non_part_table""")
-      checkAnswer(
-        sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
-        Row(16, "john") :: Nil)
+      checkAnswer(sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
+                  Row(16, "john") :: Nil)
 
       // Use URI as LOCAL inpath:
       // file:/path/to/data/files/employee.dat
       val uri = "file:" + testData
       sql(s"""LOAD DATA LOCAL INPATH "$uri" INTO TABLE non_part_table""")
 
-      checkAnswer(
-        sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
-        Row(16, "john") :: Row(16, "john") :: Nil)
+      checkAnswer(sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
+                  Row(16, "john") :: Row(16, "john") :: Nil)
 
       // Use URI as non-LOCAL inpath
       sql(s"""LOAD DATA INPATH "$uri" INTO TABLE non_part_table""")
 
-      checkAnswer(
-        sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
-        Row(16, "john") :: Row(16, "john") :: Row(16, "john") :: Nil)
+      checkAnswer(sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
+                  Row(16, "john") :: Row(16, "john") :: Row(16, "john") :: Nil)
 
       sql(s"""LOAD DATA INPATH "$uri" OVERWRITE INTO TABLE non_part_table""")
 
-      checkAnswer(
-        sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
-        Row(16, "john") :: Nil)
+      checkAnswer(sql("SELECT * FROM non_part_table WHERE employeeID = 16"),
+                  Row(16, "john") :: Nil)
 
       // Incorrect URI:
       // file://path/to/data/files/employee.dat
@@ -270,21 +246,15 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
   }
 
   test("show columns") {
-    checkAnswer(
-      sql("SHOW COLUMNS IN parquet_tab3"),
-      Row("col1") :: Row("col 2") :: Nil)
+    checkAnswer(sql("SHOW COLUMNS IN parquet_tab3"), Row("col1") :: Row("col 2") :: Nil)
+
+    checkAnswer(sql("SHOW COLUMNS IN default.parquet_tab3"), Row("col1") :: Row("col 2") :: Nil)
 
     checkAnswer(
-      sql("SHOW COLUMNS IN default.parquet_tab3"),
-      Row("col1") :: Row("col 2") :: Nil)
+        sql("SHOW COLUMNS IN parquet_tab3 FROM default"), Row("col1") :: Row("col 2") :: Nil)
 
-    checkAnswer(
-      sql("SHOW COLUMNS IN parquet_tab3 FROM default"),
-      Row("col1") :: Row("col 2") :: Nil)
-
-    checkAnswer(
-      sql("SHOW COLUMNS IN parquet_tab4 IN default"),
-      Row("price") :: Row("qty") :: Row("year") :: Row("month") :: Nil)
+    checkAnswer(sql("SHOW COLUMNS IN parquet_tab4 IN default"),
+                Row("price") :: Row("qty") :: Row("year") :: Row("month") :: Nil)
 
     val message = intercept[NoSuchTableException] {
       sql("SHOW COLUMNS IN badtable FROM default")
@@ -293,48 +263,41 @@ class HiveCommandSuite extends QueryTest with SQLTestUtils with TestHiveSingleto
   }
 
   test("show partitions - show everything") {
-    checkAnswer(
-      sql("show partitions parquet_tab4"),
-      Row("year=2015/month=1") ::
-        Row("year=2015/month=2") ::
-        Row("year=2016/month=2") ::
-        Row("year=2016/month=3") :: Nil)
+    checkAnswer(sql("show partitions parquet_tab4"),
+                Row("year=2015/month=1") ::
+                Row("year=2015/month=2") ::
+                Row("year=2016/month=2") ::
+                Row("year=2016/month=3") :: Nil)
 
-    checkAnswer(
-      sql("show partitions default.parquet_tab4"),
-      Row("year=2015/month=1") ::
-        Row("year=2015/month=2") ::
-        Row("year=2016/month=2") ::
-        Row("year=2016/month=3") :: Nil)
+    checkAnswer(sql("show partitions default.parquet_tab4"),
+                Row("year=2015/month=1") ::
+                Row("year=2015/month=2") ::
+                Row("year=2016/month=2") ::
+                Row("year=2016/month=3") :: Nil)
   }
 
   test("show partitions - show everything more than 5 part keys") {
-    checkAnswer(
-      sql("show partitions parquet_tab5"),
-      Row("year=2016/month=3/hour=10/minute=10/sec=10/extra=1") ::
-        Row("year=2016/month=4/hour=10/minute=10/sec=10/extra=1") :: Nil)
+    checkAnswer(sql("show partitions parquet_tab5"),
+                Row("year=2016/month=3/hour=10/minute=10/sec=10/extra=1") ::
+                Row("year=2016/month=4/hour=10/minute=10/sec=10/extra=1") :: Nil)
   }
 
   test("show partitions - filter") {
-    checkAnswer(
-      sql("show partitions default.parquet_tab4 PARTITION(year=2015)"),
-      Row("year=2015/month=1") ::
-        Row("year=2015/month=2") :: Nil)
+    checkAnswer(sql("show partitions default.parquet_tab4 PARTITION(year=2015)"),
+                Row("year=2015/month=1") ::
+                Row("year=2015/month=2") :: Nil)
 
-    checkAnswer(
-      sql("show partitions default.parquet_tab4 PARTITION(year=2015, month=1)"),
-      Row("year=2015/month=1") :: Nil)
+    checkAnswer(sql("show partitions default.parquet_tab4 PARTITION(year=2015, month=1)"),
+                Row("year=2015/month=1") :: Nil)
 
-    checkAnswer(
-      sql("show partitions default.parquet_tab4 PARTITION(month=2)"),
-      Row("year=2015/month=2") ::
-        Row("year=2016/month=2") :: Nil)
+    checkAnswer(sql("show partitions default.parquet_tab4 PARTITION(month=2)"),
+                Row("year=2015/month=2") ::
+                Row("year=2016/month=2") :: Nil)
   }
 
   test("show partitions - empty row") {
     withTempTable("parquet_temp") {
-      sql(
-        """
+      sql("""
           |CREATE TEMPORARY TABLE parquet_temp (c1 INT, c2 STRING)
           |USING org.apache.spark.sql.parquet.DefaultSource
         """.stripMargin)

@@ -26,7 +26,10 @@ object DataTypeTestUtils {
    * Instances of all [[IntegralType]]s.
    */
   val integralType: Set[IntegralType] = Set(
-    ByteType, ShortType, IntegerType, LongType
+      ByteType,
+      ShortType,
+      IntegerType,
+      LongType
   )
 
   /**
@@ -34,11 +37,11 @@ object DataTypeTestUtils {
    * decimal types.
    */
   val fractionalTypes: Set[FractionalType] = Set(
-    DecimalType.USER_DEFAULT,
-    DecimalType(20, 5),
-    DecimalType.SYSTEM_DEFAULT,
-    DoubleType,
-    FloatType
+      DecimalType.USER_DEFAULT,
+      DecimalType(20, 5),
+      DecimalType.SYSTEM_DEFAULT,
+      DoubleType,
+      FloatType
   )
 
   /**
@@ -68,13 +71,14 @@ object DataTypeTestUtils {
   /**
    * Instances of all [[AtomicType]]s.
    */
-  val atomicTypes: Set[DataType] = numericTypes ++ Set(
-    BinaryType,
-    BooleanType,
-    DateType,
-    StringType,
-    TimestampType
-  )
+  val atomicTypes: Set[DataType] =
+    numericTypes ++ Set(
+        BinaryType,
+        BooleanType,
+        DateType,
+        StringType,
+        TimestampType
+    )
 
   /**
    * Instances of [[ArrayType]] for all [[AtomicType]]s. Arrays of these types may contain null.

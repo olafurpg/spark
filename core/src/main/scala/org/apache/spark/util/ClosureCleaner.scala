@@ -73,6 +73,7 @@ private[spark] object ClosureCleaner extends Logging {
     }
     (Nil, Nil)
   }
+
   /**
    * Return a list of classes that represent closures enclosed in the given closure object.
    */
@@ -101,10 +102,9 @@ private[spark] object ClosureCleaner extends Logging {
    * @param checkSerializable whether to verify that the closure is serializable after cleaning
    * @param cleanTransitively whether to clean enclosing closures transitively
    */
-  def clean(
-      closure: AnyRef,
-      checkSerializable: Boolean = true,
-      cleanTransitively: Boolean = true): Unit = {
+  def clean(closure: AnyRef,
+            checkSerializable: Boolean = true,
+            cleanTransitively: Boolean = true): Unit = {
     clean(closure, checkSerializable, cleanTransitively, Map.empty)
   }
 
@@ -149,11 +149,10 @@ private[spark] object ClosureCleaner extends Logging {
    * @param accessedFields a map from a class to a set of its fields that are accessed by
    *                       the starting closure
    */
-  private def clean(
-      func: AnyRef,
-      checkSerializable: Boolean,
-      cleanTransitively: Boolean,
-      accessedFields: Map[Class[_], Set[String]]): Unit = {
+  private def clean(func: AnyRef,
+                    checkSerializable: Boolean,
+                    cleanTransitively: Boolean,
+                    accessedFields: Map[Class[_], Set[String]]): Unit = {
 
     if (!isClosure(func.getClass)) {
       logWarning("Expected a closure; got " + func.getClass.getName)
@@ -181,15 +180,25 @@ private[spark] object ClosureCleaner extends Logging {
     val declaredMethods = func.getClass.getDeclaredMethods
 
     logDebug(" + declared fields: " + declaredFields.size)
-    declaredFields.foreach { f => logDebug("     " + f) }
+    declaredFields.foreach { f =>
+      logDebug("     " + f)
+    }
     logDebug(" + declared methods: " + declaredMethods.size)
-    declaredMethods.foreach { m => logDebug("     " + m) }
+    declaredMethods.foreach { m =>
+      logDebug("     " + m)
+    }
     logDebug(" + inner classes: " + innerClasses.size)
-    innerClasses.foreach { c => logDebug("     " + c.getName) }
+    innerClasses.foreach { c =>
+      logDebug("     " + c.getName)
+    }
     logDebug(" + outer classes: " + outerClasses.size)
-    outerClasses.foreach { c => logDebug("     " + c.getName) }
+    outerClasses.foreach { c =>
+      logDebug("     " + c.getName)
+    }
     logDebug(" + outer objects: " + outerObjects.size)
-    outerObjects.foreach { o => logDebug("     " + o) }
+    outerObjects.foreach { o =>
+      logDebug("     " + o)
+    }
 
     // Fail fast if we detect return statements in closures
     getClassReader(func.getClass).accept(new ReturnStatementFinder(), 0)
@@ -212,7 +221,9 @@ private[spark] object ClosureCleaner extends Logging {
     }
 
     logDebug(s" + fields accessed by starting closure: " + accessedFields.size)
-    accessedFields.foreach { f => logDebug("     " + f) }
+    accessedFields.foreach { f =>
+      logDebug("     " + f)
+    }
 
     // List of outer (class, object) pairs, ordered from outermost to innermost
     // Note that all outer objects but the outermost one (first one in this list) must be closures
@@ -232,7 +243,7 @@ private[spark] object ClosureCleaner extends Logging {
         // Note that we still need to keep around the outermost object itself because
         // we need it to clone its child closure later (see below).
         logDebug(" + outermost object is not a closure or REPL line object, so do not clone it: " +
-          outerPairs.head)
+            outerPairs.head)
         parent = outermostObject // e.g. SparkContext
         outerPairs = outerPairs.tail
       }
@@ -272,7 +283,7 @@ private[spark] object ClosureCleaner extends Logging {
       field.setAccessible(true)
       // If the starting closure doesn't actually need our enclosing object, then just null it out
       if (accessedFields.contains(func.getClass) &&
-        !accessedFields(func.getClass).contains("$outer")) {
+          !accessedFields(func.getClass).contains("$outer")) {
         logDebug(s" + the starting closure doesn't actually need $parent, so we null it out")
         field.set(func, null)
       } else {
@@ -299,9 +310,7 @@ private[spark] object ClosureCleaner extends Logging {
     }
   }
 
-  private def instantiateClass(
-      cls: Class[_],
-      enclosingObject: AnyRef): AnyRef = {
+  private def instantiateClass(cls: Class[_], enclosingObject: AnyRef): AnyRef = {
     // Use reflection to instantiate object without calling constructor
     val rf = sun.reflect.ReflectionFactory.getReflectionFactory()
     val parentCtor = classOf[java.lang.Object].getDeclaredConstructor()
@@ -317,11 +326,14 @@ private[spark] object ClosureCleaner extends Logging {
 }
 
 private[spark] class ReturnStatementInClosureException
-  extends SparkException("Return statements aren't allowed in Spark closures")
+    extends SparkException("Return statements aren't allowed in Spark closures")
 
 private class ReturnStatementFinder extends ClassVisitor(ASM5) {
-  override def visitMethod(access: Int, name: String, desc: String,
-      sig: String, exceptions: Array[String]): MethodVisitor = {
+  override def visitMethod(access: Int,
+                           name: String,
+                           desc: String,
+                           sig: String,
+                           exceptions: Array[String]): MethodVisitor = {
     if (name.contains("apply")) {
       new MethodVisitor(ASM5) {
         override def visitTypeInsn(op: Int, tp: String) {
@@ -350,19 +362,17 @@ private case class MethodIdentifier[T](cls: Class[T], name: String, desc: String
  * @param specificMethod if not empty, visit only this specific method
  * @param visitedMethods a set of visited methods to avoid cycles
  */
-private[util] class FieldAccessFinder(
-    fields: Map[Class[_], Set[String]],
-    findTransitively: Boolean,
-    specificMethod: Option[MethodIdentifier[_]] = None,
-    visitedMethods: Set[MethodIdentifier[_]] = Set.empty)
-  extends ClassVisitor(ASM5) {
+private[util] class FieldAccessFinder(fields: Map[Class[_], Set[String]],
+                                      findTransitively: Boolean,
+                                      specificMethod: Option[MethodIdentifier[_]] = None,
+                                      visitedMethods: Set[MethodIdentifier[_]] = Set.empty)
+    extends ClassVisitor(ASM5) {
 
-  override def visitMethod(
-      access: Int,
-      name: String,
-      desc: String,
-      sig: String,
-      exceptions: Array[String]): MethodVisitor = {
+  override def visitMethod(access: Int,
+                           name: String,
+                           desc: String,
+                           sig: String,
+                           exceptions: Array[String]): MethodVisitor = {
 
     // If we are told to visit only a certain method and this is not the one, ignore it
     if (specificMethod.isDefined &&
@@ -393,8 +403,10 @@ private[util] class FieldAccessFinder(
             if (!visitedMethods.contains(m)) {
               // Keep track of visited methods to avoid potential infinite cycles
               visitedMethods += m
-              ClosureCleaner.getClassReader(cl).accept(
-                new FieldAccessFinder(fields, findTransitively, Some(m), visitedMethods), 0)
+              ClosureCleaner
+                .getClassReader(cl)
+                .accept(
+                    new FieldAccessFinder(fields, findTransitively, Some(m), visitedMethods), 0)
             }
           }
         }
@@ -411,25 +423,31 @@ private class InnerClosureFinder(output: Set[Class[_]]) extends ClassVisitor(ASM
   //   val closure2 = () => { (1 to 5).map(closure1) }
   // The second closure technically has two inner closures, but this finder only finds one
 
-  override def visit(version: Int, access: Int, name: String, sig: String,
-      superName: String, interfaces: Array[String]) {
+  override def visit(version: Int,
+                     access: Int,
+                     name: String,
+                     sig: String,
+                     superName: String,
+                     interfaces: Array[String]) {
     myName = name
   }
 
-  override def visitMethod(access: Int, name: String, desc: String,
-      sig: String, exceptions: Array[String]): MethodVisitor = {
+  override def visitMethod(access: Int,
+                           name: String,
+                           desc: String,
+                           sig: String,
+                           exceptions: Array[String]): MethodVisitor = {
     new MethodVisitor(ASM5) {
       override def visitMethodInsn(
           op: Int, owner: String, name: String, desc: String, itf: Boolean) {
         val argTypes = Type.getArgumentTypes(desc)
-        if (op == INVOKESPECIAL && name == "<init>" && argTypes.length > 0
-            && argTypes(0).toString.startsWith("L") // is it an object?
+        if (op == INVOKESPECIAL && name == "<init>" && argTypes.length > 0 &&
+            argTypes(0).toString.startsWith("L") // is it an object?
             && argTypes(0).getInternalName == myName) {
           // scalastyle:off classforname
-          output += Class.forName(
-              owner.replace('/', '.'),
-              false,
-              Thread.currentThread.getContextClassLoader)
+          output += Class.forName(owner.replace('/', '.'),
+                                  false,
+                                  Thread.currentThread.getContextClassLoader)
           // scalastyle:on classforname
         }
       }

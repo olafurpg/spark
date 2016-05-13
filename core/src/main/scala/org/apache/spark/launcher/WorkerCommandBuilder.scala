@@ -45,5 +45,4 @@ private[spark] class WorkerCommandBuilder(sparkHome: String, memoryMb: Int, comm
   }
 
   def buildCommand(): JList[String] = buildCommand(new JHashMap[String, String]())
-
 }

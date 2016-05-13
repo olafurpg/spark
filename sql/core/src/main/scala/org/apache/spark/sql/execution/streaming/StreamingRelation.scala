@@ -24,7 +24,7 @@ import org.apache.spark.sql.execution.datasources.DataSource
 object StreamingRelation {
   def apply(dataSource: DataSource): StreamingRelation = {
     StreamingRelation(
-      dataSource, dataSource.sourceInfo.name, dataSource.sourceInfo.schema.toAttributes)
+        dataSource, dataSource.sourceInfo.name, dataSource.sourceInfo.schema.toAttributes)
   }
 }
 
@@ -36,7 +36,7 @@ object StreamingRelation {
  * passing to [[StreamExecution]] to run a query.
  */
 case class StreamingRelation(dataSource: DataSource, sourceName: String, output: Seq[Attribute])
-  extends LeafNode {
+    extends LeafNode {
   override def isStreaming: Boolean = true
   override def toString: String = sourceName
 }

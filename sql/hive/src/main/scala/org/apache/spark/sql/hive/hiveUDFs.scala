@@ -25,8 +25,7 @@ import org.apache.hadoop.hive.ql.udf.{UDFType => HiveUDFType}
 import org.apache.hadoop.hive.ql.udf.generic._
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF._
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDFUtils.ConversionHelper
-import org.apache.hadoop.hive.serde2.objectinspector.{ConstantObjectInspector, ObjectInspector,
-  ObjectInspectorFactory}
+import org.apache.hadoop.hive.serde2.objectinspector.{ConstantObjectInspector, ObjectInspector, ObjectInspectorFactory}
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory.ObjectInspectorOptions
 
 import org.apache.spark.internal.Logging
@@ -37,10 +36,12 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
 import org.apache.spark.sql.hive.HiveShim._
 import org.apache.spark.sql.types._
 
-
 private[hive] case class HiveSimpleUDF(
     name: String, funcWrapper: HiveFunctionWrapper, children: Seq[Expression])
-  extends Expression with HiveInspectors with CodegenFallback with Logging {
+    extends Expression
+    with HiveInspectors
+    with CodegenFallback
+    with Logging {
 
   override def deterministic: Boolean = isUDFDeterministic
 
@@ -72,7 +73,7 @@ private[hive] case class HiveSimpleUDF(
 
   @transient
   lazy val returnInspector = ObjectInspectorFactory.getReflectionObjectInspector(
-    method.getGenericReturnType(), ObjectInspectorOptions.JAVA)
+      method.getGenericReturnType(), ObjectInspectorOptions.JAVA)
 
   @transient
   private lazy val cached: Array[AnyRef] = new Array[AnyRef](children.length)
@@ -84,9 +85,7 @@ private[hive] case class HiveSimpleUDF(
   override def eval(input: InternalRow): Any = {
     val inputs = wrap(children.map(_.eval(input)), arguments, cached, inputDataTypes)
     val ret = FunctionRegistry.invoke(
-      method,
-      function,
-      conversionHelper.convertIfNecessary(inputs : _*): _*)
+        method, function, conversionHelper.convertIfNecessary(inputs: _*): _*)
     unwrap(ret, returnInspector)
   }
 
@@ -101,7 +100,8 @@ private[hive] case class HiveSimpleUDF(
 
 // Adapter from Catalyst ExpressionResult to Hive DeferredObject
 private[hive] class DeferredObjectAdapter(oi: ObjectInspector, dataType: DataType)
-  extends DeferredObject with HiveInspectors {
+    extends DeferredObject
+    with HiveInspectors {
 
   private var func: () => Any = _
   def set(func: () => Any): Unit = {
@@ -113,7 +113,10 @@ private[hive] class DeferredObjectAdapter(oi: ObjectInspector, dataType: DataTyp
 
 private[hive] case class HiveGenericUDF(
     name: String, funcWrapper: HiveFunctionWrapper, children: Seq[Expression])
-  extends Expression with HiveInspectors with CodegenFallback with Logging {
+    extends Expression
+    with HiveInspectors
+    with CodegenFallback
+    with Logging {
 
   override def nullable: Boolean = true
 
@@ -140,9 +143,13 @@ private[hive] case class HiveGenericUDF(
   }
 
   @transient
-  private lazy val deferredObjects = argumentInspectors.zip(children).map { case (inspect, child) =>
-    new DeferredObjectAdapter(inspect, child.dataType)
-  }.toArray[DeferredObject]
+  private lazy val deferredObjects = argumentInspectors
+    .zip(children)
+    .map {
+      case (inspect, child) =>
+        new DeferredObjectAdapter(inspect, child.dataType)
+    }
+    .toArray[DeferredObject]
 
   override lazy val dataType: DataType = inspectorToDataType(returnInspector)
 
@@ -152,8 +159,7 @@ private[hive] case class HiveGenericUDF(
     var i = 0
     while (i < children.length) {
       val idx = i
-      deferredObjects(i).asInstanceOf[DeferredObjectAdapter]
-        .set(() => children(idx).eval(input))
+      deferredObjects(i).asInstanceOf[DeferredObjectAdapter].set(() => children(idx).eval(input))
       i += 1
     }
     unwrap(function.evaluate(deferredObjects), returnInspector)
@@ -178,10 +184,10 @@ private[hive] case class HiveGenericUDF(
  * user defined aggregations, which have clean semantics even in a partitioned execution.
  */
 private[hive] case class HiveGenericUDTF(
-    name: String,
-    funcWrapper: HiveFunctionWrapper,
-    children: Seq[Expression])
-  extends Generator with HiveInspectors with CodegenFallback {
+    name: String, funcWrapper: HiveFunctionWrapper, children: Seq[Expression])
+    extends Generator
+    with HiveInspectors
+    with CodegenFallback {
 
   @transient
   protected lazy val function: GenericUDTF = {
@@ -202,9 +208,10 @@ private[hive] case class HiveGenericUDTF(
   @transient
   protected lazy val collector = new UDTFCollector
 
-  override lazy val elementSchema = StructType(outputInspector.getAllStructFieldRefs.asScala.map {
-    field => StructField(field.getFieldName, inspectorToDataType(field.getFieldObjectInspector),
-      nullable = true)
+  override lazy val elementSchema = StructType(
+      outputInspector.getAllStructFieldRefs.asScala.map { field =>
+    StructField(
+        field.getFieldName, inspectorToDataType(field.getFieldObjectInspector), nullable = true)
   })
 
   @transient
@@ -253,14 +260,14 @@ private[hive] case class HiveGenericUDTF(
  * Currently we don't support partial aggregation for queries using Hive UDAF, which may hurt
  * performance a lot.
  */
-private[hive] case class HiveUDAFFunction(
-    name: String,
-    funcWrapper: HiveFunctionWrapper,
-    children: Seq[Expression],
-    isUDAFBridgeRequired: Boolean = false,
-    mutableAggBufferOffset: Int = 0,
-    inputAggBufferOffset: Int = 0)
-  extends ImperativeAggregate with HiveInspectors {
+private[hive] case class HiveUDAFFunction(name: String,
+                                          funcWrapper: HiveFunctionWrapper,
+                                          children: Seq[Expression],
+                                          isUDAFBridgeRequired: Boolean = false,
+                                          mutableAggBufferOffset: Int = 0,
+                                          inputAggBufferOffset: Int = 0)
+    extends ImperativeAggregate
+    with HiveInspectors {
 
   override def withNewMutableAggBufferOffset(newMutableAggBufferOffset: Int): ImperativeAggregate =
     copy(mutableAggBufferOffset = newMutableAggBufferOffset)
@@ -316,8 +323,7 @@ private[hive] case class HiveUDAFFunction(
   }
 
   override def merge(buffer1: MutableRow, buffer2: InternalRow): Unit = {
-    throw new UnsupportedOperationException(
-      "Hive UDAF doesn't support partial aggregate")
+    throw new UnsupportedOperationException("Hive UDAF doesn't support partial aggregate")
   }
 
   override def initialize(_buffer: MutableRow): Unit = {

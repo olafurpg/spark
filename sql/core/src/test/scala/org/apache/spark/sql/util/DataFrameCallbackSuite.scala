@@ -70,7 +70,9 @@ class DataFrameCallbackSuite extends QueryTest with SharedSQLContext {
     }
     spark.listenerManager.register(listener)
 
-    val errorUdf = udf[Int, Int] { _ => throw new RuntimeException("udf error") }
+    val errorUdf = udf[Int, Int] { _ =>
+      throw new RuntimeException("udf error")
+    }
     val df = sparkContext.makeRDD(Seq(1 -> "a")).toDF("i", "j")
 
     // Ignore the log when we are expecting an exception.
@@ -140,7 +142,9 @@ class DataFrameCallbackSuite extends QueryTest with SharedSQLContext {
     df.groupBy("i").count().collect()
 
     def getPeakExecutionMemory(stageId: Int): Long = {
-      val peakMemoryAccumulator = sparkListener.getCompletedStageInfos(stageId).accumulables
+      val peakMemoryAccumulator = sparkListener
+        .getCompletedStageInfos(stageId)
+        .accumulables
         .filter(_._2.name == InternalAccumulator.PEAK_EXECUTION_MEMORY)
 
       assert(peakMemoryAccumulator.size == 1)

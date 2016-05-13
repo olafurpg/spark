@@ -25,6 +25,7 @@ import org.apache.spark.sql.execution.datasources.{OutputWriter, OutputWriterFac
 import org.apache.spark.sql.types.StructType
 
 class CommitFailureTestSource extends SimpleTextSource {
+
   /**
    * Prepares a write job and returns an
    * [[org.apache.spark.sql.execution.datasources.OutputWriterFactory]].
@@ -32,17 +33,15 @@ class CommitFailureTestSource extends SimpleTextSource {
    * be put here.  For example, user defined output committer can be configured here
    * by setting the output committer class in the conf of spark.sql.sources.outputCommitterClass.
    */
-  override def prepareWrite(
-      sparkSession: SparkSession,
-      job: Job,
-      options: Map[String, String],
-      dataSchema: StructType): OutputWriterFactory =
+  override def prepareWrite(sparkSession: SparkSession,
+                            job: Job,
+                            options: Map[String, String],
+                            dataSchema: StructType): OutputWriterFactory =
     new OutputWriterFactory {
-      override def newInstance(
-          path: String,
-          bucketId: Option[Int],
-          dataSchema: StructType,
-          context: TaskAttemptContext): OutputWriter = {
+      override def newInstance(path: String,
+                               bucketId: Option[Int],
+                               dataSchema: StructType,
+                               context: TaskAttemptContext): OutputWriter = {
         new SimpleTextOutputWriter(path, context) {
           var failed = false
           TaskContext.get().addTaskFailureListener { (t: TaskContext, e: Throwable) =>
@@ -53,7 +52,6 @@ class CommitFailureTestSource extends SimpleTextSource {
           override def write(row: Row): Unit = {
             if (SimpleTextRelation.failWriter) {
               sys.error("Intentional task writer failure for testing purpose.")
-
             }
             super.write(row)
           }

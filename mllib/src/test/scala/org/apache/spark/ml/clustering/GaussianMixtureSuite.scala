@@ -22,9 +22,10 @@ import org.apache.spark.ml.util.DefaultReadWriteTest
 import org.apache.spark.mllib.util.MLlibTestSparkContext
 import org.apache.spark.sql.Dataset
 
-
-class GaussianMixtureSuite extends SparkFunSuite with MLlibTestSparkContext
-  with DefaultReadWriteTest {
+class GaussianMixtureSuite
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   final val k = 5
   @transient var dataset: Dataset[_] = _
@@ -73,8 +74,12 @@ class GaussianMixtureSuite extends SparkFunSuite with MLlibTestSparkContext
   test("fit, transform, and summary") {
     val predictionColName = "gm_prediction"
     val probabilityColName = "gm_probability"
-    val gm = new GaussianMixture().setK(k).setMaxIter(2).setPredictionCol(predictionColName)
-        .setProbabilityCol(probabilityColName).setSeed(1)
+    val gm = new GaussianMixture()
+      .setK(k)
+      .setMaxIter(2)
+      .setPredictionCol(predictionColName)
+      .setProbabilityCol(probabilityColName)
+      .setSeed(1)
     val model = gm.fit(dataset)
     assert(model.hasParent)
     assert(model.weights.length === k)
@@ -112,22 +117,23 @@ class GaussianMixtureSuite extends SparkFunSuite with MLlibTestSparkContext
       assert(model.gaussians.map(_.cov) === model2.gaussians.map(_.cov))
     }
     val gm = new GaussianMixture()
-    testEstimatorAndModelReadWrite(gm, dataset,
-      GaussianMixtureSuite.allParamSettings, checkModelData)
+    testEstimatorAndModelReadWrite(
+        gm, dataset, GaussianMixtureSuite.allParamSettings, checkModelData)
   }
 }
 
 object GaussianMixtureSuite {
+
   /**
    * Mapping from all Params to valid settings which differ from the defaults.
    * This is useful for tests which need to exercise all Params, such as save/load.
    * This excludes input columns to simplify some tests.
    */
   val allParamSettings: Map[String, Any] = Map(
-    "predictionCol" -> "myPrediction",
-    "probabilityCol" -> "myProbability",
-    "k" -> 3,
-    "maxIter" -> 2,
-    "tol" -> 0.01
+      "predictionCol" -> "myPrediction",
+      "probabilityCol" -> "myProbability",
+      "k" -> 3,
+      "maxIter" -> 2,
+      "tol" -> 0.01
   )
 }

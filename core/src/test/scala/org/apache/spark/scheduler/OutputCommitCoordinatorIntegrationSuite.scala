@@ -30,9 +30,9 @@ import org.apache.spark.util.Utils
  * See also: [[OutputCommitCoordinatorSuite]] for unit tests that use mocks.
  */
 class OutputCommitCoordinatorIntegrationSuite
-  extends SparkFunSuite
-  with LocalSparkContext
-  with Timeouts {
+    extends SparkFunSuite
+    with LocalSparkContext
+    with Timeouts {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -40,7 +40,7 @@ class OutputCommitCoordinatorIntegrationSuite
       .set("master", "local[2,4]")
       .set("spark.hadoop.outputCommitCoordination.enabled", "true")
       .set("spark.hadoop.mapred.output.committer.class",
-        classOf[ThrowExceptionOnFirstAttemptOutputCommitter].getCanonicalName)
+           classOf[ThrowExceptionOnFirstAttemptOutputCommitter].getCanonicalName)
     sc = new SparkContext("local[2, 4]", "test", conf)
   }
 

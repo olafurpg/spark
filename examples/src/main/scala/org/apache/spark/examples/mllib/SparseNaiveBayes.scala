@@ -34,11 +34,11 @@ import org.apache.spark.mllib.util.MLUtils
  */
 object SparseNaiveBayes {
 
-  case class Params(
-      input: String = null,
-      minPartitions: Int = 0,
-      numFeatures: Int = -1,
-      lambda: Double = 1.0) extends AbstractParams[Params]
+  case class Params(input: String = null,
+                    minPartitions: Int = 0,
+                    numFeatures: Int = -1,
+                    lambda: Double = 1.0)
+      extends AbstractParams[Params]
 
   def main(args: Array[String]) {
     val defaultParams = Params()
@@ -48,9 +48,7 @@ object SparseNaiveBayes {
       opt[Int]("numPartitions")
         .text("min number of partitions")
         .action((x, c) => c.copy(minPartitions = x))
-      opt[Int]("numFeatures")
-        .text("number of features")
-        .action((x, c) => c.copy(numFeatures = x))
+      opt[Int]("numFeatures").text("number of features").action((x, c) => c.copy(numFeatures = x))
       opt[Double]("lambda")
         .text(s"lambda (smoothing constant), default: ${defaultParams.lambda}")
         .action((x, c) => c.copy(lambda = x))
@@ -60,11 +58,14 @@ object SparseNaiveBayes {
         .action((x, c) => c.copy(input = x))
     }
 
-    parser.parse(args, defaultParams).map { params =>
-      run(params)
-    }.getOrElse {
-      sys.exit(1)
-    }
+    parser
+      .parse(args, defaultParams)
+      .map { params =>
+        run(params)
+      }
+      .getOrElse {
+        sys.exit(1)
+      }
   }
 
   def run(params: Params) {
@@ -76,8 +77,7 @@ object SparseNaiveBayes {
     val minPartitions =
       if (params.minPartitions > 0) params.minPartitions else sc.defaultMinPartitions
 
-    val examples =
-      MLUtils.loadLibSVMFile(sc, params.input, params.numFeatures, minPartitions)
+    val examples = MLUtils.loadLibSVMFile(sc, params.input, params.numFeatures, minPartitions)
     // Cache examples because it will be used in both training and evaluation.
     examples.cache()
 

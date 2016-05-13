@@ -40,19 +40,21 @@ object CompressionSchemeBenchmark extends AllCompressionSchemes {
 
   private[this] def genLowerSkewData() = {
     val rng = new LogNormalDistribution(0.0, 0.01)
-    () => rng.sample
+    () =>
+      rng.sample
   }
 
   private[this] def genHigherSkewData() = {
     val rng = new LogNormalDistribution(0.0, 1.0)
-    () => rng.sample
+    () =>
+      rng.sample
   }
 
   private[this] def prepareEncodeInternal[T <: AtomicType](
-    count: Int,
-    tpe: NativeColumnType[T],
-    supportedScheme: CompressionScheme,
-    input: ByteBuffer): ((ByteBuffer, ByteBuffer) => ByteBuffer, Double, ByteBuffer) = {
+      count: Int,
+      tpe: NativeColumnType[T],
+      supportedScheme: CompressionScheme,
+      input: ByteBuffer): ((ByteBuffer, ByteBuffer) => ByteBuffer, Double, ByteBuffer) = {
     assert(supportedScheme.supports(tpe))
 
     def toRow(d: Any) = new GenericInternalRow(Array[Any](d))
@@ -62,21 +64,21 @@ object CompressionSchemeBenchmark extends AllCompressionSchemes {
     }
     input.rewind()
 
-    val compressedSize = if (encoder.compressedSize == 0) {
-      input.remaining()
-    } else {
-      encoder.compressedSize
-    }
+    val compressedSize =
+      if (encoder.compressedSize == 0) {
+        input.remaining()
+      } else {
+        encoder.compressedSize
+      }
 
     (encoder.compress, encoder.compressionRatio, allocateLocal(4 + compressedSize))
   }
 
-  private[this] def runEncodeBenchmark[T <: AtomicType](
-      name: String,
-      iters: Int,
-      count: Int,
-      tpe: NativeColumnType[T],
-      input: ByteBuffer): Unit = {
+  private[this] def runEncodeBenchmark[T <: AtomicType](name: String,
+                                                        iters: Int,
+                                                        count: Int,
+                                                        tpe: NativeColumnType[T],
+                                                        input: ByteBuffer): Unit = {
     val benchmark = new Benchmark(name, iters * count)
 
     schemes.filter(_.supports(tpe)).map { scheme =>
@@ -95,12 +97,11 @@ object CompressionSchemeBenchmark extends AllCompressionSchemes {
     benchmark.run()
   }
 
-  private[this] def runDecodeBenchmark[T <: AtomicType](
-      name: String,
-      iters: Int,
-      count: Int,
-      tpe: NativeColumnType[T],
-      input: ByteBuffer): Unit = {
+  private[this] def runDecodeBenchmark[T <: AtomicType](name: String,
+                                                        iters: Int,
+                                                        count: Int,
+                                                        tpe: NativeColumnType[T],
+                                                        input: ByteBuffer): Unit = {
     val benchmark = new Benchmark(name, iters * count)
 
     schemes.filter(_.supports(tpe)).map { scheme =>
@@ -132,7 +133,8 @@ object CompressionSchemeBenchmark extends AllCompressionSchemes {
 
     val g = {
       val rng = genLowerSkewData()
-      () => (rng().toInt % 2).toByte
+      () =>
+        (rng().toInt % 2).toByte
     }
     for (i <- 0 until count) {
       testData.put(i * BOOLEAN.defaultSize, g())
@@ -145,7 +147,6 @@ object CompressionSchemeBenchmark extends AllCompressionSchemes {
     // RunLengthEncoding(2.491)                  923 /  939         72.7          13.8       0.0X
     // BooleanBitSet(0.125)                      359 /  363        187.1           5.3       0.0X
     runEncodeBenchmark("BOOLEAN Encode", iters, count, BOOLEAN, testData)
-
 
     // Intel(R) Core(TM) i7-4578U CPU @ 3.00GHz
     // BOOLEAN Decode:                     Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
@@ -310,7 +311,8 @@ object CompressionSchemeBenchmark extends AllCompressionSchemes {
     val g = {
       val dataTable = (0 until tableSize).map(_ => RandomStringUtils.randomAlphabetic(strLen))
       val rng = genHigherSkewData()
-      () => dataTable(rng().toInt % tableSize)
+      () =>
+        dataTable(rng().toInt % tableSize)
     }
     for (i <- 0 until count) {
       testData.putInt(strLen)

@@ -25,11 +25,10 @@ import org.apache.spark.sql.types.DataType
  * A serialized version of a Python lambda function.
  */
 case class PythonUDF(
-    name: String,
-    func: PythonFunction,
-    dataType: DataType,
-    children: Seq[Expression])
-  extends Expression with Unevaluable with NonSQLExpression {
+    name: String, func: PythonFunction, dataType: DataType, children: Seq[Expression])
+    extends Expression
+    with Unevaluable
+    with NonSQLExpression {
 
   override def toString: String = s"$name(${children.mkString(", ")})"
 

@@ -56,7 +56,7 @@ class DecimalExpressionSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation(CheckOverflow(Literal(d2), DecimalType(4, 2)), d2)
     checkEvaluation(CheckOverflow(Literal(d2), DecimalType(4, 3)), null)
 
-    checkEvaluation(CheckOverflow(Literal.create(null, DecimalType(2, 1)), DecimalType(3, 2)), null)
+    checkEvaluation(
+        CheckOverflow(Literal.create(null, DecimalType(2, 1)), DecimalType(3, 2)), null)
   }
-
 }

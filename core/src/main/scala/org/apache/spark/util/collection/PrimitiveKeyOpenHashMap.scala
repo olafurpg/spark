@@ -26,12 +26,11 @@ import scala.reflect._
  *
  * Under the hood, it uses our OpenHashSet implementation.
  */
-private[spark]
-class PrimitiveKeyOpenHashMap[@specialized(Long, Int) K: ClassTag,
-                              @specialized(Long, Int, Double) V: ClassTag](
+private[spark] class PrimitiveKeyOpenHashMap[
+    @specialized(Long, Int) K: ClassTag, @specialized(Long, Int, Double) V: ClassTag](
     initialCapacity: Int)
-  extends Iterable[(K, V)]
-  with Serializable {
+    extends Iterable[(K, V)]
+    with Serializable {
 
   def this() = this(64)
 

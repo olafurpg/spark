@@ -33,11 +33,11 @@ private[netty] sealed trait OutboxMessage {
   def sendWith(client: TransportClient): Unit
 
   def onFailure(e: Throwable): Unit
-
 }
 
-private[netty] case class OneWayOutboxMessage(content: ByteBuffer) extends OutboxMessage
-  with Logging {
+private[netty] case class OneWayOutboxMessage(content: ByteBuffer)
+    extends OutboxMessage
+    with Logging {
 
   override def sendWith(client: TransportClient): Unit = {
     client.send(content)
@@ -49,14 +49,13 @@ private[netty] case class OneWayOutboxMessage(content: ByteBuffer) extends Outbo
       case e1: Throwable => logWarning(s"Failed to send one-way RPC.", e1)
     }
   }
-
 }
 
-private[netty] case class RpcOutboxMessage(
-    content: ByteBuffer,
-    _onFailure: (Throwable) => Unit,
-    _onSuccess: (TransportClient, ByteBuffer) => Unit)
-  extends OutboxMessage with RpcResponseCallback {
+private[netty] case class RpcOutboxMessage(content: ByteBuffer,
+                                           _onFailure: (Throwable) => Unit,
+                                           _onSuccess: (TransportClient, ByteBuffer) => Unit)
+    extends OutboxMessage
+    with RpcResponseCallback {
 
   private var client: TransportClient = _
   private var requestId: Long = _
@@ -78,12 +77,9 @@ private[netty] case class RpcOutboxMessage(
   override def onSuccess(response: ByteBuffer): Unit = {
     _onSuccess(client, response)
   }
-
 }
 
-private[netty] class Outbox(nettyEnv: NettyRpcEnv, val address: RpcAddress) {
-
-  outbox => // Give this an alias so we can use it more clearly in closures.
+private[netty] class Outbox(nettyEnv: NettyRpcEnv, val address: RpcAddress) { outbox => // Give this an alias so we can use it more clearly in closures.
 
   @GuardedBy("this")
   private val messages = new java.util.LinkedList[OutboxMessage]

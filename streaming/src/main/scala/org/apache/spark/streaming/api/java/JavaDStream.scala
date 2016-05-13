@@ -97,6 +97,7 @@ class JavaDStream[T](val dstream: DStream[T])(implicit val classTag: ClassTag[T]
 }
 
 object JavaDStream {
+
   /**
    * Convert a scala [[org.apache.spark.streaming.dstream.DStream]] to a Java-friendly
    * [[org.apache.spark.streaming.api.java.JavaDStream]].

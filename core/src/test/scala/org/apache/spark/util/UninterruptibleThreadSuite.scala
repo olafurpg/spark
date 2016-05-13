@@ -142,8 +142,8 @@ class UninterruptibleThreadSuite extends SparkFunSuite {
             }
           } catch {
             case _: InterruptedException =>
-              // The first runUninterruptibly may throw InterruptedException if the interrupt status
-              // is set before running `f`.
+            // The first runUninterruptibly may throw InterruptedException if the interrupt status
+            // is set before running `f`.
           }
         }
       }

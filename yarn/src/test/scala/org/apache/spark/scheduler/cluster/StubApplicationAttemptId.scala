@@ -43,6 +43,5 @@ class StubApplicationAttemptId(var applicationId: ApplicationId, var attempt: In
     applicationId
   }
 
-  override def build(): Unit = {
-  }
+  override def build(): Unit = {}
 }

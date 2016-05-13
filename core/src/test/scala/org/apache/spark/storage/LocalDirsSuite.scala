@@ -46,9 +46,9 @@ class LocalDirsSuite extends SparkFunSuite with BeforeAndAfter {
     assert(!new File("/NONEXISTENT_DIR").exists())
     // spark.local.dir only contains invalid directories, but that's not a problem since
     // SPARK_LOCAL_DIRS will override it on both the driver and workers:
-    val conf = new SparkConfWithEnv(Map("SPARK_LOCAL_DIRS" -> System.getProperty("java.io.tmpdir")))
-      .set("spark.local.dir", "/NONEXISTENT_PATH")
+    val conf =
+      new SparkConfWithEnv(Map("SPARK_LOCAL_DIRS" -> System.getProperty("java.io.tmpdir")))
+        .set("spark.local.dir", "/NONEXISTENT_PATH")
     assert(new File(Utils.getLocalDir(conf)).exists())
   }
-
 }

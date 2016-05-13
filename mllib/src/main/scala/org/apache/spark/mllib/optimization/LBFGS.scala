@@ -37,7 +37,8 @@ import org.apache.spark.rdd.RDD
  */
 @DeveloperApi
 class LBFGS(private var gradient: Gradient, private var updater: Updater)
-  extends Optimizer with Logging {
+    extends Optimizer
+    with Logging {
 
   private var numCorrections = 10
   private var convergenceTol = 1E-6
@@ -52,8 +53,7 @@ class LBFGS(private var gradient: Gradient, private var updater: Updater)
    * Restriction: numCorrections > 0
    */
   def setNumCorrections(corrections: Int): this.type = {
-    require(corrections > 0,
-      s"Number of corrections must be positive but got ${corrections}")
+    require(corrections > 0, s"Number of corrections must be positive but got ${corrections}")
     this.numCorrections = corrections
     this
   }
@@ -65,8 +65,7 @@ class LBFGS(private var gradient: Gradient, private var updater: Updater)
    * and therefore generally cause more iterations to be run.
    */
   def setConvergenceTol(tolerance: Double): this.type = {
-    require(tolerance >= 0,
-      s"Convergence tolerance must be nonnegative but got ${tolerance}")
+    require(tolerance >= 0, s"Convergence tolerance must be nonnegative but got ${tolerance}")
     this.convergenceTol = tolerance
     this
   }
@@ -82,8 +81,7 @@ class LBFGS(private var gradient: Gradient, private var updater: Updater)
    * Set the maximal number of iterations for L-BFGS. Default 100.
    */
   def setNumIterations(iters: Int): this.type = {
-    require(iters >= 0,
-      s"Maximum of iterations must be nonnegative but got ${iters}")
+    require(iters >= 0, s"Maximum of iterations must be nonnegative but got ${iters}")
     this.maxNumIterations = iters
     this
   }
@@ -99,8 +97,7 @@ class LBFGS(private var gradient: Gradient, private var updater: Updater)
    * Set the regularization parameter. Default 0.0.
    */
   def setRegParam(regParam: Double): this.type = {
-    require(regParam >= 0,
-      s"Regularization parameter must be nonnegative but got ${regParam}")
+    require(regParam >= 0, s"Regularization parameter must be nonnegative but got ${regParam}")
     this.regParam = regParam
     this
   }
@@ -139,18 +136,16 @@ class LBFGS(private var gradient: Gradient, private var updater: Updater)
   }
 
   override def optimize(data: RDD[(Double, Vector)], initialWeights: Vector): Vector = {
-    val (weights, _) = LBFGS.runLBFGS(
-      data,
-      gradient,
-      updater,
-      numCorrections,
-      convergenceTol,
-      maxNumIterations,
-      regParam,
-      initialWeights)
+    val (weights, _) = LBFGS.runLBFGS(data,
+                                      gradient,
+                                      updater,
+                                      numCorrections,
+                                      convergenceTol,
+                                      maxNumIterations,
+                                      regParam,
+                                      initialWeights)
     weights
   }
-
 }
 
 /**
@@ -159,6 +154,7 @@ class LBFGS(private var gradient: Gradient, private var updater: Updater)
  */
 @DeveloperApi
 object LBFGS extends Logging {
+
   /**
    * Run Limited-memory BFGS (L-BFGS) in parallel.
    * Averaging the subgradients over different partitions is performed using one standard
@@ -180,22 +176,20 @@ object LBFGS extends Logging {
    *         weights for every feature, and the second element is an array containing the loss
    *         computed for every iteration.
    */
-  def runLBFGS(
-      data: RDD[(Double, Vector)],
-      gradient: Gradient,
-      updater: Updater,
-      numCorrections: Int,
-      convergenceTol: Double,
-      maxNumIterations: Int,
-      regParam: Double,
-      initialWeights: Vector): (Vector, Array[Double]) = {
+  def runLBFGS(data: RDD[(Double, Vector)],
+               gradient: Gradient,
+               updater: Updater,
+               numCorrections: Int,
+               convergenceTol: Double,
+               maxNumIterations: Int,
+               regParam: Double,
+               initialWeights: Vector): (Vector, Array[Double]) = {
 
     val lossHistory = mutable.ArrayBuilder.make[Double]
 
     val numExamples = data.count()
 
-    val costFun =
-      new CostFun(data, gradient, updater, regParam, numExamples)
+    val costFun = new CostFun(data, gradient, updater, regParam, numExamples)
 
     val lbfgs = new BreezeLBFGS[BDV[Double]](maxNumIterations, numCorrections, convergenceTol)
 
@@ -216,8 +210,9 @@ object LBFGS extends Logging {
 
     val lossHistoryArray = lossHistory.result()
 
-    logInfo("LBFGS.runLBFGS finished. Last 10 losses %s".format(
-      lossHistoryArray.takeRight(10).mkString(", ")))
+    logInfo(
+        "LBFGS.runLBFGS finished. Last 10 losses %s".format(
+            lossHistoryArray.takeRight(10).mkString(", ")))
 
     (weights, lossHistoryArray)
   }
@@ -226,12 +221,12 @@ object LBFGS extends Logging {
    * CostFun implements Breeze's DiffFunction[T], which returns the loss and gradient
    * at a particular point (weights). It's used in Breeze's convex optimization routines.
    */
-  private class CostFun(
-    data: RDD[(Double, Vector)],
-    gradient: Gradient,
-    updater: Updater,
-    regParam: Double,
-    numExamples: Long) extends DiffFunction[BDV[Double]] {
+  private class CostFun(data: RDD[(Double, Vector)],
+                        gradient: Gradient,
+                        updater: Updater,
+                        regParam: Double,
+                        numExamples: Long)
+      extends DiffFunction[BDV[Double]] {
 
     override def calculate(weights: BDV[Double]): (Double, BDV[Double]) = {
       // Have a local copy to avoid the serialization of CostFun object which is not serializable.
@@ -241,14 +236,17 @@ object LBFGS extends Logging {
       val localGradient = gradient
 
       val (gradientSum, lossSum) = data.treeAggregate((Vectors.zeros(n), 0.0))(
-          seqOp = (c, v) => (c, v) match { case ((grad, loss), (label, features)) =>
-            val l = localGradient.compute(
-              features, label, bcW.value, grad)
-            (grad, loss + l)
+          seqOp = (c, v) =>
+              (c, v) match {
+              case ((grad, loss), (label, features)) =>
+                val l = localGradient.compute(features, label, bcW.value, grad)
+                (grad, loss + l)
           },
-          combOp = (c1, c2) => (c1, c2) match { case ((grad1, loss1), (grad2, loss2)) =>
-            axpy(1.0, grad2, grad1)
-            (grad1, loss1 + loss2)
+          combOp = (c1, c2) =>
+              (c1, c2) match {
+              case ((grad1, loss1), (grad2, loss2)) =>
+                axpy(1.0, grad2, grad1)
+                (grad1, loss1 + loss2)
           })
 
       /**
@@ -258,6 +256,7 @@ object LBFGS extends Logging {
       val regVal = updater.compute(w, Vectors.zeros(n), 0, 1, regParam)._2
 
       val loss = lossSum / numExamples + regVal
+
       /**
        * It will return the gradient part of regularization using updater.
        *

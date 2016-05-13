@@ -29,17 +29,16 @@ import org.apache.spark.util.Utils
  * However, by doing this, we add SparkSQL dependency on user classes. This object provides
  * alterntive approach to register UDTs for user classes.
  */
-private[spark]
-object UDTRegistration extends Serializable with Logging {
+private[spark] object UDTRegistration extends Serializable with Logging {
 
   /** The mapping between the Class between UserDefinedType and user classes. */
   private lazy val udtMap: mutable.Map[String, String] = mutable.Map(
-    ("org.apache.spark.ml.linalg.Vector", "org.apache.spark.ml.linalg.VectorUDT"),
-    ("org.apache.spark.ml.linalg.DenseVector", "org.apache.spark.ml.linalg.VectorUDT"),
-    ("org.apache.spark.ml.linalg.SparseVector", "org.apache.spark.ml.linalg.VectorUDT"),
-    ("org.apache.spark.ml.linalg.Matrix", "org.apache.spark.ml.linalg.MatrixUDT"),
-    ("org.apache.spark.ml.linalg.DenseMatrix", "org.apache.spark.ml.linalg.MatrixUDT"),
-    ("org.apache.spark.ml.linalg.SparseMatrix", "org.apache.spark.ml.linalg.MatrixUDT"))
+      ("org.apache.spark.ml.linalg.Vector", "org.apache.spark.ml.linalg.VectorUDT"),
+      ("org.apache.spark.ml.linalg.DenseVector", "org.apache.spark.ml.linalg.VectorUDT"),
+      ("org.apache.spark.ml.linalg.SparseVector", "org.apache.spark.ml.linalg.VectorUDT"),
+      ("org.apache.spark.ml.linalg.Matrix", "org.apache.spark.ml.linalg.MatrixUDT"),
+      ("org.apache.spark.ml.linalg.DenseMatrix", "org.apache.spark.ml.linalg.MatrixUDT"),
+      ("org.apache.spark.ml.linalg.SparseMatrix", "org.apache.spark.ml.linalg.MatrixUDT"))
 
   /**
    * Queries if a given user class is already registered or not.
@@ -77,12 +76,12 @@ object UDTRegistration extends Serializable with Logging {
           udtClass
         } else {
           throw new SparkException(
-            s"${udtClass.getName} is not an UserDefinedType. Please make sure registering " +
+              s"${udtClass.getName} is not an UserDefinedType. Please make sure registering " +
               s"an UserDefinedType for ${userClass}")
         }
       } else {
         throw new SparkException(
-          s"Can not load in UserDefinedType ${udtClassName} for user class ${userClass}.")
+            s"Can not load in UserDefinedType ${udtClassName} for user class ${userClass}.")
       }
     }
   }

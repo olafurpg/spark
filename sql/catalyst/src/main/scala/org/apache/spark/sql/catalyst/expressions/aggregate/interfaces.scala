@@ -68,15 +68,10 @@ private[sql] case object NoOp extends Expression with Unevaluable {
 }
 
 object AggregateExpression {
-  def apply(
-      aggregateFunction: AggregateFunction,
-      mode: AggregateMode,
-      isDistinct: Boolean): AggregateExpression = {
-    AggregateExpression(
-      aggregateFunction,
-      mode,
-      isDistinct,
-      NamedExpression.newExprId)
+  def apply(aggregateFunction: AggregateFunction,
+            mode: AggregateMode,
+            isDistinct: Boolean): AggregateExpression = {
+    AggregateExpression(aggregateFunction, mode, isDistinct, NamedExpression.newExprId)
   }
 }
 
@@ -84,29 +79,27 @@ object AggregateExpression {
  * A container for an [[AggregateFunction]] with its [[AggregateMode]] and a field
  * (`isDistinct`) indicating if DISTINCT keyword is specified for this function.
  */
-private[sql] case class AggregateExpression(
-    aggregateFunction: AggregateFunction,
-    mode: AggregateMode,
-    isDistinct: Boolean,
-    resultId: ExprId)
-  extends Expression
-  with Unevaluable {
+private[sql] case class AggregateExpression(aggregateFunction: AggregateFunction,
+                                            mode: AggregateMode,
+                                            isDistinct: Boolean,
+                                            resultId: ExprId)
+    extends Expression
+    with Unevaluable {
 
-  lazy val resultAttribute: Attribute = if (aggregateFunction.resolved) {
-    AttributeReference(
-      aggregateFunction.toString,
-      aggregateFunction.dataType,
-      aggregateFunction.nullable)(exprId = resultId)
-  } else {
-    // This is a bit of a hack.  Really we should not be constructing this container and reasoning
-    // about datatypes / aggregation mode until after we have finished analysis and made it to
-    // planning.
-    UnresolvedAttribute(aggregateFunction.toString)
-  }
+  lazy val resultAttribute: Attribute =
+    if (aggregateFunction.resolved) {
+      AttributeReference(aggregateFunction.toString,
+                         aggregateFunction.dataType,
+                         aggregateFunction.nullable)(exprId = resultId)
+    } else {
+      // This is a bit of a hack.  Really we should not be constructing this container and reasoning
+      // about datatypes / aggregation mode until after we have finished analysis and made it to
+      // planning.
+      UnresolvedAttribute(aggregateFunction.toString)
+    }
 
   // We compute the same thing regardless of our final result.
-  override lazy val canonicalized: Expression =
-    AggregateExpression(
+  override lazy val canonicalized: Expression = AggregateExpression(
       aggregateFunction.canonicalized.asInstanceOf[AggregateFunction],
       mode,
       isDistinct,
@@ -326,10 +319,7 @@ abstract class ImperativeAggregate extends AggregateFunction with CodegenFallbac
  * the implemented class that need to access fields of its children, please make
  * those fields `lazy val`s.
  */
-abstract class DeclarativeAggregate
-  extends AggregateFunction
-  with Serializable
-  with Unevaluable {
+abstract class DeclarativeAggregate extends AggregateFunction with Serializable with Unevaluable {
 
   /**
    * Expressions for initializing empty aggregation buffers.
@@ -369,6 +359,7 @@ abstract class DeclarativeAggregate
    * which represent `a` in `bufferLeft` and `bufferRight`, respectively.
    */
   implicit class RichAttribute(a: AttributeReference) {
+
     /** Represents this attribute at the mutable buffer side. */
     def left: AttributeReference = a
 

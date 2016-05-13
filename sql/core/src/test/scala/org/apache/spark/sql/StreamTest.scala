@@ -88,6 +88,7 @@ trait StreamTest extends QueryTest with Timeouts {
 
   /** A trait that can be extended when testing a source. */
   trait AddData extends StreamAction {
+
     /**
      * Called to adding the data to a source. It should find the source to add data to from
      * the active query, and then return the source object the data was added, as well as the
@@ -109,7 +110,7 @@ trait StreamTest extends QueryTest with Timeouts {
    * This operation automatically blocks until all added data has been processed.
    */
   object CheckAnswer {
-    def apply[A : Encoder](data: A*): CheckAnswerRows = {
+    def apply[A: Encoder](data: A*): CheckAnswerRows = {
       val encoder = encoderFor[A]
       val toExternalRow = RowEncoder(encoder.schema)
       CheckAnswerRows(data.map(d => toExternalRow.fromRow(encoder.toRow(d))), false)
@@ -123,7 +124,7 @@ trait StreamTest extends QueryTest with Timeouts {
    * This operation automatically blocks until all added data has been processed.
    */
   object CheckLastBatch {
-    def apply[A : Encoder](data: A*): CheckAnswerRows = {
+    def apply[A: Encoder](data: A*): CheckAnswerRows = {
       val encoder = encoderFor[A]
       val toExternalRow = RowEncoder(encoder.schema)
       CheckAnswerRows(data.map(d => toExternalRow.fromRow(encoder.toRow(d))), true)
@@ -133,7 +134,8 @@ trait StreamTest extends QueryTest with Timeouts {
   }
 
   case class CheckAnswerRows(expectedAnswer: Seq[Row], lastOnly: Boolean)
-      extends StreamAction with StreamMustBeRunning {
+      extends StreamAction
+      with StreamMustBeRunning {
     override def toString: String = s"$operatorName: ${expectedAnswer.mkString(",")}"
     private def operatorName = if (lastOnly) "CheckLastBatch" else "CheckAnswer"
   }
@@ -143,15 +145,14 @@ trait StreamTest extends QueryTest with Timeouts {
 
   /** Starts the stream, resuming if data has already been processed. It must not be running. */
   case class StartStream(
-      trigger: Trigger = ProcessingTime(0),
-      triggerClock: Clock = new SystemClock)
-    extends StreamAction
+      trigger: Trigger = ProcessingTime(0), triggerClock: Clock = new SystemClock)
+      extends StreamAction
 
   /** Advance the trigger clock's time manually. */
   case class AdvanceManualClock(timeToAdd: Long) extends StreamAction
 
   /** Signals that a failure is expected and should not kill the test. */
-  case class ExpectFailure[T <: Throwable : ClassTag]() extends StreamAction {
+  case class ExpectFailure[T <: Throwable: ClassTag]() extends StreamAction {
     val causeClass: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
     override def toString(): String = s"ExpectFailure[${causeClass.getCanonicalName}]"
   }
@@ -164,13 +165,13 @@ trait StreamTest extends QueryTest with Timeouts {
 
   object Assert {
     def apply(condition: => Boolean, message: String = ""): Assert = new Assert(condition, message)
-    def apply(message: String)(body: => Unit): Assert = new Assert( { body; true }, message)
-    def apply(body: => Unit): Assert = new Assert( { body; true }, "")
+    def apply(message: String)(body: => Unit): Assert = new Assert({ body; true }, message)
+    def apply(body: => Unit): Assert = new Assert({ body; true }, "")
   }
 
   /** Assert that a condition on the active query is true */
   class AssertOnQuery(val condition: StreamExecution => Boolean, val message: String)
-    extends StreamAction {
+      extends StreamAction {
     override def toString: String = s"AssertOnQuery(<condition>, $message)"
   }
 
@@ -208,14 +209,15 @@ trait StreamTest extends QueryTest with Timeouts {
       actions.takeWhile(!_.isInstanceOf[StreamMustBeRunning]).exists(_.isInstanceOf[StartStream])
     val startedTest = if (startedManually) actions else StartStream() +: actions
 
-    def testActions = actions.zipWithIndex.map {
-      case (a, i) =>
-        if ((pos == i && startedManually) || (pos == (i + 1) && !startedManually)) {
-          "=> " + a.toString
-        } else {
-          "   " + a.toString
-        }
-    }.mkString("\n")
+    def testActions =
+      actions.zipWithIndex.map {
+        case (a, i) =>
+          if ((pos == i && startedManually) || (pos == (i + 1) && !startedManually)) {
+            "=> " + a.toString
+          } else {
+            "   " + a.toString
+          }
+      }.mkString("\n")
 
     def currentOffsets =
       if (currentStream != null) currentStream.committedOffsets.toString else "not started"
@@ -263,7 +265,8 @@ trait StreamTest extends QueryTest with Timeouts {
 
       // Recursively pretty print a exception with truncated stacktrace and internal cause
       def exceptionToString(e: Throwable, prefix: String = ""): String = {
-        val base = s"$prefix${e.getMessage}" +
+        val base =
+          s"$prefix${e.getMessage}" +
           e.getStackTrace.take(10).mkString(s"\n$prefix", s"\n$prefix\t", "\n")
         if (e.getCause != null) {
           base + s"\n$prefix\tCaused by: " + exceptionToString(e.getCause, s"$prefix\t")
@@ -273,8 +276,7 @@ trait StreamTest extends QueryTest with Timeouts {
       }
       val c = Option(cause).map(exceptionToString(_))
       val m = if (message != null && message.size > 0) Some(message) else None
-      fail(
-        s"""
+      fail(s"""
            |${(m ++ c).mkString(": ")}
            |$testState
          """.stripMargin)
@@ -289,29 +291,26 @@ trait StreamTest extends QueryTest with Timeouts {
           case StartStream(trigger, triggerClock) =>
             verify(currentStream == null, "stream already running")
             lastStream = currentStream
-            currentStream =
-              spark
-                .streams
-                .startQuery(
-                  StreamExecution.nextName,
-                  metadataRoot,
-                  stream,
-                  sink,
-                  trigger,
-                  triggerClock,
-                  outputMode = outputMode)
-                .asInstanceOf[StreamExecution]
+            currentStream = spark.streams
+              .startQuery(StreamExecution.nextName,
+                          metadataRoot,
+                          stream,
+                          sink,
+                          trigger,
+                          triggerClock,
+                          outputMode = outputMode)
+              .asInstanceOf[StreamExecution]
             currentStream.microBatchThread.setUncaughtExceptionHandler(
-              new UncaughtExceptionHandler {
-                override def uncaughtException(t: Thread, e: Throwable): Unit = {
-                  streamDeathCause = e
-                  testThread.interrupt()
-                }
-              })
+                new UncaughtExceptionHandler {
+              override def uncaughtException(t: Thread, e: Throwable): Unit = {
+                streamDeathCause = e
+                testThread.interrupt()
+              }
+            })
 
           case AdvanceManualClock(timeToAdd) =>
-            verify(currentStream != null,
-                   "can not advance manual clock when a stream is not running")
+            verify(
+                currentStream != null, "can not advance manual clock when a stream is not running")
             verify(currentStream.triggerClock.isInstanceOf[ManualClock],
                    s"can not advance clock of type ${currentStream.triggerClock.getClass}")
             currentStream.triggerClock.asInstanceOf[ManualClock].advance(timeToAdd)
@@ -320,13 +319,11 @@ trait StreamTest extends QueryTest with Timeouts {
             verify(currentStream != null, "can not stop a stream that is not running")
             try failAfter(streamingTimeout) {
               currentStream.stop()
-              verify(!currentStream.microBatchThread.isAlive,
-                s"microbatch thread not stopped")
-              verify(!currentStream.isActive,
-                "query.isActive() is false even after stopping")
+              verify(!currentStream.microBatchThread.isAlive, s"microbatch thread not stopped")
+              verify(!currentStream.isActive, "query.isActive() is false even after stopping")
               verify(currentStream.exception.isEmpty,
-                s"query.exception() is not empty after clean stop: " +
-                  currentStream.exception.map(_.toString()).getOrElse(""))
+                     s"query.exception() is not empty after clean stop: " +
+                     currentStream.exception.map(_.toString()).getOrElse(""))
             } catch {
               case _: InterruptedException =>
               case _: org.scalatest.exceptions.TestFailedDueToTimeoutException =>
@@ -348,14 +345,14 @@ trait StreamTest extends QueryTest with Timeouts {
                 assert(!currentStream.microBatchThread.isAlive)
               }
               verify(thrownException.query.eq(currentStream),
-                s"incorrect query reference in exception")
+                     s"incorrect query reference in exception")
               verify(currentStream.exception === Some(thrownException),
-                s"incorrect exception returned by query.exception()")
+                     s"incorrect exception returned by query.exception()")
 
               val exception = currentStream.exception.get
               verify(exception.cause.getClass === ef.causeClass,
-                "incorrect cause in exception returned by query.exception()\n" +
-                  s"\tExpected: ${ef.causeClass}\n\tReturned: ${exception.cause.getClass}")
+                     "incorrect cause in exception returned by query.exception()\n" +
+                     s"\tExpected: ${ef.causeClass}\n\tReturned: ${exception.cause.getClass}")
             } catch {
               case _: InterruptedException =>
               case _: org.scalatest.exceptions.TestFailedDueToTimeoutException =>
@@ -370,7 +367,7 @@ trait StreamTest extends QueryTest with Timeouts {
 
           case a: AssertOnQuery =>
             verify(currentStream != null || lastStream != null,
-              "cannot assert when not stream has been started")
+                   "cannot assert when not stream has been started")
             val streamToAssert = Option(currentStream).getOrElse(lastStream)
             verify(a.condition(streamToAssert), s"Assert on query failed: ${a.message}")
 
@@ -386,24 +383,21 @@ trait StreamTest extends QueryTest with Timeouts {
               val (source, offset) = a.addData(queryToUse)
 
               def findSourceIndex(plan: LogicalPlan): Option[Int] = {
-                plan
-                  .collect { case StreamingExecutionRelation(s, _) => s }
-                  .zipWithIndex
+                plan.collect { case StreamingExecutionRelation(s, _) => s }.zipWithIndex
                   .find(_._1 == source)
                   .map(_._2)
               }
 
               // Try to find the index of the source to which data was added. Either get the index
               // from the current active query or the original input logical plan.
-              val sourceIndex =
-                queryToUse.flatMap { query =>
-                  findSourceIndex(query.logicalPlan)
-                }.orElse {
-                  findSourceIndex(stream.logicalPlan)
-                }.getOrElse {
-                  throw new IllegalArgumentException(
+              val sourceIndex = queryToUse.flatMap { query =>
+                findSourceIndex(query.logicalPlan)
+              }.orElse {
+                findSourceIndex(stream.logicalPlan)
+              }.getOrElse {
+                throw new IllegalArgumentException(
                     "Could find index of the source to which data was added")
-                }
+              }
 
               // Store the expected offset of added data to wait for it later
               awaiting.put(sourceIndex, offset)
@@ -415,18 +409,16 @@ trait StreamTest extends QueryTest with Timeouts {
           case CheckAnswerRows(expectedAnswer, lastOnly) =>
             verify(currentStream != null, "stream not running")
             // Get the map of source index to the current source objects
-            val indexToSource = currentStream
-              .logicalPlan
-              .collect { case StreamingExecutionRelation(s, _) => s }
-              .zipWithIndex
-              .map(_.swap)
-              .toMap
+            val indexToSource = currentStream.logicalPlan.collect {
+              case StreamingExecutionRelation(s, _) => s
+            }.zipWithIndex.map(_.swap).toMap
 
             // Block until all data added has been processed for all the source
-            awaiting.foreach { case (sourceIndex, offset) =>
-              failAfter(streamingTimeout) {
-                currentStream.awaitOffset(indexToSource(sourceIndex), offset)
-              }
+            awaiting.foreach {
+              case (sourceIndex, offset) =>
+                failAfter(streamingTimeout) {
+                  currentStream.awaitOffset(indexToSource(sourceIndex), offset)
+                }
             }
 
             val sparkAnswer = try if (lastOnly) sink.lastBatch else sink.allData catch {
@@ -434,8 +426,8 @@ trait StreamTest extends QueryTest with Timeouts {
                 failTest("Exception while getting data from sink", e)
             }
 
-            QueryTest.sameRows(expectedAnswer, sparkAnswer).foreach {
-              error => failTest(error)
+            QueryTest.sameRows(expectedAnswer, sparkAnswer).foreach { error =>
+              failTest(error)
             }
         }
         pos += 1
@@ -460,9 +452,7 @@ trait StreamTest extends QueryTest with Timeouts {
    *                as needed
    */
   def runStressTest(
-      ds: Dataset[Int],
-      addData: Seq[Int] => StreamAction,
-      iterations: Int = 100): Unit = {
+      ds: Dataset[Int], addData: Seq[Int] => StreamAction, iterations: Int = 100): Unit = {
     implicit val intEncoder = ExpressionEncoder[Int]()
     var dataPos = 0
     var running = true
@@ -479,7 +469,7 @@ trait StreamTest extends QueryTest with Timeouts {
 
     (1 to iterations).foreach { i =>
       val rand = Random.nextDouble()
-      if(!running) {
+      if (!running) {
         rand match {
           case r if r < 0.7 => // AddData
             addRandomData()
@@ -503,11 +493,10 @@ trait StreamTest extends QueryTest with Timeouts {
         }
       }
     }
-    if(!running) { actions += StartStream() }
+    if (!running) { actions += StartStream() }
     addCheck()
     testStream(ds)(actions: _*)
   }
-
 
   object AwaitTerminationTester {
 
@@ -521,7 +510,7 @@ trait StreamTest extends QueryTest with Timeouts {
 
     /** Expect awaitTermination to throw an exception */
     case class ExpectException[E <: Exception]()(implicit val t: ClassTag[E])
-      extends ExpectedBehavior
+        extends ExpectedBehavior
 
     private val DEFAULT_TEST_TIMEOUT = 1 second
 
@@ -529,7 +518,7 @@ trait StreamTest extends QueryTest with Timeouts {
         expectedBehavior: ExpectedBehavior,
         awaitTermFunc: () => Unit,
         testTimeout: Span = DEFAULT_TEST_TIMEOUT
-      ): Unit = {
+    ): Unit = {
 
       expectedBehavior match {
         case ExpectNotBlocked =>
@@ -558,7 +547,7 @@ trait StreamTest extends QueryTest with Timeouts {
               }
             }
           assert(thrownException.cause.getClass === e.t.runtimeClass,
-            "exception of incorrect type was throw")
+                 "exception of incorrect type was throw")
       }
     }
   }

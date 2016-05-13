@@ -30,28 +30,25 @@ class StaticMemoryManagerSuite extends MemoryManagerSuite {
    * Make a [[StaticMemoryManager]] and a [[MemoryStore]] with limited class dependencies.
    */
   private def makeThings(
-      maxExecutionMem: Long,
-      maxStorageMem: Long): (StaticMemoryManager, MemoryStore) = {
-    val mm = new StaticMemoryManager(
-      conf,
-      maxOnHeapExecutionMemory = maxExecutionMem,
-      maxOnHeapStorageMemory = maxStorageMem,
-      numCores = 1)
+      maxExecutionMem: Long, maxStorageMem: Long): (StaticMemoryManager, MemoryStore) = {
+    val mm = new StaticMemoryManager(conf,
+                                     maxOnHeapExecutionMemory = maxExecutionMem,
+                                     maxOnHeapStorageMemory = maxStorageMem,
+                                     numCores = 1)
     val ms = makeMemoryStore(mm)
     (mm, ms)
   }
 
   override protected def createMemoryManager(
-      maxOnHeapExecutionMemory: Long,
-      maxOffHeapExecutionMemory: Long): StaticMemoryManager = {
+      maxOnHeapExecutionMemory: Long, maxOffHeapExecutionMemory: Long): StaticMemoryManager = {
     new StaticMemoryManager(
-      conf.clone
-        .set("spark.memory.fraction", "1")
-        .set("spark.testing.memory", maxOnHeapExecutionMemory.toString)
-        .set("spark.memory.offHeap.size", maxOffHeapExecutionMemory.toString),
-      maxOnHeapExecutionMemory = maxOnHeapExecutionMemory,
-      maxOnHeapStorageMemory = 0,
-      numCores = 1)
+        conf.clone
+          .set("spark.memory.fraction", "1")
+          .set("spark.testing.memory", maxOnHeapExecutionMemory.toString)
+          .set("spark.memory.offHeap.size", maxOffHeapExecutionMemory.toString),
+        maxOnHeapExecutionMemory = maxOnHeapExecutionMemory,
+        maxOnHeapStorageMemory = 0,
+        numCores = 1)
   }
 
   test("basic execution memory") {
@@ -186,5 +183,4 @@ class StaticMemoryManagerSuite extends MemoryManagerSuite {
     mm.releaseUnrollMemory(maxStorageMem, memoryMode)
     assert(mm.storageMemoryUsed === 0L)
   }
-
 }

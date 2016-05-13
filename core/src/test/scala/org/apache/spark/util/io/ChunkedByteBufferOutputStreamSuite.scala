@@ -23,7 +23,6 @@ import scala.util.Random
 
 import org.apache.spark.SparkFunSuite
 
-
 class ChunkedByteBufferOutputStreamSuite extends SparkFunSuite {
 
   test("empty output") {

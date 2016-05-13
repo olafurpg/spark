@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.CalendarInterval
 
-
 class LiteralExpressionSuite extends SparkFunSuite with ExpressionEvalHelper {
 
   test("null") {
@@ -92,7 +91,6 @@ class LiteralExpressionSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation(Literal(Double.MaxValue), Double.MaxValue)
     checkEvaluation(Literal(Float.MinValue), Float.MinValue)
     checkEvaluation(Literal(Float.MaxValue), Float.MaxValue)
-
   }
 
   test("string literals") {
@@ -116,7 +114,7 @@ class LiteralExpressionSuite extends SparkFunSuite with ExpressionEvalHelper {
       checkEvaluation(Literal(Decimal(d.toInt)), Decimal(d.toInt))
       checkEvaluation(Literal(Decimal(d.toLong)), Decimal(d.toLong))
       checkEvaluation(Literal(Decimal((d * 1000L).toLong, 10, 3)),
-        Decimal((d * 1000L).toLong, 10, 3))
+                      Decimal((d * 1000L).toLong, 10, 3))
       checkEvaluation(Literal(BigDecimal(d.toString)), Decimal(d))
       checkEvaluation(Literal(new java.math.BigDecimal(d.toString)), Decimal(d))
     }

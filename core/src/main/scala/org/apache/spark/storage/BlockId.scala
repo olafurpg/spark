@@ -31,6 +31,7 @@ import org.apache.spark.annotation.DeveloperApi
  */
 @DeveloperApi
 sealed abstract class BlockId {
+
   /** A globally unique identifier for this Block. Can be used for ser/de. */
   def name: String
 

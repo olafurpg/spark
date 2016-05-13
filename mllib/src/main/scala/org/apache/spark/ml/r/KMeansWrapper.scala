@@ -29,11 +29,11 @@ import org.apache.spark.ml.feature.RFormula
 import org.apache.spark.ml.util._
 import org.apache.spark.sql.{DataFrame, Dataset}
 
-private[r] class KMeansWrapper private (
-    val pipeline: PipelineModel,
-    val features: Array[String],
-    val size: Array[Long],
-    val isLoaded: Boolean = false) extends MLWritable {
+private[r] class KMeansWrapper private (val pipeline: PipelineModel,
+                                        val features: Array[String],
+                                        val size: Array[Long],
+                                        val isLoaded: Boolean = false)
+    extends MLWritable {
 
   private val kMeansModel: KMeansModel = pipeline.stages(1).asInstanceOf[KMeansModel]
 
@@ -50,7 +50,7 @@ private[r] class KMeansWrapper private (
       kMeansModel.summary.cluster
     } else {
       throw new UnsupportedOperationException(
-        s"Method (centers or classes) required but $method found.")
+          s"Method (centers or classes) required but $method found.")
     }
   }
 
@@ -63,32 +63,23 @@ private[r] class KMeansWrapper private (
 
 private[r] object KMeansWrapper extends MLReadable[KMeansWrapper] {
 
-  def fit(
-      data: DataFrame,
-      formula: String,
-      k: Int,
-      maxIter: Int,
-      initMode: String): KMeansWrapper = {
+  def fit(data: DataFrame,
+          formula: String,
+          k: Int,
+          maxIter: Int,
+          initMode: String): KMeansWrapper = {
 
-    val rFormulaModel = new RFormula()
-      .setFormula(formula)
-      .setFeaturesCol("features")
-      .fit(data)
+    val rFormulaModel = new RFormula().setFormula(formula).setFeaturesCol("features").fit(data)
 
     // get feature names from output schema
     val schema = rFormulaModel.transform(data).schema
-    val featureAttrs = AttributeGroup.fromStructField(schema(rFormulaModel.getFeaturesCol))
-      .attributes.get
+    val featureAttrs =
+      AttributeGroup.fromStructField(schema(rFormulaModel.getFeaturesCol)).attributes.get
     val features = featureAttrs.map(_.name.get)
 
-    val kMeans = new KMeans()
-      .setK(k)
-      .setMaxIter(maxIter)
-      .setInitMode(initMode)
+    val kMeans = new KMeans().setK(k).setMaxIter(maxIter).setInitMode(initMode)
 
-    val pipeline = new Pipeline()
-      .setStages(Array(rFormulaModel, kMeans))
-      .fit(data)
+    val pipeline = new Pipeline().setStages(Array(rFormulaModel, kMeans)).fit(data)
 
     val kMeansModel: KMeansModel = pipeline.stages(1).asInstanceOf[KMeansModel]
     val size: Array[Long] = kMeansModel.summary.clusterSizes
@@ -106,7 +97,8 @@ private[r] object KMeansWrapper extends MLReadable[KMeansWrapper] {
       val rMetadataPath = new Path(path, "rMetadata").toString
       val pipelinePath = new Path(path, "pipeline").toString
 
-      val rMetadata = ("class" -> instance.getClass.getName) ~
+      val rMetadata =
+        ("class" -> instance.getClass.getName) ~
         ("features" -> instance.features.toSeq) ~
         ("size" -> instance.size.toSeq)
       val rMetadataJson: String = compact(render(rMetadata))

@@ -34,7 +34,10 @@ import org.apache.spark.sql.types.{ArrayType, StringType, StructType}
  */
 @Experimental
 class StopWordsRemover(override val uid: String)
-  extends Transformer with HasInputCol with HasOutputCol with DefaultParamsWritable {
+    extends Transformer
+    with HasInputCol
+    with HasOutputCol
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("stopWords"))
 
@@ -50,8 +53,8 @@ class StopWordsRemover(override val uid: String)
    * @see [[StopWordsRemover.loadDefaultStopWords()]]
    * @group param
    */
-  val stopWords: StringArrayParam =
-    new StringArrayParam(this, "stopWords", "the words to be filtered out")
+  val stopWords: StringArrayParam = new StringArrayParam(
+      this, "stopWords", "the words to be filtered out")
 
   /** @group setParam */
   def setStopWords(value: Array[String]): this.type = set(stopWords, value)
@@ -64,8 +67,8 @@ class StopWordsRemover(override val uid: String)
    * Default: false
    * @group param
    */
-  val caseSensitive: BooleanParam = new BooleanParam(this, "caseSensitive",
-    "whether to do a case-sensitive comparison over the stop words")
+  val caseSensitive: BooleanParam = new BooleanParam(
+      this, "caseSensitive", "whether to do a case-sensitive comparison over the stop words")
 
   /** @group setParam */
   def setCaseSensitive(value: Boolean): this.type = set(caseSensitive, value)
@@ -78,19 +81,20 @@ class StopWordsRemover(override val uid: String)
   @Since("2.0.0")
   override def transform(dataset: Dataset[_]): DataFrame = {
     val outputSchema = transformSchema(dataset.schema)
-    val t = if ($(caseSensitive)) {
-      val stopWordsSet = $(stopWords).toSet
-      udf { terms: Seq[String] =>
-        terms.filter(s => !stopWordsSet.contains(s))
+    val t =
+      if ($(caseSensitive)) {
+        val stopWordsSet = $(stopWords).toSet
+        udf { terms: Seq[String] =>
+          terms.filter(s => !stopWordsSet.contains(s))
+        }
+      } else {
+        // TODO: support user locale (SPARK-15064)
+        val toLower = (s: String) => if (s != null) s.toLowerCase else s
+        val lowerStopWords = $(stopWords).map(toLower(_)).toSet
+        udf { terms: Seq[String] =>
+          terms.filter(s => !lowerStopWords.contains(toLower(s)))
+        }
       }
-    } else {
-      // TODO: support user locale (SPARK-15064)
-      val toLower = (s: String) => if (s != null) s.toLowerCase else s
-      val lowerStopWords = $(stopWords).map(toLower(_)).toSet
-      udf { terms: Seq[String] =>
-        terms.filter(s => !lowerStopWords.contains(toLower(s)))
-      }
-    }
     val metadata = outputSchema($(outputCol)).metadata
     dataset.select(col("*"), t(col($(inputCol))).as($(outputCol), metadata))
   }
@@ -98,7 +102,7 @@ class StopWordsRemover(override val uid: String)
   override def transformSchema(schema: StructType): StructType = {
     val inputType = schema($(inputCol)).dataType
     require(inputType.sameType(ArrayType(StringType)),
-      s"Input type must be ArrayType(StringType) but got $inputType.")
+            s"Input type must be ArrayType(StringType) but got $inputType.")
     SchemaUtils.appendColumn(schema, $(outputCol), inputType, schema($(inputCol)).nullable)
   }
 
@@ -108,9 +112,20 @@ class StopWordsRemover(override val uid: String)
 @Since("1.6.0")
 object StopWordsRemover extends DefaultParamsReadable[StopWordsRemover] {
 
-  private[feature]
-  val supportedLanguages = Set("danish", "dutch", "english", "finnish", "french", "german",
-    "hungarian", "italian", "norwegian", "portuguese", "russian", "spanish", "swedish", "turkish")
+  private[feature] val supportedLanguages = Set("danish",
+                                                "dutch",
+                                                "english",
+                                                "finnish",
+                                                "french",
+                                                "german",
+                                                "hungarian",
+                                                "italian",
+                                                "norwegian",
+                                                "portuguese",
+                                                "russian",
+                                                "spanish",
+                                                "swedish",
+                                                "turkish")
 
   @Since("1.6.0")
   override def load(path: String): StopWordsRemover = super.load(path)
@@ -123,8 +138,9 @@ object StopWordsRemover extends DefaultParamsReadable[StopWordsRemover] {
    */
   @Since("2.0.0")
   def loadDefaultStopWords(language: String): Array[String] = {
-    require(supportedLanguages.contains(language),
-      s"$language is not in the supported language list: ${supportedLanguages.mkString(", ")}.")
+    require(
+        supportedLanguages.contains(language),
+        s"$language is not in the supported language list: ${supportedLanguages.mkString(", ")}.")
     val is = getClass.getResourceAsStream(s"/org/apache/spark/ml/feature/stopwords/$language.txt")
     scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
   }

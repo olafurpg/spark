@@ -24,14 +24,11 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.hive.client.HiveClient
 import org.apache.spark.sql.internal.SessionState
 
-
 /**
  * A class that holds all session-specific state in a given [[SparkSession]] backed by Hive.
  */
 private[hive] class HiveSessionState(sparkSession: SparkSession)
-  extends SessionState(sparkSession) {
-
-  self =>
+    extends SessionState(sparkSession) { self =>
 
   private lazy val sharedState: HiveSharedState = {
     sparkSession.sharedState.asInstanceOf[HiveSharedState]
@@ -46,14 +43,13 @@ private[hive] class HiveSessionState(sparkSession: SparkSession)
    * Internal catalog for managing table and database states.
    */
   override lazy val catalog = {
-    new HiveSessionCatalog(
-      sharedState.externalCatalog,
-      metadataHive,
-      sparkSession,
-      functionResourceLoader,
-      functionRegistry,
-      conf,
-      newHadoopConf())
+    new HiveSessionCatalog(sharedState.externalCatalog,
+                           metadataHive,
+                           sparkSession,
+                           functionResourceLoader,
+                           functionRegistry,
+                           conf,
+                           newHadoopConf())
   }
 
   /**
@@ -79,27 +75,26 @@ private[hive] class HiveSessionState(sparkSession: SparkSession)
    */
   override def planner: SparkPlanner = {
     new SparkPlanner(sparkSession.sparkContext, conf, experimentalMethods.extraStrategies)
-      with HiveStrategies {
+    with HiveStrategies {
       override val sparkSession: SparkSession = self.sparkSession
 
       override def strategies: Seq[Strategy] = {
         experimentalMethods.extraStrategies ++ Seq(
-          FileSourceStrategy,
-          DataSourceStrategy,
-          DDLStrategy,
-          SpecialLimits,
-          InMemoryScans,
-          HiveTableScans,
-          DataSinks,
-          Scripts,
-          Aggregation,
-          JoinSelection,
-          BasicOperators
+            FileSourceStrategy,
+            DataSourceStrategy,
+            DDLStrategy,
+            SpecialLimits,
+            InMemoryScans,
+            HiveTableScans,
+            DataSinks,
+            Scripts,
+            Aggregation,
+            JoinSelection,
+            BasicOperators
         )
       }
     }
   }
-
 
   // ------------------------------------------------------
   //  Helper methods, partially leftover from pre-2.0 days
@@ -163,8 +158,7 @@ private[hive] class HiveSessionState(sparkSession: SparkSession)
 
   // TODO: why do we get this from SparkConf but not SQLConf?
   def hiveThriftServerSingleSession: Boolean = {
-    sparkSession.sparkContext.conf.getBoolean(
-      "spark.sql.hive.thriftServer.singleSession", defaultValue = false)
+    sparkSession.sparkContext.conf
+      .getBoolean("spark.sql.hive.thriftServer.singleSession", defaultValue = false)
   }
-
 }

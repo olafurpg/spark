@@ -82,16 +82,14 @@ private[spark] class OutputCommitCoordinator(conf: SparkConf, isDriver: Boolean)
    * @return true if this task is authorized to commit, false otherwise
    */
   def canCommit(
-      stage: StageId,
-      partition: PartitionId,
-      attemptNumber: TaskAttemptNumber): Boolean = {
+      stage: StageId, partition: PartitionId, attemptNumber: TaskAttemptNumber): Boolean = {
     val msg = AskPermissionToCommitOutput(stage, partition, attemptNumber)
     coordinatorRef match {
       case Some(endpointRef) =>
         endpointRef.askWithRetry[Boolean](msg)
       case None =>
         logError(
-          "canCommit called after coordinator was stopped (is SparkEnv shutdown in progress)?")
+            "canCommit called after coordinator was stopped (is SparkEnv shutdown in progress)?")
         false
     }
   }
@@ -103,9 +101,7 @@ private[spark] class OutputCommitCoordinator(conf: SparkConf, isDriver: Boolean)
    * @param maxPartitionId the maximum partition id that could appear in this stage's tasks (i.e.
    *                       the maximum possible value of `context.partitionId`).
    */
-  private[scheduler] def stageStart(
-      stage: StageId,
-      maxPartitionId: Int): Unit = {
+  private[scheduler] def stageStart(stage: StageId, maxPartitionId: Int): Unit = {
     val arr = new Array[TaskAttemptNumber](maxPartitionId + 1)
     java.util.Arrays.fill(arr, NO_AUTHORIZED_COMMITTER)
     synchronized {
@@ -119,11 +115,10 @@ private[spark] class OutputCommitCoordinator(conf: SparkConf, isDriver: Boolean)
   }
 
   // Called by DAGScheduler
-  private[scheduler] def taskCompleted(
-      stage: StageId,
-      partition: PartitionId,
-      attemptNumber: TaskAttemptNumber,
-      reason: TaskEndReason): Unit = synchronized {
+  private[scheduler] def taskCompleted(stage: StageId,
+                                       partition: PartitionId,
+                                       attemptNumber: TaskAttemptNumber,
+                                       reason: TaskEndReason): Unit = synchronized {
     val authorizedCommitters = authorizedCommittersByStage.getOrElse(stage, {
       logDebug(s"Ignoring task completion for completed stage")
       return
@@ -133,11 +128,11 @@ private[spark] class OutputCommitCoordinator(conf: SparkConf, isDriver: Boolean)
       // The task output has been committed successfully
       case denied: TaskCommitDenied =>
         logInfo(s"Task was denied committing, stage: $stage, partition: $partition, " +
-          s"attempt: $attemptNumber")
+            s"attempt: $attemptNumber")
       case otherReason =>
         if (authorizedCommitters(partition) == attemptNumber) {
           logDebug(s"Authorized committer (attemptNumber=$attemptNumber, stage=$stage, " +
-            s"partition=$partition) failed; clearing lock")
+              s"partition=$partition) failed; clearing lock")
           authorizedCommitters(partition) = NO_AUTHORIZED_COMMITTER
         }
     }
@@ -153,28 +148,28 @@ private[spark] class OutputCommitCoordinator(conf: SparkConf, isDriver: Boolean)
 
   // Marked private[scheduler] instead of private so this can be mocked in tests
   private[scheduler] def handleAskPermissionToCommit(
-      stage: StageId,
-      partition: PartitionId,
-      attemptNumber: TaskAttemptNumber): Boolean = synchronized {
-    authorizedCommittersByStage.get(stage) match {
-      case Some(authorizedCommitters) =>
-        authorizedCommitters(partition) match {
-          case NO_AUTHORIZED_COMMITTER =>
-            logDebug(s"Authorizing attemptNumber=$attemptNumber to commit for stage=$stage, " +
-              s"partition=$partition")
-            authorizedCommitters(partition) = attemptNumber
-            true
-          case existingCommitter =>
-            logDebug(s"Denying attemptNumber=$attemptNumber to commit for stage=$stage, " +
-              s"partition=$partition; existingCommitter = $existingCommitter")
-            false
-        }
-      case None =>
-        logDebug(s"Stage $stage has completed, so not allowing attempt number $attemptNumber of" +
-          s"partition $partition to commit")
-        false
+      stage: StageId, partition: PartitionId, attemptNumber: TaskAttemptNumber): Boolean =
+    synchronized {
+      authorizedCommittersByStage.get(stage) match {
+        case Some(authorizedCommitters) =>
+          authorizedCommitters(partition) match {
+            case NO_AUTHORIZED_COMMITTER =>
+              logDebug(s"Authorizing attemptNumber=$attemptNumber to commit for stage=$stage, " +
+                  s"partition=$partition")
+              authorizedCommitters(partition) = attemptNumber
+              true
+            case existingCommitter =>
+              logDebug(s"Denying attemptNumber=$attemptNumber to commit for stage=$stage, " +
+                  s"partition=$partition; existingCommitter = $existingCommitter")
+              false
+          }
+        case None =>
+          logDebug(
+              s"Stage $stage has completed, so not allowing attempt number $attemptNumber of" +
+              s"partition $partition to commit")
+          false
+      }
     }
-  }
 }
 
 private[spark] object OutputCommitCoordinator {
@@ -182,7 +177,8 @@ private[spark] object OutputCommitCoordinator {
   // This endpoint is used only for RPC
   private[spark] class OutputCommitCoordinatorEndpoint(
       override val rpcEnv: RpcEnv, outputCommitCoordinator: OutputCommitCoordinator)
-    extends RpcEndpoint with Logging {
+      extends RpcEndpoint
+      with Logging {
 
     override def receive: PartialFunction[Any, Unit] = {
       case StopCoordinator =>
@@ -193,7 +189,7 @@ private[spark] object OutputCommitCoordinator {
     override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
       case AskPermissionToCommitOutput(stage, partition, attemptNumber) =>
         context.reply(
-          outputCommitCoordinator.handleAskPermissionToCommit(stage, partition, attemptNumber))
+            outputCommitCoordinator.handleAskPermissionToCommit(stage, partition, attemptNumber))
     }
   }
 }

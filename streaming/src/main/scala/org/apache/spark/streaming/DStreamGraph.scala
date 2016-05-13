@@ -69,7 +69,7 @@ final private[streaming] class DStreamGraph extends Serializable with Logging {
   def setBatchDuration(duration: Duration) {
     this.synchronized {
       require(batchDuration == null,
-        s"Batch duration already set as $batchDuration. Cannot set it again.")
+              s"Batch duration already set as $batchDuration. Cannot set it again.")
       batchDuration = duration
     }
   }
@@ -77,7 +77,7 @@ final private[streaming] class DStreamGraph extends Serializable with Logging {
   def remember(duration: Duration) {
     this.synchronized {
       require(rememberDuration == null,
-        s"Remember duration already set as $rememberDuration. Cannot set it again.")
+              s"Remember duration already set as $rememberDuration. Cannot set it again.")
       rememberDuration = duration
     }
   }
@@ -101,7 +101,8 @@ final private[streaming] class DStreamGraph extends Serializable with Logging {
   def getOutputStreams(): Array[DStream[_]] = this.synchronized { outputStreams.toArray }
 
   def getReceiverInputStreams(): Array[ReceiverInputDStream[_]] = this.synchronized {
-    inputStreams.filter(_.isInstanceOf[ReceiverInputDStream[_]])
+    inputStreams
+      .filter(_.isInstanceOf[ReceiverInputDStream[_]])
       .map(_.asInstanceOf[ReceiverInputDStream[_]])
       .toArray
   }
@@ -160,7 +161,8 @@ final private[streaming] class DStreamGraph extends Serializable with Logging {
       require(batchDuration != null, "Batch duration has not been set")
       // assert(batchDuration >= Milliseconds(100), "Batch duration of " + batchDuration +
       // " is very low")
-      require(getOutputStreams().nonEmpty, "No output operations registered, so nothing to execute")
+      require(
+          getOutputStreams().nonEmpty, "No output operations registered, so nothing to execute")
     }
   }
 
@@ -195,4 +197,3 @@ final private[streaming] class DStreamGraph extends Serializable with Logging {
     }
   }
 }
-

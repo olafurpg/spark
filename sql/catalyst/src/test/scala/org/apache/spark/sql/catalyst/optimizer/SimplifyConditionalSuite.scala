@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules._
 import org.apache.spark.sql.types.{IntegerType, NullType}
 
-
 class SimplifyConditionalSuite extends PlanTest with PredicateHelper {
 
   object Optimize extends RuleExecutor[LogicalPlan] {
@@ -44,50 +43,42 @@ class SimplifyConditionalSuite extends PlanTest with PredicateHelper {
   private val nullBranch = (Literal.create(null, NullType), Literal(30))
 
   test("simplify if") {
-    assertEquivalent(
-      If(TrueLiteral, Literal(10), Literal(20)),
-      Literal(10))
+    assertEquivalent(If(TrueLiteral, Literal(10), Literal(20)), Literal(10))
 
-    assertEquivalent(
-      If(FalseLiteral, Literal(10), Literal(20)),
-      Literal(20))
+    assertEquivalent(If(FalseLiteral, Literal(10), Literal(20)), Literal(20))
 
-    assertEquivalent(
-      If(Literal.create(null, NullType), Literal(10), Literal(20)),
-      Literal(20))
+    assertEquivalent(If(Literal.create(null, NullType), Literal(10), Literal(20)), Literal(20))
   }
 
   test("remove unreachable branches") {
     // i.e. removing branches whose conditions are always false
     assertEquivalent(
-      CaseWhen(unreachableBranch :: normalBranch :: unreachableBranch :: nullBranch :: Nil, None),
-      CaseWhen(normalBranch :: Nil, None))
+        CaseWhen(unreachableBranch :: normalBranch :: unreachableBranch :: nullBranch :: Nil,
+                 None),
+        CaseWhen(normalBranch :: Nil, None))
   }
 
   test("remove entire CaseWhen if only the else branch is reachable") {
     assertEquivalent(
-      CaseWhen(unreachableBranch :: unreachableBranch :: nullBranch :: Nil, Some(Literal(30))),
-      Literal(30))
+        CaseWhen(unreachableBranch :: unreachableBranch :: nullBranch :: Nil, Some(Literal(30))),
+        Literal(30))
 
-    assertEquivalent(
-      CaseWhen(unreachableBranch :: unreachableBranch :: Nil, None),
-      Literal.create(null, IntegerType))
+    assertEquivalent(CaseWhen(unreachableBranch :: unreachableBranch :: Nil, None),
+                     Literal.create(null, IntegerType))
   }
 
   test("remove entire CaseWhen if the first branch is always true") {
-    assertEquivalent(
-      CaseWhen(trueBranch :: normalBranch :: nullBranch :: Nil, None),
-      Literal(5))
+    assertEquivalent(CaseWhen(trueBranch :: normalBranch :: nullBranch :: Nil, None), Literal(5))
 
     // Test branch elimination and simplification in combination
     assertEquivalent(
-      CaseWhen(unreachableBranch :: unreachableBranch :: nullBranch :: trueBranch :: normalBranch
-        :: Nil, None),
-      Literal(5))
+        CaseWhen(
+            unreachableBranch :: unreachableBranch :: nullBranch :: trueBranch :: normalBranch :: Nil,
+            None),
+        Literal(5))
 
     // Make sure this doesn't trigger if there is a non-foldable branch before the true branch
-    assertEquivalent(
-      CaseWhen(normalBranch :: trueBranch :: normalBranch :: Nil, None),
-      CaseWhen(normalBranch :: trueBranch :: normalBranch :: Nil, None))
+    assertEquivalent(CaseWhen(normalBranch :: trueBranch :: normalBranch :: Nil, None),
+                     CaseWhen(normalBranch :: trueBranch :: normalBranch :: Nil, None))
   }
 }

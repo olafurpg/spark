@@ -37,14 +37,13 @@ import org.apache.spark.util.Utils
  * Each WebUI represents a collection of tabs, each of which in turn represents a collection of
  * pages. The use of tabs is optional, however; a WebUI may choose to include pages directly.
  */
-private[spark] abstract class WebUI(
-    val securityManager: SecurityManager,
-    val sslOptions: SSLOptions,
-    port: Int,
-    conf: SparkConf,
-    basePath: String = "",
-    name: String = "")
-  extends Logging {
+private[spark] abstract class WebUI(val securityManager: SecurityManager,
+                                    val sslOptions: SSLOptions,
+                                    port: Int,
+                                    conf: SparkConf,
+                                    basePath: String = "",
+                                    name: String = "")
+    extends Logging {
 
   protected val tabs = ArrayBuffer[WebUITab]()
   protected val handlers = ArrayBuffer[ServletContextHandler]()
@@ -78,12 +77,20 @@ private[spark] abstract class WebUI(
   def attachPage(page: WebUIPage) {
     val pagePath = "/" + page.prefix
     val renderHandler = createServletHandler(pagePath,
-      (request: HttpServletRequest) => page.render(request), securityManager, conf, basePath)
-    val renderJsonHandler = createServletHandler(pagePath.stripSuffix("/") + "/json",
-      (request: HttpServletRequest) => page.renderJson(request), securityManager, conf, basePath)
+                                             (request: HttpServletRequest) => page.render(request),
+                                             securityManager,
+                                             conf,
+                                             basePath)
+    val renderJsonHandler = createServletHandler(
+        pagePath.stripSuffix("/") + "/json",
+        (request: HttpServletRequest) => page.renderJson(request),
+        securityManager,
+        conf,
+        basePath)
     attachHandler(renderHandler)
     attachHandler(renderJsonHandler)
-    pageToHandlers.getOrElseUpdate(page, ArrayBuffer[ServletContextHandler]())
+    pageToHandlers
+      .getOrElseUpdate(page, ArrayBuffer[ServletContextHandler]())
       .append(renderHandler)
   }
 
@@ -153,12 +160,10 @@ private[spark] abstract class WebUI(
 
   /** Stop the server behind this web interface. Only valid after bind(). */
   def stop() {
-    assert(serverInfo.isDefined,
-      s"Attempted to stop $className before binding to a server!")
+    assert(serverInfo.isDefined, s"Attempted to stop $className before binding to a server!")
     serverInfo.get.stop()
   }
 }
-
 
 /**
  * A tab that represents a collection of pages.
@@ -179,7 +184,6 @@ private[spark] abstract class WebUITab(parent: WebUI, val prefix: String) {
 
   def basePath: String = parent.getBasePath
 }
-
 
 /**
  * A page that represents the leaf node in the UI hierarchy.

@@ -21,8 +21,7 @@ import com.codahale.metrics.{Gauge, MetricRegistry}
 
 import org.apache.spark.metrics.source.Source
 
-private[mesos] class MesosClusterSchedulerSource(scheduler: MesosClusterScheduler)
-  extends Source {
+private[mesos] class MesosClusterSchedulerSource(scheduler: MesosClusterScheduler) extends Source {
   override def sourceName: String = "mesos_cluster"
   override def metricRegistry: MetricRegistry = new MetricRegistry()
 

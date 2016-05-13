@@ -148,4 +148,3 @@ class SortingSuite extends SparkFunSuite with SharedSparkContext with Matchers w
     assert((850 to 250 by -1).toArray === range.map(_._1))
   }
 }
-

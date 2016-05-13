@@ -43,22 +43,27 @@ import org.apache.spark.util.Utils
  *       (Wikipedia)]]
  */
 @Since("1.3.0")
-class LDA private (
-    private var k: Int,
-    private var maxIterations: Int,
-    private var docConcentration: Vector,
-    private var topicConcentration: Double,
-    private var seed: Long,
-    private var checkpointInterval: Int,
-    private var ldaOptimizer: LDAOptimizer) extends Logging {
+class LDA private (private var k: Int,
+                   private var maxIterations: Int,
+                   private var docConcentration: Vector,
+                   private var topicConcentration: Double,
+                   private var seed: Long,
+                   private var checkpointInterval: Int,
+                   private var ldaOptimizer: LDAOptimizer)
+    extends Logging {
 
   /**
    * Constructs a LDA instance with default parameters.
    */
   @Since("1.3.0")
-  def this() = this(k = 10, maxIterations = 20, docConcentration = Vectors.dense(-1),
-    topicConcentration = -1, seed = Utils.random.nextLong(), checkpointInterval = 10,
-    ldaOptimizer = new EMLDAOptimizer)
+  def this() =
+    this(k = 10,
+         maxIterations = 20,
+         docConcentration = Vectors.dense(-1),
+         topicConcentration = -1,
+         seed = Utils.random.nextLong(),
+         checkpointInterval = 10,
+         ldaOptimizer = new EMLDAOptimizer)
 
   /**
    * Number of topics to infer, i.e., the number of soft cluster centers.
@@ -131,7 +136,7 @@ class LDA private (
   @Since("1.5.0")
   def setDocConcentration(docConcentration: Vector): this.type = {
     require(docConcentration.size == 1 || docConcentration.size == k,
-      s"Size of docConcentration must be 1 or ${k} but got ${docConcentration.size}")
+            s"Size of docConcentration must be 1 or ${k} but got ${docConcentration.size}")
     this.docConcentration = docConcentration
     this
   }
@@ -233,8 +238,8 @@ class LDA private (
    */
   @Since("1.3.0")
   def setMaxIterations(maxIterations: Int): this.type = {
-    require(maxIterations >= 0,
-      s"Maximum of iterations must be nonnegative but got ${maxIterations}")
+    require(
+        maxIterations >= 0, s"Maximum of iterations must be nonnegative but got ${maxIterations}")
     this.maxIterations = maxIterations
     this
   }
@@ -272,11 +277,10 @@ class LDA private (
   @Since("1.3.0")
   def setCheckpointInterval(checkpointInterval: Int): this.type = {
     require(checkpointInterval == -1 || checkpointInterval > 0,
-      s"Period between checkpoints must be -1 or positive but got ${checkpointInterval}")
+            s"Period between checkpoints must be -1 or positive but got ${checkpointInterval}")
     this.checkpointInterval = checkpointInterval
     this
   }
-
 
   /**
    * :: DeveloperApi ::
@@ -305,13 +309,12 @@ class LDA private (
    */
   @Since("1.4.0")
   def setOptimizer(optimizerName: String): this.type = {
-    this.ldaOptimizer =
-      optimizerName.toLowerCase match {
-        case "em" => new EMLDAOptimizer
-        case "online" => new OnlineLDAOptimizer
-        case other =>
-          throw new IllegalArgumentException(s"Only em, online are supported but got $other.")
-      }
+    this.ldaOptimizer = optimizerName.toLowerCase match {
+      case "em" => new EMLDAOptimizer
+      case "online" => new OnlineLDAOptimizer
+      case other =>
+        throw new IllegalArgumentException(s"Only em, online are supported but got $other.")
+    }
     this
   }
 
@@ -347,7 +350,6 @@ class LDA private (
     run(documents.rdd.asInstanceOf[RDD[(Long, Vector)]])
   }
 }
-
 
 private[clustering] object LDA {
 
@@ -420,13 +422,12 @@ private[clustering] object LDA {
   /**
    * Compute gamma_{wjk}, a distribution over topics k.
    */
-  private[clustering] def computePTopic(
-      docTopicCounts: TopicCounts,
-      termTopicCounts: TopicCounts,
-      totalTopicCounts: TopicCounts,
-      vocabSize: Int,
-      eta: Double,
-      alpha: Double): TopicCounts = {
+  private[clustering] def computePTopic(docTopicCounts: TopicCounts,
+                                        termTopicCounts: TopicCounts,
+                                        totalTopicCounts: TopicCounts,
+                                        vocabSize: Int,
+                                        eta: Double,
+                                        alpha: Double): TopicCounts = {
     val K = docTopicCounts.length
     val N_j = docTopicCounts.data
     val N_w = termTopicCounts.data

@@ -65,43 +65,46 @@ class StreamingListenerSuite extends TestSuiteBase with Matchers {
     val batchInfosSubmitted = collector.batchInfosSubmitted
     batchInfosSubmitted should have size 4
 
-    batchInfosSubmitted.asScala.foreach(info => {
-      info.schedulingDelay should be (None)
-      info.processingDelay should be (None)
-      info.totalDelay should be (None)
+    batchInfosSubmitted.asScala.foreach(
+        info => {
+      info.schedulingDelay should be(None)
+      info.processingDelay should be(None)
+      info.totalDelay should be(None)
     })
 
     batchInfosSubmitted.asScala.foreach { info =>
-      info.numRecords should be (1L)
-      info.streamIdToInputInfo should be (Map(0 -> StreamInputInfo(0, 1L)))
+      info.numRecords should be(1L)
+      info.streamIdToInputInfo should be(Map(0 -> StreamInputInfo(0, 1L)))
     }
 
-    isInIncreasingOrder(batchInfosSubmitted.asScala.map(_.submissionTime)) should be (true)
+    isInIncreasingOrder(batchInfosSubmitted.asScala.map(_.submissionTime)) should be(true)
 
     // SPARK-6766: processingStartTime of batch info should not be None when starting
     val batchInfosStarted = collector.batchInfosStarted
     batchInfosStarted should have size 4
 
-    batchInfosStarted.asScala.foreach(info => {
+    batchInfosStarted.asScala.foreach(
+        info => {
       info.schedulingDelay should not be None
       info.schedulingDelay.get should be >= 0L
-      info.processingDelay should be (None)
-      info.totalDelay should be (None)
+      info.processingDelay should be(None)
+      info.totalDelay should be(None)
     })
 
     batchInfosStarted.asScala.foreach { info =>
-      info.numRecords should be (1L)
-      info.streamIdToInputInfo should be (Map(0 -> StreamInputInfo(0, 1L)))
+      info.numRecords should be(1L)
+      info.streamIdToInputInfo should be(Map(0 -> StreamInputInfo(0, 1L)))
     }
 
-    isInIncreasingOrder(batchInfosStarted.asScala.map(_.submissionTime)) should be (true)
-    isInIncreasingOrder(batchInfosStarted.asScala.map(_.processingStartTime.get)) should be (true)
+    isInIncreasingOrder(batchInfosStarted.asScala.map(_.submissionTime)) should be(true)
+    isInIncreasingOrder(batchInfosStarted.asScala.map(_.processingStartTime.get)) should be(true)
 
     // test onBatchCompleted
     val batchInfosCompleted = collector.batchInfosCompleted
     batchInfosCompleted should have size 4
 
-    batchInfosCompleted.asScala.foreach(info => {
+    batchInfosCompleted.asScala.foreach(
+        info => {
       info.schedulingDelay should not be None
       info.processingDelay should not be None
       info.totalDelay should not be None
@@ -111,13 +114,13 @@ class StreamingListenerSuite extends TestSuiteBase with Matchers {
     })
 
     batchInfosCompleted.asScala.foreach { info =>
-      info.numRecords should be (1L)
-      info.streamIdToInputInfo should be (Map(0 -> StreamInputInfo(0, 1L)))
+      info.numRecords should be(1L)
+      info.streamIdToInputInfo should be(Map(0 -> StreamInputInfo(0, 1L)))
     }
 
-    isInIncreasingOrder(batchInfosCompleted.asScala.map(_.submissionTime)) should be (true)
-    isInIncreasingOrder(batchInfosCompleted.asScala.map(_.processingStartTime.get)) should be (true)
-    isInIncreasingOrder(batchInfosCompleted.asScala.map(_.processingEndTime.get)) should be (true)
+    isInIncreasingOrder(batchInfosCompleted.asScala.map(_.submissionTime)) should be(true)
+    isInIncreasingOrder(batchInfosCompleted.asScala.map(_.processingStartTime.get)) should be(true)
+    isInIncreasingOrder(batchInfosCompleted.asScala.map(_.processingEndTime.get)) should be(true)
   }
 
   test("receiver info reporting") {
@@ -131,14 +134,14 @@ class StreamingListenerSuite extends TestSuiteBase with Matchers {
     ssc.start()
     try {
       eventually(timeout(30 seconds), interval(20 millis)) {
-        collector.startedReceiverStreamIds.size should equal (1)
-        collector.startedReceiverStreamIds.peek() should equal (0)
-        collector.stoppedReceiverStreamIds.size should equal (1)
-        collector.stoppedReceiverStreamIds.peek() should equal (0)
+        collector.startedReceiverStreamIds.size should equal(1)
+        collector.startedReceiverStreamIds.peek() should equal(0)
+        collector.stoppedReceiverStreamIds.size should equal(1)
+        collector.stoppedReceiverStreamIds.peek() should equal(0)
         collector.receiverErrors should have size 1
-        collector.receiverErrors.peek()._1 should equal (0)
-        collector.receiverErrors.peek()._2 should include ("report error")
-        collector.receiverErrors.peek()._3 should include ("report exception")
+        collector.receiverErrors.peek()._1 should equal(0)
+        collector.receiverErrors.peek()._2 should include("report error")
+        collector.receiverErrors.peek()._3 should include("report exception")
       }
     } finally {
       ssc.stop()
@@ -158,8 +161,8 @@ class StreamingListenerSuite extends TestSuiteBase with Matchers {
     ssc.start()
     try {
       eventually(timeout(30 seconds), interval(20 millis)) {
-        collector.startedOutputOperationIds.asScala.take(3) should be (Seq(0, 1, 2))
-        collector.completedOutputOperationIds.asScala.take(3) should be (Seq(0, 1, 2))
+        collector.startedOutputOperationIds.asScala.take(3) should be(Seq(0, 1, 2))
+        collector.completedOutputOperationIds.asScala.take(3) should be(Seq(0, 1, 2))
       }
     } finally {
       ssc.stop()
@@ -181,7 +184,7 @@ class StreamingListenerSuite extends TestSuiteBase with Matchers {
 
     val failureReasons = startStreamingContextAndCollectFailureReasons(ssc)
     assert(failureReasons != null && failureReasons.isEmpty,
-      "A successful batch should not set errorMessage")
+           "A successful batch should not set errorMessage")
   }
 
   test("onBatchCompleted with failed batch and one failed job") {
@@ -210,8 +213,7 @@ class StreamingListenerSuite extends TestSuiteBase with Matchers {
     }
 
     // Check if failureReasons contains the correct error messages
-    val failureReasons =
-      startStreamingContextAndCollectFailureReasons(ssc, isFailed = true)
+    val failureReasons = startStreamingContextAndCollectFailureReasons(ssc, isFailed = true)
     assert(failureReasons != null)
     assert(failureReasons.size === 2)
     assert(failureReasons.contains(0))
@@ -270,15 +272,16 @@ class StreamingListenerSuite extends TestSuiteBase with Matchers {
       }
     }
     _ssc.stop()
-    failureReasonsCollector.failureReasons.synchronized
-    {
+    failureReasonsCollector.failureReasons.synchronized {
       failureReasonsCollector.failureReasons.toMap
     }
   }
 
   /** Check if a sequence of numbers is in increasing order */
   def isInIncreasingOrder(data: Iterable[Long]): Boolean = {
-    !data.sliding(2).exists { itr => itr.size == 2 && itr.head > itr.tail.head }
+    !data.sliding(2).exists { itr =>
+      itr.size == 2 && itr.head > itr.tail.head
+    }
   }
 }
 
@@ -316,8 +319,10 @@ class ReceiverInfoCollector extends StreamingListener {
   }
 
   override def onReceiverError(receiverError: StreamingListenerReceiverError) {
-    receiverErrors.add(((receiverError.receiverInfo.streamId,
-      receiverError.receiverInfo.lastErrorMessage, receiverError.receiverInfo.lastError)))
+    receiverErrors.add(
+        ((receiverError.receiverInfo.streamId,
+          receiverError.receiverInfo.lastErrorMessage,
+          receiverError.receiverInfo.lastError)))
   }
 }
 
@@ -349,7 +354,7 @@ class StreamingListenerSuiteReceiver extends Receiver[Any](StorageLevel.MEMORY_O
       stop("test stop error")
     }
   }
-  def onStop() { }
+  def onStop() {}
 }
 
 /**
@@ -362,13 +367,13 @@ class FailureReasonsCollector extends StreamingListener {
   override def onOutputOperationCompleted(
       outputOperationCompleted: StreamingListenerOutputOperationCompleted): Unit = {
     outputOperationCompleted.outputOperationInfo.failureReason.foreach { f =>
-      failureReasons.synchronized
-      {
+      failureReasons.synchronized {
         failureReasons(outputOperationCompleted.outputOperationInfo.id) = f
       }
     }
   }
 }
+
 /**
  * A StreamingListener that calls StreamingContext.stop().
  */

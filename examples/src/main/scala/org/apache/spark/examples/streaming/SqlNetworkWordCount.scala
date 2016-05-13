@@ -36,7 +36,6 @@ import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
  * and then run the example
  *    `$ bin/run-example org.apache.spark.examples.streaming.SqlNetworkWordCount localhost 9999`
  */
-
 object SqlNetworkWordCount {
   def main(args: Array[String]) {
     if (args.length < 2) {
@@ -81,22 +80,17 @@ object SqlNetworkWordCount {
   }
 }
 
-
 /** Case class for converting RDD to DataFrame */
 case class Record(word: String)
-
 
 /** Lazily instantiated singleton instance of SparkSession */
 object SparkSessionSingleton {
 
-  @transient  private var instance: SparkSession = _
+  @transient private var instance: SparkSession = _
 
   def getInstance(sparkConf: SparkConf): SparkSession = {
     if (instance == null) {
-      instance = SparkSession
-        .builder
-        .config(sparkConf)
-        .getOrCreate()
+      instance = SparkSession.builder.config(sparkConf).getOrCreate()
     }
     instance
   }

@@ -46,8 +46,7 @@ case class EnsureRequirements(conf: SQLConf) extends Rule[SparkPlan] {
    * Given a required distribution, returns a partitioning that satisfies that distribution.
    */
   private def createPartitioning(
-      requiredDistribution: Distribution,
-      numPartitions: Int): Partitioning = {
+      requiredDistribution: Distribution, numPartitions: Int): Partitioning = {
     requiredDistribution match {
       case AllTuples => SinglePartition
       case ClusteredDistribution(clustering) => HashPartitioning(clustering, numPartitions)
@@ -61,8 +60,7 @@ case class EnsureRequirements(conf: SQLConf) extends Rule[SparkPlan] {
    * and partitioning schemes of these [[ShuffleExchange]]s support [[ExchangeCoordinator]].
    */
   private def withExchangeCoordinator(
-      children: Seq[SparkPlan],
-      requiredChildDistributions: Seq[Distribution]): Seq[SparkPlan] = {
+      children: Seq[SparkPlan], requiredChildDistributions: Seq[Distribution]): Seq[SparkPlan] = {
     val supportsCoordinator =
       if (children.exists(_.isInstanceOf[ShuffleExchange])) {
         // Right now, ExchangeCoordinator only support HashPartitionings.
@@ -88,11 +86,9 @@ case class EnsureRequirements(conf: SQLConf) extends Rule[SparkPlan] {
 
     val withCoordinator =
       if (adaptiveExecutionEnabled && supportsCoordinator) {
-        val coordinator =
-          new ExchangeCoordinator(
-            children.length,
-            targetPostShuffleInputSize,
-            minNumPostShufflePartitions)
+        val coordinator = new ExchangeCoordinator(children.length,
+                                                  targetPostShuffleInputSize,
+                                                  minNumPostShufflePartitions)
         children.zip(requiredChildDistributions).map {
           case (e: ShuffleExchange, _) =>
             // This child is an Exchange, we need to add the coordinator.
@@ -172,9 +168,8 @@ case class EnsureRequirements(conf: SQLConf) extends Rule[SparkPlan] {
       case BroadcastDistribution(_) => false
       case _ => true
     }
-    if (children.length > 1
-        && requiredChildDistributions.exists(requireCompatiblePartitioning)
-        && !Partitioning.allCompatible(children.map(_.outputPartitioning))) {
+    if (children.length > 1 && requiredChildDistributions.exists(requireCompatiblePartitioning) &&
+        !Partitioning.allCompatible(children.map(_.outputPartitioning))) {
 
       // First check if the existing partitions of the children all match. This means they are
       // partitioned by the same partitioning into the same number of partitions. In that case,
@@ -183,44 +178,45 @@ case class EnsureRequirements(conf: SQLConf) extends Rule[SparkPlan] {
       val useExistingPartitioning = children.zip(requiredChildDistributions).forall {
         case (child, distribution) =>
           child.outputPartitioning.guarantees(
-            createPartitioning(distribution, maxChildrenNumPartitions))
+              createPartitioning(distribution, maxChildrenNumPartitions))
       }
 
-      children = if (useExistingPartitioning) {
-        // We do not need to shuffle any child's output.
-        children
-      } else {
-        // We need to shuffle at least one child's output.
-        // Now, we will determine the number of partitions that will be used by created
-        // partitioning schemes.
-        val numPartitions = {
-          // Let's see if we need to shuffle all child's outputs when we use
-          // maxChildrenNumPartitions.
-          val shufflesAllChildren = children.zip(requiredChildDistributions).forall {
-            case (child, distribution) =>
-              !child.outputPartitioning.guarantees(
-                createPartitioning(distribution, maxChildrenNumPartitions))
+      children =
+        if (useExistingPartitioning) {
+          // We do not need to shuffle any child's output.
+          children
+        } else {
+          // We need to shuffle at least one child's output.
+          // Now, we will determine the number of partitions that will be used by created
+          // partitioning schemes.
+          val numPartitions = {
+            // Let's see if we need to shuffle all child's outputs when we use
+            // maxChildrenNumPartitions.
+            val shufflesAllChildren = children.zip(requiredChildDistributions).forall {
+              case (child, distribution) =>
+                !child.outputPartitioning.guarantees(
+                    createPartitioning(distribution, maxChildrenNumPartitions))
+            }
+            // If we need to shuffle all children, we use defaultNumPreShufflePartitions as the
+            // number of partitions. Otherwise, we use maxChildrenNumPartitions.
+            if (shufflesAllChildren) defaultNumPreShufflePartitions else maxChildrenNumPartitions
           }
-          // If we need to shuffle all children, we use defaultNumPreShufflePartitions as the
-          // number of partitions. Otherwise, we use maxChildrenNumPartitions.
-          if (shufflesAllChildren) defaultNumPreShufflePartitions else maxChildrenNumPartitions
-        }
 
-        children.zip(requiredChildDistributions).map {
-          case (child, distribution) =>
-            val targetPartitioning = createPartitioning(distribution, numPartitions)
-            if (child.outputPartitioning.guarantees(targetPartitioning)) {
-              child
-            } else {
-              child match {
-                // If child is an exchange, we replace it with
-                // a new one having targetPartitioning.
-                case ShuffleExchange(_, c, _) => ShuffleExchange(targetPartitioning, c)
-                case _ => ShuffleExchange(targetPartitioning, child)
+          children.zip(requiredChildDistributions).map {
+            case (child, distribution) =>
+              val targetPartitioning = createPartitioning(distribution, numPartitions)
+              if (child.outputPartitioning.guarantees(targetPartitioning)) {
+                child
+              } else {
+                child match {
+                  // If child is an exchange, we replace it with
+                  // a new one having targetPartitioning.
+                  case ShuffleExchange(_, c, _) => ShuffleExchange(targetPartitioning, c)
+                  case _ => ShuffleExchange(targetPartitioning, child)
+                }
               }
           }
         }
-      }
     }
 
     // Now, we need to add ExchangeCoordinator if necessary.
@@ -233,17 +229,18 @@ case class EnsureRequirements(conf: SQLConf) extends Rule[SparkPlan] {
     children = withExchangeCoordinator(children, requiredChildDistributions)
 
     // Now that we've performed any necessary shuffles, add sorts to guarantee output orderings:
-    children = children.zip(requiredChildOrderings).map { case (child, requiredOrdering) =>
-      if (requiredOrdering.nonEmpty) {
-        // If child.outputOrdering is [a, b] and requiredOrdering is [a], we do not need to sort.
-        if (requiredOrdering != child.outputOrdering.take(requiredOrdering.length)) {
-          SortExec(requiredOrdering, global = false, child = child)
+    children = children.zip(requiredChildOrderings).map {
+      case (child, requiredOrdering) =>
+        if (requiredOrdering.nonEmpty) {
+          // If child.outputOrdering is [a, b] and requiredOrdering is [a], we do not need to sort.
+          if (requiredOrdering != child.outputOrdering.take(requiredOrdering.length)) {
+            SortExec(requiredOrdering, global = false, child = child)
+          } else {
+            child
+          }
         } else {
           child
         }
-      } else {
-        child
-      }
     }
 
     operator.withNewChildren(children)
@@ -252,7 +249,7 @@ case class EnsureRequirements(conf: SQLConf) extends Rule[SparkPlan] {
   def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
     case operator @ ShuffleExchange(partitioning, child, _) =>
       child.children match {
-        case ShuffleExchange(childPartitioning, baseChild, _)::Nil =>
+        case ShuffleExchange(childPartitioning, baseChild, _) :: Nil =>
           if (childPartitioning.guarantees(partitioning)) child else operator
         case _ => operator
       }

@@ -25,7 +25,6 @@ import com.typesafe.tools.mima.core.ProblemFilters._
 import com.typesafe.tools.mima.plugin.MimaKeys.{binaryIssueFilters, previousArtifact}
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 
-
 object MimaBuild {
 
   def excludeMember(fullName: String) = Seq(
@@ -34,20 +33,20 @@ object MimaBuild {
       // they are translated into public methods/fields($default$) in generated
       // bytecode. It is not possible to exhaustively list everything.
       // But this should be okay.
-      ProblemFilters.exclude[MissingMethodProblem](fullName+"$default$2"),
-      ProblemFilters.exclude[MissingMethodProblem](fullName+"$default$1"),
+      ProblemFilters.exclude[MissingMethodProblem](fullName + "$default$2"),
+      ProblemFilters.exclude[MissingMethodProblem](fullName + "$default$1"),
       ProblemFilters.exclude[MissingFieldProblem](fullName),
       ProblemFilters.exclude[IncompatibleResultTypeProblem](fullName),
       ProblemFilters.exclude[IncompatibleMethTypeProblem](fullName),
       ProblemFilters.exclude[IncompatibleFieldTypeProblem](fullName)
-    )
+  )
 
   // Exclude a single class
   def excludeClass(className: String) = Seq(
       excludePackage(className),
       ProblemFilters.exclude[MissingClassProblem](className),
       ProblemFilters.exclude[MissingTypesProblem](className)
-    )
+  )
 
   // Exclude a Spark class, that is in the package org.apache.spark
   def excludeSparkClass(className: String) = {
@@ -77,10 +76,10 @@ object MimaBuild {
 
     val ignoredMembers: Seq[String] =
       if (!memberExcludeFilePath.exists()) {
-      Seq()
-    } else {
-      IO.read(memberExcludeFilePath).split("\n")
-    }
+        Seq()
+      } else {
+        IO.read(memberExcludeFilePath).split("\n")
+      }
 
     defaultExcludes ++ ignoredClasses.flatMap(excludeClass) ++
     ignoredMembers.flatMap(excludeMember) ++ MimaExcludes.excludes(currentSparkVersion)
@@ -90,17 +89,15 @@ object MimaBuild {
     val organization = "org.apache.spark"
     val previousSparkVersion = "1.6.0"
     // This check can be removed post-2.0
-    val project = if (previousSparkVersion == "1.6.0" &&
-      projectRef.project == "streaming-kafka-0-8"
-    ) {
-      "streaming-kafka"
-    } else {
-      projectRef.project
-    }
+    val project =
+      if (previousSparkVersion == "1.6.0" && projectRef.project == "streaming-kafka-0-8") {
+        "streaming-kafka"
+      } else {
+        projectRef.project
+      }
     val fullId = "spark-" + project + "_2.11"
     mimaDefaultSettings ++
     Seq(previousArtifact := Some(organization % fullId % previousSparkVersion),
-      binaryIssueFilters ++= ignoredABIProblems(sparkHome, version.value))
+        binaryIssueFilters ++= ignoredABIProblems(sparkHome, version.value))
   }
-
 }

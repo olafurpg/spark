@@ -54,7 +54,8 @@ private[spark] trait MesosClusterPersistenceEngine {
  * all of them reuses the same connection pool.
  */
 private[spark] class ZookeeperMesosClusterPersistenceEngineFactory(conf: SparkConf)
-  extends MesosClusterPersistenceEngineFactory(conf) with Logging {
+    extends MesosClusterPersistenceEngineFactory(conf)
+    with Logging {
 
   lazy val zk = SparkCuratorUtil.newClient(conf)
 
@@ -68,7 +69,7 @@ private[spark] class ZookeeperMesosClusterPersistenceEngineFactory(conf: SparkCo
  * persistence engines, which stores nothing.
  */
 private[spark] class BlackHoleMesosClusterPersistenceEngineFactory
-  extends MesosClusterPersistenceEngineFactory(null) {
+    extends MesosClusterPersistenceEngineFactory(null) {
   def createEngine(path: String): MesosClusterPersistenceEngine = {
     new BlackHoleMesosClusterPersistenceEngine
   }
@@ -90,10 +91,9 @@ private[spark] class BlackHoleMesosClusterPersistenceEngine extends MesosCluster
  * reuses a shared Zookeeper client.
  */
 private[spark] class ZookeeperMesosClusterPersistenceEngine(
-    baseDir: String,
-    zk: CuratorFramework,
-    conf: SparkConf)
-  extends MesosClusterPersistenceEngine with Logging {
+    baseDir: String, zk: CuratorFramework, conf: SparkConf)
+    extends MesosClusterPersistenceEngine
+    with Logging {
   private val WORKING_DIR =
     conf.get("spark.deploy.zookeeper.dir", "/spark_mesos_dispatcher") + "/" + baseDir
 

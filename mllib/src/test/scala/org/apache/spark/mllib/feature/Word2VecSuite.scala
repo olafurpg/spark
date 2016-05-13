@@ -28,8 +28,7 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext {
   test("Word2Vec") {
     val sentence = "a b " * 100 + "a c " * 10
     val localDoc = Seq(sentence, sentence)
-    val doc = sc.parallelize(localDoc)
-      .map(line => line.split(" ").toSeq)
+    val doc = sc.parallelize(localDoc).map(line => line.split(" ").toSeq)
     val model = new Word2Vec().setVectorSize(10).setSeed(42L).fit(doc)
     val syms = model.findSynonyms("a", 2)
     assert(syms.length == 2)
@@ -47,8 +46,7 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext {
     intercept[IllegalArgumentException] {
       val sentence = "a b c"
       val localDoc = Seq(sentence, sentence)
-      val doc = sc.parallelize(localDoc)
-        .map(line => line.split(" ").toSeq)
+      val doc = sc.parallelize(localDoc).map(line => line.split(" ").toSeq)
       new Word2Vec().setMinCount(10).fit(doc)
     }
   }
@@ -56,10 +54,10 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext {
   test("Word2VecModel") {
     val num = 2
     val word2VecMap = Map(
-      ("china", Array(0.50f, 0.50f, 0.50f, 0.50f)),
-      ("japan", Array(0.40f, 0.50f, 0.50f, 0.50f)),
-      ("taiwan", Array(0.60f, 0.50f, 0.50f, 0.50f)),
-      ("korea", Array(0.45f, 0.60f, 0.60f, 0.60f))
+        ("china", Array(0.50f, 0.50f, 0.50f, 0.50f)),
+        ("japan", Array(0.40f, 0.50f, 0.50f, 0.50f)),
+        ("taiwan", Array(0.60f, 0.50f, 0.50f, 0.50f)),
+        ("korea", Array(0.45f, 0.60f, 0.60f, 0.60f))
     )
     val model = new Word2VecModel(word2VecMap)
     val syms = model.findSynonyms("china", num)
@@ -71,10 +69,10 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext {
   test("model load / save") {
 
     val word2VecMap = Map(
-      ("china", Array(0.50f, 0.50f, 0.50f, 0.50f)),
-      ("japan", Array(0.40f, 0.50f, 0.50f, 0.50f)),
-      ("taiwan", Array(0.60f, 0.50f, 0.50f, 0.50f)),
-      ("korea", Array(0.45f, 0.60f, 0.60f, 0.60f))
+        ("china", Array(0.50f, 0.50f, 0.50f, 0.50f)),
+        ("japan", Array(0.40f, 0.50f, 0.50f, 0.50f)),
+        ("taiwan", Array(0.60f, 0.50f, 0.50f, 0.50f)),
+        ("korea", Array(0.45f, 0.60f, 0.60f, 0.60f))
     )
     val model = new Word2VecModel(word2VecMap)
 
@@ -88,7 +86,6 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext {
     } finally {
       Utils.deleteRecursively(tempDir)
     }
-
   }
 
   test("big model load / save") {
@@ -109,19 +106,34 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext {
   }
 
   test("test similarity for word vectors with large values is not Infinity or NaN") {
-    val vecA = Array(-4.331467827487745E21, -5.26707742075006E21,
-      5.63551690626524E21, 2.833692188614257E21, -1.9688159903619345E21, -4.933950659913092E21,
-      -2.7401535502536787E21, -1.418671793782632E20).map(_.toFloat)
-    val vecB = Array(-3.9850175451103232E16, -3.4829783883841536E16,
-      9.421469251534848E15, 4.4069684466679808E16, 7.20936298872832E15, -4.2883302830374912E16,
-      -3.605579947835392E16, -2.8151294422155264E16).map(_.toFloat)
-    val vecC = Array(-1.9227381025734656E16, -3.907009342603264E16,
-      2.110207626838016E15, -4.8770066610651136E16, -1.9734964555743232E16, -3.2206001247617024E16,
-      2.7725358220443648E16, 3.1618718156980224E16).map(_.toFloat)
+    val vecA = Array(-4.331467827487745E21,
+                     -5.26707742075006E21,
+                     5.63551690626524E21,
+                     2.833692188614257E21,
+                     -1.9688159903619345E21,
+                     -4.933950659913092E21,
+                     -2.7401535502536787E21,
+                     -1.418671793782632E20).map(_.toFloat)
+    val vecB = Array(-3.9850175451103232E16,
+                     -3.4829783883841536E16,
+                     9.421469251534848E15,
+                     4.4069684466679808E16,
+                     7.20936298872832E15,
+                     -4.2883302830374912E16,
+                     -3.605579947835392E16,
+                     -2.8151294422155264E16).map(_.toFloat)
+    val vecC = Array(-1.9227381025734656E16,
+                     -3.907009342603264E16,
+                     2.110207626838016E15,
+                     -4.8770066610651136E16,
+                     -1.9734964555743232E16,
+                     -3.2206001247617024E16,
+                     2.7725358220443648E16,
+                     3.1618718156980224E16).map(_.toFloat)
     val wordMapIn = Map(
-      ("A", vecA),
-      ("B", vecB),
-      ("C", vecC)
+        ("A", vecA),
+        ("B", vecB),
+        ("C", vecC)
     )
 
     val model = new Word2VecModel(wordMapIn)
@@ -129,5 +141,4 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext {
       assert(!(pair._2.isInfinite || pair._2.isNaN))
     }
   }
-
 }

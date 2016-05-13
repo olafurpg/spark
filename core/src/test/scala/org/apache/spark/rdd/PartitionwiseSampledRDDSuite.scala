@@ -57,4 +57,3 @@ class PartitionwiseSampledRDDSuite extends SparkFunSuite with SharedSparkContext
     }
   }
 }
-

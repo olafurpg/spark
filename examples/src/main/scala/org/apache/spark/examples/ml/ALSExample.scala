@@ -38,16 +38,12 @@ object ALSExample {
   // $example off$
 
   def main(args: Array[String]) {
-    val spark = SparkSession
-      .builder
-      .appName("ALSExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("ALSExample").getOrCreate()
     import spark.implicits._
 
     // $example on$
-    val ratings = spark.read.text("data/mllib/als/sample_movielens_ratings.txt")
-      .map(Rating.parseRating)
-      .toDF()
+    val ratings =
+      spark.read.text("data/mllib/als/sample_movielens_ratings.txt").map(Rating.parseRating).toDF()
     val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
 
     // Build the recommendation model using ALS on the training data
@@ -74,4 +70,3 @@ object ALSExample {
   }
 }
 // scalastyle:on println
-

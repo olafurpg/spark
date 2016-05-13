@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql.execution.metric
 
@@ -22,7 +22,6 @@ import java.text.NumberFormat
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.AccumulableInfo
 import org.apache.spark.util.{AccumulatorV2, Utils}
-
 
 class SQLMetric(val metricType: String, initValue: Long = 0L) extends AccumulatorV2[Long, Long] {
   // This is a workaround for SPARK-11013.
@@ -42,8 +41,9 @@ class SQLMetric(val metricType: String, initValue: Long = 0L) extends Accumulato
 
   override def merge(other: AccumulatorV2[Long, Long]): Unit = other match {
     case o: SQLMetric => _value += o.value
-    case _ => throw new UnsupportedOperationException(
-      s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
+    case _ =>
+      throw new UnsupportedOperationException(
+          s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
   }
 
   override def isZero(): Boolean = _value == _zeroValue
@@ -59,7 +59,6 @@ class SQLMetric(val metricType: String, initValue: Long = 0L) extends Accumulato
     new AccumulableInfo(id, name, update, value, true, true, Some(SQLMetrics.ACCUM_IDENTIFIER))
   }
 }
-
 
 private[sql] object SQLMetrics {
   // Identifier for distinguishing SQL metrics from other accumulators
@@ -105,22 +104,27 @@ private[sql] object SQLMetrics {
     if (metricsType == SUM_METRIC) {
       NumberFormat.getInstance().format(values.sum)
     } else {
-      val strFormat: Long => String = if (metricsType == SIZE_METRIC) {
-        Utils.bytesToString
-      } else if (metricsType == TIMING_METRIC) {
-        Utils.msDurationToString
-      } else {
-        throw new IllegalStateException("unexpected metrics type: " + metricsType)
-      }
+      val strFormat: Long => String =
+        if (metricsType == SIZE_METRIC) {
+          Utils.bytesToString
+        } else if (metricsType == TIMING_METRIC) {
+          Utils.msDurationToString
+        } else {
+          throw new IllegalStateException("unexpected metrics type: " + metricsType)
+        }
 
       val validValues = values.filter(_ >= 0)
       val Seq(sum, min, med, max) = {
-        val metric = if (validValues.length == 0) {
-          Seq.fill(4)(0L)
-        } else {
-          val sorted = validValues.sorted
-          Seq(sorted.sum, sorted(0), sorted(validValues.length / 2), sorted(validValues.length - 1))
-        }
+        val metric =
+          if (validValues.length == 0) {
+            Seq.fill(4)(0L)
+          } else {
+            val sorted = validValues.sorted
+            Seq(sorted.sum,
+                sorted(0),
+                sorted(validValues.length / 2),
+                sorted(validValues.length - 1))
+          }
         metric.map(strFormat)
       }
       s"\n$sum ($min, $med, $max)"

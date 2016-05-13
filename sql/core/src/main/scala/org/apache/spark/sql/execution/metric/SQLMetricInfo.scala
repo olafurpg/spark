@@ -24,7 +24,4 @@ import org.apache.spark.annotation.DeveloperApi
  * Stores information about a SQL Metric.
  */
 @DeveloperApi
-class SQLMetricInfo(
-    val name: String,
-    val accumulatorId: Long,
-    val metricType: String)
+class SQLMetricInfo(val name: String, val accumulatorId: Long, val metricType: String)

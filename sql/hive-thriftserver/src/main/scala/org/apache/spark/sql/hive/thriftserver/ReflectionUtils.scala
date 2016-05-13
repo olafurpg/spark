@@ -18,7 +18,7 @@
 package org.apache.spark.sql.hive.thriftserver
 
 private[hive] object ReflectionUtils {
-  def setSuperField(obj : Object, fieldName: String, fieldValue: Object) {
+  def setSuperField(obj: Object, fieldName: String, fieldValue: Object) {
     setAncestorField(obj, 1, fieldName, fieldValue)
   }
 
@@ -44,11 +44,7 @@ private[hive] object ReflectionUtils {
     invoke(clazz, null, methodName, args: _*)
   }
 
-  def invoke(
-      clazz: Class[_],
-      obj: AnyRef,
-      methodName: String,
-      args: (Class[_], AnyRef)*): AnyRef = {
+  def invoke(clazz: Class[_], obj: AnyRef, methodName: String, args: (Class[_], AnyRef)*): AnyRef = {
 
     val (types, values) = args.unzip
     val method = clazz.getDeclaredMethod(methodName, types: _*)

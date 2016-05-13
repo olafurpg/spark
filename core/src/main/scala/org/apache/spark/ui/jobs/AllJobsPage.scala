@@ -31,8 +31,7 @@ import org.apache.spark.ui.jobs.UIData.{ExecutorUIData, JobUIData}
 
 /** Page showing list of all ongoing and recently finished jobs */
 private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
-  private val JOBS_LEGEND =
-    <div class="legend-area"><svg width="150px" height="85px">
+  private val JOBS_LEGEND = <div class="legend-area"><svg width="150px" height="85px">
       <rect class="succeeded-job-legend"
         x="5px" y="5px" width="20px" height="15px" rx="2px" ry="2px"></rect>
       <text x="35px" y="17px">Succeeded</text>
@@ -44,8 +43,7 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
       <text x="35px" y="67px">Running</text>
     </svg></div>.toString.filter(_ != '\n')
 
-  private val EXECUTORS_LEGEND =
-    <div class="legend-area"><svg width="150px" height="55px">
+  private val EXECUTORS_LEGEND = <div class="legend-area"><svg width="150px" height="55px">
       <rect class="executor-added-legend"
         x="5px" y="5px" width="20px" height="15px" rx="2px" ry="2px"></rect>
       <text x="35px" y="17px">Added</text>
@@ -55,9 +53,9 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
     </svg></div>.toString.filter(_ != '\n')
 
   private def getLastStageNameAndDescription(job: JobUIData): (String, String) = {
-    val lastStageInfo = Option(job.stageIds)
-      .filter(_.nonEmpty)
-      .flatMap { ids => parent.jobProgresslistener.stageIdToInfo.get(ids.max)}
+    val lastStageInfo = Option(job.stageIds).filter(_.nonEmpty).flatMap { ids =>
+      parent.jobProgresslistener.stageIdToInfo.get(ids.max)
+    }
     val lastStageData = lastStageInfo.flatMap { s =>
       parent.jobProgresslistener.stageIdToData.get((s.stageId, s.attemptId))
     }
@@ -93,8 +91,7 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
       // extra layers of escaping in order to embed this in a Javascript string literal.
       val escapedDesc = Utility.escape(displayJobDescription)
       val jsEscapedDesc = StringEscapeUtils.escapeEcmaScript(escapedDesc)
-      val jobEventJsonAsStr =
-        s"""
+      val jobEventJsonAsStr = s"""
            |{
            |  'className': 'job application-timeline-object ${classNameByStatus}',
            |  'group': 'jobs',
@@ -105,13 +102,12 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
            |     'data-title="${jsEscapedDesc} (Job ${jobId})<br>' +
            |     'Status: ${status}<br>' +
            |     'Submitted: ${UIUtils.formatDate(new Date(submissionTime))}' +
-           |     '${
-                     if (status != JobExecutionStatus.RUNNING) {
-                       s"""<br>Completed: ${UIUtils.formatDate(new Date(completionTime))}"""
-                     } else {
-                       ""
-                     }
-                  }">' +
+           |     '${if (status != JobExecutionStatus.RUNNING) {
+                                   s"""<br>Completed: ${UIUtils.formatDate(
+                                       new Date(completionTime))}"""
+                                 } else {
+                                   ""
+                                 }}">' +
            |    '${jsEscapedDesc} (Job ${jobId})</div>'
            |}
          """.stripMargin
@@ -123,8 +119,7 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
     val events = ListBuffer[String]()
     executorUIDatas.foreach {
       case (executorId, event) =>
-        val addedEvent =
-          s"""
+        val addedEvent = s"""
              |{
              |  'className': 'executor added',
              |  'group': 'executors',
@@ -139,8 +134,7 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
         events += addedEvent
 
         if (event.finishTime.isDefined) {
-          val removedEvent =
-            s"""
+          val removedEvent = s"""
                |{
                |  'className': 'executor removed',
                |  'group': 'executors',
@@ -149,13 +143,11 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
                |    'data-toggle="tooltip" data-placement="bottom"' +
                |    'data-title="Executor ${executorId}<br>' +
                |    'Removed at ${UIUtils.formatDate(new Date(event.finishTime.get))}' +
-               |    '${
-                        if (event.finishReason.isDefined) {
-                          s"""<br>Reason: ${event.finishReason.get.replace("\n", " ")}"""
-                        } else {
-                          ""
-                        }
-                     }"' +
+               |    '${if (event.finishReason.isDefined) {
+                                  s"""<br>Reason: ${event.finishReason.get.replace("\n", " ")}"""
+                                } else {
+                                  ""
+                                }}"' +
                |    'data-html="true">Executor ${executorId} removed</div>'
                |}
              """.stripMargin
@@ -165,16 +157,14 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
     events.toSeq
   }
 
-  private def makeTimeline(
-      jobs: Seq[JobUIData],
-      executors: HashMap[String, ExecutorUIData],
-      startTime: Long): Seq[Node] = {
+  private def makeTimeline(jobs: Seq[JobUIData],
+                           executors: HashMap[String, ExecutorUIData],
+                           startTime: Long): Seq[Node] = {
 
     val jobEventJsonAsStrSeq = makeJobEvent(jobs)
     val executorEventJsonAsStrSeq = makeExecutorEvent(executors)
 
-    val groupJsonArrayAsStr =
-      s"""
+    val groupJsonArrayAsStr = s"""
           |[
           |  {
           |    'id': 'executors',
@@ -279,25 +269,23 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
       val completedJobs = listener.completedJobs.reverse.toSeq
       val failedJobs = listener.failedJobs.reverse.toSeq
 
-      val activeJobsTable =
-        jobsTable(activeJobs.sortBy(_.submissionTime.getOrElse(-1L)).reverse)
+      val activeJobsTable = jobsTable(activeJobs.sortBy(_.submissionTime.getOrElse(-1L)).reverse)
       val completedJobsTable =
         jobsTable(completedJobs.sortBy(_.completionTime.getOrElse(-1L)).reverse)
-      val failedJobsTable =
-        jobsTable(failedJobs.sortBy(_.completionTime.getOrElse(-1L)).reverse)
+      val failedJobsTable = jobsTable(failedJobs.sortBy(_.completionTime.getOrElse(-1L)).reverse)
 
       val shouldShowActiveJobs = activeJobs.nonEmpty
       val shouldShowCompletedJobs = completedJobs.nonEmpty
       val shouldShowFailedJobs = failedJobs.nonEmpty
 
-      val completedJobNumStr = if (completedJobs.size == listener.numCompletedJobs) {
-        s"${completedJobs.size}"
-      } else {
-        s"${listener.numCompletedJobs}, only showing ${completedJobs.size}"
-      }
+      val completedJobNumStr =
+        if (completedJobs.size == listener.numCompletedJobs) {
+          s"${completedJobs.size}"
+        } else {
+          s"${listener.numCompletedJobs}, only showing ${completedJobs.size}"
+        }
 
-      val summary: NodeSeq =
-        <div>
+      val summary: NodeSeq = <div>
           <ul class="unstyled">
             <li>
               <strong>User:</strong>
@@ -346,23 +334,24 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
 
       var content = summary
       val executorListener = parent.executorListener
-      content ++= makeTimeline(activeJobs ++ completedJobs ++ failedJobs,
-          executorListener.executorIdToData, startTime)
+      content ++= makeTimeline(
+          activeJobs ++ completedJobs ++ failedJobs, executorListener.executorIdToData, startTime)
 
       if (shouldShowActiveJobs) {
         content ++= <h4 id="active">Active Jobs ({activeJobs.size})</h4> ++
-          activeJobsTable
+        activeJobsTable
       }
       if (shouldShowCompletedJobs) {
         content ++= <h4 id="completed">Completed Jobs ({completedJobNumStr})</h4> ++
-          completedJobsTable
+        completedJobsTable
       }
       if (shouldShowFailedJobs) {
         content ++= <h4 id ="failed">Failed Jobs ({failedJobs.size})</h4> ++
-          failedJobsTable
+        failedJobsTable
       }
 
-      val helpText = """A job is triggered by an action, like count() or saveAsTextFile().""" +
+      val helpText =
+        """A job is triggered by an action, like count() or saveAsTextFile().""" +
         " Click on a job to see information about the stages of tasks inside it."
 
       UIUtils.headerSparkPage("Spark Jobs", content, parent, helpText = Some(helpText))

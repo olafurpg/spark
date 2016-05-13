@@ -39,10 +39,8 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.{SerializableConfiguration, ShutdownHookManager}
 
 private[spark] class NewHadoopPartition(
-    rddId: Int,
-    val index: Int,
-    rawSplit: InputSplit with Writable)
-  extends Partition {
+    rddId: Int, val index: Int, rawSplit: InputSplit with Writable)
+    extends Partition {
 
   val serializableHadoopSplit = new SerializableWritable(rawSplit)
 
@@ -65,13 +63,13 @@ private[spark] class NewHadoopPartition(
  * @param valueClass Class of the value associated with the inputFormatClass.
  */
 @DeveloperApi
-class NewHadoopRDD[K, V](
-    sc : SparkContext,
-    inputFormatClass: Class[_ <: InputFormat[K, V]],
-    keyClass: Class[K],
-    valueClass: Class[V],
-    @transient private val _conf: Configuration)
-  extends RDD[(K, V)](sc, Nil) with Logging {
+class NewHadoopRDD[K, V](sc: SparkContext,
+                         inputFormatClass: Class[_ <: InputFormat[K, V]],
+                         keyClass: Class[K],
+                         valueClass: Class[V],
+                         @transient private val _conf: Configuration)
+    extends RDD[(K, V)](sc, Nil)
+    with Logging {
 
   // A Hadoop Configuration can be about 10 KB, which is pretty big, so broadcast it
   private val confBroadcast = sc.broadcast(new SerializableConfiguration(_conf))
@@ -122,7 +120,8 @@ class NewHadoopRDD[K, V](
     val rawSplits = inputFormat.getSplits(jobContext).toArray
     val result = new Array[Partition](rawSplits.size)
     for (i <- 0 until rawSplits.size) {
-      result(i) = new NewHadoopPartition(id, i, rawSplits(i).asInstanceOf[InputSplit with Writable])
+      result(i) = new NewHadoopPartition(
+          id, i, rawSplits(i).asInstanceOf[InputSplit with Writable])
     }
     result
   }
@@ -162,8 +161,8 @@ class NewHadoopRDD[K, V](
       }
       val attemptId = new TaskAttemptID(jobTrackerId, id, TaskType.MAP, split.index, 0)
       val hadoopAttemptContext = new TaskAttemptContextImpl(conf, attemptId)
-      private var reader = format.createRecordReader(
-        split.serializableHadoopSplit.value, hadoopAttemptContext)
+      private var reader =
+        format.createRecordReader(split.serializableHadoopSplit.value, hadoopAttemptContext)
       reader.initialize(split.serializableHadoopSplit.value, hadoopAttemptContext)
 
       // Register an on-task-completion callback to close the input stream.
@@ -237,9 +236,8 @@ class NewHadoopRDD[K, V](
 
   /** Maps over a partition, providing the InputSplit that was used as the base of the partition. */
   @DeveloperApi
-  def mapPartitionsWithInputSplit[U: ClassTag](
-      f: (InputSplit, Iterator[(K, V)]) => Iterator[U],
-      preservesPartitioning: Boolean = false): RDD[U] = {
+  def mapPartitionsWithInputSplit[U: ClassTag](f: (InputSplit, Iterator[(K, V)]) => Iterator[U],
+                                               preservesPartitioning: Boolean = false): RDD[U] = {
     new NewHadoopMapPartitionsWithSplitRDD(this, f, preservesPartitioning)
   }
 
@@ -251,7 +249,7 @@ class NewHadoopRDD[K, V](
           val infos = c.newGetLocationInfo.invoke(split).asInstanceOf[Array[AnyRef]]
           Some(HadoopRDD.convertSplitLocationInfo(infos))
         } catch {
-          case e : Exception =>
+          case e: Exception =>
             logDebug("Failed to use InputSplit#getLocationInfo.", e)
             None
         }
@@ -262,16 +260,17 @@ class NewHadoopRDD[K, V](
 
   override def persist(storageLevel: StorageLevel): this.type = {
     if (storageLevel.deserialized) {
-      logWarning("Caching NewHadoopRDDs as deserialized objects usually leads to undesired" +
-        " behavior because Hadoop's RecordReader reuses the same Writable object for all records." +
-        " Use a map transformation to make copies of the records.")
+      logWarning(
+          "Caching NewHadoopRDDs as deserialized objects usually leads to undesired" +
+          " behavior because Hadoop's RecordReader reuses the same Writable object for all records." +
+          " Use a map transformation to make copies of the records.")
     }
     super.persist(storageLevel)
   }
-
 }
 
 private[spark] object NewHadoopRDD {
+
   /**
    * Configuration's constructor is not threadsafe (see SPARK-1097 and HADOOP-10456).
    * Therefore, we synchronize on this lock before calling new Configuration().
@@ -286,7 +285,7 @@ private[spark] object NewHadoopRDD {
       prev: RDD[T],
       f: (InputSplit, Iterator[T]) => Iterator[U],
       preservesPartitioning: Boolean = false)
-    extends RDD[U](prev) {
+      extends RDD[U](prev) {
 
     override val partitioner = if (preservesPartitioning) firstParent[T].partitioner else None
 

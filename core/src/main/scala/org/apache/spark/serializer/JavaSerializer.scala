@@ -28,7 +28,7 @@ import org.apache.spark.util.{ByteBufferInputStream, ByteBufferOutputStream, Uti
 
 private[spark] class JavaSerializationStream(
     out: OutputStream, counterReset: Int, extraDebugInfo: Boolean)
-  extends SerializationStream {
+    extends SerializationStream {
   private val objOut = new ObjectOutputStream(out)
   private var counter = 0
 
@@ -58,7 +58,7 @@ private[spark] class JavaSerializationStream(
 }
 
 private[spark] class JavaDeserializationStream(in: InputStream, loader: ClassLoader)
-  extends DeserializationStream {
+    extends DeserializationStream {
 
   private val objIn = new ObjectInputStream(in) {
     override def resolveClass(desc: ObjectStreamClass): Class[_] =
@@ -78,21 +78,21 @@ private[spark] class JavaDeserializationStream(in: InputStream, loader: ClassLoa
 
 private object JavaDeserializationStream {
   val primitiveMappings = Map[String, Class[_]](
-    "boolean" -> classOf[Boolean],
-    "byte" -> classOf[Byte],
-    "char" -> classOf[Char],
-    "short" -> classOf[Short],
-    "int" -> classOf[Int],
-    "long" -> classOf[Long],
-    "float" -> classOf[Float],
-    "double" -> classOf[Double],
-    "void" -> classOf[Void]
+      "boolean" -> classOf[Boolean],
+      "byte" -> classOf[Byte],
+      "char" -> classOf[Char],
+      "short" -> classOf[Short],
+      "int" -> classOf[Int],
+      "long" -> classOf[Long],
+      "float" -> classOf[Float],
+      "double" -> classOf[Double],
+      "void" -> classOf[Void]
   )
 }
 
 private[spark] class JavaSerializerInstance(
     counterReset: Int, extraDebugInfo: Boolean, defaultClassLoader: ClassLoader)
-  extends SerializerInstance {
+    extends SerializerInstance {
 
   override def serialize[T: ClassTag](t: T): ByteBuffer = {
     val bos = new ByteBufferOutputStream()
@@ -140,7 +140,7 @@ class JavaSerializer(conf: SparkConf) extends Serializer with Externalizable {
   private var counterReset = conf.getInt("spark.serializer.objectStreamReset", 100)
   private var extraDebugInfo = conf.getBoolean("spark.serializer.extraDebugInfo", true)
 
-  protected def this() = this(new SparkConf())  // For deserialization only
+  protected def this() = this(new SparkConf()) // For deserialization only
 
   override def newInstance(): SerializerInstance = {
     val classLoader = defaultClassLoader.getOrElse(Thread.currentThread.getContextClassLoader)

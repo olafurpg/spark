@@ -48,7 +48,7 @@ class CommitFailureTestRelationSuite extends SQLTestUtils with TestHiveSingleton
     SimpleTextRelation.failCommitter = false
     withTempPath { file =>
       // fail the job in the middle of writing
-      val divideByZero = udf((x: Int) => { x / (x - 1)})
+      val divideByZero = udf((x: Int) => { x / (x - 1) })
       val df = spark.range(0, 10).coalesce(1).select(divideByZero(col("id")))
 
       SimpleTextRelation.callbackCalled = false

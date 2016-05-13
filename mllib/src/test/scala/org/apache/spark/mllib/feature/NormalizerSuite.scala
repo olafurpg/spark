@@ -27,12 +27,12 @@ import org.apache.spark.mllib.util.TestingUtils._
 class NormalizerSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   val data = Array(
-    Vectors.sparse(3, Seq((0, -2.0), (1, 2.3))),
-    Vectors.dense(0.0, 0.0, 0.0),
-    Vectors.dense(0.6, -1.1, -3.0),
-    Vectors.sparse(3, Seq((1, 0.91), (2, 3.2))),
-    Vectors.sparse(3, Seq((0, 5.7), (1, 0.72), (2, 2.7))),
-    Vectors.sparse(3, Seq())
+      Vectors.sparse(3, Seq((0, -2.0), (1, 2.3))),
+      Vectors.dense(0.0, 0.0, 0.0),
+      Vectors.dense(0.6, -1.1, -3.0),
+      Vectors.sparse(3, Seq((1, 0.91), (2, 3.2))),
+      Vectors.sparse(3, Seq((0, 5.7), (1, 0.72), (2, 2.7))),
+      Vectors.sparse(3, Seq())
   )
 
   lazy val dataRDD = sc.parallelize(data, 3)
@@ -117,5 +117,4 @@ class NormalizerSuite extends SparkFunSuite with MLlibTestSparkContext {
     assert(dataInf(4) ~== Vectors.dense(1.0, 0.12631579, 0.473684211) absTol 1E-5)
     assert(dataInf(5) ~== Vectors.sparse(3, Seq()) absTol 1E-5)
   }
-
 }

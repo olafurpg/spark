@@ -39,7 +39,8 @@ import org.scalatest.{BeforeAndAfterEach, Suite}
  * See the "Composing fixtures by stacking traits" section at
  * http://www.scalatest.org/user_guide/sharing_fixtures for more details about this pattern.
  */
-private[spark] trait ResetSystemProperties extends BeforeAndAfterEach { this: Suite =>
+private[spark] trait ResetSystemProperties extends BeforeAndAfterEach {
+  this: Suite =>
   var oldProperties: Properties = null
 
   override def beforeEach(): Unit = {

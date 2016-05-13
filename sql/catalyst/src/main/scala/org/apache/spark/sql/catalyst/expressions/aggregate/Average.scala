@@ -23,8 +23,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.types._
 
-@ExpressionDescription(
-  usage = "_FUNC_(x) - Returns the mean calculated from values of a group.")
+@ExpressionDescription(usage = "_FUNC_(x) - Returns the mean calculated from values of a group.")
 case class Average(child: Expression) extends DeclarativeAggregate {
 
   override def prettyName: String = "avg"
@@ -48,7 +47,7 @@ case class Average(child: Expression) extends DeclarativeAggregate {
   }
 
   private lazy val sumDataType = child.dataType match {
-    case _ @ DecimalType.Fixed(p, s) => DecimalType.bounded(p + 10, s)
+    case _ @DecimalType.Fixed(p, s) => DecimalType.bounded(p + 10, s)
     case _ => DoubleType
   }
 
@@ -58,21 +57,19 @@ case class Average(child: Expression) extends DeclarativeAggregate {
   override lazy val aggBufferAttributes = sum :: count :: Nil
 
   override lazy val initialValues = Seq(
-    /* sum = */ Cast(Literal(0), sumDataType),
-    /* count = */ Literal(0L)
+      /* sum = */ Cast(Literal(0), sumDataType),
+      /* count = */ Literal(0L)
   )
 
   override lazy val updateExpressions = Seq(
-    /* sum = */
-    Add(
-      sum,
-      Coalesce(Cast(child, sumDataType) :: Cast(Literal(0), sumDataType) :: Nil)),
-    /* count = */ If(IsNull(child), count, count + 1L)
+      /* sum = */
+      Add(sum, Coalesce(Cast(child, sumDataType) :: Cast(Literal(0), sumDataType) :: Nil)),
+      /* count = */ If(IsNull(child), count, count + 1L)
   )
 
   override lazy val mergeExpressions = Seq(
-    /* sum = */ sum.left + sum.right,
-    /* count = */ count.left + count.right
+      /* sum = */ sum.left + sum.right,
+      /* count = */ count.left + count.right
   )
 
   // If all input are nulls, count will be 0 and we will get null after the division.

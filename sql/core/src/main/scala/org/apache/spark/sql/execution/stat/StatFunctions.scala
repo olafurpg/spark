@@ -58,20 +58,19 @@ private[sql] object StatFunctions extends Logging {
    *
    * @return for each column, returns the requested approximations
    */
-  def multipleApproxQuantiles(
-      df: DataFrame,
-      cols: Seq[String],
-      probabilities: Seq[Double],
-      relativeError: Double): Seq[Seq[Double]] = {
+  def multipleApproxQuantiles(df: DataFrame,
+                              cols: Seq[String],
+                              probabilities: Seq[Double],
+                              relativeError: Double): Seq[Seq[Double]] = {
     val columns: Seq[Column] = cols.map { colName =>
       val field = df.schema(colName)
       require(field.dataType.isInstanceOf[NumericType],
-        s"Quantile calculation for column $colName with data type ${field.dataType}" +
-        " is not supported.")
+              s"Quantile calculation for column $colName with data type ${field.dataType}" +
+              " is not supported.")
       Column(Cast(Column(colName).expr, DoubleType))
     }
     val emptySummaries = Array.fill(cols.size)(
-      new QuantileSummaries(QuantileSummaries.defaultCompressThreshold, relativeError))
+        new QuantileSummaries(QuantileSummaries.defaultCompressThreshold, relativeError))
 
     // Note that it works more or less by accident as `rdd.aggregate` is not a pure function:
     // this function returns the same array as given in the input (because `aggregate` reuses
@@ -85,14 +84,15 @@ private[sql] object StatFunctions extends Logging {
       summaries
     }
 
-    def merge(
-        sum1: Array[QuantileSummaries],
-        sum2: Array[QuantileSummaries]): Array[QuantileSummaries] = {
+    def merge(sum1: Array[QuantileSummaries],
+              sum2: Array[QuantileSummaries]): Array[QuantileSummaries] = {
       sum1.zip(sum2).map { case (s1, s2) => s1.compress().merge(s2.compress()) }
     }
     val summaries = df.select(columns: _*).rdd.aggregate(emptySummaries)(apply, merge)
 
-    summaries.map { summary => probabilities.map(summary.query) }
+    summaries.map { summary =>
+      probabilities.map(summary.query)
+    }
   }
 
   /**
@@ -116,12 +116,12 @@ private[sql] object StatFunctions extends Logging {
    *              (excluding the head buffer)
    * @param headSampled a buffer of latest samples seen so far
    */
-  class QuantileSummaries(
-      val compressThreshold: Int,
-      val relativeError: Double,
-      val sampled: ArrayBuffer[Stats] = ArrayBuffer.empty,
-      private[stat] var count: Long = 0L,
-      val headSampled: ArrayBuffer[Double] = ArrayBuffer.empty) extends Serializable {
+  class QuantileSummaries(val compressThreshold: Int,
+                          val relativeError: Double,
+                          val sampled: ArrayBuffer[Stats] = ArrayBuffer.empty,
+                          private[stat] var count: Long = 0L,
+                          val headSampled: ArrayBuffer[Double] = ArrayBuffer.empty)
+      extends Serializable {
 
     import QuantileSummaries._
 
@@ -159,10 +159,10 @@ private[sql] object StatFunctions extends Logging {
       var sampleIdx = 0
       // The index of the sample currently being inserted.
       var opsIdx: Int = 0
-      while(opsIdx < sorted.length) {
+      while (opsIdx < sorted.length) {
         val currentSample = sorted(opsIdx)
         // Add all the samples before the next observation.
-        while(sampleIdx < sampled.size && sampled(sampleIdx).value <= currentSample) {
+        while (sampleIdx < sampled.size && sampled(sampleIdx).value <= currentSample) {
           newSamples.append(sampled(sampleIdx))
           sampleIdx += 1
         }
@@ -182,7 +182,7 @@ private[sql] object StatFunctions extends Logging {
       }
 
       // Add all the remaining existing samples
-      while(sampleIdx < sampled.size) {
+      while (sampleIdx < sampled.size) {
         newSamples.append(sampled(sampleIdx))
         sampleIdx += 1
       }
@@ -201,8 +201,8 @@ private[sql] object StatFunctions extends Logging {
       val inserted = this.withHeadBufferInserted
       assert(inserted.headSampled.isEmpty)
       assert(inserted.count == count + headSampled.size)
-      val compressed =
-        compressImmut(inserted.sampled, mergeThreshold = 2 * relativeError * inserted.count)
+      val compressed = compressImmut(
+          inserted.sampled, mergeThreshold = 2 * relativeError * inserted.count)
       new QuantileSummaries(compressThreshold, relativeError, compressed, inserted.count)
     }
 
@@ -231,7 +231,7 @@ private[sql] object StatFunctions extends Logging {
         val res = (sampled ++ other.sampled).sortBy(_.value)
         val comp = compressImmut(res, mergeThreshold = 2 * relativeError * count)
         new QuantileSummaries(
-          other.compressThreshold, other.relativeError, comp, other.count + count)
+            other.compressThreshold, other.relativeError, comp, other.count + count)
       }
     }
 
@@ -246,8 +246,8 @@ private[sql] object StatFunctions extends Logging {
      */
     def query(quantile: Double): Double = {
       require(quantile >= 0 && quantile <= 1.0, "quantile should be in the range [0.0, 1.0]")
-      require(headSampled.isEmpty,
-        "Cannot operate on an uncompressed summary, call compress() first")
+      require(
+          headSampled.isEmpty, "Cannot operate on an uncompressed summary, call compress() first")
 
       if (quantile <= relativeError) {
         return sampled.head.value
@@ -304,8 +304,7 @@ private[sql] object StatFunctions extends Logging {
     case class Stats(value: Double, g: Int, delta: Int)
 
     private def compressImmut(
-        currentSamples: IndexedSeq[Stats],
-        mergeThreshold: Double): ArrayBuffer[Stats] = {
+        currentSamples: IndexedSeq[Stats], mergeThreshold: Double): ArrayBuffer[Stats] = {
       val res: ArrayBuffer[Stats] = ArrayBuffer.empty
       if (currentSamples.isEmpty) {
         return res
@@ -382,23 +381,26 @@ private[sql] object StatFunctions extends Logging {
     def cov: Double = Ck / (count - 1)
   }
 
-  private def collectStatisticalData(df: DataFrame, cols: Seq[String],
-              functionName: String): CovarianceCounter = {
-    require(cols.length == 2, s"Currently $functionName calculation is supported " +
-      "between two columns.")
-    cols.map(name => (name, df.schema.fields.find(_.name == name))).foreach { case (name, data) =>
-      require(data.nonEmpty, s"Couldn't find column with name $name")
-      require(data.get.dataType.isInstanceOf[NumericType], s"Currently $functionName calculation " +
-        s"for columns with dataType ${data.get.dataType} not supported.")
+  private def collectStatisticalData(
+      df: DataFrame, cols: Seq[String], functionName: String): CovarianceCounter = {
+    require(cols.length == 2,
+            s"Currently $functionName calculation is supported " + "between two columns.")
+    cols.map(name => (name, df.schema.fields.find(_.name == name))).foreach {
+      case (name, data) =>
+        require(data.nonEmpty, s"Couldn't find column with name $name")
+        require(data.get.dataType.isInstanceOf[NumericType],
+                s"Currently $functionName calculation " +
+                s"for columns with dataType ${data.get.dataType} not supported.")
     }
     val columns = cols.map(n => Column(Cast(Column(n).expr, DoubleType)))
-    df.select(columns: _*).queryExecution.toRdd.aggregate(new CovarianceCounter)(
-      seqOp = (counter, row) => {
+    df.select(columns: _*)
+      .queryExecution
+      .toRdd
+      .aggregate(new CovarianceCounter)(seqOp = (counter, row) => {
         counter.add(row.getDouble(0), row.getDouble(1))
-      },
-      combOp = (baseCounter, other) => {
+      }, combOp = (baseCounter, other) => {
         baseCounter.merge(other)
-    })
+      })
   }
 
   /**
@@ -418,7 +420,7 @@ private[sql] object StatFunctions extends Logging {
     val counts = df.groupBy(col1, col2).agg(count("*")).take(1e6.toInt)
     if (counts.length == 1e6.toInt) {
       logWarning("The maximum limit of 1e6 pairs have been collected, which may not be all of " +
-        "the pairs. Please try reducing the amount of distinct items in your columns.")
+          "the pairs. Please try reducing the amount of distinct items in your columns.")
     }
     def cleanElement(element: Any): String = {
       if (element == null) "null" else element.toString
@@ -427,21 +429,26 @@ private[sql] object StatFunctions extends Logging {
     val distinctCol2: Map[Any, Int] =
       counts.map(e => cleanElement(e.get(1))).distinct.zipWithIndex.toMap
     val columnSize = distinctCol2.size
-    require(columnSize < 1e4, s"The number of distinct values for $col2, can't " +
-      s"exceed 1e4. Currently $columnSize")
-    val table = counts.groupBy(_.get(0)).map { case (col1Item, rows) =>
-      val countsRow = new GenericMutableRow(columnSize + 1)
-      rows.foreach { (row: Row) =>
-        // row.get(0) is column 1
-        // row.get(1) is column 2
-        // row.get(2) is the frequency
-        val columnIndex = distinctCol2.get(cleanElement(row.get(1))).get
-        countsRow.setLong(columnIndex + 1, row.getLong(2))
+    require(
+        columnSize < 1e4,
+        s"The number of distinct values for $col2, can't " + s"exceed 1e4. Currently $columnSize")
+    val table = counts
+      .groupBy(_.get(0))
+      .map {
+        case (col1Item, rows) =>
+          val countsRow = new GenericMutableRow(columnSize + 1)
+          rows.foreach { (row: Row) =>
+            // row.get(0) is column 1
+            // row.get(1) is column 2
+            // row.get(2) is the frequency
+            val columnIndex = distinctCol2.get(cleanElement(row.get(1))).get
+            countsRow.setLong(columnIndex + 1, row.getLong(2))
+          }
+          // the value of col1 is the first value, the rest are the counts
+          countsRow.update(0, UTF8String.fromString(cleanElement(col1Item)))
+          countsRow
       }
-      // the value of col1 is the first value, the rest are the counts
-      countsRow.update(0, UTF8String.fromString(cleanElement(col1Item)))
-      countsRow
-    }.toSeq
+      .toSeq
     // Back ticks can't exist in DataFrame column names, therefore drop them. To be able to accept
     // special keywords and `.`, wrap the column names in ``.
     def cleanColumnName(name: String): String = {

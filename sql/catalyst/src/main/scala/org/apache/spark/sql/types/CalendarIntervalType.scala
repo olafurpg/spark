@@ -19,7 +19,6 @@ package org.apache.spark.sql.types
 
 import org.apache.spark.annotation.DeveloperApi
 
-
 /**
  * :: DeveloperApi ::
  * The data type representing calendar time intervals. The calendar time interval is stored
@@ -30,7 +29,7 @@ import org.apache.spark.annotation.DeveloperApi
  * Please use the singleton [[DataTypes.CalendarIntervalType]].
  */
 @DeveloperApi
-class CalendarIntervalType private() extends DataType {
+class CalendarIntervalType private () extends DataType {
 
   override def defaultSize: Int = 16
 

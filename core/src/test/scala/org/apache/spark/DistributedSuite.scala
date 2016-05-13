@@ -27,7 +27,6 @@ import org.apache.spark.util.io.ChunkedByteBuffer
 class NotSerializableClass
 class NotSerializableExn(val notSer: NotSerializableClass) extends Throwable() {}
 
-
 class DistributedSuite extends SparkFunSuite with Matchers with LocalSparkContext {
 
   val clusterUrl = "local-cluster[2,1,1024]"
@@ -42,8 +41,9 @@ class DistributedSuite extends SparkFunSuite with Matchers with LocalSparkContex
     val numPartitions = 10
 
     sc = new SparkContext("local-cluster[%s,1,1024]".format(numSlaves), "test")
-    val data = sc.parallelize(1 to 100, numPartitions).
-      map(x => throw new NotSerializableExn(new NotSerializableClass))
+    val data = sc
+      .parallelize(1 to 100, numPartitions)
+      .map(x => throw new NotSerializableExn(new NotSerializableClass))
     intercept[SparkException] {
       data.count()
     }
@@ -54,10 +54,10 @@ class DistributedSuite extends SparkFunSuite with Matchers with LocalSparkContex
     import SparkMasterRegex._
 
     val masterStrings = Seq(
-      "local-cluster[2,1,1024]",
-      "local-cluster[2 , 1 , 1024]",
-      "local-cluster[2, 1, 1024]",
-      "local-cluster[ 2, 1, 1024 ]"
+        "local-cluster[2,1,1024]",
+        "local-cluster[2 , 1 , 1024]",
+        "local-cluster[2, 1, 1024]",
+        "local-cluster[ 2, 1, 1024 ]"
     )
 
     masterStrings.foreach {
@@ -101,7 +101,7 @@ class DistributedSuite extends SparkFunSuite with Matchers with LocalSparkContex
     sc = new SparkContext(clusterUrl, "test")
     val array = new Array[Int](100)
     val bv = sc.broadcast(array)
-    array(2) = 3     // Change the array -- this should not be seen on workers
+    array(2) = 3 // Change the array -- this should not be seen on workers
     val rdd = sc.parallelize(1 to 10, 10)
     val sum = rdd.map(x => bv.value.sum).reduce(_ + _)
     assert(sum === 0)
@@ -128,7 +128,9 @@ class DistributedSuite extends SparkFunSuite with Matchers with LocalSparkContex
     failAfter(Span(100000, Millis)) {
       val thrown = intercept[SparkException] {
         // One of the tasks always fails.
-        sc.parallelize(1 to 10, 2).foreach { x => if (x == 1) System.exit(42) }
+        sc.parallelize(1 to 10, 2).foreach { x =>
+          if (x == 1) System.exit(42)
+        }
       }
       assert(thrown.getClass === classOf[SparkException])
       assert(thrown.getMessage.contains("failed 4 times"))
@@ -199,10 +201,12 @@ class DistributedSuite extends SparkFunSuite with Matchers with LocalSparkContex
     val blockTransfer = blockManager.blockTransferService
     val serializerManager = SparkEnv.get.serializerManager
     blockManager.master.getLocations(blockId).foreach { cmId =>
-      val bytes = blockTransfer.fetchBlockSync(cmId.host, cmId.port, cmId.executorId,
-        blockId.toString)
-      val deserialized = serializerManager.dataDeserializeStream[Int](blockId,
-        new ChunkedByteBuffer(bytes.nioByteBuffer()).toInputStream()).toList
+      val bytes =
+        blockTransfer.fetchBlockSync(cmId.host, cmId.port, cmId.executorId, blockId.toString)
+      val deserialized = serializerManager
+        .dataDeserializeStream[Int](
+            blockId, new ChunkedByteBuffer(bytes.nioByteBuffer()).toInputStream())
+        .toList
       assert(deserialized === (1 to 100).toList)
     }
   }
@@ -277,11 +281,13 @@ class DistributedSuite extends SparkFunSuite with Matchers with LocalSparkContex
       assert(data.map(markNodeIfIdentity).collect.size === 2)
       // This relies on mergeCombiners being used to perform the actual reduce for this
       // test to actually be testing what it claims.
-      val grouped = data.map(x => x -> x).combineByKey(
-                      x => x,
-                      (x: Boolean, y: Boolean) => x,
-                      (x: Boolean, y: Boolean) => failOnMarkedIdentity(x)
-                    )
+      val grouped = data
+        .map(x => x -> x)
+        .combineByKey(
+            x => x,
+            (x: Boolean, y: Boolean) => x,
+            (x: Boolean, y: Boolean) => failOnMarkedIdentity(x)
+        )
       assert(grouped.collect.size === 1)
     }
   }
@@ -319,17 +325,16 @@ class DistributedSuite extends SparkFunSuite with Matchers with LocalSparkContex
 
     failAfter(Span(3000, Millis)) {
       try {
-        while (! sc.getRDDStorageInfo.isEmpty) {
+        while (!sc.getRDDStorageInfo.isEmpty) {
           Thread.sleep(200)
         }
       } catch {
         case _: Throwable => Thread.sleep(10)
-          // Do nothing. We might see exceptions because block manager
-          // is racing this thread to remove entries from the driver.
+        // Do nothing. We might see exceptions because block manager
+        // is racing this thread to remove entries from the driver.
       }
     }
   }
-
 }
 
 object DistributedSuite {

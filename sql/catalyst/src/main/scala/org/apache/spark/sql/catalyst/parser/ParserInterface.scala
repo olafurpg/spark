@@ -25,6 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
  * Interface for a parser.
  */
 trait ParserInterface {
+
   /** Creates LogicalPlan for a given SQL string. */
   def parsePlan(sqlText: String): LogicalPlan
 

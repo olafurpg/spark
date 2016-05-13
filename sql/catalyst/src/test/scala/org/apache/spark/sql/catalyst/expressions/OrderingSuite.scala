@@ -84,20 +84,18 @@ class OrderingSuite extends SparkFunSuite with ExpressionEvalHelper {
   // contain two columns of that type, then for pairs of randomly-generated rows we check that
   // GenerateOrdering agrees with RowOrdering.
   {
-    val structType =
-      new StructType()
-        .add("f1", FloatType, nullable = true)
-        .add("f2", ArrayType(BooleanType, containsNull = true), nullable = true)
+    val structType = new StructType()
+      .add("f1", FloatType, nullable = true)
+      .add("f2", ArrayType(BooleanType, containsNull = true), nullable = true)
     val arrayOfStructType = ArrayType(structType)
     val complexTypes = ArrayType(IntegerType) :: structType :: arrayOfStructType :: Nil
     (DataTypeTestUtils.atomicTypes ++ complexTypes ++ Set(NullType)).foreach { dataType =>
       test(s"GenerateOrdering with $dataType") {
         val rowOrdering = InterpretedOrdering.forSchema(Seq(dataType, dataType))
-        val genOrdering = GenerateOrdering.generate(
-          BoundReference(0, dataType, nullable = true).asc ::
-            BoundReference(1, dataType, nullable = true).asc :: Nil)
-        val rowType = StructType(
-          StructField("a", dataType, nullable = true) ::
+        val genOrdering =
+          GenerateOrdering.generate(BoundReference(0, dataType, nullable = true).asc ::
+              BoundReference(1, dataType, nullable = true).asc :: Nil)
+        val rowType = StructType(StructField("a", dataType, nullable = true) ::
             StructField("b", dataType, nullable = true) :: Nil)
         val maybeDataGenerator = RandomDataGenerator.forType(rowType, nullable = false)
         assume(maybeDataGenerator.isDefined)
@@ -113,9 +111,8 @@ class OrderingSuite extends SparkFunSuite with ExpressionEvalHelper {
             assert(rowOrdering.compare(b, b) === 0)
             assert(signum(genOrdering.compare(a, b)) === -1 * signum(genOrdering.compare(b, a)))
             assert(signum(rowOrdering.compare(a, b)) === -1 * signum(rowOrdering.compare(b, a)))
-            assert(
-              signum(rowOrdering.compare(a, b)) === signum(genOrdering.compare(a, b)),
-              "Generated and non-generated orderings should agree")
+            assert(signum(rowOrdering.compare(a, b)) === signum(genOrdering.compare(a, b)),
+                   "Generated and non-generated orderings should agree")
           }
         }
       }

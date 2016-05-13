@@ -33,5 +33,4 @@ private[spark] class ParentClassLoader(parent: ClassLoader) extends ClassLoader(
   override def loadClass(name: String, resolve: Boolean): Class[_] = {
     super.loadClass(name, resolve)
   }
-
 }

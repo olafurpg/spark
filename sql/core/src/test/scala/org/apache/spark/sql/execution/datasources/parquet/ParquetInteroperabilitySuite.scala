@@ -40,8 +40,7 @@ class ParquetInteroperabilitySuite extends ParquetCompatibilityTest with SharedS
       val avroStylePath = new File(dir, "avro-style").getCanonicalPath
       val protobufStylePath = new File(dir, "protobuf-style").getCanonicalPath
 
-      val avroStyleSchema =
-        """message avro_style {
+      val avroStyleSchema = """message avro_style {
           |  required group f (LIST) {
           |    repeated int32 array;
           |  }
@@ -63,8 +62,7 @@ class ParquetInteroperabilitySuite extends ParquetCompatibilityTest with SharedS
 
       logParquetSchema(avroStylePath)
 
-      val protobufStyleSchema =
-        """message protobuf_style {
+      val protobufStyleSchema = """message protobuf_style {
           |  repeated int32 f;
           |}
         """.stripMargin
@@ -80,11 +78,7 @@ class ParquetInteroperabilitySuite extends ParquetCompatibilityTest with SharedS
 
       logParquetSchema(protobufStylePath)
 
-      checkAnswer(
-        spark.read.parquet(dir.getCanonicalPath),
-        Seq(
-          Row(Seq(0, 1)),
-          Row(Seq(2, 3))))
+      checkAnswer(spark.read.parquet(dir.getCanonicalPath), Seq(Row(Seq(0, 1)), Row(Seq(2, 3))))
     }
   }
 }

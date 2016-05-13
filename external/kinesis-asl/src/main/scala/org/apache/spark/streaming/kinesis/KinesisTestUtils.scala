@@ -71,7 +71,8 @@ private[kinesis] class KinesisTestUtils extends Logging {
     if (!aggregate) {
       new SimpleDataGenerator(kinesisClient)
     } else {
-      throw new UnsupportedOperationException("Aggregation is not supported through this code path")
+      throw new UnsupportedOperationException(
+          "Aggregation is not supported through this code path")
     }
   }
 
@@ -186,8 +187,7 @@ private[kinesis] object KinesisTestUtils {
     if (isEnvSet) {
       // scalastyle:off println
       // Print this so that they are easily visible on the console and not hidden in the log4j logs.
-      println(
-        s"""
+      println(s"""
           |Kinesis tests that actually send data has been enabled by setting the environment
           |variable $envVarNameForEnablingTests to 1. This will create Kinesis Streams and
           |DynamoDB tables in AWS. Please be aware that this may incur some AWS costs.
@@ -215,13 +215,11 @@ private[kinesis] object KinesisTestUtils {
   }
 
   def getAWSCredentials(): AWSCredentials = {
-    assert(shouldRunTests,
-      "Kinesis test not enabled, should not attempt to get AWS credentials")
+    assert(shouldRunTests, "Kinesis test not enabled, should not attempt to get AWS credentials")
     Try { new DefaultAWSCredentialsProviderChain().getCredentials() } match {
       case Success(cred) => cred
       case Failure(e) =>
-        throw new Exception(
-          s"""
+        throw new Exception(s"""
              |Kinesis tests enabled using environment variable $envVarNameForEnablingTests
              |but could not find AWS credentials. Please follow instructions in AWS documentation
              |to set the credentials in your system such that the DefaultAWSCredentialsProviderChain
@@ -233,26 +231,26 @@ private[kinesis] object KinesisTestUtils {
 
 /** A wrapper interface that will allow us to consolidate the code for synthetic data generation. */
 private[kinesis] trait KinesisDataGenerator {
+
   /** Sends the data to Kinesis and returns the metadata for everything that has been sent. */
   def sendData(streamName: String, data: Seq[Int]): Map[String, Seq[(Int, String)]]
 }
 
-private[kinesis] class SimpleDataGenerator(
-    client: AmazonKinesisClient) extends KinesisDataGenerator {
+private[kinesis] class SimpleDataGenerator(client: AmazonKinesisClient)
+    extends KinesisDataGenerator {
   override def sendData(streamName: String, data: Seq[Int]): Map[String, Seq[(Int, String)]] = {
     val shardIdToSeqNumbers = new mutable.HashMap[String, ArrayBuffer[(Int, String)]]()
     data.foreach { num =>
       val str = num.toString
       val data = ByteBuffer.wrap(str.getBytes(StandardCharsets.UTF_8))
-      val putRecordRequest = new PutRecordRequest().withStreamName(streamName)
-        .withData(data)
-        .withPartitionKey(str)
+      val putRecordRequest =
+        new PutRecordRequest().withStreamName(streamName).withData(data).withPartitionKey(str)
 
       val putRecordResult = client.putRecord(putRecordRequest)
       val shardId = putRecordResult.getShardId
       val seqNumber = putRecordResult.getSequenceNumber()
-      val sentSeqNumbers = shardIdToSeqNumbers.getOrElseUpdate(shardId,
-        new ArrayBuffer[(Int, String)]())
+      val sentSeqNumbers =
+        shardIdToSeqNumbers.getOrElseUpdate(shardId, new ArrayBuffer[(Int, String)]())
       sentSeqNumbers += ((num, seqNumber))
     }
 

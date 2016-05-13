@@ -28,11 +28,11 @@ import org.apache.spark.util.Utils
  * Class representing partitions of PartitionerAwareUnionRDD, which maintains the list of
  * corresponding partitions of parent RDDs.
  */
-private[spark]
-class PartitionerAwareUnionRDDPartition(
+private[spark] class PartitionerAwareUnionRDDPartition(
     @transient val rdds: Seq[RDD[_]],
     override val index: Int
-  ) extends Partition {
+)
+    extends Partition {
   var parents = rdds.map(_.partitions(index)).toArray
 
   override def hashCode(): Int = index
@@ -55,15 +55,15 @@ class PartitionerAwareUnionRDDPartition(
  * of the corresponding partitions of the parent RDDs. For example, location of partition 0
  * of the unified RDD will be where most of partition 0 of the parent RDDs are located.
  */
-private[spark]
-class PartitionerAwareUnionRDD[T: ClassTag](
+private[spark] class PartitionerAwareUnionRDD[T: ClassTag](
     sc: SparkContext,
     var rdds: Seq[RDD[T]]
-  ) extends RDD[T](sc, rdds.map(x => new OneToOneDependency(x))) {
+)
+    extends RDD[T](sc, rdds.map(x => new OneToOneDependency(x))) {
   require(rdds.length > 0)
   require(rdds.forall(_.partitioner.isDefined))
   require(rdds.flatMap(_.partitioner).toSet.size == 1,
-    "Parent RDDs have different partitioners: " + rdds.flatMap(_.partitioner))
+          "Parent RDDs have different partitioners: " + rdds.flatMap(_.partitioner))
 
   override val partitioner = rdds.head.partitioner
 
@@ -84,12 +84,13 @@ class PartitionerAwareUnionRDD[T: ClassTag](
         logDebug("Location of " + rdd + " partition " + part.index + " = " + parentLocations)
         parentLocations
     }
-    val location = if (locations.isEmpty) {
-      None
-    } else {
-      // Find the location that maximum number of parent partitions prefer
-      Some(locations.groupBy(x => x).maxBy(_._2.length)._1)
-    }
+    val location =
+      if (locations.isEmpty) {
+        None
+      } else {
+        // Find the location that maximum number of parent partitions prefer
+        Some(locations.groupBy(x => x).maxBy(_._2.length)._1)
+      }
     logDebug("Selected location for " + this + ", partition " + s.index + " = " + location)
     location.toSeq
   }

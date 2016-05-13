@@ -25,17 +25,12 @@ import org.apache.spark.sql.SparkSession
 
 object MinMaxScalerExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("MinMaxScalerExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("MinMaxScalerExample").getOrCreate()
 
     // $example on$
     val dataFrame = spark.read.format("libsvm").load("data/mllib/sample_libsvm_data.txt")
 
-    val scaler = new MinMaxScaler()
-      .setInputCol("features")
-      .setOutputCol("scaledFeatures")
+    val scaler = new MinMaxScaler().setInputCol("features").setOutputCol("scaledFeatures")
 
     // Compute summary statistics and generate MinMaxScalerModel
     val scalerModel = scaler.fit(dataFrame)

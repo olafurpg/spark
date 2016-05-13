@@ -30,16 +30,14 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.sql.execution.QueryExecution
 
-
 private[hive] class SparkSQLDriver(val context: SQLContext = SparkSQLEnv.sqlContext)
-  extends Driver
-  with Logging {
+    extends Driver
+    with Logging {
 
   private[hive] var tableSchema: Schema = _
   private[hive] var hiveResponse: Seq[String] = _
 
-  override def init(): Unit = {
-  }
+  override def init(): Unit = {}
 
   private def getResultSetSchema(query: QueryExecution): Schema = {
     val analyzed = query.analyzed
@@ -64,12 +62,12 @@ private[hive] class SparkSQLDriver(val context: SQLContext = SparkSQLEnv.sqlCont
       tableSchema = getResultSetSchema(execution)
       new CommandProcessorResponse(0)
     } catch {
-        case ae: AnalysisException =>
-          logDebug(s"Failed in [$command]", ae)
-          new CommandProcessorResponse(1, ExceptionUtils.getStackTrace(ae), null, ae)
-        case cause: Throwable =>
-          logError(s"Failed in [$command]", cause)
-          new CommandProcessorResponse(1, ExceptionUtils.getStackTrace(cause), null, cause)
+      case ae: AnalysisException =>
+        logDebug(s"Failed in [$command]", ae)
+        new CommandProcessorResponse(1, ExceptionUtils.getStackTrace(ae), null, ae)
+      case cause: Throwable =>
+        logError(s"Failed in [$command]", cause)
+        new CommandProcessorResponse(1, ExceptionUtils.getStackTrace(cause), null, cause)
     }
   }
 

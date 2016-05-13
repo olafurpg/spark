@@ -29,8 +29,7 @@ import org.apache.spark.util.Utils
  * the wrapper classes for Flume-style Events.
  */
 private[streaming] object EventTransformer extends Logging {
-  def readExternal(in: ObjectInput): (java.util.HashMap[CharSequence, CharSequence],
-    Array[Byte]) = {
+  def readExternal(in: ObjectInput): (java.util.HashMap[CharSequence, CharSequence], Array[Byte]) = {
     val bodyLength = in.readInt()
     val bodyBuff = new Array[Byte](bodyLength)
     in.readFully(bodyBuff)
@@ -54,8 +53,8 @@ private[streaming] object EventTransformer extends Logging {
     (headers, bodyBuff)
   }
 
-  def writeExternal(out: ObjectOutput, headers: java.util.Map[CharSequence, CharSequence],
-    body: Array[Byte]) {
+  def writeExternal(
+      out: ObjectOutput, headers: java.util.Map[CharSequence, CharSequence], body: Array[Byte]) {
     out.writeInt(body.length)
     out.write(body)
     val numHeaders = headers.size()

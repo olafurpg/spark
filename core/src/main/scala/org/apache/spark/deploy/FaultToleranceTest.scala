@@ -202,13 +202,17 @@ private object FaultToleranceTest extends App with Logging {
 
   private def addMasters(num: Int) {
     logInfo(s">>>>> ADD MASTERS $num <<<<<")
-    (1 to num).foreach { _ => masters += SparkDocker.startMaster(dockerMountDir) }
+    (1 to num).foreach { _ =>
+      masters += SparkDocker.startMaster(dockerMountDir)
+    }
   }
 
   private def addWorkers(num: Int) {
     logInfo(s">>>>> ADD WORKERS $num <<<<<")
     val masterUrls = getMasterUrls(masters)
-    (1 to num).foreach { _ => workers += SparkDocker.startWorker(dockerMountDir, masterUrls) }
+    (1 to num).foreach { _ =>
+      workers += SparkDocker.startWorker(dockerMountDir, masterUrls)
+    }
   }
 
   /** Creates a SparkContext, which constructs a Client to interact with our cluster. */
@@ -281,8 +285,8 @@ private object FaultToleranceTest extends App with Logging {
     var liveWorkerIPs: Seq[String] = List()
 
     def stateValid(): Boolean = {
-      (workers.map(_.ip) -- liveWorkerIPs).isEmpty &&
-        numAlive == 1 && numStandby == masters.size - 1 && numLiveApps >= 1
+      (workers.map(_.ip) -- liveWorkerIPs).isEmpty && numAlive == 1 &&
+      numStandby == masters.size - 1 && numLiveApps >= 1
     }
 
     val f = Future {
@@ -334,12 +338,12 @@ private object FaultToleranceTest extends App with Logging {
     }
   }
 
-  logInfo("Ran %s tests, %s passed and %s failed".format(numPassed + numFailed, numPassed,
-    numFailed))
+  logInfo(
+      "Ran %s tests, %s passed and %s failed".format(numPassed + numFailed, numPassed, numFailed))
 }
 
 private class TestMasterInfo(val ip: String, val dockerId: DockerId, val logFile: File)
-  extends Logging  {
+    extends Logging {
 
   implicit val formats = org.json4s.DefaultFormats
   var state: RecoveryState.Value = _
@@ -351,15 +355,15 @@ private class TestMasterInfo(val ip: String, val dockerId: DockerId, val logFile
   def readState() {
     try {
       val masterStream = new InputStreamReader(
-        new URL("http://%s:8080/json".format(ip)).openStream, StandardCharsets.UTF_8)
+          new URL("http://%s:8080/json".format(ip)).openStream, StandardCharsets.UTF_8)
       val json = JsonMethods.parse(masterStream)
 
       val workers = json \ "workers"
       val liveWorkers = workers.children.filter(w => (w \ "state").extract[String] == "ALIVE")
       // Extract the worker IP from "webuiaddress" (rather than "host") because the host name
       // on containers is a weird hash instead of the actual IP address.
-      liveWorkerIPs = liveWorkers.map {
-        w => (w \ "webuiaddress").extract[String].stripPrefix("http://").stripSuffix(":8081")
+      liveWorkerIPs = liveWorkers.map { w =>
+        (w \ "webuiaddress").extract[String].stripPrefix("http://").stripSuffix(":8081")
       }
 
       numLiveApps = (json \ "activeapps").children.size
@@ -377,12 +381,11 @@ private class TestMasterInfo(val ip: String, val dockerId: DockerId, val logFile
   def kill() { Docker.kill(dockerId) }
 
   override def toString: String =
-    "[ip=%s, id=%s, logFile=%s, state=%s]".
-      format(ip, dockerId.id, logFile.getAbsolutePath, state)
+    "[ip=%s, id=%s, logFile=%s, state=%s]".format(ip, dockerId.id, logFile.getAbsolutePath, state)
 }
 
 private class TestWorkerInfo(val ip: String, val dockerId: DockerId, val logFile: File)
-  extends Logging {
+    extends Logging {
 
   implicit val formats = org.json4s.DefaultFormats
 
@@ -407,7 +410,7 @@ private object SparkDocker {
     new TestWorkerInfo(ip, id, outFile)
   }
 
-  private def startNode(dockerCmd: ProcessBuilder) : (String, DockerId, File) = {
+  private def startNode(dockerCmd: ProcessBuilder): (String, DockerId, File) = {
     val ipPromise = Promise[String]()
     val outFile = File.createTempFile("fault-tolerance-test", "", Utils.createTempDir())
     val outStream: FileWriter = new FileWriter(outFile)
@@ -441,7 +444,7 @@ private object Docker extends Logging {
     cmd
   }
 
-  def kill(dockerId: DockerId) : Unit = {
+  def kill(dockerId: DockerId): Unit = {
     "docker kill %s".format(dockerId.id).!
   }
 

@@ -30,8 +30,11 @@ import org.apache.spark.sql.types.{DoubleType, StructType}
 /**
  * Params for [[QuantileDiscretizer]].
  */
-private[feature] trait QuantileDiscretizerBase extends Params
-  with HasInputCol with HasOutputCol with HasSeed {
+private[feature] trait QuantileDiscretizerBase
+    extends Params
+    with HasInputCol
+    with HasOutputCol
+    with HasSeed {
 
   /**
    * Number of buckets (quantiles, or categories) into which data points are grouped. Must
@@ -39,9 +42,11 @@ private[feature] trait QuantileDiscretizerBase extends Params
    * default: 2
    * @group param
    */
-  val numBuckets = new IntParam(this, "numBuckets", "Maximum number of buckets (quantiles, or " +
-    "categories) into which data points are grouped. Must be >= 2.",
-    ParamValidators.gtEq(2))
+  val numBuckets = new IntParam(this,
+                                "numBuckets",
+                                "Maximum number of buckets (quantiles, or " +
+                                "categories) into which data points are grouped. Must be >= 2.",
+                                ParamValidators.gtEq(2))
   setDefault(numBuckets -> 2)
 
   /** @group getParam */
@@ -54,9 +59,10 @@ private[feature] trait QuantileDiscretizerBase extends Params
    * default: 0.001
    * @group param
    */
-  val relativeError = new DoubleParam(this, "relativeError", "The relative target precision " +
-    "for approxQuantile",
-    ParamValidators.inRange(0.0, 1.0))
+  val relativeError = new DoubleParam(this,
+                                      "relativeError",
+                                      "The relative target precision " + "for approxQuantile",
+                                      ParamValidators.inRange(0.0, 1.0))
   setDefault(relativeError -> 0.001)
 
   /** @group getParam */
@@ -72,7 +78,9 @@ private[feature] trait QuantileDiscretizerBase extends Params
  */
 @Experimental
 final class QuantileDiscretizer(override val uid: String)
-  extends Estimator[Bucketizer] with QuantileDiscretizerBase with DefaultParamsWritable {
+    extends Estimator[Bucketizer]
+    with QuantileDiscretizerBase
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("quantileDiscretizer"))
 
@@ -95,7 +103,7 @@ final class QuantileDiscretizer(override val uid: String)
     SchemaUtils.checkColumnType(schema, $(inputCol), DoubleType)
     val inputFields = schema.fields
     require(inputFields.forall(_.name != $(outputCol)),
-      s"Output column ${$(outputCol)} already exists.")
+            s"Output column ${$(outputCol)} already exists.")
     val attr = NominalAttribute.defaultAttr.withName($(outputCol))
     val outputFields = inputFields :+ attr.toStructField()
     StructType(outputFields)
@@ -103,8 +111,8 @@ final class QuantileDiscretizer(override val uid: String)
 
   @Since("2.0.0")
   override def fit(dataset: Dataset[_]): Bucketizer = {
-    val splits = dataset.stat.approxQuantile($(inputCol),
-      (0.0 to 1.0 by 1.0/$(numBuckets)).toArray, $(relativeError))
+    val splits = dataset.stat.approxQuantile(
+        $(inputCol), (0.0 to 1.0 by 1.0 / $(numBuckets)).toArray, $(relativeError))
     splits(0) = Double.NegativeInfinity
     splits(splits.length - 1) = Double.PositiveInfinity
 

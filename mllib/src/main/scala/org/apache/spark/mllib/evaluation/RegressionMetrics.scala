@@ -32,7 +32,7 @@ import org.apache.spark.sql.DataFrame
  *                      regression, it will be true without fitting intercept.
  */
 @Since("1.2.0")
-class RegressionMetrics @Since("2.0.0") (
+class RegressionMetrics @Since("2.0.0")(
     predictionAndObservations: RDD[(Double, Double)], throughOrigin: Boolean)
     extends Logging {
 
@@ -57,7 +57,7 @@ class RegressionMetrics @Since("2.0.0") (
     }.aggregate(new MultivariateOnlineSummarizer())(
         (summary, v) => summary.add(v),
         (sum1, sum2) => sum1.merge(sum2)
-      )
+    )
     summary
   }
 

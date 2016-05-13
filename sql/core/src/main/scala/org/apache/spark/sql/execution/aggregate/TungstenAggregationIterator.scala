@@ -76,27 +76,27 @@ import org.apache.spark.unsafe.KVIterator
  * @param inputIter
  *   the iterator containing input [[UnsafeRow]]s.
  */
-class TungstenAggregationIterator(
-    groupingExpressions: Seq[NamedExpression],
-    aggregateExpressions: Seq[AggregateExpression],
-    aggregateAttributes: Seq[Attribute],
-    initialInputBufferOffset: Int,
-    resultExpressions: Seq[NamedExpression],
-    newMutableProjection: (Seq[Expression], Seq[Attribute]) => MutableProjection,
-    originalInputAttributes: Seq[Attribute],
-    inputIter: Iterator[InternalRow],
-    testFallbackStartsAt: Option[(Int, Int)],
-    numOutputRows: SQLMetric,
-    peakMemory: SQLMetric,
-    spillSize: SQLMetric)
-  extends AggregationIterator(
-    groupingExpressions,
-    originalInputAttributes,
-    aggregateExpressions,
-    aggregateAttributes,
-    initialInputBufferOffset,
-    resultExpressions,
-    newMutableProjection) with Logging {
+class TungstenAggregationIterator(groupingExpressions: Seq[NamedExpression],
+                                  aggregateExpressions: Seq[AggregateExpression],
+                                  aggregateAttributes: Seq[Attribute],
+                                  initialInputBufferOffset: Int,
+                                  resultExpressions: Seq[NamedExpression],
+                                  newMutableProjection: (Seq[Expression],
+                                  Seq[Attribute]) => MutableProjection,
+                                  originalInputAttributes: Seq[Attribute],
+                                  inputIter: Iterator[InternalRow],
+                                  testFallbackStartsAt: Option[(Int, Int)],
+                                  numOutputRows: SQLMetric,
+                                  peakMemory: SQLMetric,
+                                  spillSize: SQLMetric)
+    extends AggregationIterator(groupingExpressions,
+                                originalInputAttributes,
+                                aggregateExpressions,
+                                aggregateAttributes,
+                                initialInputBufferOffset,
+                                resultExpressions,
+                                newMutableProjection)
+    with Logging {
 
   ///////////////////////////////////////////////////////////////////////////
   // Part 1: Initializing aggregate functions.
@@ -117,7 +117,8 @@ class TungstenAggregationIterator(
   // and when we create the re-used buffer for sort-based aggregation).
   private def createNewAggregationBuffer(): UnsafeRow = {
     val bufferSchema = aggregateFunctions.flatMap(_.aggBufferAttributes)
-    val buffer: UnsafeRow = UnsafeProjection.create(bufferSchema.map(_.dataType))
+    val buffer: UnsafeRow = UnsafeProjection
+      .create(bufferSchema.map(_.dataType))
       .apply(new GenericMutableRow(bufferSchema.length))
     // Initialize declarative aggregates' buffer values
     expressionAggInitialProjection.target(buffer)(EmptyRow)
@@ -137,9 +138,10 @@ class TungstenAggregationIterator(
       val bufferSchema = StructType.fromAttributes(bufferAttributes)
       val unsafeRowJoiner = GenerateUnsafeRowJoiner.create(groupingKeySchema, bufferSchema)
 
-      (currentGroupingKey: UnsafeRow, currentBuffer: MutableRow) => {
-        unsafeRowJoiner.join(currentGroupingKey, currentBuffer.asInstanceOf[UnsafeRow])
-      }
+      (currentGroupingKey: UnsafeRow, currentBuffer: MutableRow) =>
+        {
+          unsafeRowJoiner.join(currentGroupingKey, currentBuffer.asInstanceOf[UnsafeRow])
+        }
     } else {
       super.generateResultProjection()
     }
@@ -157,13 +159,13 @@ class TungstenAggregationIterator(
   // UnsafeFixedWidthAggregationMap and it is used to store
   // all groups and their corresponding aggregation buffers for hash-based aggregation.
   private[this] val hashMap = new UnsafeFixedWidthAggregationMap(
-    initialAggregationBuffer,
-    StructType.fromAttributes(aggregateFunctions.flatMap(_.aggBufferAttributes)),
-    StructType.fromAttributes(groupingExpressions.map(_.toAttribute)),
-    TaskContext.get().taskMemoryManager(),
-    1024 * 16, // initial capacity
-    TaskContext.get().taskMemoryManager().pageSizeBytes,
-    false // disable tracking of performance metrics
+      initialAggregationBuffer,
+      StructType.fromAttributes(aggregateFunctions.flatMap(_.aggBufferAttributes)),
+      StructType.fromAttributes(groupingExpressions.map(_.toAttribute)),
+      TaskContext.get().taskMemoryManager(),
+      1024 * 16, // initial capacity
+      TaskContext.get().taskMemoryManager().pageSizeBytes,
+      false // disable tracking of performance metrics
   )
 
   // The function used to read and process input rows. When processing input rows,
@@ -377,37 +379,36 @@ class TungstenAggregationIterator(
 
   override final def next(): UnsafeRow = {
     if (hasNext) {
-      val res = if (sortBased) {
-        // Process the current group.
-        processCurrentSortedGroup()
-        // Generate output row for the current group.
-        val outputRow = generateOutput(currentGroupingKey, sortBasedAggregationBuffer)
-        // Initialize buffer values for the next group.
-        sortBasedAggregationBuffer.copyFrom(initialAggregationBuffer)
+      val res =
+        if (sortBased) {
+          // Process the current group.
+          processCurrentSortedGroup()
+          // Generate output row for the current group.
+          val outputRow = generateOutput(currentGroupingKey, sortBasedAggregationBuffer)
+          // Initialize buffer values for the next group.
+          sortBasedAggregationBuffer.copyFrom(initialAggregationBuffer)
 
-        outputRow
-      } else {
-        // We did not fall back to sort-based aggregation.
-        val result =
-          generateOutput(
-            aggregationBufferMapIterator.getKey,
-            aggregationBufferMapIterator.getValue)
-
-        // Pre-load next key-value pair form aggregationBufferMapIterator to make hasNext
-        // idempotent.
-        mapIteratorHasNext = aggregationBufferMapIterator.next()
-
-        if (!mapIteratorHasNext) {
-          // If there is no input from aggregationBufferMapIterator, we copy current result.
-          val resultCopy = result.copy()
-          // Then, we free the map.
-          hashMap.free()
-
-          resultCopy
+          outputRow
         } else {
-          result
+          // We did not fall back to sort-based aggregation.
+          val result = generateOutput(
+              aggregationBufferMapIterator.getKey, aggregationBufferMapIterator.getValue)
+
+          // Pre-load next key-value pair form aggregationBufferMapIterator to make hasNext
+          // idempotent.
+          mapIteratorHasNext = aggregationBufferMapIterator.next()
+
+          if (!mapIteratorHasNext) {
+            // If there is no input from aggregationBufferMapIterator, we copy current result.
+            val resultCopy = result.copy()
+            // Then, we free the map.
+            hashMap.free()
+
+            resultCopy
+          } else {
+            result
+          }
         }
-      }
 
       // If this is the last record, update the task's peak memory usage. Since we destroy
       // the map to create the sorter, their memory usages should not overlap, so it is safe
@@ -446,7 +447,7 @@ class TungstenAggregationIterator(
       resultCopy
     } else {
       throw new IllegalStateException(
-        "This method should not be called when groupingExpressions is not empty.")
+          "This method should not be called when groupingExpressions is not empty.")
     }
   }
 }

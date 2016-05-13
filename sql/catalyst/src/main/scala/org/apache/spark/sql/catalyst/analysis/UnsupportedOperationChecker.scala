@@ -29,8 +29,7 @@ object UnsupportedOperationChecker {
   def checkForBatch(plan: LogicalPlan): Unit = {
     plan.foreachUp {
       case p if p.isStreaming =>
-        throwError(
-          "Queries with streaming sources must be executed with write.startStream()")(p)
+        throwError("Queries with streaming sources must be executed with write.startStream()")(p)
 
       case _ =>
     }
@@ -39,29 +38,26 @@ object UnsupportedOperationChecker {
   def checkForStreaming(plan: LogicalPlan, outputMode: OutputMode): Unit = {
 
     if (!plan.isStreaming) {
-      throwError(
-        "Queries without streaming sources cannot be executed with write.startStream()")(plan)
+      throwError("Queries without streaming sources cannot be executed with write.startStream()")(
+          plan)
     }
 
     plan.foreachUp { implicit plan =>
-
       // Operations that cannot exists anywhere in a streaming plan
       plan match {
 
         case _: Command =>
           throwError("Commands like CreateTable*, AlterTable*, Show* are not supported with " +
-            "streaming DataFrames/Datasets")
+              "streaming DataFrames/Datasets")
 
         case _: InsertIntoTable =>
           throwError("InsertIntoTable is not supported with streaming DataFrames/Datasets")
 
         case Aggregate(_, _, child) if child.isStreaming && outputMode == Append =>
-          throwError(
-            "Aggregations are not supported on streaming DataFrames/Datasets in " +
+          throwError("Aggregations are not supported on streaming DataFrames/Datasets in " +
               "Append output mode. Consider changing output mode to Update.")
 
         case Join(left, right, joinType, _) =>
-
           joinType match {
 
             case Inner =>
@@ -73,7 +69,6 @@ object UnsupportedOperationChecker {
               if (left.isStreaming || right.isStreaming) {
                 throwError("Full outer joins with streaming DataFrames/Datasets are not supported")
               }
-
 
             case LeftOuter | LeftSemi | LeftAnti =>
               if (right.isStreaming) {
@@ -88,7 +83,7 @@ object UnsupportedOperationChecker {
               }
 
             case NaturalJoin(_) | UsingJoin(_, _) =>
-              // They should not appear in an analyzed plan.
+            // They should not appear in an analyzed plan.
 
             case _ =>
               throwError(s"Join type $joinType is not supported with streaming DataFrame/Dataset")
@@ -123,16 +118,14 @@ object UnsupportedOperationChecker {
 
         case ReturnAnswer(child) if child.isStreaming =>
           throwError("Cannot return immediate result on streaming DataFrames/Dataset. Queries " +
-            "with streaming DataFrames/Datasets must be executed with write.startStream().")
+              "with streaming DataFrames/Datasets must be executed with write.startStream().")
 
         case _ =>
       }
     }
   }
 
-  private def throwErrorIf(
-      condition: Boolean,
-      msg: String)(implicit operator: LogicalPlan): Unit = {
+  private def throwErrorIf(condition: Boolean, msg: String)(implicit operator: LogicalPlan): Unit = {
     if (condition) {
       throwError(msg)
     }
@@ -140,6 +133,6 @@ object UnsupportedOperationChecker {
 
   private def throwError(msg: String)(implicit operator: LogicalPlan): Nothing = {
     throw new AnalysisException(
-      msg, operator.origin.line, operator.origin.startPosition, Some(operator))
+        msg, operator.origin.line, operator.origin.startPosition, Some(operator))
   }
 }

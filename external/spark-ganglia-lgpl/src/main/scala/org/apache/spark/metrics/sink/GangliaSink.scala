@@ -28,8 +28,9 @@ import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode
 import org.apache.spark.SecurityManager
 import org.apache.spark.metrics.MetricsSystem
 
-class GangliaSink(val property: Properties, val registry: MetricRegistry,
-    securityMgr: SecurityManager) extends Sink {
+class GangliaSink(
+    val property: Properties, val registry: MetricRegistry, securityMgr: SecurityManager)
+    extends Sink {
   val GANGLIA_KEY_PERIOD = "period"
   val GANGLIA_DEFAULT_PERIOD = 10
 
@@ -60,9 +61,10 @@ class GangliaSink(val property: Properties, val registry: MetricRegistry,
   val port = propertyToOption(GANGLIA_KEY_PORT).get.toInt
   val ttl = propertyToOption(GANGLIA_KEY_TTL).map(_.toInt).getOrElse(GANGLIA_DEFAULT_TTL)
   val mode: UDPAddressingMode = propertyToOption(GANGLIA_KEY_MODE)
-    .map(u => GMetric.UDPAddressingMode.valueOf(u.toUpperCase)).getOrElse(GANGLIA_DEFAULT_MODE)
-  val pollPeriod = propertyToOption(GANGLIA_KEY_PERIOD).map(_.toInt)
-    .getOrElse(GANGLIA_DEFAULT_PERIOD)
+    .map(u => GMetric.UDPAddressingMode.valueOf(u.toUpperCase))
+    .getOrElse(GANGLIA_DEFAULT_MODE)
+  val pollPeriod =
+    propertyToOption(GANGLIA_KEY_PERIOD).map(_.toInt).getOrElse(GANGLIA_DEFAULT_PERIOD)
   val pollUnit: TimeUnit = propertyToOption(GANGLIA_KEY_UNIT)
     .map(u => TimeUnit.valueOf(u.toUpperCase))
     .getOrElse(GANGLIA_DEFAULT_UNIT)
@@ -70,10 +72,11 @@ class GangliaSink(val property: Properties, val registry: MetricRegistry,
   MetricsSystem.checkMinimalPollingPeriod(pollUnit, pollPeriod)
 
   val ganglia = new GMetric(host, port, mode, ttl)
-  val reporter: GangliaReporter = GangliaReporter.forRegistry(registry)
-      .convertDurationsTo(TimeUnit.MILLISECONDS)
-      .convertRatesTo(TimeUnit.SECONDS)
-      .build(ganglia)
+  val reporter: GangliaReporter = GangliaReporter
+    .forRegistry(registry)
+    .convertDurationsTo(TimeUnit.MILLISECONDS)
+    .convertRatesTo(TimeUnit.SECONDS)
+    .build(ganglia)
 
   override def start() {
     reporter.start(pollPeriod, pollUnit)
@@ -87,4 +90,3 @@ class GangliaSink(val property: Properties, val registry: MetricRegistry,
     reporter.report()
   }
 }
-

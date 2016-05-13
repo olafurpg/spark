@@ -114,9 +114,8 @@ class ExpressionParserSuite extends PlanTest {
   }
 
   test("exists expression") {
-    assertEqual(
-      "exists (select 1 from b where b.x = a.x)",
-      Exists(table("b").where(Symbol("b.x") === Symbol("a.x")).select(1)))
+    assertEqual("exists (select 1 from b where b.x = a.x)",
+                Exists(table("b").where(Symbol("b.x") === Symbol("a.x")).select(1)))
   }
 
   test("comparison expressions") {
@@ -144,9 +143,7 @@ class ExpressionParserSuite extends PlanTest {
   }
 
   test("in sub-query") {
-    assertEqual(
-      "a in (select b from c)",
-      In('a, Seq(ListQuery(table("c").select('b)))))
+    assertEqual("a in (select b from c)", In('a, Seq(ListQuery(table("c").select('b)))))
   }
 
   test("like expressions") {
@@ -178,9 +175,8 @@ class ExpressionParserSuite extends PlanTest {
     assertEqual("a | b", 'a | 'b)
 
     // Check precedences
-    assertEqual(
-      "a * t | b ^ c & d - e + f % g DIV h / i * k",
-      'a * 't | ('b ^ ('c & ('d - 'e + (('f % 'g / 'h).cast(LongType) / 'i * 'k)))))
+    assertEqual("a * t | b ^ c & d - e + f % g DIV h / i * k",
+                'a * 't | ('b ^ ('c & ('d - 'e + (('f % 'g / 'h).cast(LongType) / 'i * 'k)))))
   }
 
   test("unary arithmetic expressions") {
@@ -200,8 +196,9 @@ class ExpressionParserSuite extends PlanTest {
 
   test("function expressions") {
     assertEqual("foo()", 'foo.function())
-    assertEqual("foo.bar()",
-      UnresolvedFunction(FunctionIdentifier("bar", Some("foo")), Seq.empty, isDistinct = false))
+    assertEqual(
+        "foo.bar()",
+        UnresolvedFunction(FunctionIdentifier("bar", Some("foo")), Seq.empty, isDistinct = false))
     assertEqual("foo(*)", 'foo.function(star()))
     assertEqual("count(*)", 'count.function(1))
     assertEqual("foo(a, b)", 'foo.function('a, 'b))
@@ -213,10 +210,9 @@ class ExpressionParserSuite extends PlanTest {
 
   test("window function expressions") {
     val func = 'foo.function(star())
-    def windowed(
-        partitioning: Seq[Expression] = Seq.empty,
-        ordering: Seq[SortOrder] = Seq.empty,
-        frame: WindowFrame = UnspecifiedFrame): Expression = {
+    def windowed(partitioning: Seq[Expression] = Seq.empty,
+                 ordering: Seq[SortOrder] = Seq.empty,
+                 frame: WindowFrame = UnspecifiedFrame): Expression = {
       WindowExpression(func, WindowSpecDefinition(partitioning, ordering, frame))
     }
 
@@ -226,34 +222,37 @@ class ExpressionParserSuite extends PlanTest {
     assertEqual("foo(*) over (partition by a, b)", windowed(Seq('a, 'b)))
     assertEqual("foo(*) over (distribute by a, b)", windowed(Seq('a, 'b)))
     assertEqual("foo(*) over (cluster by a, b)", windowed(Seq('a, 'b)))
-    assertEqual("foo(*) over (order by a desc, b asc)", windowed(Seq.empty, Seq('a.desc, 'b.asc )))
-    assertEqual("foo(*) over (sort by a desc, b asc)", windowed(Seq.empty, Seq('a.desc, 'b.asc )))
+    assertEqual("foo(*) over (order by a desc, b asc)", windowed(Seq.empty, Seq('a.desc, 'b.asc)))
+    assertEqual("foo(*) over (sort by a desc, b asc)", windowed(Seq.empty, Seq('a.desc, 'b.asc)))
     assertEqual("foo(*) over (partition by a, b order by c)", windowed(Seq('a, 'b), Seq('c.asc)))
     assertEqual("foo(*) over (distribute by a, b sort by c)", windowed(Seq('a, 'b), Seq('c.asc)))
 
     // Test use of expressions in window functions.
-    assertEqual(
-      "sum(product + 1) over (partition by ((product) + (1)) order by 2)",
-      WindowExpression('sum.function('product + 1),
-        WindowSpecDefinition(Seq('product + 1), Seq(Literal(2).asc), UnspecifiedFrame)))
-    assertEqual(
-      "sum(product + 1) over (partition by ((product / 2) + 1) order by 2)",
-      WindowExpression('sum.function('product + 1),
-        WindowSpecDefinition(Seq('product / 2 + 1), Seq(Literal(2).asc), UnspecifiedFrame)))
+    assertEqual("sum(product + 1) over (partition by ((product) + (1)) order by 2)",
+                WindowExpression('sum.function('product + 1),
+                                 WindowSpecDefinition(Seq('product + 1),
+                                                      Seq(Literal(2).asc),
+                                                      UnspecifiedFrame)))
+    assertEqual("sum(product + 1) over (partition by ((product / 2) + 1) order by 2)",
+                WindowExpression('sum.function('product + 1),
+                                 WindowSpecDefinition(Seq('product / 2 + 1),
+                                                      Seq(Literal(2).asc),
+                                                      UnspecifiedFrame)))
 
     // Range/Row
     val frameTypes = Seq(("rows", RowFrame), ("range", RangeFrame))
     val boundaries = Seq(
-      ("10 preceding", ValuePreceding(10), CurrentRow),
-      ("3 + 1 following", ValueFollowing(4), CurrentRow), // Will fail during analysis
-      ("unbounded preceding", UnboundedPreceding, CurrentRow),
-      ("unbounded following", UnboundedFollowing, CurrentRow), // Will fail during analysis
-      ("between unbounded preceding and current row", UnboundedPreceding, CurrentRow),
-      ("between unbounded preceding and unbounded following",
-        UnboundedPreceding, UnboundedFollowing),
-      ("between 10 preceding and current row", ValuePreceding(10), CurrentRow),
-      ("between current row and 5 following", CurrentRow, ValueFollowing(5)),
-      ("between 10 preceding and 5 following", ValuePreceding(10), ValueFollowing(5))
+        ("10 preceding", ValuePreceding(10), CurrentRow),
+        ("3 + 1 following", ValueFollowing(4), CurrentRow), // Will fail during analysis
+        ("unbounded preceding", UnboundedPreceding, CurrentRow),
+        ("unbounded following", UnboundedFollowing, CurrentRow), // Will fail during analysis
+        ("between unbounded preceding and current row", UnboundedPreceding, CurrentRow),
+        ("between unbounded preceding and unbounded following",
+         UnboundedPreceding,
+         UnboundedFollowing),
+        ("between 10 preceding and current row", ValuePreceding(10), CurrentRow),
+        ("between current row and 5 following", CurrentRow, ValueFollowing(5)),
+        ("between 10 preceding and 5 following", ValuePreceding(10), ValueFollowing(5))
     )
     frameTypes.foreach {
       case (frameTypeSql, frameType) =>
@@ -267,11 +266,11 @@ class ExpressionParserSuite extends PlanTest {
 
     // We cannot use non integer constants.
     intercept("foo(*) over (partition by a order by b rows 10.0 preceding)",
-      "Frame bound value must be a constant integer.")
+              "Frame bound value must be a constant integer.")
 
     // We cannot use an arbitrary expression.
     intercept("foo(*) over (partition by a order by b rows exp(b) preceding)",
-      "Frame bound value must be a constant integer.")
+              "Frame bound value must be a constant integer.")
   }
 
   test("row constructor") {
@@ -281,19 +280,16 @@ class ExpressionParserSuite extends PlanTest {
   }
 
   test("scalar sub-query") {
-    assertEqual(
-      "(select max(val) from tbl) > current",
-      ScalarSubquery(table("tbl").select('max.function('val))) > 'current)
-    assertEqual(
-      "a = (select b from s)",
-      'a === ScalarSubquery(table("s").select('b)))
+    assertEqual("(select max(val) from tbl) > current",
+                ScalarSubquery(table("tbl").select('max.function('val))) > 'current)
+    assertEqual("a = (select b from s)", 'a === ScalarSubquery(table("s").select('b)))
   }
 
   test("case when") {
-    assertEqual("case a when 1 then b when 2 then c else d end",
-      CaseKeyWhen('a, Seq(1, 'b, 2, 'c, 'd)))
+    assertEqual(
+        "case a when 1 then b when 2 then c else d end", CaseKeyWhen('a, Seq(1, 'b, 2, 'c, 'd)))
     assertEqual("case when a = 1 then b when a = 2 then c else d end",
-      CaseWhen(Seq(('a === 1, 'b.expr), ('a === 2, 'c.expr)), 'd))
+                CaseWhen(Seq(('a === 1, 'b.expr), ('a === 2, 'c.expr)), 'd))
   }
 
   test("dereference") {
@@ -337,7 +333,7 @@ class ExpressionParserSuite extends PlanTest {
 
     // Timestamps.
     assertEqual("tImEstAmp '2016-03-11 20:54:00.000'",
-      Literal(Timestamp.valueOf("2016-03-11 20:54:00.000")))
+                Literal(Timestamp.valueOf("2016-03-11 20:54:00.000")))
     intercept[IllegalArgumentException] {
       parseExpression("timestamP '2016-33-11 20:54:00.000'")
     }
@@ -358,11 +354,11 @@ class ExpressionParserSuite extends PlanTest {
     assertEqual("787324", Literal(787324))
     assertEqual("7873247234798249234", Literal(7873247234798249234L))
     assertEqual("78732472347982492793712334",
-      Literal(BigDecimal("78732472347982492793712334").underlying()))
+                Literal(BigDecimal("78732472347982492793712334").underlying()))
 
     // Decimal
     assertEqual("7873247234798249279371.2334",
-      Literal(BigDecimal("7873247234798249279371.2334").underlying()))
+                Literal(BigDecimal("7873247234798249279371.2334").underlying()))
 
     // Scientific Decimal
     assertEqual("9.0e1", 90d)
@@ -411,12 +407,12 @@ class ExpressionParserSuite extends PlanTest {
     // Escaped characters.
     // See: http://dev.mysql.com/doc/refman/5.7/en/string-literals.html
     assertEqual("'\\0'", "\u0000") // ASCII NUL (X'00')
-    assertEqual("'\\''", "\'")     // Single quote
-    assertEqual("'\\\"'", "\"")    // Double quote
-    assertEqual("'\\b'", "\b")     // Backspace
-    assertEqual("'\\n'", "\n")     // Newline
-    assertEqual("'\\r'", "\r")     // Carriage return
-    assertEqual("'\\t'", "\t")     // Tab character
+    assertEqual("'\\''", "\'") // Single quote
+    assertEqual("'\\\"'", "\"") // Double quote
+    assertEqual("'\\b'", "\b") // Backspace
+    assertEqual("'\\n'", "\n") // Newline
+    assertEqual("'\\r'", "\r") // Carriage return
+    assertEqual("'\\t'", "\t") // Tab character
     assertEqual("'\\Z'", "\u001A") // ASCII 26 - CTRL + Z (EOF on windows)
 
     // Octals
@@ -435,25 +431,24 @@ class ExpressionParserSuite extends PlanTest {
     intercept("interval", "at least one time unit should be given for interval literal")
 
     // Single Intervals.
-    val units = Seq(
-      "year",
-      "month",
-      "week",
-      "day",
-      "hour",
-      "minute",
-      "second",
-      "millisecond",
-      "microsecond")
+    val units = Seq("year",
+                    "month",
+                    "week",
+                    "day",
+                    "hour",
+                    "minute",
+                    "second",
+                    "millisecond",
+                    "microsecond")
     val forms = Seq("", "s")
     val values = Seq("0", "10", "-7", "21")
     units.foreach { unit =>
       forms.foreach { form =>
-         values.foreach { value =>
-           val expected = intervalLiteral(unit, value)
-           assertEqual(s"interval $value $unit$form", expected)
-           assertEqual(s"interval '$value' $unit$form", expected)
-         }
+        values.foreach { value =>
+          val expected = intervalLiteral(unit, value)
+          assertEqual(s"interval $value $unit$form", expected)
+          assertEqual(s"interval '$value' $unit$form", expected)
+        }
       }
     }
 
@@ -472,13 +467,12 @@ class ExpressionParserSuite extends PlanTest {
     }
 
     // Day-Time intervals.
-    val datTimeValues = Seq(
-      "99 11:22:33.123456789",
-      "-99 11:22:33.123456789",
-      "10 9:8:7.123456789",
-      "1 0:0:0",
-      "-1 0:0:0",
-      "1 0:0:1")
+    val datTimeValues = Seq("99 11:22:33.123456789",
+                            "-99 11:22:33.123456789",
+                            "10 9:8:7.123456789",
+                            "1 0:0:0",
+                            "-1 0:0:0",
+                            "1 0:0:1")
     datTimeValues.foreach { value =>
       val result = Literal(CalendarInterval.fromDayTimeString(value))
       assertEqual(s"interval '$value' day to second", result)
@@ -489,12 +483,11 @@ class ExpressionParserSuite extends PlanTest {
 
     // Composed intervals.
     assertEqual(
-      "interval 3 months 22 seconds 1 millisecond",
-      Literal(new CalendarInterval(3, 22001000L)))
-    assertEqual(
-      "interval 3 years '-1-10' year to month 3 weeks '1 0:0:2' day to second",
-      Literal(new CalendarInterval(14,
-        22 * CalendarInterval.MICROS_PER_DAY + 2 * CalendarInterval.MICROS_PER_SECOND)))
+        "interval 3 months 22 seconds 1 millisecond", Literal(new CalendarInterval(3, 22001000L)))
+    assertEqual("interval 3 years '-1-10' year to month 3 weeks '1 0:0:2' day to second",
+                Literal(new CalendarInterval(14,
+                                             22 * CalendarInterval.MICROS_PER_DAY +
+                                             2 * CalendarInterval.MICROS_PER_SECOND)))
   }
 
   test("composed expressions") {

@@ -50,8 +50,8 @@ private[ml] trait ValidatorParams extends HasSeed with Params {
    *
    * @group param
    */
-  val estimatorParamMaps: Param[Array[ParamMap]] =
-    new Param(this, "estimatorParamMaps", "param maps for the estimator")
+  val estimatorParamMaps: Param[Array[ParamMap]] = new Param(
+      this, "estimatorParamMaps", "param maps for the estimator")
 
   /** @group getParam */
   def getEstimatorParamMaps: Array[ParamMap] = $(estimatorParamMaps)
@@ -61,8 +61,10 @@ private[ml] trait ValidatorParams extends HasSeed with Params {
    *
    * @group param
    */
-  val evaluator: Param[Evaluator] = new Param(this, "evaluator",
-    "evaluator used to select hyper-parameters that maximize the validated metric")
+  val evaluator: Param[Evaluator] = new Param(
+      this,
+      "evaluator",
+      "evaluator used to select hyper-parameters that maximize the validated metric")
 
   /** @group getParam */
   def getEvaluator: Evaluator = $(evaluator)
@@ -79,6 +81,7 @@ private[ml] trait ValidatorParams extends HasSeed with Params {
 }
 
 private[ml] object ValidatorParams {
+
   /**
    * Check that [[ValidatorParams.evaluator]] and [[ValidatorParams.estimator]] are Writable.
    * This does not check [[ValidatorParams.estimatorParamMaps]].
@@ -87,21 +90,26 @@ private[ml] object ValidatorParams {
     def checkElement(elem: Params, name: String): Unit = elem match {
       case stage: MLWritable => // good
       case other =>
-        throw new UnsupportedOperationException(instance.getClass.getName + " write will fail " +
-          s" because it contains $name which does not implement Writable." +
-          s" Non-Writable $name: ${other.uid} of type ${other.getClass}")
+        throw new UnsupportedOperationException(
+            instance.getClass.getName + " write will fail " +
+            s" because it contains $name which does not implement Writable." +
+            s" Non-Writable $name: ${other.uid} of type ${other.getClass}")
     }
     checkElement(instance.getEvaluator, "evaluator")
     checkElement(instance.getEstimator, "estimator")
     // Check to make sure all Params apply to this estimator.  Throw an error if any do not.
     // Extraneous Params would cause problems when loading the estimatorParamMaps.
     val uidToInstance: Map[String, Params] = MetaAlgorithmReadWrite.getUidMap(instance)
-    instance.getEstimatorParamMaps.foreach { case pMap: ParamMap =>
-      pMap.toSeq.foreach { case ParamPair(p, v) =>
-        require(uidToInstance.contains(p.parent), s"ValidatorParams save requires all Params in" +
-          s" estimatorParamMaps to apply to this ValidatorParams, its Estimator, or its" +
-          s" Evaluator. An extraneous Param was found: $p")
-      }
+    instance.getEstimatorParamMaps.foreach {
+      case pMap: ParamMap =>
+        pMap.toSeq.foreach {
+          case ParamPair(p, v) =>
+            require(
+                uidToInstance.contains(p.parent),
+                s"ValidatorParams save requires all Params in" +
+                s" estimatorParamMaps to apply to this ValidatorParams, its Estimator, or its" +
+                s" Evaluator. An extraneous Param was found: $p")
+        }
     }
   }
 
@@ -110,20 +118,22 @@ private[ml] object ValidatorParams {
    * This handles all [[ValidatorParams]] fields and saves [[Param]] values, but the implementing
    * class needs to handle model data.
    */
-  def saveImpl(
-      path: String,
-      instance: ValidatorParams,
-      sc: SparkContext,
-      extraMetadata: Option[JObject] = None): Unit = {
+  def saveImpl(path: String,
+               instance: ValidatorParams,
+               sc: SparkContext,
+               extraMetadata: Option[JObject] = None): Unit = {
     import org.json4s.JsonDSL._
 
-    val estimatorParamMapsJson = compact(render(
-      instance.getEstimatorParamMaps.map { case paramMap =>
-        paramMap.toSeq.map { case ParamPair(p, v) =>
-          Map("parent" -> p.parent, "name" -> p.name, "value" -> p.jsonEncode(v))
-        }
-      }.toSeq
-    ))
+    val estimatorParamMapsJson = compact(
+        render(
+            instance.getEstimatorParamMaps.map {
+          case paramMap =>
+            paramMap.toSeq.map {
+              case ParamPair(p, v) =>
+                Map("parent" -> p.parent, "name" -> p.name, "value" -> p.jsonEncode(v))
+            }
+        }.toSeq
+        ))
 
     val validatorSpecificParams = instance match {
       case cv: CrossValidatorParams =>
@@ -132,13 +142,13 @@ private[ml] object ValidatorParams {
         List("trainRatio" -> parse(tvs.trainRatio.jsonEncode(tvs.getTrainRatio)))
       case _ =>
         // This should not happen.
-        throw new NotImplementedError("ValidatorParams.saveImpl does not handle type: " +
-          instance.getClass.getCanonicalName)
+        throw new NotImplementedError(
+            "ValidatorParams.saveImpl does not handle type: " + instance.getClass.getCanonicalName)
     }
 
-    val jsonParams = validatorSpecificParams ++ List(
-      "estimatorParamMaps" -> parse(estimatorParamMapsJson),
-      "seed" -> parse(instance.seed.jsonEncode(instance.getSeed)))
+    val jsonParams =
+      validatorSpecificParams ++ List("estimatorParamMaps" -> parse(estimatorParamMapsJson),
+                                      "seed" -> parse(instance.seed.jsonEncode(instance.getSeed)))
 
     DefaultParamsWriter.saveMetadata(instance, path, sc, extraMetadata, Some(jsonParams))
 
@@ -166,19 +176,22 @@ private[ml] object ValidatorParams {
     val estimatorPath = new Path(path, "estimator").toString
     val estimator = DefaultParamsReader.loadParamsInstance[Estimator[M]](estimatorPath, sc)
 
-    val uidToParams = Map(evaluator.uid -> evaluator) ++ MetaAlgorithmReadWrite.getUidMap(estimator)
+    val uidToParams =
+      Map(evaluator.uid -> evaluator) ++ MetaAlgorithmReadWrite.getUidMap(estimator)
 
-    val estimatorParamMaps: Array[ParamMap] =
-      (metadata.params \ "estimatorParamMaps").extract[Seq[Seq[Map[String, String]]]].map {
-        pMap =>
-          val paramPairs = pMap.map { case pInfo: Map[String, String] =>
+    val estimatorParamMaps: Array[ParamMap] = (metadata.params \ "estimatorParamMaps")
+      .extract[Seq[Seq[Map[String, String]]]]
+      .map { pMap =>
+        val paramPairs = pMap.map {
+          case pInfo: Map[String, String] =>
             val est = uidToParams(pInfo("parent"))
             val param = est.getParam(pInfo("name"))
             val value = param.jsonDecode(pInfo("value"))
             param -> value
-          }
-          ParamMap(paramPairs: _*)
-      }.toArray
+        }
+        ParamMap(paramPairs: _*)
+      }
+      .toArray
 
     (metadata, estimator, evaluator, estimatorParamMaps)
   }

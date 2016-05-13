@@ -34,48 +34,46 @@ class HashingTFSuite extends SparkFunSuite with MLlibTestSparkContext with Defau
   }
 
   test("hashingTF") {
-    val df = spark.createDataFrame(Seq(
-      (0, "a a b b c d".split(" ").toSeq)
-    )).toDF("id", "words")
+    val df = spark
+      .createDataFrame(Seq(
+              (0, "a a b b c d".split(" ").toSeq)
+          ))
+      .toDF("id", "words")
     val n = 100
-    val hashingTF = new HashingTF()
-      .setInputCol("words")
-      .setOutputCol("features")
-      .setNumFeatures(n)
+    val hashingTF = new HashingTF().setInputCol("words").setOutputCol("features").setNumFeatures(n)
     val output = hashingTF.transform(df)
     val attrGroup = AttributeGroup.fromStructField(output.schema("features"))
     require(attrGroup.numAttributes === Some(n))
     val features = output.select("features").first().getAs[Vector](0)
     // Assume perfect hash on "a", "b", "c", and "d".
     def idx: Any => Int = murmur3FeatureIdx(n)
-    val expected = Vectors.sparse(n,
-      Seq((idx("a"), 2.0), (idx("b"), 2.0), (idx("c"), 1.0), (idx("d"), 1.0)))
+    val expected =
+      Vectors.sparse(n, Seq((idx("a"), 2.0), (idx("b"), 2.0), (idx("c"), 1.0), (idx("d"), 1.0)))
     assert(features ~== expected absTol 1e-14)
   }
 
   test("applying binary term freqs") {
-    val df = spark.createDataFrame(Seq(
-      (0, "a a b c c c".split(" ").toSeq)
-    )).toDF("id", "words")
+    val df = spark
+      .createDataFrame(Seq(
+              (0, "a a b c c c".split(" ").toSeq)
+          ))
+      .toDF("id", "words")
     val n = 100
     val hashingTF = new HashingTF()
-        .setInputCol("words")
-        .setOutputCol("features")
-        .setNumFeatures(n)
-        .setBinary(true)
+      .setInputCol("words")
+      .setOutputCol("features")
+      .setNumFeatures(n)
+      .setBinary(true)
     val output = hashingTF.transform(df)
     val features = output.select("features").first().getAs[Vector](0)
-    def idx: Any => Int = murmur3FeatureIdx(n)  // Assume perfect hash on input features
-    val expected = Vectors.sparse(n,
-      Seq((idx("a"), 1.0), (idx("b"), 1.0), (idx("c"), 1.0)))
+    def idx: Any => Int = murmur3FeatureIdx(n) // Assume perfect hash on input features
+    val expected = Vectors.sparse(n, Seq((idx("a"), 1.0), (idx("b"), 1.0), (idx("c"), 1.0)))
     assert(features ~== expected absTol 1e-14)
   }
 
   test("read/write") {
-    val t = new HashingTF()
-      .setInputCol("myInputCol")
-      .setOutputCol("myOutputCol")
-      .setNumFeatures(10)
+    val t =
+      new HashingTF().setInputCol("myInputCol").setOutputCol("myOutputCol").setNumFeatures(10)
     testDefaultReadWrite(t)
   }
 

@@ -73,7 +73,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
   /**
    * Writes `data` to a Parquet file, reads it back and check file contents.
    */
-  protected def checkParquetFile[T <: Product : ClassTag: TypeTag](data: Seq[T]): Unit = {
+  protected def checkParquetFile[T <: Product: ClassTag: TypeTag](data: Seq[T]): Unit = {
     withParquetDataFrame(data)(r => checkAnswer(r, data.map(Row.fromTuple)))
   }
 
@@ -94,8 +94,8 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
   }
 
   test("SPARK-11694 Parquet logical types are not being tested properly") {
-    val parquetSchema = MessageTypeParser.parseMessageType(
-      """message root {
+    val parquetSchema =
+      MessageTypeParser.parseMessageType("""message root {
         |  required int32 a(INT_8);
         |  required int32 b(INT_16);
         |  required int32 c(DATE);
@@ -108,8 +108,15 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
         |}
       """.stripMargin)
 
-    val expectedSparkTypes = Seq(ByteType, ShortType, DateType, DecimalType(1, 0),
-      DecimalType(10, 0), StringType, StringType, DecimalType(32, 0), DecimalType(32, 0))
+    val expectedSparkTypes = Seq(ByteType,
+                                 ShortType,
+                                 DateType,
+                                 DecimalType(1, 0),
+                                 DecimalType(10, 0),
+                                 StringType,
+                                 StringType,
+                                 DecimalType(32, 0),
+                                 DecimalType(32, 0))
 
     withTempPath { location =>
       val path = new Path(location.getCanonicalPath)
@@ -145,9 +152,11 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
       withTempPath { dir =>
         val data = makeDecimalRDD(DecimalType(precision, scale))
         data.write.parquet(dir.getCanonicalPath)
-        readParquetFile(dir.getCanonicalPath) { df => {
-          checkAnswer(df, data.collect().toSeq)
-        }}
+        readParquetFile(dir.getCanonicalPath) { df =>
+          {
+            checkAnswer(df, data.collect().toSeq)
+          }
+        }
       }
     }
   }
@@ -188,8 +197,9 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
     val data = (1 to 4).map(i => Tuple1((i, s"val_$i")))
     withParquetDataFrame(data) { df =>
       // Structs are converted to `Row`s
-      checkAnswer(df, data.map { case Tuple1(struct) =>
-        Row(Row(struct.productIterator.toSeq: _*))
+      checkAnswer(df, data.map {
+        case Tuple1(struct) =>
+          Row(Row(struct.productIterator.toSeq: _*))
       })
     }
   }
@@ -198,8 +208,9 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
     val data = (1 to 4).map(i => Tuple1((i, Seq(Seq(s"val_$i")))))
     withParquetDataFrame(data) { df =>
       // Structs are converted to `Row`s
-      checkAnswer(df, data.map { case Tuple1(struct) =>
-        Row(Row(struct.productIterator.toSeq: _*))
+      checkAnswer(df, data.map {
+        case Tuple1(struct) =>
+          Row(Row(struct.productIterator.toSeq: _*))
       })
     }
   }
@@ -207,19 +218,19 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
   testStandardAndLegacyModes("nested map with struct as value type") {
     val data = (1 to 4).map(i => Tuple1(Map(i -> (i, s"val_$i"))))
     withParquetDataFrame(data) { df =>
-      checkAnswer(df, data.map { case Tuple1(m) =>
-        Row(m.mapValues(struct => Row(struct.productIterator.toSeq: _*)))
+      checkAnswer(df, data.map {
+        case Tuple1(m) =>
+          Row(m.mapValues(struct => Row(struct.productIterator.toSeq: _*)))
       })
     }
   }
 
   test("nulls") {
-    val allNulls = (
-      null.asInstanceOf[java.lang.Boolean],
-      null.asInstanceOf[Integer],
-      null.asInstanceOf[java.lang.Long],
-      null.asInstanceOf[java.lang.Float],
-      null.asInstanceOf[java.lang.Double])
+    val allNulls = (null.asInstanceOf[java.lang.Boolean],
+                    null.asInstanceOf[Integer],
+                    null.asInstanceOf[java.lang.Long],
+                    null.asInstanceOf[java.lang.Float],
+                    null.asInstanceOf[java.lang.Double])
 
     withParquetDataFrame(allNulls :: Nil) { df =>
       val rows = df.collect()
@@ -229,10 +240,9 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
   }
 
   test("nones") {
-    val allNones = (
-      None.asInstanceOf[Option[Int]],
-      None.asInstanceOf[Option[Long]],
-      None.asInstanceOf[Option[String]])
+    val allNones = (None.asInstanceOf[Option[Int]],
+                    None.asInstanceOf[Option[Long]],
+                    None.asInstanceOf[Option[String]])
 
     withParquetDataFrame(allNones :: Nil) { df =>
       val rows = df.collect()
@@ -242,8 +252,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
   }
 
   test("SPARK-10113 Support for unsigned Parquet logical types") {
-    val parquetSchema = MessageTypeParser.parseMessageType(
-      """message root {
+    val parquetSchema = MessageTypeParser.parseMessageType("""message root {
         |  required int32 c(UINT_32);
         |}
       """.stripMargin)
@@ -260,8 +269,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
   }
 
   test("SPARK-11692 Support for Parquet logical types, JSON and BSON (embedded types)") {
-    val parquetSchema = MessageTypeParser.parseMessageType(
-      """message root {
+    val parquetSchema = MessageTypeParser.parseMessageType("""message root {
         |  required binary a(JSON);
         |  required binary b(BSON);
         |}
@@ -305,7 +313,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
 
     // Checks default compression codec
     checkCompressionCodec(
-      CompressionCodecName.fromConf(spark.conf.get(SQLConf.PARQUET_COMPRESSION)))
+        CompressionCodecName.fromConf(spark.conf.get(SQLConf.PARQUET_COMPRESSION)))
 
     checkCompressionCodec(CompressionCodecName.UNCOMPRESSED)
     checkCompressionCodec(CompressionCodecName.GZIP)
@@ -314,8 +322,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
 
   test("read raw Parquet file") {
     def makeRawParquetFile(path: Path): Unit = {
-      val schema = MessageTypeParser.parseMessageType(
-        """
+      val schema = MessageTypeParser.parseMessageType("""
           |message root {
           |  required boolean _1;
           |  required int32   _2;
@@ -346,7 +353,8 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
       makeRawParquetFile(path)
       readParquetFile(path.toString) { df =>
         checkAnswer(df, (0 until 10).map { i =>
-          Row(i % 2 == 0, i, i.toLong, i.toFloat, i.toDouble) })
+          Row(i % 2 == 0, i, i.toLong, i.toFloat, i.toDouble)
+        })
       }
     }
   }
@@ -425,8 +433,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
     // Parquet data source simply falls back to the Parquet schema once it fails to parse the Spark
     // schema.  By making these two different, we are able to assert the old style case class string
     // is parsed successfully.
-    val parquetSchema = MessageTypeParser.parseMessageType(
-      """message root {
+    val parquetSchema = MessageTypeParser.parseMessageType("""message root {
         |  required int32 c;
         |}
       """.stripMargin)
@@ -439,8 +446,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
 
       readParquetFile(path.toString) { df =>
         assertResult(df.schema) {
-          StructType(
-            StructField("a", BooleanType, nullable = true) ::
+          StructType(StructField("a", BooleanType, nullable = true) ::
               StructField("b", IntegerType, nullable = true) ::
               Nil)
         }
@@ -450,8 +456,8 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
 
   test("SPARK-8121: spark.sql.parquet.output.committer.class shouldn't be overridden") {
     val extraOptions = Map(
-      SQLConf.OUTPUT_COMMITTER_CLASS.key -> classOf[ParquetOutputCommitter].getCanonicalName,
-      "spark.sql.parquet.output.committer.class" ->
+        SQLConf.OUTPUT_COMMITTER_CLASS.key -> classOf[ParquetOutputCommitter].getCanonicalName,
+        "spark.sql.parquet.output.committer.class" ->
         classOf[JobCommitFailureParquetOutputCommitter].getCanonicalName
     )
     withTempPath { dir =>
@@ -478,7 +484,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
     // Using a output committer that always fail when committing a task, so that both
     // `commitTask()` and `abortTask()` are invoked.
     val extraOptions = Map[String, String](
-      "spark.sql.parquet.output.committer.class" ->
+        "spark.sql.parquet.output.committer.class" ->
         classOf[TaskCommitFailureParquetOutputCommitter].getCanonicalName
     )
 
@@ -506,19 +512,25 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
     // version. So, this test checks one of the encoding types in order to ensure that
     // the file is written with writer version2.
     val extraOptions = Map[String, String](
-      // Write a Parquet file with writer version2.
-      ParquetOutputFormat.WRITER_VERSION -> ParquetProperties.WriterVersion.PARQUET_2_0.toString,
-      // By default, dictionary encoding is enabled from Parquet 1.2.0 but
-      // it is enabled just in case.
-      ParquetOutputFormat.ENABLE_DICTIONARY -> "true"
+        // Write a Parquet file with writer version2.
+        ParquetOutputFormat.WRITER_VERSION -> ParquetProperties.WriterVersion.PARQUET_2_0.toString,
+        // By default, dictionary encoding is enabled from Parquet 1.2.0 but
+        // it is enabled just in case.
+        ParquetOutputFormat.ENABLE_DICTIONARY -> "true"
     )
 
     val hadoopConf = spark.sessionState.newHadoopConfWithOptions(extraOptions)
 
     withTempPath { dir =>
       val path = s"${dir.getCanonicalPath}/part-r-0.parquet"
-      spark.range(1 << 16).selectExpr("(id % 4) AS i")
-        .coalesce(1).write.options(extraOptions).mode("overwrite").parquet(path)
+      spark
+        .range(1 << 16)
+        .selectExpr("(id % 4) AS i")
+        .coalesce(1)
+        .write
+        .options(extraOptions)
+        .mode("overwrite")
+        .parquet(path)
 
       val blockMetadata = readFooter(new Path(path), hadoopConf).getBlocks.asScala.head
       val columnChunkMetadata = blockMetadata.getColumns.asScala.head
@@ -532,10 +544,11 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
   test("null and non-null strings") {
     // Create a dataset where the first values are NULL and then some non-null values. The
     // number of non-nulls needs to be bigger than the ParquetReader batch size.
-    val data: Dataset[String] = spark.range(200).map (i =>
-      if (i < 150) null
-      else "a"
-    )
+    val data: Dataset[String] = spark
+      .range(200)
+      .map(i =>
+            if (i < 150) null
+            else "a")
     val df = data.toDF("col")
     assert(df.agg("col" -> "count").collect().head.getLong(0) == 50)
 
@@ -553,9 +566,9 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
     ("true" :: "false" :: Nil).foreach { vectorized =>
       withSQLConf(SQLConf.PARQUET_VECTORIZED_READER_ENABLED.key -> vectorized) {
         checkAnswer(
-          // Decimal column in this file is encoded using plain dictionary
-          readResourceParquetFile("dec-in-i32.parquet"),
-          spark.range(1 << 4).select('id % 10 cast DecimalType(5, 2) as 'i32_dec))
+                    // Decimal column in this file is encoded using plain dictionary
+                    readResourceParquetFile("dec-in-i32.parquet"),
+                    spark.range(1 << 4).select('id % 10 cast DecimalType(5, 2) as 'i32_dec))
       }
     }
   }
@@ -564,9 +577,9 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
     ("true" :: "false" :: Nil).foreach { vectorized =>
       withSQLConf(SQLConf.PARQUET_VECTORIZED_READER_ENABLED.key -> vectorized) {
         checkAnswer(
-          // Decimal column in this file is encoded using plain dictionary
-          readResourceParquetFile("dec-in-i64.parquet"),
-          spark.range(1 << 4).select('id % 10 cast DecimalType(10, 2) as 'i64_dec))
+                    // Decimal column in this file is encoded using plain dictionary
+                    readResourceParquetFile("dec-in-i64.parquet"),
+                    spark.range(1 << 4).select('id % 10 cast DecimalType(10, 2) as 'i64_dec))
       }
     }
   }
@@ -575,16 +588,16 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
     ("true" :: "false" :: Nil).foreach { vectorized =>
       withSQLConf(SQLConf.PARQUET_VECTORIZED_READER_ENABLED.key -> vectorized) {
         checkAnswer(
-          // Decimal column in this file is encoded using plain dictionary
-          readResourceParquetFile("dec-in-fixed-len.parquet"),
-          spark.range(1 << 4).select('id % 10 cast DecimalType(10, 2) as 'fixed_len_dec))
+                    // Decimal column in this file is encoded using plain dictionary
+                    readResourceParquetFile("dec-in-fixed-len.parquet"),
+                    spark.range(1 << 4).select('id % 10 cast DecimalType(10, 2) as 'fixed_len_dec))
       }
     }
   }
 
   test("SPARK-12589 copy() on rows returned from reader works for strings") {
     withTempPath { dir =>
-      val data = (1, "abc") ::(2, "helloabcde") :: Nil
+      val data = (1, "abc") :: (2, "helloabcde") :: Nil
       data.toDF().write.parquet(dir.getCanonicalPath)
       var hash1: Int = 0
       var hash2: Int = 0
@@ -653,7 +666,9 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
             val v = (row.getString(0), row.getInt(1))
             result += v
           }
-          assert(data.map { x => (x._2, x._1) } == result)
+          assert(data.map { x =>
+            (x._2, x._1)
+          } == result)
         } finally {
           reader.close()
         }
@@ -678,7 +693,7 @@ class ParquetIOSuite extends QueryTest with ParquetTest with SharedSQLContext {
 }
 
 class JobCommitFailureParquetOutputCommitter(outputPath: Path, context: TaskAttemptContext)
-  extends ParquetOutputCommitter(outputPath, context) {
+    extends ParquetOutputCommitter(outputPath, context) {
 
   override def commitJob(jobContext: JobContext): Unit = {
     sys.error("Intentional exception for testing purposes")
@@ -686,7 +701,7 @@ class JobCommitFailureParquetOutputCommitter(outputPath: Path, context: TaskAtte
 }
 
 class TaskCommitFailureParquetOutputCommitter(outputPath: Path, context: TaskAttemptContext)
-  extends ParquetOutputCommitter(outputPath, context) {
+    extends ParquetOutputCommitter(outputPath, context) {
 
   override def commitTask(context: TaskAttemptContext): Unit = {
     sys.error("Intentional exception for testing purposes")

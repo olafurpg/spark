@@ -25,10 +25,12 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.util.ArrayData
 
 object ArrayType extends AbstractDataType {
+
   /** Construct a [[ArrayType]] object with the given element type. The `containsNull` is true. */
   def apply(elementType: DataType): ArrayType = ArrayType(elementType, containsNull = true)
 
-  override private[sql] def defaultConcreteType: DataType = ArrayType(NullType, containsNull = true)
+  override private[sql] def defaultConcreteType: DataType =
+    ArrayType(NullType, containsNull = true)
 
   override private[sql] def acceptsType(other: DataType): Boolean = {
     other.isInstanceOf[ArrayType]
@@ -36,7 +38,6 @@ object ArrayType extends AbstractDataType {
 
   override private[sql] def simpleString: String = "array"
 }
-
 
 /**
  * :: DeveloperApi ::
@@ -59,15 +60,14 @@ case class ArrayType(elementType: DataType, containsNull: Boolean) extends DataT
   protected def this() = this(null, false)
 
   private[sql] def buildFormattedString(prefix: String, builder: StringBuilder): Unit = {
-    builder.append(
-      s"$prefix-- element: ${elementType.typeName} (containsNull = $containsNull)\n")
+    builder.append(s"$prefix-- element: ${elementType.typeName} (containsNull = $containsNull)\n")
     DataType.buildFormattedString(elementType, s"$prefix    |", builder)
   }
 
   override private[sql] def jsonValue =
     ("type" -> typeName) ~
-      ("elementType" -> elementType.jsonValue) ~
-      ("containsNull" -> containsNull)
+    ("elementType" -> elementType.jsonValue) ~
+    ("containsNull" -> containsNull)
 
   /**
    * The default size of a value of the ArrayType is 100 * the default size of the element type.
@@ -90,7 +90,7 @@ case class ArrayType(elementType: DataType, containsNull: Boolean) extends DataT
   private[sql] lazy val interpretedOrdering: Ordering[ArrayData] = new Ordering[ArrayData] {
     private[this] val elementOrdering: Ordering[Any] = elementType match {
       case dt: AtomicType => dt.ordering.asInstanceOf[Ordering[Any]]
-      case a : ArrayType => a.interpretedOrdering.asInstanceOf[Ordering[Any]]
+      case a: ArrayType => a.interpretedOrdering.asInstanceOf[Ordering[Any]]
       case s: StructType => s.interpretedOrdering.asInstanceOf[Ordering[Any]]
       case other =>
         throw new IllegalArgumentException(s"Type $other does not support ordered operations")
@@ -112,9 +112,7 @@ case class ArrayType(elementType: DataType, containsNull: Boolean) extends DataT
           return 1
         } else {
           val comp =
-            elementOrdering.compare(
-              leftArray.get(i, elementType),
-              rightArray.get(i, elementType))
+            elementOrdering.compare(leftArray.get(i, elementType), rightArray.get(i, elementType))
           if (comp != 0) {
             return comp
           }

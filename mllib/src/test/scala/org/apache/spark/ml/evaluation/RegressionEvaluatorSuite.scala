@@ -25,13 +25,16 @@ import org.apache.spark.mllib.util.{LinearDataGenerator, MLlibTestSparkContext}
 import org.apache.spark.mllib.util.TestingUtils._
 
 class RegressionEvaluatorSuite
-  extends SparkFunSuite with MLlibTestSparkContext with DefaultReadWriteTest {
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   test("params") {
     ParamsSuite.checkParams(new RegressionEvaluator)
   }
 
   test("Regression Evaluator: default params") {
+
     /**
      * Here is the instruction describing how to export the test data into CSV format
      * so we can validate the metrics compared with R's mmetric package.
@@ -43,8 +46,9 @@ class RegressionEvaluatorSuite
      *   .saveAsTextFile("path")
      */
     val dataset = spark.createDataFrame(
-      sc.parallelize(LinearDataGenerator.generateLinearInput(
-        6.3, Array(4.7, 7.2), Array(0.9, -1.3), Array(0.7, 1.2), 100, 42, 0.1), 2))
+        sc.parallelize(LinearDataGenerator.generateLinearInput(
+                           6.3, Array(4.7, 7.2), Array(0.9, -1.3), Array(0.7, 1.2), 100, 42, 0.1),
+                       2))
 
     /**
      * Using the following R code to load the data, train the model and evaluate metrics.

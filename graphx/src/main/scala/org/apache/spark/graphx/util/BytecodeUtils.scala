@@ -52,8 +52,8 @@ private[graphx] object BytecodeUtils {
     }
   }
 
-  private def _invokedMethod(cls: Class[_], method: String,
-      targetClass: Class[_], targetMethod: String): Boolean = {
+  private def _invokedMethod(
+      cls: Class[_], method: String, targetClass: Class[_], targetMethod: String): Boolean = {
 
     val seen = new HashSet[(Class[_], String)]
     var stack = List[(Class[_], String)]((cls, method))
@@ -109,12 +109,15 @@ private[graphx] object BytecodeUtils {
    * determine the actual method invoked by inspecting the bytecode.
    */
   private class MethodInvocationFinder(className: String, methodName: String)
-    extends ClassVisitor(ASM5) {
+      extends ClassVisitor(ASM5) {
 
     val methodsInvoked = new HashSet[(Class[_], String)]
 
-    override def visitMethod(access: Int, name: String, desc: String,
-                             sig: String, exceptions: Array[String]): MethodVisitor = {
+    override def visitMethod(access: Int,
+                             name: String,
+                             desc: String,
+                             sig: String,
+                             exceptions: Array[String]): MethodVisitor = {
       if (name == methodName) {
         new MethodVisitor(ASM5) {
           override def visitMethodInsn(

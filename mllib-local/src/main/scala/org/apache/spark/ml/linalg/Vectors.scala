@@ -197,8 +197,9 @@ object Vectors {
       require(prev < i, s"Found duplicate indices: $i.")
       prev = i
     }
-    require(prev < size, s"You may not write an element to index $prev because the declared " +
-      s"size of your vector is $size")
+    require(prev < size,
+            s"You may not write an element to index $prev because the declared " +
+            s"size of your vector is $size")
 
     new SparseVector(size, indices.toArray, values.toArray)
   }
@@ -210,8 +211,9 @@ object Vectors {
    * @param elements vector elements in (index, value) pairs.
    */
   def sparse(size: Int, elements: JavaIterable[(JavaInteger, JavaDouble)]): Vector = {
-    sparse(size, elements.asScala.map { case (i, x) =>
-      (i.intValue(), x.doubleValue())
+    sparse(size, elements.asScala.map {
+      case (i, x) =>
+        (i.intValue(), x.doubleValue())
     }.toSeq)
   }
 
@@ -234,7 +236,7 @@ object Vectors {
         if (v.offset == 0 && v.stride == 1 && v.length == v.data.length) {
           new DenseVector(v.data)
         } else {
-          new DenseVector(v.toArray)  // Can't use underlying array directly, so make a new one
+          new DenseVector(v.toArray) // Can't use underlying array directly, so make a new one
         }
       case v: BSV[Double] =>
         if (v.index.length == v.used) {
@@ -254,8 +256,9 @@ object Vectors {
    * @return norm in L^p^ space.
    */
   def norm(vector: Vector, p: Double): Double = {
-    require(p >= 1.0, "To compute the p-norm of the vector, we require that you specify a p>=1. " +
-      s"You specified p=$p.")
+    require(p >= 1.0,
+            "To compute the p-norm of the vector, we require that you specify a p>=1. " +
+            s"You specified p=$p.")
     val values = vector match {
       case DenseVector(vs) => vs
       case SparseVector(n, ids, vs) => vs
@@ -306,8 +309,8 @@ object Vectors {
    * @return squared distance between two Vectors.
    */
   def sqdist(v1: Vector, v2: Vector): Double = {
-    require(v1.size == v2.size, s"Vector dimensions do not match: Dim(v1)=${v1.size} and Dim(v2)" +
-      s"=${v2.size}.")
+    require(v1.size == v2.size,
+            s"Vector dimensions do not match: Dim(v1)=${v1.size} and Dim(v2)" + s"=${v2.size}.")
     var squaredDistance = 0.0
     (v1, v2) match {
       case (v1: SparseVector, v2: SparseVector) =>
@@ -352,8 +355,8 @@ object Vectors {
           kv += 1
         }
       case _ =>
-        throw new IllegalArgumentException("Do not support vector type " + v1.getClass +
-          " and " + v2.getClass)
+        throw new IllegalArgumentException(
+            "Do not support vector type " + v1.getClass + " and " + v2.getClass)
     }
     squaredDistance
   }
@@ -390,11 +393,10 @@ object Vectors {
   /**
    * Check equality between sparse/dense vectors
    */
-  private[ml] def equals(
-      v1Indices: IndexedSeq[Int],
-      v1Values: Array[Double],
-      v2Indices: IndexedSeq[Int],
-      v2Values: Array[Double]): Boolean = {
+  private[ml] def equals(v1Indices: IndexedSeq[Int],
+                         v1Values: Array[Double],
+                         v2Indices: IndexedSeq[Int],
+                         v2Values: Array[Double]): Boolean = {
     val v1Size = v1Values.length
     val v2Size = v2Values.length
     var k1 = 0
@@ -421,7 +423,7 @@ object Vectors {
 /**
  * A dense vector represented by a value array.
  */
-class DenseVector (val values: Array[Double]) extends Vector {
+class DenseVector(val values: Array[Double]) extends Vector {
 
   override def size: Int = values.length
 
@@ -528,16 +530,17 @@ object DenseVector {
  * @param indices index array, assume to be strictly increasing.
  * @param values value array, must have the same length as the index array.
  */
-class SparseVector (
-    override val size: Int,
-    val indices: Array[Int],
-    val values: Array[Double]) extends Vector {
+class SparseVector(override val size: Int, val indices: Array[Int], val values: Array[Double])
+    extends Vector {
 
-  require(indices.length == values.length, "Sparse vectors require that the dimension of the" +
-    s" indices match the dimension of the values. You provided ${indices.length} indices and " +
-    s" ${values.length} values.")
-  require(indices.length <= size, s"You provided ${indices.length} indices and values, " +
-    s"which exceeds the specified vector size ${size}.")
+  require(
+      indices.length == values.length,
+      "Sparse vectors require that the dimension of the" +
+      s" indices match the dimension of the values. You provided ${indices.length} indices and " +
+      s" ${values.length} values.")
+  require(indices.length <= size,
+          s"You provided ${indices.length} indices and values, " +
+          s"which exceeds the specified vector size ${size}.")
 
   override def toString: String =
     s"($size,${indices.mkString("[", ",", "]")},${values.mkString("[", ",", "]")})"
@@ -681,11 +684,12 @@ class SparseVector (
     var currentIdx = 0
     val (sliceInds, sliceVals) = selectedIndices.flatMap { origIdx =>
       val iIdx = java.util.Arrays.binarySearch(this.indices, origIdx)
-      val i_v = if (iIdx >= 0) {
-        Iterator((currentIdx, this.values(iIdx)))
-      } else {
-        Iterator()
-      }
+      val i_v =
+        if (iIdx >= 0) {
+          Iterator((currentIdx, this.values(iIdx)))
+        } else {
+          Iterator()
+        }
       currentIdx += 1
       i_v
     }.unzip

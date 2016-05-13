@@ -36,7 +36,8 @@ import org.apache.spark.util.{ThreadUtils, Utils}
 private[streaming] abstract class ReceiverSupervisor(
     receiver: Receiver[_],
     conf: SparkConf
-  ) extends Logging {
+)
+    extends Logging {
 
   /** Enumeration to identify current state of the Receiver */
   object ReceiverState extends Enumeration {
@@ -49,7 +50,7 @@ private[streaming] abstract class ReceiverSupervisor(
   receiver.attachSupervisor(this)
 
   private val futureExecutionContext = ExecutionContext.fromExecutorService(
-    ThreadUtils.newDaemonCachedThreadPool("receiver-supervisor-future", 128))
+      ThreadUtils.newDaemonCachedThreadPool("receiver-supervisor-future", 128))
 
   /** Receiver id */
   protected val streamId = receiver.streamId
@@ -77,21 +78,21 @@ private[streaming] abstract class ReceiverSupervisor(
       bytes: ByteBuffer,
       optionalMetadata: Option[Any],
       optionalBlockId: Option[StreamBlockId]
-    ): Unit
+  ): Unit
 
   /** Store a iterator of received data as a data block into Spark's memory. */
   def pushIterator(
       iterator: Iterator[_],
       optionalMetadata: Option[Any],
       optionalBlockId: Option[StreamBlockId]
-    ): Unit
+  ): Unit
 
   /** Store an ArrayBuffer of received data as a data block into Spark's memory. */
   def pushArrayBuffer(
       arrayBuffer: ArrayBuffer[_],
       optionalMetadata: Option[Any],
       optionalBlockId: Option[StreamBlockId]
-    ): Unit
+  ): Unit
 
   /**
    * Create a custom [[BlockGenerator]] that the receiver implementation can directly control
@@ -110,20 +111,20 @@ private[streaming] abstract class ReceiverSupervisor(
    * Note that this must be called before the receiver.onStart() is called to ensure
    * things like [[BlockGenerator]]s are started before the receiver starts sending data.
    */
-  protected def onStart() { }
+  protected def onStart() {}
 
   /**
    * Called when supervisor is stopped.
    * Note that this must be called after the receiver.onStop() is called to ensure
    * things like [[BlockGenerator]]s are cleaned up after the receiver stops sending data.
    */
-  protected def onStop(message: String, error: Option[Throwable]) { }
+  protected def onStop(message: String, error: Option[Throwable]) {}
 
   /** Called when receiver is started. Return true if the driver accepts us */
   protected def onReceiverStart(): Boolean
 
   /** Called when receiver is stopped */
-  protected def onReceiverStop(message: String, error: Option[Throwable]) { }
+  protected def onReceiverStop(message: String, error: Option[Throwable]) {}
 
   /** Start the supervisor */
   def start() {
@@ -150,7 +151,8 @@ private[streaming] abstract class ReceiverSupervisor(
         logInfo(s"Called receiver $streamId onStart")
       } else {
         // The driver refused us
-        stop("Registered unsuccessfully because Driver refused to start receiver " + streamId, None)
+        stop(
+            "Registered unsuccessfully because Driver refused to start receiver " + streamId, None)
       }
     } catch {
       case NonFatal(t) =>
@@ -190,7 +192,7 @@ private[streaming] abstract class ReceiverSupervisor(
       // This is a blocking action so we should use "futureExecutionContext" which is a cached
       // thread pool.
       logWarning("Restarting receiver with delay " + delay + " ms: " + message,
-        error.getOrElse(null))
+                 error.getOrElse(null))
       stopReceiver("Restarting receiver with delay " + delay + "ms: " + message, error)
       logDebug("Sleeping for " + delay)
       Thread.sleep(delay)
@@ -211,7 +213,6 @@ private[streaming] abstract class ReceiverSupervisor(
     logDebug("state = " + receiverState)
     receiverState == Stopped
   }
-
 
   /** Wait the thread until the supervisor is stopped */
   def awaitTermination() {

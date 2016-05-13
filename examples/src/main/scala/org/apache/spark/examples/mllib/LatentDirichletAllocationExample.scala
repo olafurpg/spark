@@ -52,8 +52,8 @@ object LatentDirichletAllocationExample {
 
     // Save and load model.
     ldaModel.save(sc, "target/org/apache/spark/LatentDirichletAllocationExample/LDAModel")
-    val sameModel = DistributedLDAModel.load(sc,
-      "target/org/apache/spark/LatentDirichletAllocationExample/LDAModel")
+    val sameModel = DistributedLDAModel.load(
+        sc, "target/org/apache/spark/LatentDirichletAllocationExample/LDAModel")
     // $example off$
 
     sc.stop()

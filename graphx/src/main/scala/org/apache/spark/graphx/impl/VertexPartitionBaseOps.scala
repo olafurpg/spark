@@ -31,10 +31,10 @@ import org.apache.spark.util.collection.BitSet
  * implicit evidence of membership in the `VertexPartitionBaseOpsConstructor` typeclass (for
  * example, [[VertexPartition.VertexPartitionOpsConstructor]]).
  */
-private[graphx] abstract class VertexPartitionBaseOps
-    [VD: ClassTag, Self[X] <: VertexPartitionBase[X]: VertexPartitionBaseOpsConstructor]
-    (self: Self[VD])
-  extends Serializable with Logging {
+private[graphx] abstract class VertexPartitionBaseOps[VD: ClassTag, Self[X] <: VertexPartitionBase[
+        X]: VertexPartitionBaseOpsConstructor](self: Self[VD])
+    extends Serializable
+    with Logging {
 
   def withIndex(index: VertexIdToIndexMap): Self[VD]
   def withValues[VD2: ClassTag](values: Array[VD2]): Self[VD2]
@@ -124,9 +124,8 @@ private[graphx] abstract class VertexPartitionBaseOps
   }
 
   /** Left outer join another VertexPartition. */
-  def leftJoin[VD2: ClassTag, VD3: ClassTag]
-      (other: Self[VD2])
-      (f: (VertexId, VD, Option[VD2]) => VD3): Self[VD3] = {
+  def leftJoin[VD2: ClassTag, VD3: ClassTag](other: Self[VD2])(
+      f: (VertexId, VD, Option[VD2]) => VD3): Self[VD3] = {
     if (self.index != other.index) {
       logWarning("Joining two VertexPartitions with different indexes is slow.")
       leftJoin(createUsingIndex(other.iterator))(f)
@@ -144,16 +143,14 @@ private[graphx] abstract class VertexPartitionBaseOps
   }
 
   /** Left outer join another iterator of messages. */
-  def leftJoin[VD2: ClassTag, VD3: ClassTag]
-      (other: Iterator[(VertexId, VD2)])
-      (f: (VertexId, VD, Option[VD2]) => VD3): Self[VD3] = {
+  def leftJoin[VD2: ClassTag, VD3: ClassTag](other: Iterator[(VertexId, VD2)])(
+      f: (VertexId, VD, Option[VD2]) => VD3): Self[VD3] = {
     leftJoin(createUsingIndex(other))(f)
   }
 
   /** Inner join another VertexPartition. */
-  def innerJoin[U: ClassTag, VD2: ClassTag]
-      (other: Self[U])
-      (f: (VertexId, VD, U) => VD2): Self[VD2] = {
+  def innerJoin[U: ClassTag, VD2: ClassTag](other: Self[U])(
+      f: (VertexId, VD, U) => VD2): Self[VD2] = {
     if (self.index != other.index) {
       logWarning("Joining two VertexPartitions with different indexes is slow.")
       innerJoin(createUsingIndex(other.iterator))(f)
@@ -172,17 +169,15 @@ private[graphx] abstract class VertexPartitionBaseOps
   /**
    * Inner join an iterator of messages.
    */
-  def innerJoin[U: ClassTag, VD2: ClassTag]
-      (iter: Iterator[Product2[VertexId, U]])
-      (f: (VertexId, VD, U) => VD2): Self[VD2] = {
+  def innerJoin[U: ClassTag, VD2: ClassTag](iter: Iterator[Product2[VertexId, U]])(
+      f: (VertexId, VD, U) => VD2): Self[VD2] = {
     innerJoin(createUsingIndex(iter))(f)
   }
 
   /**
    * Similar effect as aggregateUsingIndex((a, b) => a)
    */
-  def createUsingIndex[VD2: ClassTag](iter: Iterator[Product2[VertexId, VD2]])
-    : Self[VD2] = {
+  def createUsingIndex[VD2: ClassTag](iter: Iterator[Product2[VertexId, VD2]]): Self[VD2] = {
     val newMask = new BitSet(self.capacity)
     val newValues = new Array[VD2](self.capacity)
     iter.foreach { pair =>
@@ -214,8 +209,7 @@ private[graphx] abstract class VertexPartitionBaseOps
   }
 
   def aggregateUsingIndex[VD2: ClassTag](
-      iter: Iterator[Product2[VertexId, VD2]],
-      reduceFunc: (VD2, VD2) => VD2): Self[VD2] = {
+      iter: Iterator[Product2[VertexId, VD2]], reduceFunc: (VD2, VD2) => VD2): Self[VD2] = {
     val newMask = new BitSet(self.capacity)
     val newValues = new Array[VD2](self.capacity)
     iter.foreach { product =>
@@ -225,7 +219,8 @@ private[graphx] abstract class VertexPartitionBaseOps
       if (pos >= 0) {
         if (newMask.get(pos)) {
           newValues(pos) = reduceFunc(newValues(pos), vdata)
-        } else { // otherwise just store the new value
+        } else {
+          // otherwise just store the new value
           newMask.set(pos)
           newValues(pos) = vdata
         }
@@ -252,8 +247,8 @@ private[graphx] abstract class VertexPartitionBaseOps
    * because these methods return a `Self` and this implicit conversion re-wraps that in a
    * `VertexPartitionBaseOps`. This relies on the context bound on `Self`.
    */
-  private implicit def toOps[VD2: ClassTag](partition: Self[VD2])
-    : VertexPartitionBaseOps[VD2, Self] = {
+  private implicit def toOps[VD2: ClassTag](
+      partition: Self[VD2]): VertexPartitionBaseOps[VD2, Self] = {
     implicitly[VertexPartitionBaseOpsConstructor[Self]].toOps(partition)
   }
 }

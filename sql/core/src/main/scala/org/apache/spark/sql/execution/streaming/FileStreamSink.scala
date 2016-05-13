@@ -46,12 +46,13 @@ object FileStreamSink {
  * data may be present in the target directory, but only one copy of each file will be present
  * in the log.
  */
-class FileStreamSink(
-    sparkSession: SparkSession,
-    path: String,
-    fileFormat: FileFormat,
-    partitionColumnNames: Seq[String],
-    options: Map[String, String]) extends Sink with Logging {
+class FileStreamSink(sparkSession: SparkSession,
+                     path: String,
+                     fileFormat: FileFormat,
+                     partitionColumnNames: Seq[String],
+                     options: Map[String, String])
+    extends Sink
+    with Logging {
 
   private val basePath = new Path(path)
   private val logPath = new Path(basePath, FileStreamSink.metadataDir)
@@ -64,7 +65,7 @@ class FileStreamSink(
       logInfo(s"Skipping already committed batch $batchId")
     } else {
       val writer = new FileStreamSinkWriter(
-        data, fileFormat, path, partitionColumnNames, hadoopConf, options)
+          data, fileFormat, path, partitionColumnNames, hadoopConf, options)
       val fileStatuses = writer.write()
       if (fileLog.add(batchId, fileStatuses)) {
         logInfo(s"Committed batch $batchId")
@@ -77,22 +78,22 @@ class FileStreamSink(
   override def toString: String = s"FileSink[$path]"
 }
 
-
 /**
  * Writes data given to a [[FileStreamSink]] to the given `basePath` in the given `fileFormat`,
  * partitioned by the given `partitionColumnNames`. This writer always appends data to the
  * directory if it already has data.
  */
-class FileStreamSinkWriter(
-    data: DataFrame,
-    fileFormat: FileFormat,
-    basePath: String,
-    partitionColumnNames: Seq[String],
-    hadoopConf: Configuration,
-    options: Map[String, String]) extends Serializable with Logging {
+class FileStreamSinkWriter(data: DataFrame,
+                           fileFormat: FileFormat,
+                           basePath: String,
+                           partitionColumnNames: Seq[String],
+                           hadoopConf: Configuration,
+                           options: Map[String, String])
+    extends Serializable
+    with Logging {
 
   PartitioningUtils.validatePartitionColumnDataTypes(
-    data.schema, partitionColumnNames, data.sqlContext.conf.caseSensitiveAnalysis)
+      data.schema, partitionColumnNames, data.sqlContext.conf.caseSensitiveAnalysis)
 
   private val serializableConf = new SerializableConfiguration(hadoopConf)
   private val dataSchema = data.schema
@@ -101,11 +102,12 @@ class FileStreamSinkWriter(
   // Get the actual partition columns as attributes after matching them by name with
   // the given columns names.
   private val partitionColumns = partitionColumnNames.map { col =>
-    val nameEquality = if (data.sparkSession.sessionState.conf.caseSensitiveAnalysis) {
-      org.apache.spark.sql.catalyst.analysis.caseSensitiveResolution
-    } else {
-      org.apache.spark.sql.catalyst.analysis.caseInsensitiveResolution
-    }
+    val nameEquality =
+      if (data.sparkSession.sessionState.conf.caseSensitiveAnalysis) {
+        org.apache.spark.sql.catalyst.analysis.caseSensitiveResolution
+      } else {
+        org.apache.spark.sql.catalyst.analysis.caseInsensitiveResolution
+      }
     data.logicalPlan.output.find(f => nameEquality(f.name, col)).getOrElse {
       throw new RuntimeException(s"Partition column $col not found in schema $dataSchema")
     }
@@ -124,16 +126,15 @@ class FileStreamSinkWriter(
 
   /** Expressions that given a partition key build a string like: col1=val/col2=val/... */
   private def partitionStringExpression: Seq[Expression] = {
-    partitionColumns.zipWithIndex.flatMap { case (c, i) =>
-      val escaped =
-        ScalaUDF(
-          PartitioningUtils.escapePathName _,
-          StringType,
-          Seq(Cast(c, StringType)),
-          Seq(StringType))
-      val str = If(IsNull(c), Literal(PartitioningUtils.DEFAULT_PARTITION_NAME), escaped)
-      val partitionName = Literal(c.name + "=") :: str :: Nil
-      if (i == 0) partitionName else Literal(Path.SEPARATOR) :: partitionName
+    partitionColumns.zipWithIndex.flatMap {
+      case (c, i) =>
+        val escaped = ScalaUDF(PartitioningUtils.escapePathName _,
+                               StringType,
+                               Seq(Cast(c, StringType)),
+                               Seq(StringType))
+        val str = If(IsNull(c), Literal(PartitioningUtils.DEFAULT_PARTITION_NAME), escaped)
+        val partitionName = Literal(c.name + "=") :: str :: Nil
+        if (i == 0) partitionName else Literal(Path.SEPARATOR) :: partitionName
     }
   }
 
@@ -146,15 +147,16 @@ class FileStreamSinkWriter(
 
   /** Write the dataframe to files. This gets called in the driver by the [[FileStreamSink]]. */
   def write(): Array[SinkFileStatus] = {
-    data.sqlContext.sparkContext.runJob(
-      data.queryExecution.toRdd,
-      (taskContext: TaskContext, iterator: Iterator[InternalRow]) => {
-        if (partitionColumns.isEmpty) {
-          Seq(writePartitionToSingleFile(iterator))
-        } else {
-          writePartitionToPartitionedFiles(iterator)
-        }
-      }).flatten
+    data.sqlContext.sparkContext
+      .runJob(data.queryExecution.toRdd,
+              (taskContext: TaskContext, iterator: Iterator[InternalRow]) => {
+                if (partitionColumns.isEmpty) {
+                  Seq(writePartitionToSingleFile(iterator))
+                } else {
+                  writePartitionToPartitionedFiles(iterator)
+                }
+              })
+      .flatten
   }
 
   /**
@@ -204,12 +206,11 @@ class FileStreamSinkWriter(
       UnsafeProjection.create(Concat(partitionStringExpression) :: Nil, partitionColumns)
 
     // Sort the data before write, so that we only need one writer at the same time.
-    val sorter = new UnsafeKVExternalSorter(
-      partitionColumns.toStructType,
-      StructType.fromAttributes(writeColumns),
-      SparkEnv.get.blockManager,
-      SparkEnv.get.serializerManager,
-      TaskContext.get().taskMemoryManager().pageSizeBytes)
+    val sorter = new UnsafeKVExternalSorter(partitionColumns.toStructType,
+                                            StructType.fromAttributes(writeColumns),
+                                            SparkEnv.get.blockManager,
+                                            SparkEnv.get.serializerManager,
+                                            TaskContext.get().taskMemoryManager().pageSizeBytes)
 
     while (iterator.hasNext) {
       val currentRow = iterator.next()

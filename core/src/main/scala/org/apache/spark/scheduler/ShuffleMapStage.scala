@@ -33,15 +33,14 @@ import org.apache.spark.util.CallSite
  * For such stages, the ActiveJobs that submitted them are tracked in `mapStageJobs`. Note that
  * there can be multiple ActiveJobs trying to compute the same shuffle map stage.
  */
-private[spark] class ShuffleMapStage(
-    id: Int,
-    rdd: RDD[_],
-    numTasks: Int,
-    parents: List[Stage],
-    firstJobId: Int,
-    callSite: CallSite,
-    val shuffleDep: ShuffleDependency[_, _, _])
-  extends Stage(id, rdd, numTasks, parents, firstJobId, callSite) {
+private[spark] class ShuffleMapStage(id: Int,
+                                     rdd: RDD[_],
+                                     numTasks: Int,
+                                     parents: List[Stage],
+                                     firstJobId: Int,
+                                     callSite: CallSite,
+                                     val shuffleDep: ShuffleDependency[_, _, _])
+    extends Stage(id, rdd, numTasks, parents, firstJobId, callSite) {
 
   private[this] var _mapStageJobs: List[ActiveJob] = Nil
 
@@ -89,7 +88,7 @@ private[spark] class ShuffleMapStage(
   override def findMissingPartitions(): Seq[Int] = {
     val missing = (0 until numPartitions).filter(id => outputLocs(id).isEmpty)
     assert(missing.size == numPartitions - _numAvailableOutputs,
-      s"${missing.size} missing, expected ${numPartitions - _numAvailableOutputs}")
+           s"${missing.size} missing, expected ${numPartitions - _numAvailableOutputs}")
     missing
   }
 
@@ -136,8 +135,9 @@ private[spark] class ShuffleMapStage(
       }
     }
     if (becameUnavailable) {
-      logInfo("%s is now unavailable on executor %s (%d/%d, %s)".format(
-        this, execId, _numAvailableOutputs, numPartitions, isAvailable))
+      logInfo(
+          "%s is now unavailable on executor %s (%d/%d, %s)".format(
+              this, execId, _numAvailableOutputs, numPartitions, isAvailable))
     }
   }
 }

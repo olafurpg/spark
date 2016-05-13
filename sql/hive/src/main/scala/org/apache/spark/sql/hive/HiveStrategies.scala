@@ -42,14 +42,12 @@ private[hive] trait HiveStrategies {
 
   object DataSinks extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-      case logical.InsertIntoTable(
-          table: MetastoreRelation, partition, child, overwrite, ifNotExists) =>
-        execution.InsertIntoHiveTable(
-          table, partition, planLater(child), overwrite, ifNotExists) :: Nil
+      case logical
+            .InsertIntoTable(table: MetastoreRelation, partition, child, overwrite, ifNotExists) =>
+        execution.InsertIntoHiveTable(table, partition, planLater(child), overwrite, ifNotExists) :: Nil
       case hive.InsertIntoHiveTable(
           table: MetastoreRelation, partition, child, overwrite, ifNotExists) =>
-        execution.InsertIntoHiveTable(
-          table, partition, planLater(child), overwrite, ifNotExists) :: Nil
+        execution.InsertIntoHiveTable(table, partition, planLater(child), overwrite, ifNotExists) :: Nil
       case _ => Nil
     }
   }
@@ -65,15 +63,13 @@ private[hive] trait HiveStrategies {
         // hive table scan operator to be used for partition pruning.
         val partitionKeyIds = AttributeSet(relation.partitionKeys)
         val (pruningPredicates, otherPredicates) = predicates.partition { predicate =>
-          !predicate.references.isEmpty &&
-          predicate.references.subsetOf(partitionKeyIds)
+          !predicate.references.isEmpty && predicate.references.subsetOf(partitionKeyIds)
         }
 
-        pruneFilterProject(
-          projectList,
-          otherPredicates,
-          identity[Seq[Expression]],
-          HiveTableScanExec(_, relation, pruningPredicates)(sparkSession)) :: Nil
+        pruneFilterProject(projectList,
+                           otherPredicates,
+                           identity[Seq[Expression]],
+                           HiveTableScanExec(_, relation, pruningPredicates)(sparkSession)) :: Nil
       case _ =>
         Nil
     }

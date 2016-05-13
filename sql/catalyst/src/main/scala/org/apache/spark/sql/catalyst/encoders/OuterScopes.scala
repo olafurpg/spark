@@ -25,8 +25,7 @@ import org.apache.spark.util.Utils
 
 object OuterScopes {
   @transient
-  lazy val outerScopes: ConcurrentMap[String, AnyRef] =
-    new MapMaker().weakValues().makeMap()
+  lazy val outerScopes: ConcurrentMap[String, AnyRef] = new MapMaker().weakValues().makeMap()
 
   /**
    * Adds a new outer scope to this context that can be used when instantiating an `inner class`
@@ -58,30 +57,31 @@ object OuterScopes {
         // `INSTANCE()` method to get the single instance of class `$read`. Then call `$iw()`
         // method multiply times to get the single instance of the inner most `$iw` class.
         case REPLClass(baseClassName) =>
-          () => {
-            val objClass = Utils.classForName(baseClassName + "$")
-            val objInstance = objClass.getField("MODULE$").get(null)
-            val baseInstance = objClass.getMethod("INSTANCE").invoke(objInstance)
-            val baseClass = Utils.classForName(baseClassName)
+          () =>
+            {
+              val objClass = Utils.classForName(baseClassName + "$")
+              val objInstance = objClass.getField("MODULE$").get(null)
+              val baseInstance = objClass.getMethod("INSTANCE").invoke(objInstance)
+              val baseClass = Utils.classForName(baseClassName)
 
-            var getter = iwGetter(baseClass)
-            var obj = baseInstance
-            while (getter != null) {
-              obj = getter.invoke(obj)
-              getter = iwGetter(getter.getReturnType)
+              var getter = iwGetter(baseClass)
+              var obj = baseInstance
+              while (getter != null) {
+                obj = getter.invoke(obj)
+                getter = iwGetter(getter.getReturnType)
+              }
+
+              if (obj == null) {
+                throw new RuntimeException(s"Failed to get outer pointer for ${innerCls.getName}")
+              }
+
+              outerScopes.putIfAbsent(outerClassName, obj)
+              obj
             }
-
-            if (obj == null) {
-              throw new RuntimeException(s"Failed to get outer pointer for ${innerCls.getName}")
-            }
-
-            outerScopes.putIfAbsent(outerClassName, obj)
-            obj
-          }
-        case _ => null
+          case _ => null
       }
-    } else {
-      () => outer
+    } else { () =>
+      outer
     }
   }
 

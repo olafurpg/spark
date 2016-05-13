@@ -23,7 +23,6 @@ import scala.reflect.runtime.universe.typeTag
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.ScalaReflectionLock
 
-
 /**
  * :: DeveloperApi ::
  * A date type, supporting "0001-01-01" through "9999-12-31".
@@ -33,7 +32,7 @@ import org.apache.spark.sql.catalyst.ScalaReflectionLock
  * Internally, this is represented as the number of days from epoch (1970-01-01 00:00:00 UTC).
  */
 @DeveloperApi
-class DateType private() extends AtomicType {
+class DateType private () extends AtomicType {
   // The companion object and this class is separated so the companion object also subclasses
   // this type. Otherwise, the companion object would be of type "DateType$" in byte code.
   // Defined with a private constructor so the companion object is the only possible instantiation.
@@ -50,6 +49,5 @@ class DateType private() extends AtomicType {
 
   private[spark] override def asNullable: DateType = this
 }
-
 
 case object DateType extends DateType

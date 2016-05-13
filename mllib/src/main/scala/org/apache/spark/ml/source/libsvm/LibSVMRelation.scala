@@ -40,10 +40,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.util.SerializableConfiguration
 
 private[libsvm] class LibSVMOutputWriter(
-    path: String,
-    dataSchema: StructType,
-    context: TaskAttemptContext)
-  extends OutputWriter {
+    path: String, dataSchema: StructType, context: TaskAttemptContext)
+    extends OutputWriter {
 
   private[this] val buffer = new Text()
 
@@ -63,9 +61,10 @@ private[libsvm] class LibSVMOutputWriter(
     val label = row.get(0)
     val vector = row.get(1).asInstanceOf[Vector]
     val sb = new StringBuilder(label.toString)
-    vector.foreachActive { case (i, v) =>
-      sb += ' '
-      sb ++= s"${i + 1}:$v"
+    vector.foreachActive {
+      case (i, v) =>
+        sb += ' '
+        sb ++= s"${i + 1}:$v"
     }
     buffer.set(sb.mkString)
     recordWriter.write(NullWritable.get(), buffer)
@@ -115,36 +114,32 @@ class DefaultSource extends FileFormat with DataSourceRegister {
   override def toString: String = "LibSVM"
 
   private def verifySchema(dataSchema: StructType): Unit = {
-    if (dataSchema.size != 2 ||
-      (!dataSchema(0).dataType.sameType(DataTypes.DoubleType)
-        || !dataSchema(1).dataType.sameType(new VectorUDT()))) {
+    if (dataSchema.size != 2 || (!dataSchema(0).dataType.sameType(DataTypes.DoubleType) ||
+            !dataSchema(1).dataType.sameType(new VectorUDT()))) {
       throw new IOException(s"Illegal schema for libsvm data, schema=$dataSchema")
     }
   }
 
-  override def inferSchema(
-      sparkSession: SparkSession,
-      options: Map[String, String],
-      files: Seq[FileStatus]): Option[StructType] = {
-    Some(
-      StructType(
-        StructField("label", DoubleType, nullable = false) ::
-        StructField("features", new VectorUDT(), nullable = false) :: Nil))
+  override def inferSchema(sparkSession: SparkSession,
+                           options: Map[String, String],
+                           files: Seq[FileStatus]): Option[StructType] = {
+    Some(StructType(StructField("label", DoubleType, nullable = false) ::
+            StructField("features", new VectorUDT(), nullable = false) :: Nil))
   }
 
-  override def prepareRead(
-      sparkSession: SparkSession,
-      options: Map[String, String],
-      files: Seq[FileStatus]): Map[String, String] = {
+  override def prepareRead(sparkSession: SparkSession,
+                           options: Map[String, String],
+                           files: Seq[FileStatus]): Map[String, String] = {
     def computeNumFeatures(): Int = {
       val dataFiles = files.filterNot(_.getPath.getName startsWith "_")
-      val path = if (dataFiles.length == 1) {
-        dataFiles.head.getPath.toUri.toString
-      } else if (dataFiles.isEmpty) {
-        throw new IOException("No input path specified for libsvm data")
-      } else {
-        throw new IOException("Multiple input paths are not supported for libsvm data.")
-      }
+      val path =
+        if (dataFiles.length == 1) {
+          dataFiles.head.getPath.toUri.toString
+        } else if (dataFiles.isEmpty) {
+          throw new IOException("No input path specified for libsvm data")
+        } else {
+          throw new IOException("Multiple input paths are not supported for libsvm data.")
+        }
 
       val sc = sparkSession.sparkContext
       val parsed = MLUtils.parseLibSVMFile(sc, path, sc.defaultParallelism)
@@ -158,17 +153,15 @@ class DefaultSource extends FileFormat with DataSourceRegister {
     new CaseInsensitiveMap(options + ("numFeatures" -> numFeatures.toString))
   }
 
-  override def prepareWrite(
-      sparkSession: SparkSession,
-      job: Job,
-      options: Map[String, String],
-      dataSchema: StructType): OutputWriterFactory = {
+  override def prepareWrite(sparkSession: SparkSession,
+                            job: Job,
+                            options: Map[String, String],
+                            dataSchema: StructType): OutputWriterFactory = {
     new OutputWriterFactory {
-      override def newInstance(
-          path: String,
-          bucketId: Option[Int],
-          dataSchema: StructType,
-          context: TaskAttemptContext): OutputWriter = {
+      override def newInstance(path: String,
+                               bucketId: Option[Int],
+                               dataSchema: StructType,
+                               context: TaskAttemptContext): OutputWriter = {
         if (bucketId.isDefined) { sys.error("LibSVM doesn't support bucketing") }
         new LibSVMOutputWriter(path, dataSchema, context)
       }
@@ -192,9 +185,9 @@ class DefaultSource extends FileFormat with DataSourceRegister {
     val broadcastedHadoopConf =
       sparkSession.sparkContext.broadcast(new SerializableConfiguration(hadoopConf))
 
-    (file: PartitionedFile) => {
-      val points =
-        new HadoopFileLinesReader(file, broadcastedHadoopConf.value.value)
+    (file: PartitionedFile) =>
+      {
+        val points = new HadoopFileLinesReader(file, broadcastedHadoopConf.value.value)
           .map(_.toString.trim)
           .filterNot(line => line.isEmpty || line.startsWith("#"))
           .map { line =>
@@ -202,20 +195,20 @@ class DefaultSource extends FileFormat with DataSourceRegister {
             LabeledPoint(label, Vectors.sparse(numFeatures, indices, values))
           }
 
-      val converter = RowEncoder(dataSchema)
-      val fullOutput = dataSchema.map { f =>
-        AttributeReference(f.name, f.dataType, f.nullable, f.metadata)()
-      }
-      val requiredOutput = fullOutput.filter { a =>
-        requiredSchema.fieldNames.contains(a.name)
-      }
+        val converter = RowEncoder(dataSchema)
+        val fullOutput = dataSchema.map { f =>
+          AttributeReference(f.name, f.dataType, f.nullable, f.metadata)()
+        }
+        val requiredOutput = fullOutput.filter { a =>
+          requiredSchema.fieldNames.contains(a.name)
+        }
 
-      val requiredColumns = GenerateUnsafeProjection.generate(requiredOutput, fullOutput)
+        val requiredColumns = GenerateUnsafeProjection.generate(requiredOutput, fullOutput)
 
-      points.map { pt =>
-        val features = if (sparse) pt.features.toSparse else pt.features.toDense
-        requiredColumns(converter.toRow(Row(pt.label, features)))
+        points.map { pt =>
+          val features = if (sparse) pt.features.toSparse else pt.features.toDense
+          requiredColumns(converter.toRow(Row(pt.label, features)))
+        }
       }
-    }
   }
 }

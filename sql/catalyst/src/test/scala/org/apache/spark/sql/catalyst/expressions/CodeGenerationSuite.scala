@@ -56,7 +56,8 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     val expected = Seq.fill(length)(true)
 
     if (!checkResult(actual, expected)) {
-      fail(s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
+      fail(
+          s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
     }
   }
 
@@ -89,24 +90,28 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     val expected = Seq(new GenericArrayData(Seq.fill(length)(true)))
 
     if (!checkResult(actual, expected)) {
-      fail(s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
+      fail(
+          s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
     }
   }
 
   test("SPARK-14793: split wide map creation into blocks due to JVM code size limit") {
     val length = 5000
-    val expressions = Seq(CreateMap(
-      List.fill(length)(EqualTo(Literal(1), Literal(1))).zipWithIndex.flatMap {
+    val expressions = Seq(
+        CreateMap(List
+              .fill(length)(EqualTo(Literal(1), Literal(1)))
+              .zipWithIndex
+              .flatMap {
         case (expr, i) => Seq(Literal(i), expr)
       }))
     val plan = GenerateMutableProjection.generate(expressions)
     val actual = plan(new GenericMutableRow(length)).toSeq(expressions.map(_.dataType))
-    val expected = Seq(new ArrayBasedMapData(
-      new GenericArrayData(0 until length),
-      new GenericArrayData(Seq.fill(length)(true))))
+    val expected = Seq(new ArrayBasedMapData(new GenericArrayData(0 until length),
+                                             new GenericArrayData(Seq.fill(length)(true))))
 
     if (!checkResult(actual, expected)) {
-      fail(s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
+      fail(
+          s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
     }
   }
 
@@ -118,40 +123,51 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     val expected = Seq(InternalRow(Seq.fill(length)(true): _*))
 
     if (!checkResult(actual, expected)) {
-      fail(s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
+      fail(
+          s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
     }
   }
 
   test("SPARK-14793: split wide named struct creation into blocks due to JVM code size limit") {
     val length = 5000
-    val expressions = Seq(CreateNamedStruct(
-      List.fill(length)(EqualTo(Literal(1), Literal(1))).flatMap {
-        expr => Seq(Literal(expr.toString), expr)
+    val expressions = Seq(
+        CreateNamedStruct(List
+              .fill(length)(EqualTo(Literal(1), Literal(1)))
+              .flatMap { expr =>
+        Seq(Literal(expr.toString), expr)
       }))
     val plan = GenerateMutableProjection.generate(expressions)
     val actual = plan(new GenericMutableRow(length)).toSeq(expressions.map(_.dataType))
     val expected = Seq(InternalRow(Seq.fill(length)(true): _*))
 
     if (!checkResult(actual, expected)) {
-      fail(s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
+      fail(
+          s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
     }
   }
 
   test("test generated safe and unsafe projection") {
-    val schema = new StructType(Array(
-      StructField("a", StringType, true),
-      StructField("b", IntegerType, true),
-      StructField("c", new StructType(Array(
-        StructField("aa", StringType, true),
-        StructField("bb", IntegerType, true)
-      )), true),
-      StructField("d", new StructType(Array(
-        StructField("a", new StructType(Array(
-          StructField("b", StringType, true),
-          StructField("", IntegerType, true)
-        )), true)
-      )), true)
-    ))
+    val schema = new StructType(
+        Array(
+            StructField("a", StringType, true),
+            StructField("b", IntegerType, true),
+            StructField("c",
+                        new StructType(Array(
+                                StructField("aa", StringType, true),
+                                StructField("bb", IntegerType, true)
+                            )),
+                        true),
+            StructField("d",
+                        new StructType(Array(
+                                StructField("a",
+                                            new StructType(Array(
+                                                    StructField("b", StringType, true),
+                                                    StructField("", IntegerType, true)
+                                                )),
+                                            true)
+                            )),
+                        true)
+        ))
     val row = Row("a", 1, Row("b", 2), Row(Row("c", 3)))
     val lit = Literal.create(row, schema)
     val internalRow = lit.value.asInstanceOf[InternalRow]
@@ -163,7 +179,7 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     assert(unsafeRow.getStruct(2, 2).getUTF8String(0) === UTF8String.fromString("b"))
     assert(unsafeRow.getStruct(2, 2).getInt(1) === 2)
     assert(unsafeRow.getStruct(3, 1).getStruct(0, 2).getUTF8String(0) ===
-      UTF8String.fromString("c"))
+        UTF8String.fromString("c"))
     assert(unsafeRow.getStruct(3, 1).getStruct(0, 2).getInt(1) === 3)
 
     val fromUnsafe = FromUnsafeProjection(schema)
@@ -181,17 +197,17 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     // When */ appears in a comment block (i.e. in /**/), code gen will break.
     // So, in Expression and CodegenFallback, we escape */ to \*\/.
     checkEvaluation(
-      EqualTo(BoundReference(0, StringType, false), Literal.create("*/", StringType)),
-      true,
-      InternalRow(UTF8String.fromString("*/")))
+        EqualTo(BoundReference(0, StringType, false), Literal.create("*/", StringType)),
+        true,
+        InternalRow(UTF8String.fromString("*/")))
   }
 
   test("\\u in the data") {
     // When \ u appears in a comment block (i.e. in /**/), code gen will break.
     // So, in Expression and CodegenFallback, we escape \ u to \\u.
     checkEvaluation(
-      EqualTo(BoundReference(0, StringType, false), Literal.create("\\u", StringType)),
-      true,
-      InternalRow(UTF8String.fromString("\\u")))
+        EqualTo(BoundReference(0, StringType, false), Literal.create("\\u", StringType)),
+        true,
+        InternalRow(UTF8String.fromString("\\u")))
   }
 }

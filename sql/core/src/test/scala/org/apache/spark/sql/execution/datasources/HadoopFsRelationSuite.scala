@@ -25,7 +25,7 @@ import org.apache.spark.sql.test.SharedSQLContext
 class HadoopFsRelationSuite extends QueryTest with SharedSQLContext {
 
   test("sizeInBytes should be the total size of all files") {
-    withTempDir{ dir =>
+    withTempDir { dir =>
       dir.delete()
       spark.range(1000).write.parquet(dir.toString)
       // ignore hidden files

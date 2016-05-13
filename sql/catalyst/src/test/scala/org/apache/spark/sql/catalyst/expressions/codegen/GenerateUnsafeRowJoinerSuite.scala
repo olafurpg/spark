@@ -106,10 +106,9 @@ class GenerateUnsafeRowJoinerSuite extends SparkFunSuite {
         assert(output.isNullAt(i) === row2.isNullAt(i - schema1.size))
         if (!output.isNullAt(i)) {
           assert(output.get(i, mergedSchema(i).dataType) ===
-            row2.get(i - schema1.size, mergedSchema(i).dataType))
+              row2.get(i - schema1.size, mergedSchema(i).dataType))
         }
       }
     }
   }
-
 }

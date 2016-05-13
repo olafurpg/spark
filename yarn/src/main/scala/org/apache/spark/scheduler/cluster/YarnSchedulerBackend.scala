@@ -34,10 +34,8 @@ import org.apache.spark.util.{RpcUtils, ThreadUtils}
  * Abstract Yarn scheduler backend that contains common logic
  * between the client and cluster Yarn scheduler backends.
  */
-private[spark] abstract class YarnSchedulerBackend(
-    scheduler: TaskSchedulerImpl,
-    sc: SparkContext)
-  extends CoarseGrainedSchedulerBackend(scheduler, sc.env.rpcEnv) {
+private[spark] abstract class YarnSchedulerBackend(scheduler: TaskSchedulerImpl, sc: SparkContext)
+    extends CoarseGrainedSchedulerBackend(scheduler, sc.env.rpcEnv) {
 
   override val minRegisteredRatio =
     if (conf.getOption("spark.scheduler.minRegisteredResourcesRatio").isEmpty) {
@@ -50,8 +48,8 @@ private[spark] abstract class YarnSchedulerBackend(
 
   private val yarnSchedulerEndpoint = new YarnSchedulerEndpoint(rpcEnv)
 
-  private val yarnSchedulerEndpointRef = rpcEnv.setupEndpoint(
-    YarnSchedulerBackend.ENDPOINT_NAME, yarnSchedulerEndpoint)
+  private val yarnSchedulerEndpointRef =
+    rpcEnv.setupEndpoint(YarnSchedulerBackend.ENDPOINT_NAME, yarnSchedulerEndpoint)
 
   private implicit val askTimeout = RpcUtils.askRpcTimeout(sc.conf)
 
@@ -126,7 +124,7 @@ private[spark] abstract class YarnSchedulerBackend(
    */
   override def doRequestTotalExecutors(requestedTotal: Int): Boolean = {
     yarnSchedulerEndpointRef.askWithRetry[Boolean](
-      RequestExecutors(requestedTotal, localityAwareTasks, hostToLocalTaskCount))
+        RequestExecutors(requestedTotal, localityAwareTasks, hostToLocalTaskCount))
   }
 
   /**
@@ -144,21 +142,20 @@ private[spark] abstract class YarnSchedulerBackend(
    * Add filters to the SparkUI.
    */
   private def addWebUIFilter(
-      filterName: String,
-      filterParams: Map[String, String],
-      proxyBase: String): Unit = {
+      filterName: String, filterParams: Map[String, String], proxyBase: String): Unit = {
     if (proxyBase != null && proxyBase.nonEmpty) {
       System.setProperty("spark.ui.proxyBase", proxyBase)
     }
 
     val hasFilter =
-      filterName != null && filterName.nonEmpty &&
-      filterParams != null && filterParams.nonEmpty
+      filterName != null && filterName.nonEmpty && filterParams != null && filterParams.nonEmpty
     if (hasFilter) {
       logInfo(s"Add WebUI Filter. $filterName, $filterParams, $proxyBase")
       conf.set("spark.ui.filters", filterName)
       filterParams.foreach { case (k, v) => conf.set(s"spark.$filterName.param.$k", v) }
-      scheduler.sc.ui.foreach { ui => JettyUtils.addFilters(ui.getHandlers, conf) }
+      scheduler.sc.ui.foreach { ui =>
+        JettyUtils.addFilters(ui.getHandlers, conf)
+      }
     }
   }
 
@@ -208,7 +205,8 @@ private[spark] abstract class YarnSchedulerBackend(
    * An [[RpcEndpoint]] that communicates with the ApplicationMaster.
    */
   private class YarnSchedulerEndpoint(override val rpcEnv: RpcEnv)
-    extends ThreadSafeRpcEndpoint with Logging {
+      extends ThreadSafeRpcEndpoint
+      with Logging {
     private var amEndpoint: Option[RpcEndpointRef] = None
 
     private val askAmThreadPool =
@@ -216,8 +214,7 @@ private[spark] abstract class YarnSchedulerBackend(
     implicit val askAmExecutor = ExecutionContext.fromExecutor(askAmThreadPool)
 
     private[YarnSchedulerBackend] def handleExecutorDisconnectedFromDriver(
-        executorId: String,
-        executorRpcAddress: RpcAddress): Unit = {
+        executorId: String, executorRpcAddress: RpcAddress): Unit = {
       amEndpoint match {
         case Some(am) =>
           val lossReasonRequest = GetExecutorLossReason(executorId)
@@ -229,16 +226,17 @@ private[spark] abstract class YarnSchedulerBackend(
           future onFailure {
             case NonFatal(e) =>
               logWarning(s"Attempted to get executor loss reason" +
-                s" for executor id ${executorId} at RPC address ${executorRpcAddress}," +
-                s" but got no response. Marking as slave lost.", e)
+                         s" for executor id ${executorId} at RPC address ${executorRpcAddress}," +
+                         s" but got no response. Marking as slave lost.",
+                         e)
               driverEndpoint.askWithRetry[Boolean](RemoveExecutor(executorId, SlaveLost()))
             case t => throw t
           }
         case None =>
-          logWarning("Attempted to check for an executor loss reason" +
-            " before the AM has registered!")
+          logWarning(
+              "Attempted to check for an executor loss reason" + " before the AM has registered!")
           driverEndpoint.askWithRetry[Boolean](
-            RemoveExecutor(executorId, SlaveLost("AM is not yet registered.")))
+              RemoveExecutor(executorId, SlaveLost("AM is not yet registered.")))
       }
     }
 
@@ -261,7 +259,6 @@ private[spark] abstract class YarnSchedulerBackend(
         logWarning(reason.toString)
         removeExecutor(executorId, reason)
     }
-
 
     override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
       case r: RequestExecutors =>

@@ -25,16 +25,15 @@ import org.apache.spark.sql.SparkSession
 
 object CountVectorizerExample {
   def main(args: Array[String]) {
-    val spark = SparkSession
-      .builder
-      .appName("CounterVectorizerExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("CounterVectorizerExample").getOrCreate()
 
     // $example on$
-    val df = spark.createDataFrame(Seq(
-      (0, Array("a", "b", "c")),
-      (1, Array("a", "b", "b", "c", "a"))
-    )).toDF("id", "words")
+    val df = spark
+      .createDataFrame(Seq(
+              (0, Array("a", "b", "c")),
+              (1, Array("a", "b", "b", "c", "a"))
+          ))
+      .toDF("id", "words")
 
     // fit a CountVectorizerModel from the corpus
     val cvModel: CountVectorizerModel = new CountVectorizer()
@@ -45,9 +44,8 @@ object CountVectorizerExample {
       .fit(df)
 
     // alternatively, define CountVectorizerModel with a-priori vocabulary
-    val cvm = new CountVectorizerModel(Array("a", "b", "c"))
-      .setInputCol("words")
-      .setOutputCol("features")
+    val cvm =
+      new CountVectorizerModel(Array("a", "b", "c")).setInputCol("words").setOutputCol("features")
 
     cvModel.transform(df).select("features").show()
     // $example off$
@@ -56,5 +54,3 @@ object CountVectorizerExample {
   }
 }
 // scalastyle:on println
-
-

@@ -26,24 +26,23 @@ import org.apache.spark.sql.execution.metric.SQLMetric
  * An iterator used to evaluate [[AggregateFunction]]. It assumes the input rows have been
  * sorted by values of [[groupingExpressions]].
  */
-class SortBasedAggregationIterator(
-    groupingExpressions: Seq[NamedExpression],
-    valueAttributes: Seq[Attribute],
-    inputIterator: Iterator[InternalRow],
-    aggregateExpressions: Seq[AggregateExpression],
-    aggregateAttributes: Seq[Attribute],
-    initialInputBufferOffset: Int,
-    resultExpressions: Seq[NamedExpression],
-    newMutableProjection: (Seq[Expression], Seq[Attribute]) => MutableProjection,
-    numOutputRows: SQLMetric)
-  extends AggregationIterator(
-    groupingExpressions,
-    valueAttributes,
-    aggregateExpressions,
-    aggregateAttributes,
-    initialInputBufferOffset,
-    resultExpressions,
-    newMutableProjection) {
+class SortBasedAggregationIterator(groupingExpressions: Seq[NamedExpression],
+                                   valueAttributes: Seq[Attribute],
+                                   inputIterator: Iterator[InternalRow],
+                                   aggregateExpressions: Seq[AggregateExpression],
+                                   aggregateAttributes: Seq[Attribute],
+                                   initialInputBufferOffset: Int,
+                                   resultExpressions: Seq[NamedExpression],
+                                   newMutableProjection: (Seq[Expression],
+                                   Seq[Attribute]) => MutableProjection,
+                                   numOutputRows: SQLMetric)
+    extends AggregationIterator(groupingExpressions,
+                                valueAttributes,
+                                aggregateExpressions,
+                                aggregateAttributes,
+                                initialInputBufferOffset,
+                                resultExpressions,
+                                newMutableProjection) {
 
   /**
    * Creates a new aggregation buffer and initializes buffer values
@@ -56,13 +55,13 @@ class SortBasedAggregationIterator(
     val genericMutableBuffer = new GenericMutableRow(bufferRowSize)
     val useUnsafeBuffer = bufferSchema.map(_.dataType).forall(UnsafeRow.isMutable)
 
-    val buffer = if (useUnsafeBuffer) {
-      val unsafeProjection =
-        UnsafeProjection.create(bufferSchema.map(_.dataType))
-      unsafeProjection.apply(genericMutableBuffer)
-    } else {
-      genericMutableBuffer
-    }
+    val buffer =
+      if (useUnsafeBuffer) {
+        val unsafeProjection = UnsafeProjection.create(bufferSchema.map(_.dataType))
+        unsafeProjection.apply(genericMutableBuffer)
+      } else {
+        genericMutableBuffer
+      }
     initializeBuffer(buffer)
     buffer
   }

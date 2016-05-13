@@ -20,14 +20,13 @@ package org.apache.spark.executor
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.util.LongAccumulator
 
-
 /**
  * :: DeveloperApi ::
  * A collection of accumulators that represent metrics about reading shuffle data.
  * Operations are not thread-safe.
  */
 @DeveloperApi
-class ShuffleReadMetrics private[spark] () extends Serializable {
+class ShuffleReadMetrics private[spark]() extends Serializable {
   private[executor] val _remoteBlocksFetched = new LongAccumulator
   private[executor] val _localBlocksFetched = new LongAccumulator
   private[executor] val _remoteBytesRead = new LongAccumulator

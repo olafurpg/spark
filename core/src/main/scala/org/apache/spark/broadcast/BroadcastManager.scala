@@ -25,10 +25,8 @@ import org.apache.spark.{SecurityManager, SparkConf}
 import org.apache.spark.internal.Logging
 
 private[spark] class BroadcastManager(
-    val isDriver: Boolean,
-    conf: SparkConf,
-    securityManager: SecurityManager)
-  extends Logging {
+    val isDriver: Boolean, conf: SparkConf, securityManager: SecurityManager)
+    extends Logging {
 
   private var initialized = false
   private var broadcastFactory: BroadcastFactory = null

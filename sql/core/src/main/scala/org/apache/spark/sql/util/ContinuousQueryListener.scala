@@ -53,7 +53,6 @@ abstract class ContinuousQueryListener {
   def onQueryTerminated(queryTerminated: QueryTerminated): Unit
 }
 
-
 /**
  * :: Experimental ::
  * Companion object of [[ContinuousQueryListener]] that defines the listener events.

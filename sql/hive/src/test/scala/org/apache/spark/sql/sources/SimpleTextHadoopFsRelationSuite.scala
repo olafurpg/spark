@@ -59,10 +59,10 @@ class SimpleTextHadoopFsRelationSuite extends HadoopFsRelationTest with Predicat
       val dataSchemaWithPartition =
         StructType(dataSchema.fields :+ StructField("p1", IntegerType, nullable = true))
 
-      checkQueries(
-        hiveContext.read.format(dataSourceName)
-          .option("dataSchema", dataSchemaWithPartition.json)
-          .load(file.getCanonicalPath))
+      checkQueries(hiveContext.read
+            .format(dataSourceName)
+            .option("dataSchema", dataSchemaWithPartition.json)
+            .load(file.getCanonicalPath))
     }
   }
 
@@ -72,15 +72,17 @@ class SimpleTextHadoopFsRelationSuite extends HadoopFsRelationTest with Predicat
       val df = spark.range(10).selectExpr("cast(id as string)")
       df.write
         .option("some-random-write-option", "hahah-WRITE")
-        .option("some-null-value-option", null)  // test null robustness
+        .option("some-null-value-option", null) // test null robustness
         .option("dataSchema", df.schema.json)
-        .format(dataSourceName).save(file.getAbsolutePath)
-      assert(SimpleTextRelation.lastHadoopConf.get.get("some-random-write-option") == "hahah-WRITE")
+        .format(dataSourceName)
+        .save(file.getAbsolutePath)
+      assert(
+          SimpleTextRelation.lastHadoopConf.get.get("some-random-write-option") == "hahah-WRITE")
 
       // Test read side
       val df1 = spark.read
         .option("some-random-read-option", "hahah-READ")
-        .option("some-null-value-option", null)  // test null robustness
+        .option("some-null-value-option", null) // test null robustness
         .option("dataSchema", df.schema.json)
         .format(dataSourceName)
         .load(file.getAbsolutePath)

@@ -79,24 +79,20 @@ private[sql] class CacheManager extends Logging {
    * Unlike `RDD.cache()`, the default storage level is set to be `MEMORY_AND_DISK` because
    * recomputing the in-memory columnar representation of the underlying table is expensive.
    */
-  private[sql] def cacheQuery(
-      query: Dataset[_],
-      tableName: Option[String] = None,
-      storageLevel: StorageLevel = MEMORY_AND_DISK): Unit = writeLock {
+  private[sql] def cacheQuery(query: Dataset[_],
+                              tableName: Option[String] = None,
+                              storageLevel: StorageLevel = MEMORY_AND_DISK): Unit = writeLock {
     val planToCache = query.queryExecution.analyzed
     if (lookupCachedData(planToCache).nonEmpty) {
       logWarning("Asked to cache already cached data.")
     } else {
       val sparkSession = query.sparkSession
-      cachedData +=
-        CachedData(
-          planToCache,
-          InMemoryRelation(
-            sparkSession.sessionState.conf.useCompression,
-            sparkSession.sessionState.conf.columnBatchSize,
-            storageLevel,
-            sparkSession.executePlan(planToCache).executedPlan,
-            tableName))
+      cachedData += CachedData(planToCache,
+                               InMemoryRelation(sparkSession.sessionState.conf.useCompression,
+                                                sparkSession.sessionState.conf.columnBatchSize,
+                                                storageLevel,
+                                                sparkSession.executePlan(planToCache).executedPlan,
+                                                tableName))
     }
   }
 
@@ -113,18 +109,17 @@ private[sql] class CacheManager extends Logging {
    * Tries to remove the data for the given [[Dataset]] from the cache
    * if it's cached
    */
-  private[sql] def tryUncacheQuery(
-      query: Dataset[_],
-      blocking: Boolean = true): Boolean = writeLock {
-    val planToCache = query.queryExecution.analyzed
-    val dataIndex = cachedData.indexWhere(cd => planToCache.sameResult(cd.plan))
-    val found = dataIndex >= 0
-    if (found) {
-      cachedData(dataIndex).cachedRepresentation.cachedColumnBuffers.unpersist(blocking)
-      cachedData.remove(dataIndex)
+  private[sql] def tryUncacheQuery(query: Dataset[_], blocking: Boolean = true): Boolean =
+    writeLock {
+      val planToCache = query.queryExecution.analyzed
+      val dataIndex = cachedData.indexWhere(cd => planToCache.sameResult(cd.plan))
+      val found = dataIndex >= 0
+      if (found) {
+        cachedData(dataIndex).cachedRepresentation.cachedColumnBuffers.unpersist(blocking)
+        cachedData.remove(dataIndex)
+      }
+      found
     }
-    found
-  }
 
   /** Optionally returns cached data for the given [[Dataset]] */
   private[sql] def lookupCachedData(query: Dataset[_]): Option[CachedData] = readLock {

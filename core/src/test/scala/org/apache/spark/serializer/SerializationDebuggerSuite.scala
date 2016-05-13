@@ -25,7 +25,6 @@ import org.scalatest.BeforeAndAfterEach
 
 import org.apache.spark.SparkFunSuite
 
-
 class SerializationDebuggerSuite extends SparkFunSuite with BeforeAndAfterEach {
 
   import SerializationDebugger.find
@@ -126,7 +125,7 @@ class SerializationDebuggerSuite extends SparkFunSuite with BeforeAndAfterEach {
     assert(find(new SerializableClassWithWriteReplace(new SerializableClass1)).isEmpty)
   }
 
-    test("object containing writeObject() and not serializable field") {
+  test("object containing writeObject() and not serializable field") {
     val s = find(new SerializableClassWithWriteObject(new NotSerializable))
     assert(s.size === 3)
     assert(s(0).contains("NotSerializable"))
@@ -155,28 +154,30 @@ class SerializationDebuggerSuite extends SparkFunSuite with BeforeAndAfterEach {
       }
     }
 
-    findAndAssert(false,
-      new SerializableClassWithWriteReplace(new ExternalizableClass(new SerializableSubclass(
-        new SerializableArray(
-          Array(new SerializableClass1, new SerializableClass2(new NotSerializable))
-        )
-      )))
-    )
+    findAndAssert(
+        false,
+        new SerializableClassWithWriteReplace(
+            new ExternalizableClass(new SerializableSubclass(
+                    new SerializableArray(
+                        Array(new SerializableClass1, new SerializableClass2(new NotSerializable))
+                    )
+                ))))
 
     findAndAssert(true,
-      new SerializableClassWithWriteReplace(new ExternalizableClass(new SerializableSubclass(
-        new SerializableArray(
-          Array(new SerializableClass1, new SerializableClass2(new SerializableClass1))
-        )
-      )))
-    )
+                  new SerializableClassWithWriteReplace(
+                      new ExternalizableClass(new SerializableSubclass(
+                              new SerializableArray(
+                                  Array(new SerializableClass1,
+                                        new SerializableClass2(new SerializableClass1))
+                              )
+                          ))))
   }
 
   test("improveException") {
     val e = SerializationDebugger.improveException(
-      new SerializableClass2(new NotSerializable), new NotSerializableException("someClass"))
-    assert(e.getMessage.contains("someClass"))  // original exception message should be present
-    assert(e.getMessage.contains("SerializableClass2"))  // found debug trace should be present
+        new SerializableClass2(new NotSerializable), new NotSerializableException("someClass"))
+    assert(e.getMessage.contains("someClass")) // original exception message should be present
+    assert(e.getMessage.contains("SerializableClass2")) // found debug trace should be present
   }
 
   test("improveException with error in debugger") {
@@ -198,18 +199,13 @@ class SerializationDebuggerSuite extends SparkFunSuite with BeforeAndAfterEach {
   }
 }
 
-
 class SerializableClass1 extends Serializable
-
 
 class SerializableClass2(val objectField: Object) extends Serializable
 
-
 class SerializableArray(val arrayField: Array[Object]) extends Serializable
 
-
 class SerializableSubclass(val objectField: Object) extends SerializableClass1
-
 
 class SerializableClassWithWriteObject(val objectField: Object) extends Serializable {
   val serializableObjectField = new SerializableClass1
@@ -220,14 +216,12 @@ class SerializableClassWithWriteObject(val objectField: Object) extends Serializ
   }
 }
 
-
 class SerializableClassWithWriteReplace(@(transient @param) replacementFieldObject: Object)
-  extends Serializable {
+    extends Serializable {
   private def writeReplace(): Object = {
     replacementFieldObject
   }
 }
-
 
 class ExternalizableClass(objectField: Object) extends java.io.Externalizable {
   val serializableObjectField = new SerializableClass1
@@ -241,15 +235,13 @@ class ExternalizableClass(objectField: Object) extends java.io.Externalizable {
   override def readExternal(in: ObjectInput): Unit = {}
 }
 
-
-class Foo(
-    a: Int,
-    b: String,
-    c: Char,
-    d: Byte,
-    e: Array[Int],
-    f: Array[Object],
-    var g: Foo) extends Serializable
-
+class Foo(a: Int,
+          b: String,
+          c: Char,
+          d: Byte,
+          e: Array[Int],
+          f: Array[Object],
+          var g: Foo)
+    extends Serializable
 
 class NotSerializable

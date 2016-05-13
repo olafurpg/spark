@@ -31,7 +31,8 @@ import org.apache.spark.sql.types.DataType
  */
 @Experimental
 class Normalizer(override val uid: String)
-  extends UnaryTransformer[Vector, Vector, Normalizer] with DefaultParamsWritable {
+    extends UnaryTransformer[Vector, Vector, Normalizer]
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("normalizer"))
 

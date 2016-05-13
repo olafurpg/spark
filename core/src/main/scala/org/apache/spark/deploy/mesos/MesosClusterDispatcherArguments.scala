@@ -22,7 +22,6 @@ import scala.annotation.tailrec
 import org.apache.spark.SparkConf
 import org.apache.spark.util.{IntParam, Utils}
 
-
 private[mesos] class MesosClusterDispatcherArguments(args: Array[String], conf: SparkConf) {
   var host = Utils.localHostName()
   var port = 7077
@@ -91,10 +90,8 @@ private[mesos] class MesosClusterDispatcherArguments(args: Array[String], conf: 
   private def printUsageAndExit(exitCode: Int): Unit = {
     // scalastyle:off println
     System.err.println(
-      "Usage: MesosClusterDispatcher [options]\n" +
-        "\n" +
-        "Options:\n" +
-        "  -h HOST, --host HOST    Hostname to listen on\n" +
+        "Usage: MesosClusterDispatcher [options]\n" +
+        "\n" + "Options:\n" + "  -h HOST, --host HOST    Hostname to listen on\n" +
         "  -p PORT, --port PORT    Port to listen on (default: 7077)\n" +
         "  --webui-port WEBUI_PORT WebUI Port to listen on (default: 8081)\n" +
         "  --name NAME             Framework name to show in Mesos UI\n" +

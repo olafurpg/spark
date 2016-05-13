@@ -40,28 +40,25 @@ case class NestedArray(a: Array[Array[Int]]) {
 
   override def equals(other: Any): Boolean = other match {
     case NestedArray(otherArray) =>
-      java.util.Arrays.deepEquals(
-        a.asInstanceOf[Array[AnyRef]],
-        otherArray.asInstanceOf[Array[AnyRef]])
+      java.util.Arrays
+        .deepEquals(a.asInstanceOf[Array[AnyRef]], otherArray.asInstanceOf[Array[AnyRef]])
     case _ => false
   }
 }
 
-case class BoxedData(
-    intField: java.lang.Integer,
-    longField: java.lang.Long,
-    doubleField: java.lang.Double,
-    floatField: java.lang.Float,
-    shortField: java.lang.Short,
-    byteField: java.lang.Byte,
-    booleanField: java.lang.Boolean)
+case class BoxedData(intField: java.lang.Integer,
+                     longField: java.lang.Long,
+                     doubleField: java.lang.Double,
+                     floatField: java.lang.Float,
+                     shortField: java.lang.Short,
+                     byteField: java.lang.Byte,
+                     booleanField: java.lang.Boolean)
 
-case class RepeatedData(
-    arrayField: Seq[Int],
-    arrayFieldContainsNull: Seq[java.lang.Integer],
-    mapField: scala.collection.Map[Int, Long],
-    mapFieldNull: scala.collection.Map[Int, java.lang.Long],
-    structField: PrimitiveData)
+case class RepeatedData(arrayField: Seq[Int],
+                        arrayFieldContainsNull: Seq[java.lang.Integer],
+                        mapField: scala.collection.Map[Int, Long],
+                        mapFieldNull: scala.collection.Map[Int, java.lang.Long],
+                        structField: PrimitiveData)
 
 case class SpecificCollection(l: List[Int])
 
@@ -88,7 +85,7 @@ class JavaSerializable(val value: Int) extends Serializable {
 class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
   OuterScopes.addOuterScope(this)
 
-  implicit def encoder[T : TypeTag]: ExpressionEncoder[T] = ExpressionEncoder()
+  implicit def encoder[T: TypeTag]: ExpressionEncoder[T] = ExpressionEncoder()
 
   // test flat encoders
   encodeDecodeTest(false, "primitive boolean")
@@ -124,8 +121,8 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
   encodeDecodeTest(Seq.empty[String], "empty seq of string")
 
   encodeDecodeTest(Seq(Seq(31, -123), null, Seq(4, 67)), "seq of seq of int")
-  encodeDecodeTest(Seq(Seq("abc", "xyz"), Seq[String](null), null, Seq("1", null, "2")),
-    "seq of seq of string")
+  encodeDecodeTest(
+      Seq(Seq("abc", "xyz"), Seq[String](null), null, Seq("1", null, "2")), "seq of seq of string")
 
   encodeDecodeTest(Array(31, -123, 4), "array of int")
   encodeDecodeTest(Array("abc", "xyz"), "array of string")
@@ -135,7 +132,7 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
 
   encodeDecodeTest(Array(Array(31, -123), null, Array(4, 67)), "array of array of int")
   encodeDecodeTest(Array(Array("abc", "xyz"), Array[String](null), null, Array("1", null, "2")),
-    "array of array of string")
+                   "array of array of string")
 
   encodeDecodeTest(Map(1 -> "a", 2 -> "b"), "map")
   encodeDecodeTest(Map(1 -> "a", 2 -> null), "map with null")
@@ -147,15 +144,15 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
   // Kryo encoders
   encodeDecodeTest("hello", "kryo string")(encoderFor(Encoders.kryo[String]))
   encodeDecodeTest(new KryoSerializable(15), "kryo object")(
-    encoderFor(Encoders.kryo[KryoSerializable]))
+      encoderFor(Encoders.kryo[KryoSerializable]))
 
   // Java encoders
   encodeDecodeTest("hello", "java string")(encoderFor(Encoders.javaSerialization[String]))
   encodeDecodeTest(new JavaSerializable(15), "java object")(
-    encoderFor(Encoders.javaSerialization[JavaSerializable]))
+      encoderFor(Encoders.javaSerialization[JavaSerializable]))
 
   // test product encoders
-  private def productTest[T <: Product : ExpressionEncoder](input: T): Unit = {
+  private def productTest[T <: Product: ExpressionEncoder](input: T): Unit = {
     encodeDecodeTest(input, input.getClass.getSimpleName)
   }
 
@@ -168,8 +165,14 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
   productTest(PrimitiveData(1, 1, 1, 1, 1, 1, true))
 
   productTest(
-    OptionalData(Some(2), Some(2), Some(2), Some(2), Some(2), Some(2), Some(true),
-      Some(PrimitiveData(1, 1, 1, 1, 1, 1, true))))
+      OptionalData(Some(2),
+                   Some(2),
+                   Some(2),
+                   Some(2),
+                   Some(2),
+                   Some(2),
+                   Some(true),
+                   Some(PrimitiveData(1, 1, 1, 1, 1, 1, true))))
 
   productTest(OptionalData(None, None, None, None, None, None, None, None))
 
@@ -185,76 +188,51 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
   productTest((1, "test", PrimitiveData(1, 1, 1, 1, 1, 1, true)))
 
   productTest(
-    RepeatedData(
-      Seq(1, 2),
-      Seq(new Integer(1), null, new Integer(2)),
-      Map(1 -> 2L),
-      Map(1 -> null),
-      PrimitiveData(1, 1, 1, 1, 1, 1, true)))
+      RepeatedData(Seq(1, 2),
+                   Seq(new Integer(1), null, new Integer(2)),
+                   Map(1 -> 2L),
+                   Map(1 -> null),
+                   PrimitiveData(1, 1, 1, 1, 1, 1, true)))
 
   productTest(NestedArray(Array(Array(1, -2, 3), null, Array(4, 5, -6))))
 
-  productTest(("Seq[(String, String)]",
-    Seq(("a", "b"))))
-  productTest(("Seq[(Int, Int)]",
-    Seq((1, 2))))
-  productTest(("Seq[(Long, Long)]",
-    Seq((1L, 2L))))
-  productTest(("Seq[(Float, Float)]",
-    Seq((1.toFloat, 2.toFloat))))
-  productTest(("Seq[(Double, Double)]",
-    Seq((1.toDouble, 2.toDouble))))
-  productTest(("Seq[(Short, Short)]",
-    Seq((1.toShort, 2.toShort))))
-  productTest(("Seq[(Byte, Byte)]",
-    Seq((1.toByte, 2.toByte))))
-  productTest(("Seq[(Boolean, Boolean)]",
-    Seq((true, false))))
+  productTest(("Seq[(String, String)]", Seq(("a", "b"))))
+  productTest(("Seq[(Int, Int)]", Seq((1, 2))))
+  productTest(("Seq[(Long, Long)]", Seq((1L, 2L))))
+  productTest(("Seq[(Float, Float)]", Seq((1.toFloat, 2.toFloat))))
+  productTest(("Seq[(Double, Double)]", Seq((1.toDouble, 2.toDouble))))
+  productTest(("Seq[(Short, Short)]", Seq((1.toShort, 2.toShort))))
+  productTest(("Seq[(Byte, Byte)]", Seq((1.toByte, 2.toByte))))
+  productTest(("Seq[(Boolean, Boolean)]", Seq((true, false))))
 
-  productTest(("ArrayBuffer[(String, String)]",
-    ArrayBuffer(("a", "b"))))
-  productTest(("ArrayBuffer[(Int, Int)]",
-    ArrayBuffer((1, 2))))
-  productTest(("ArrayBuffer[(Long, Long)]",
-    ArrayBuffer((1L, 2L))))
-  productTest(("ArrayBuffer[(Float, Float)]",
-    ArrayBuffer((1.toFloat, 2.toFloat))))
-  productTest(("ArrayBuffer[(Double, Double)]",
-    ArrayBuffer((1.toDouble, 2.toDouble))))
-  productTest(("ArrayBuffer[(Short, Short)]",
-    ArrayBuffer((1.toShort, 2.toShort))))
-  productTest(("ArrayBuffer[(Byte, Byte)]",
-    ArrayBuffer((1.toByte, 2.toByte))))
-  productTest(("ArrayBuffer[(Boolean, Boolean)]",
-    ArrayBuffer((true, false))))
+  productTest(("ArrayBuffer[(String, String)]", ArrayBuffer(("a", "b"))))
+  productTest(("ArrayBuffer[(Int, Int)]", ArrayBuffer((1, 2))))
+  productTest(("ArrayBuffer[(Long, Long)]", ArrayBuffer((1L, 2L))))
+  productTest(("ArrayBuffer[(Float, Float)]", ArrayBuffer((1.toFloat, 2.toFloat))))
+  productTest(("ArrayBuffer[(Double, Double)]", ArrayBuffer((1.toDouble, 2.toDouble))))
+  productTest(("ArrayBuffer[(Short, Short)]", ArrayBuffer((1.toShort, 2.toShort))))
+  productTest(("ArrayBuffer[(Byte, Byte)]", ArrayBuffer((1.toByte, 2.toByte))))
+  productTest(("ArrayBuffer[(Boolean, Boolean)]", ArrayBuffer((true, false))))
 
-  productTest(("Seq[Seq[(Int, Int)]]",
-    Seq(Seq((1, 2)))))
+  productTest(("Seq[Seq[(Int, Int)]]", Seq(Seq((1, 2)))))
 
   // test for ExpressionEncoder.tuple
-  encodeDecodeTest(
-    1 -> 10L,
-    "tuple with 2 flat encoders")(
-    ExpressionEncoder.tuple(ExpressionEncoder[Int], ExpressionEncoder[Long]))
+  encodeDecodeTest(1 -> 10L, "tuple with 2 flat encoders")(
+      ExpressionEncoder.tuple(ExpressionEncoder[Int], ExpressionEncoder[Long]))
 
   encodeDecodeTest(
-    (PrimitiveData(1, 1, 1, 1, 1, 1, true), (3, 30L)),
-    "tuple with 2 product encoders")(
-    ExpressionEncoder.tuple(ExpressionEncoder[PrimitiveData], ExpressionEncoder[(Int, Long)]))
+      (PrimitiveData(1, 1, 1, 1, 1, 1, true), (3, 30L)), "tuple with 2 product encoders")(
+      ExpressionEncoder.tuple(ExpressionEncoder[PrimitiveData], ExpressionEncoder[(Int, Long)]))
 
   encodeDecodeTest(
-    (PrimitiveData(1, 1, 1, 1, 1, 1, true), 3),
-    "tuple with flat encoder and product encoder")(
-    ExpressionEncoder.tuple(ExpressionEncoder[PrimitiveData], ExpressionEncoder[Int]))
+      (PrimitiveData(1, 1, 1, 1, 1, 1, true), 3), "tuple with flat encoder and product encoder")(
+      ExpressionEncoder.tuple(ExpressionEncoder[PrimitiveData], ExpressionEncoder[Int]))
 
   encodeDecodeTest(
-    (3, PrimitiveData(1, 1, 1, 1, 1, 1, true)),
-    "tuple with product encoder and flat encoder")(
-    ExpressionEncoder.tuple(ExpressionEncoder[Int], ExpressionEncoder[PrimitiveData]))
+      (3, PrimitiveData(1, 1, 1, 1, 1, 1, true)), "tuple with product encoder and flat encoder")(
+      ExpressionEncoder.tuple(ExpressionEncoder[Int], ExpressionEncoder[PrimitiveData]))
 
-  encodeDecodeTest(
-    (1, (10, 100L)),
-    "nested tuple encoder") {
+  encodeDecodeTest((1, (10, 100L)), "nested tuple encoder") {
     val intEnc = ExpressionEncoder[Int]
     val longEnc = ExpressionEncoder[Long]
     ExpressionEncoder.tuple(intEnc, ExpressionEncoder.tuple(intEnc, longEnc))
@@ -288,9 +266,8 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
 
     // test for tupled encoders
     {
-      val schema = ExpressionEncoder.tuple(
-        ExpressionEncoder[Int],
-        ExpressionEncoder[(String, Int)]).schema
+      val schema =
+        ExpressionEncoder.tuple(ExpressionEncoder[Int], ExpressionEncoder[(String, Int)]).schema
       assert(schema(0).nullable === false)
       assert(schema(1).nullable === true)
       assert(schema(1).dataType.asInstanceOf[StructType](0).nullable === true)
@@ -298,9 +275,7 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
     }
   }
 
-  private def encodeDecodeTest[T : ExpressionEncoder](
-      input: T,
-      testName: String): Unit = {
+  private def encodeDecodeTest[T: ExpressionEncoder](input: T, testName: String): Unit = {
     test(s"encode/decode for $testName: $input") {
       val encoder = implicitly[ExpressionEncoder[T]]
       val row = encoder.toRow(input)
@@ -308,8 +283,7 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
       val boundEncoder = encoder.defaultBinding
       val convertedBack = try boundEncoder.fromRow(row) catch {
         case e: Exception =>
-          fail(
-           s"""Exception thrown while decoding
+          fail(s"""Exception thrown while decoding
               |Converted: $row
               |Schema: ${schema.mkString(",")}
               |${encoder.schema.treeString}
@@ -323,10 +297,8 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
       // Test the correct resolution of serialization / deserialization.
       val attr = AttributeReference("obj", ObjectType(encoder.clsTag.runtimeClass))()
       val inputPlan = LocalRelation(attr)
-      val plan =
-        Project(Alias(encoder.deserializer, "obj")() :: Nil,
-          Project(encoder.namedExpressions,
-            inputPlan))
+      val plan = Project(Alias(encoder.deserializer, "obj")() :: Nil,
+                         Project(encoder.namedExpressions, inputPlan))
       assertAnalysisSuccess(plan)
 
       val isCorrect = (input, convertedBack) match {
@@ -348,18 +320,21 @@ class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
         }
 
         val encodedData = try {
-          row.toSeq(encoder.schema).zip(schema).map {
-            case (a: ArrayData, AttributeReference(_, ArrayType(et, _), _, _)) =>
-              a.toArray[Any](et).toSeq
-            case (other, _) =>
-              other
-          }.mkString("[", ",", "]")
+          row
+            .toSeq(encoder.schema)
+            .zip(schema)
+            .map {
+              case (a: ArrayData, AttributeReference(_, ArrayType(et, _), _, _)) =>
+                a.toArray[Any](et).toSeq
+              case (other, _) =>
+                other
+            }
+            .mkString("[", ",", "]")
         } catch {
           case e: Throwable => s"Failed to toSeq: $e"
         }
 
-        fail(
-          s"""Encoded/Decoded data does not match input data
+        fail(s"""Encoded/Decoded data does not match input data
              |
              |in:  $input
              |out: $convertedBack

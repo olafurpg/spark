@@ -26,9 +26,9 @@ import org.apache.spark.util.Utils
  * for the specified user. It does not cache the user groups as the invocations are expected
  * to be infrequent.
  */
-
-private[spark] class ShellBasedGroupsMappingProvider extends GroupMappingServiceProvider
-  with Logging {
+private[spark] class ShellBasedGroupsMappingProvider
+    extends GroupMappingServiceProvider
+    with Logging {
 
   override def getGroups(username: String): Set[String] = {
     val userGroups = getUnixGroups(username)

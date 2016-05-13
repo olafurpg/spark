@@ -26,9 +26,7 @@ class SQLExecutionSuite extends SparkFunSuite {
 
   test("concurrent query execution (SPARK-10548)") {
     // Try to reproduce the issue with the old SparkContext
-    val conf = new SparkConf()
-      .setMaster("local[*]")
-      .setAppName("test")
+    val conf = new SparkConf().setMaster("local[*]").setAppName("test")
     val badSparkContext = new BadSparkContext(conf)
     try {
       testConcurrentQueryExecution(badSparkContext)
@@ -50,16 +48,19 @@ class SQLExecutionSuite extends SparkFunSuite {
   }
 
   test("concurrent query execution with fork-join pool (SPARK-13747)") {
-    val spark = SparkSession.builder
-      .master("local[*]")
-      .appName("test")
-      .getOrCreate()
+    val spark = SparkSession.builder.master("local[*]").appName("test").getOrCreate()
 
     import spark.implicits._
     try {
       // Should not throw IllegalArgumentException
       (1 to 100).par.foreach { _ =>
-        spark.sparkContext.parallelize(1 to 5).map { i => (i, i) }.toDF("a", "b").count()
+        spark.sparkContext
+          .parallelize(1 to 5)
+          .map { i =>
+            (i, i)
+          }
+          .toDF("a", "b")
+          .count()
       }
     } finally {
       spark.sparkContext.stop()
@@ -83,12 +84,16 @@ class SQLExecutionSuite extends SparkFunSuite {
     val child = new Thread {
       override def run(): Unit = {
         try {
-          sc.parallelize(1 to 100).map { i => (i, i) }.toDF("a", "b").collect()
+          sc.parallelize(1 to 100)
+            .map { i =>
+              (i, i)
+            }
+            .toDF("a", "b")
+            .collect()
         } catch {
           case t: Throwable =>
             throwable = Some(t)
         }
-
       }
     }
     sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, "anything")
@@ -101,7 +106,6 @@ class SQLExecutionSuite extends SparkFunSuite {
       throw t
     }
   }
-
 }
 
 /**

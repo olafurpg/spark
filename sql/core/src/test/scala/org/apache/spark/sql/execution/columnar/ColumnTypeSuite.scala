@@ -35,23 +35,32 @@ class ColumnTypeSuite extends SparkFunSuite with Logging {
   private val STRUCT_TYPE = STRUCT(StructType(StructField("a", StringType) :: Nil))
 
   test("defaultSize") {
-    val checks = Map(
-      NULL -> 0, BOOLEAN -> 1, BYTE -> 1, SHORT -> 2, INT -> 4, LONG -> 8,
-      FLOAT -> 4, DOUBLE -> 8, COMPACT_DECIMAL(15, 10) -> 8, LARGE_DECIMAL(20, 10) -> 12,
-      STRING -> 8, BINARY -> 16, STRUCT_TYPE -> 20, ARRAY_TYPE -> 16, MAP_TYPE -> 32)
+    val checks = Map(NULL -> 0,
+                     BOOLEAN -> 1,
+                     BYTE -> 1,
+                     SHORT -> 2,
+                     INT -> 4,
+                     LONG -> 8,
+                     FLOAT -> 4,
+                     DOUBLE -> 8,
+                     COMPACT_DECIMAL(15, 10) -> 8,
+                     LARGE_DECIMAL(20, 10) -> 12,
+                     STRING -> 8,
+                     BINARY -> 16,
+                     STRUCT_TYPE -> 20,
+                     ARRAY_TYPE -> 16,
+                     MAP_TYPE -> 32)
 
-    checks.foreach { case (columnType, expectedSize) =>
-      assertResult(expectedSize, s"Wrong defaultSize for $columnType") {
-        columnType.defaultSize
-      }
+    checks.foreach {
+      case (columnType, expectedSize) =>
+        assertResult(expectedSize, s"Wrong defaultSize for $columnType") {
+          columnType.defaultSize
+        }
     }
   }
 
   test("actualSize") {
-    def checkActualSize(
-        columnType: ColumnType[_],
-        value: Any,
-        expected: Int): Unit = {
+    def checkActualSize(columnType: ColumnType[_], value: Any, expected: Int): Unit = {
 
       assertResult(expected, s"Wrong actualSize for $columnType") {
         val row = new GenericMutableRow(1)
@@ -115,9 +124,10 @@ class ColumnTypeSuite extends SparkFunSuite with Logging {
         logInfo("buffer = " + buffer + ", expected = " + row)
         val expected = converter(row.get(0, columnType.dataType))
         val extracted = converter(columnType.extract(buffer))
-        assert(expected === extracted,
-          s"Extracted value didn't equal to the original one. $expected != $extracted, buffer =" +
-          dumpBuffer(buffer.duplicate().rewind().asInstanceOf[ByteBuffer]))
+        assert(
+            expected === extracted,
+            s"Extracted value didn't equal to the original one. $expected != $extracted, buffer =" +
+            dumpBuffer(buffer.duplicate().rewind().asInstanceOf[ByteBuffer]))
       }
     }
   }

@@ -47,13 +47,13 @@ import org.apache.spark.util.{AccumulatorV2, ByteBufferInputStream, ByteBufferOu
  * @param metrics a [[TaskMetrics]] that is created at driver side and sent to executor side.
  * @param localProperties copy of thread-local properties set by the user on the driver side.
  */
-private[spark] abstract class Task[T](
-    val stageId: Int,
-    val stageAttemptId: Int,
-    val partitionId: Int,
-    // The default value is only used in tests.
-    val metrics: TaskMetrics = TaskMetrics.registered,
-    @transient var localProperties: Properties = new Properties) extends Serializable {
+private[spark] abstract class Task[T](val stageId: Int,
+                                      val stageAttemptId: Int,
+                                      val partitionId: Int,
+                                      // The default value is only used in tests.
+                                      val metrics: TaskMetrics = TaskMetrics.registered,
+                                      @transient var localProperties: Properties = new Properties)
+    extends Serializable {
 
   /**
    * Called by [[org.apache.spark.executor.Executor]] to run this task.
@@ -62,20 +62,16 @@ private[spark] abstract class Task[T](
    * @param attemptNumber how many times this task has been attempted (0 for the first attempt)
    * @return the result of the task along with updates of Accumulators.
    */
-  final def run(
-      taskAttemptId: Long,
-      attemptNumber: Int,
-      metricsSystem: MetricsSystem): T = {
+  final def run(taskAttemptId: Long, attemptNumber: Int, metricsSystem: MetricsSystem): T = {
     SparkEnv.get.blockManager.registerTask(taskAttemptId)
-    context = new TaskContextImpl(
-      stageId,
-      partitionId,
-      taskAttemptId,
-      attemptNumber,
-      taskMemoryManager,
-      localProperties,
-      metricsSystem,
-      metrics)
+    context = new TaskContextImpl(stageId,
+                                  partitionId,
+                                  taskAttemptId,
+                                  attemptNumber,
+                                  taskMemoryManager,
+                                  localProperties,
+                                  metricsSystem,
+                                  metrics)
     TaskContext.setTaskContext(context)
     taskThread = Thread.currentThread()
     if (_killed) {
@@ -131,11 +127,13 @@ private[spark] abstract class Task[T](
   @transient protected var context: TaskContextImpl = _
 
   // The actual Thread on which the task is running, if any. Initialized in run().
-  @volatile @transient private var taskThread: Thread = _
+  @volatile
+  @transient private var taskThread: Thread = _
 
   // A flag to indicate whether the task is killed. This is used in case context is not yet
   // initialized when kill() is invoked.
-  @volatile @transient private var _killed = false
+  @volatile
+  @transient private var _killed = false
 
   protected var _executorDeserializeTime: Long = 0
 
@@ -160,8 +158,8 @@ private[spark] abstract class Task[T](
         // value will be updated at driver side.
         // Note: internal accumulators representing task metrics always count failed values
         !a.isZero || a.name == Some(InternalAccumulator.RESULT_SIZE)
-      // zero value external accumulators may still be useful, e.g. SQLMetrics, we should not filter
-      // them out.
+        // zero value external accumulators may still be useful, e.g. SQLMetrics, we should not filter
+        // them out.
       } ++ context.taskMetrics.externalAccums.filter(a => !taskFailed || a.countFailedValues)
     } else {
       Seq.empty
@@ -193,15 +191,14 @@ private[spark] abstract class Task[T](
  * first writing out its dependencies.
  */
 private[spark] object Task {
+
   /**
    * Serialize a task and the current app dependencies (files and JARs added to the SparkContext)
    */
-  def serializeWithDependencies(
-      task: Task[_],
-      currentFiles: HashMap[String, Long],
-      currentJars: HashMap[String, Long],
-      serializer: SerializerInstance)
-    : ByteBuffer = {
+  def serializeWithDependencies(task: Task[_],
+                                currentFiles: HashMap[String, Long],
+                                currentJars: HashMap[String, Long],
+                                serializer: SerializerInstance): ByteBuffer = {
 
     val out = new ByteBufferOutputStream(4096)
     val dataOut = new DataOutputStream(out)
@@ -265,7 +262,7 @@ private[spark] object Task {
     val taskProps = Utils.deserialize[Properties](propBytes)
 
     // Create a sub-buffer for the rest of the data, which is the serialized Task object
-    val subBuffer = serializedTask.slice()  // ByteBufferInputStream will have read just up to task
+    val subBuffer = serializedTask.slice() // ByteBufferInputStream will have read just up to task
     (taskFiles, taskJars, taskProps, subBuffer)
   }
 }

@@ -36,19 +36,20 @@ object ALSSuite {
       samplingRate: Double,
       implicitPrefs: Boolean,
       negativeWeights: Boolean): (java.util.List[Rating], Array[Double], Array[Double]) = {
-    val (sampledRatings, trueRatings, truePrefs) =
-      generateRatings(users, products, features, samplingRate, implicitPrefs, negativeWeights)
-    (sampledRatings.asJava, trueRatings.toArray, if (truePrefs == null) null else truePrefs.toArray)
+    val (sampledRatings, trueRatings, truePrefs) = generateRatings(
+        users, products, features, samplingRate, implicitPrefs, negativeWeights)
+    (sampledRatings.asJava,
+     trueRatings.toArray,
+     if (truePrefs == null) null else truePrefs.toArray)
   }
 
-  def generateRatings(
-      users: Int,
-      products: Int,
-      features: Int,
-      samplingRate: Double,
-      implicitPrefs: Boolean = false,
-      negativeWeights: Boolean = false,
-      negativeFactors: Boolean = true): (Seq[Rating], BDM[Double], BDM[Double]) = {
+  def generateRatings(users: Int,
+                      products: Int,
+                      features: Int,
+                      samplingRate: Double,
+                      implicitPrefs: Boolean = false,
+                      negativeWeights: Boolean = false,
+                      negativeFactors: Boolean = true): (Seq[Rating], BDM[Double], BDM[Double]) = {
     val rand = new Random(42)
 
     // Create a random matrix with uniform values from -1 to 1
@@ -65,25 +66,24 @@ object ALSSuite {
     val (trueRatings, truePrefs) =
       if (implicitPrefs) {
         // Generate raw values from [0,9], or if negativeWeights, from [-2,7]
-        val raw = new BDM(users, products,
-          Array.fill(users * products)(
-            (if (negativeWeights) -2 else 0) + rand.nextInt(10).toDouble))
-        val prefs =
-          new BDM(users, products, raw.data.map(v => if (v > 0) 1.0 else 0.0))
+        val raw = new BDM(users,
+                          products,
+                          Array.fill(users * products)(
+                              (if (negativeWeights) -2 else 0) + rand.nextInt(10).toDouble))
+        val prefs = new BDM(users, products, raw.data.map(v => if (v > 0) 1.0 else 0.0))
         (raw, prefs)
       } else {
         (userMatrix * productMatrix, null)
       }
 
     val sampledRatings = {
-      for (u <- 0 until users; p <- 0 until products if rand.nextDouble() < samplingRate)
-        yield Rating(u, p, trueRatings(u, p))
+      for (u <- 0 until users; p <- 0 until products if rand.nextDouble() < samplingRate) yield
+        Rating(u, p, trueRatings(u, p))
     }
 
     (sampledRatings, trueRatings, truePrefs)
   }
 }
-
 
 class ALSSuite extends SparkFunSuite with MLlibTestSparkContext {
 
@@ -167,8 +167,9 @@ class ALSSuite extends SparkFunSuite with MLlibTestSparkContext {
 
   test("negative ids") {
     val data = ALSSuite.generateRatings(50, 50, 2, 0.7, false, false)
-    val ratings = sc.parallelize(data._1.map { case Rating(u, p, r) =>
-      Rating(u - 25, p - 25, r)
+    val ratings = sc.parallelize(data._1.map {
+      case Rating(u, p, r) =>
+        Rating(u - 25, p - 25, r)
     })
     val correct = data._2
     val model = ALS.train(ratings, 5, 15)
@@ -205,23 +206,22 @@ class ALSSuite extends SparkFunSuite with MLlibTestSparkContext {
    * @param negativeFactors whether the generated user/product factors can have negative entries
    */
   // scalastyle:off
-  def testALS(
-      users: Int,
-      products: Int,
-      features: Int,
-      iterations: Int,
-      samplingRate: Double,
-      matchThreshold: Double,
-      implicitPrefs: Boolean = false,
-      bulkPredict: Boolean = false,
-      negativeWeights: Boolean = false,
-      numUserBlocks: Int = -1,
-      numProductBlocks: Int = -1,
-      negativeFactors: Boolean = true) {
+  def testALS(users: Int,
+              products: Int,
+              features: Int,
+              iterations: Int,
+              samplingRate: Double,
+              matchThreshold: Double,
+              implicitPrefs: Boolean = false,
+              bulkPredict: Boolean = false,
+              negativeWeights: Boolean = false,
+              numUserBlocks: Int = -1,
+              numProductBlocks: Int = -1,
+              negativeFactors: Boolean = true) {
     // scalastyle:on
 
-    val (sampledRatings, trueRatings, truePrefs) = ALSSuite.generateRatings(users, products,
-      features, samplingRate, implicitPrefs, negativeWeights, negativeFactors)
+    val (sampledRatings, trueRatings, truePrefs) = ALSSuite.generateRatings(
+        users, products, features, samplingRate, implicitPrefs, negativeWeights, negativeFactors)
 
     val model = new ALS()
       .setUserBlocks(numUserBlocks)
@@ -261,9 +261,16 @@ class ALSSuite extends SparkFunSuite with MLlibTestSparkContext {
         val prediction = predictedRatings(u, p)
         val correct = trueRatings(u, p)
         if (math.abs(prediction - correct) > matchThreshold) {
-          fail(("Model failed to predict (%d, %d): %f vs %f\ncorr: %s\npred: %s\nU: %s\n P: %s")
-            .format(u, p, correct, prediction, trueRatings, predictedRatings, predictedU,
-              predictedP))
+          fail(
+              ("Model failed to predict (%d, %d): %f vs %f\ncorr: %s\npred: %s\nU: %s\n P: %s")
+                .format(u,
+                        p,
+                        correct,
+                        prediction,
+                        trueRatings,
+                        predictedRatings,
+                        predictedU,
+                        predictedP))
         }
       }
     } else {
@@ -280,10 +287,10 @@ class ALSSuite extends SparkFunSuite with MLlibTestSparkContext {
       }
       val rmse = math.sqrt(sqErr / denom)
       if (rmse > matchThreshold) {
-        fail("Model failed to predict RMSE: %f\ncorr: %s\npred: %s\nU: %s\n P: %s".format(
-          rmse, truePrefs, predictedRatings, predictedU, predictedP))
+        fail(
+            "Model failed to predict RMSE: %f\ncorr: %s\npred: %s\nU: %s\n P: %s".format(
+                rmse, truePrefs, predictedRatings, predictedU, predictedP))
       }
     }
   }
 }
-

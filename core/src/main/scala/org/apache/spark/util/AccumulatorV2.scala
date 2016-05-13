@@ -25,12 +25,9 @@ import java.util.concurrent.atomic.AtomicLong
 import org.apache.spark.{InternalAccumulator, SparkContext, TaskContext}
 import org.apache.spark.scheduler.AccumulableInfo
 
-
 private[spark] case class AccumulatorMetadata(
-    id: Long,
-    name: Option[String],
-    countFailedValues: Boolean) extends Serializable
-
+    id: Long, name: Option[String], countFailedValues: Boolean)
+    extends Serializable
 
 /**
  * The base class for accumulators, that can accumulate inputs of type `IN`, and produce output of
@@ -41,9 +38,7 @@ abstract class AccumulatorV2[IN, OUT] extends Serializable {
   private[this] var atDriverSide = true
 
   private[spark] def register(
-      sc: SparkContext,
-      name: Option[String] = None,
-      countFailedValues: Boolean = false): Unit = {
+      sc: SparkContext, name: Option[String] = None, countFailedValues: Boolean = false): Unit = {
     if (this.metadata != null) {
       throw new IllegalStateException("Cannot register an Accumulator twice.")
     }
@@ -150,7 +145,7 @@ abstract class AccumulatorV2[IN, OUT] extends Serializable {
     if (atDriverSide) {
       if (!isRegistered) {
         throw new UnsupportedOperationException(
-          "Accumulator must be registered before send to executor")
+            "Accumulator must be registered before send to executor")
       }
       val copyAcc = copyAndReset()
       assert(copyAcc.isZero, "copyAndReset must return a zero value copy")
@@ -187,7 +182,6 @@ abstract class AccumulatorV2[IN, OUT] extends Serializable {
     }
   }
 }
-
 
 /**
  * An internal class used to track accumulators by Spark itself.
@@ -256,7 +250,6 @@ private[spark] object AccumulatorContext {
     originals.clear()
   }
 }
-
 
 /**
  * An [[AccumulatorV2 accumulator]] for computing sum, count, and averages for 64-bit integers.
@@ -327,14 +320,13 @@ class LongAccumulator extends AccumulatorV2[jl.Long, jl.Long] {
       _count += o.count
     case _ =>
       throw new UnsupportedOperationException(
-        s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
+          s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
   }
 
   private[spark] def setValue(newValue: Long): Unit = _sum = newValue
 
   override def value: jl.Long = _sum
 }
-
 
 /**
  * An [[AccumulatorV2 accumulator]] for computing sum, count, and averages for double precision
@@ -402,14 +394,13 @@ class DoubleAccumulator extends AccumulatorV2[jl.Double, jl.Double] {
       _count += o.count
     case _ =>
       throw new UnsupportedOperationException(
-        s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
+          s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
   }
 
   private[spark] def setValue(newValue: Double): Unit = _sum = newValue
 
   override def value: jl.Double = _sum
 }
-
 
 class ListAccumulator[T] extends AccumulatorV2[T, java.util.List[T]] {
   private val _list: java.util.List[T] = new java.util.ArrayList[T]
@@ -430,8 +421,9 @@ class ListAccumulator[T] extends AccumulatorV2[T, java.util.List[T]] {
 
   override def merge(other: AccumulatorV2[T, java.util.List[T]]): Unit = other match {
     case o: ListAccumulator[T] => _list.addAll(o.value)
-    case _ => throw new UnsupportedOperationException(
-      s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
+    case _ =>
+      throw new UnsupportedOperationException(
+          s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
   }
 
   override def value: java.util.List[T] = java.util.Collections.unmodifiableList(_list)
@@ -442,11 +434,10 @@ class ListAccumulator[T] extends AccumulatorV2[T, java.util.List[T]] {
   }
 }
 
-
 class LegacyAccumulatorWrapper[R, T](
-    initialValue: R,
-    param: org.apache.spark.AccumulableParam[R, T]) extends AccumulatorV2[T, R] {
-  private[spark] var _value = initialValue  // Current value on driver
+    initialValue: R, param: org.apache.spark.AccumulableParam[R, T])
+    extends AccumulatorV2[T, R] {
+  private[spark] var _value = initialValue // Current value on driver
 
   override def isZero: Boolean = _value == param.zero(initialValue)
 
@@ -464,8 +455,9 @@ class LegacyAccumulatorWrapper[R, T](
 
   override def merge(other: AccumulatorV2[T, R]): Unit = other match {
     case o: LegacyAccumulatorWrapper[R, T] => _value = param.addInPlace(_value, o.value)
-    case _ => throw new UnsupportedOperationException(
-      s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
+    case _ =>
+      throw new UnsupportedOperationException(
+          s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
   }
 
   override def value: R = _value

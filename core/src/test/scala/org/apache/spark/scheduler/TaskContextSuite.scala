@@ -35,16 +35,17 @@ class TaskContextSuite extends SparkFunSuite with BeforeAndAfter with LocalSpark
 
   test("provide metrics sources") {
     val filePath = getClass.getClassLoader.getResource("test_metrics_config.properties").getFile
-    val conf = new SparkConf(loadDefaults = false)
-      .set("spark.metrics.conf", filePath)
+    val conf = new SparkConf(loadDefaults = false).set("spark.metrics.conf", filePath)
     sc = new SparkContext("local", "test", conf)
     val rdd = sc.makeRDD(1 to 1)
-    val result = sc.runJob(rdd, (tc: TaskContext, it: Iterator[Int]) => {
-      tc.getMetricsSources("jvm").count {
-        case source: JvmSource => true
-        case _ => false
-      }
-    }).sum
+    val result = sc
+      .runJob(rdd, (tc: TaskContext, it: Iterator[Int]) => {
+        tc.getMetricsSources("jvm").count {
+          case source: JvmSource => true
+          case _ => false
+        }
+      })
+      .sum
     assert(result > 0)
   }
 
@@ -60,9 +61,10 @@ class TaskContextSuite extends SparkFunSuite with BeforeAndAfter with LocalSpark
     }
     val closureSerializer = SparkEnv.get.closureSerializer.newInstance()
     val func = (c: TaskContext, i: Iterator[String]) => i.next()
-    val taskBinary = sc.broadcast(JavaUtils.bufferToArray(closureSerializer.serialize((rdd, func))))
+    val taskBinary =
+      sc.broadcast(JavaUtils.bufferToArray(closureSerializer.serialize((rdd, func))))
     val task = new ResultTask[String, String](
-      0, 0, taskBinary, rdd.partitions(0), Seq.empty, 0, new Properties, new TaskMetrics)
+        0, 0, taskBinary, rdd.partitions(0), Seq.empty, 0, new Properties, new TaskMetrics)
     intercept[RuntimeException] {
       task.run(0, 0, null)
     }
@@ -81,9 +83,10 @@ class TaskContextSuite extends SparkFunSuite with BeforeAndAfter with LocalSpark
     }
     val closureSerializer = SparkEnv.get.closureSerializer.newInstance()
     val func = (c: TaskContext, i: Iterator[String]) => i.next()
-    val taskBinary = sc.broadcast(JavaUtils.bufferToArray(closureSerializer.serialize((rdd, func))))
+    val taskBinary =
+      sc.broadcast(JavaUtils.bufferToArray(closureSerializer.serialize((rdd, func))))
     val task = new ResultTask[String, String](
-      0, 0, taskBinary, rdd.partitions(0), Seq.empty, 0, new Properties, new TaskMetrics)
+        0, 0, taskBinary, rdd.partitions(0), Seq.empty, 0, new Properties, new TaskMetrics)
     intercept[RuntimeException] {
       task.run(0, 0, null)
     }
@@ -125,21 +128,27 @@ class TaskContextSuite extends SparkFunSuite with BeforeAndAfter with LocalSpark
   }
 
   test("TaskContext.attemptNumber should return attempt number, not task id (SPARK-4014)") {
-    sc = new SparkContext("local[1,2]", "test")  // use maxRetries = 2 because we test failed tasks
+    sc = new SparkContext("local[1,2]", "test") // use maxRetries = 2 because we test failed tasks
     // Check that attemptIds are 0 for all tasks' initial attempts
-    val attemptIds = sc.parallelize(Seq(1, 2), 2).mapPartitions { iter =>
-      Seq(TaskContext.get().attemptNumber).iterator
-    }.collect()
+    val attemptIds = sc
+      .parallelize(Seq(1, 2), 2)
+      .mapPartitions { iter =>
+        Seq(TaskContext.get().attemptNumber).iterator
+      }
+      .collect()
     assert(attemptIds.toSet === Set(0))
 
     // Test a job with failed tasks
-    val attemptIdsWithFailedTask = sc.parallelize(Seq(1, 2), 2).mapPartitions { iter =>
-      val attemptId = TaskContext.get().attemptNumber
-      if (iter.next() == 1 && attemptId == 0) {
-        throw new Exception("First execution of task failed")
+    val attemptIdsWithFailedTask = sc
+      .parallelize(Seq(1, 2), 2)
+      .mapPartitions { iter =>
+        val attemptId = TaskContext.get().attemptNumber
+        if (iter.next() == 1 && attemptId == 0) {
+          throw new Exception("First execution of task failed")
+        }
+        Seq(attemptId).iterator
       }
-      Seq(attemptId).iterator
-    }.collect()
+      .collect()
     assert(attemptIdsWithFailedTask.toSet === Set(0, 1))
   }
 
@@ -151,15 +160,17 @@ class TaskContextSuite extends SparkFunSuite with BeforeAndAfter with LocalSpark
     val acc1 = new Accumulator(0L, param, Some("x"), countFailedValues = true)
     val acc2 = new Accumulator(0L, param, Some("y"), countFailedValues = false)
     // Fail first 3 attempts of every task. This means each task should be run 4 times.
-    sc.parallelize(1 to 10, 10).map { i =>
-      acc1 += 1
-      acc2 += 1
-      if (TaskContext.get.attemptNumber() <= 2) {
-        throw new Exception("you did something wrong")
-      } else {
-        0
+    sc.parallelize(1 to 10, 10)
+      .map { i =>
+        acc1 += 1
+        acc2 += 1
+        if (TaskContext.get.attemptNumber() <= 2) {
+          throw new Exception("you did something wrong")
+        } else {
+          0
+        }
       }
-    }.count()
+      .count()
     // The one that counts failed values should be 4x the one that didn't,
     // since we ran each task 4 times
     assert(AccumulatorContext.get(acc1.id).get.value === 40L)
@@ -176,11 +187,14 @@ class TaskContextSuite extends SparkFunSuite with BeforeAndAfter with LocalSpark
     // accumulator updates from it.
     val taskMetrics = TaskMetrics.empty
     val task = new Task[Int](0, 0, 0) {
-      context = new TaskContextImpl(0, 0, 0L, 0,
-        new TaskMemoryManager(SparkEnv.get.memoryManager, 0L),
-        new Properties,
-        SparkEnv.get.metricsSystem,
-        taskMetrics)
+      context = new TaskContextImpl(0,
+                                    0,
+                                    0L,
+                                    0,
+                                    new TaskMemoryManager(SparkEnv.get.memoryManager, 0L),
+                                    new Properties,
+                                    SparkEnv.get.metricsSystem,
+                                    taskMetrics)
       taskMetrics.registerAccumulator(acc1)
       taskMetrics.registerAccumulator(acc2)
       override def runTask(tc: TaskContext): Int = 0
@@ -199,11 +213,14 @@ class TaskContextSuite extends SparkFunSuite with BeforeAndAfter with LocalSpark
     // accumulator updates from it.
     val taskMetrics = TaskMetrics.empty
     val task = new Task[Int](0, 0, 0) {
-      context = new TaskContextImpl(0, 0, 0L, 0,
-        new TaskMemoryManager(SparkEnv.get.memoryManager, 0L),
-        new Properties,
-        SparkEnv.get.metricsSystem,
-        taskMetrics)
+      context = new TaskContextImpl(0,
+                                    0,
+                                    0L,
+                                    0,
+                                    new TaskMemoryManager(SparkEnv.get.memoryManager, 0L),
+                                    new Properties,
+                                    SparkEnv.get.metricsSystem,
+                                    taskMetrics)
       taskMetrics.incMemoryBytesSpilled(10)
       override def runTask(tc: TaskContext): Int = 0
     }
@@ -219,14 +236,17 @@ class TaskContextSuite extends SparkFunSuite with BeforeAndAfter with LocalSpark
   test("localProperties are propagated to executors correctly") {
     sc = new SparkContext("local", "test")
     sc.setLocalProperty("testPropKey", "testPropValue")
-    val res = sc.parallelize(Array(1), 1).map(i => i).map(i => {
-      val inTask = TaskContext.get().getLocalProperty("testPropKey")
-      val inDeser = Executor.taskDeserializationProps.get().getProperty("testPropKey")
-      s"$inTask,$inDeser"
-    }).collect()
+    val res = sc
+      .parallelize(Array(1), 1)
+      .map(i => i)
+      .map(i => {
+        val inTask = TaskContext.get().getLocalProperty("testPropKey")
+        val inDeser = Executor.taskDeserializationProps.get().getProperty("testPropKey")
+        s"$inTask,$inDeser"
+      })
+      .collect()
     assert(res === Array("testPropValue,testPropValue"))
   }
-
 }
 
 private object TaskContextSuite {

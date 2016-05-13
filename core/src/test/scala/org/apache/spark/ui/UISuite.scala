@@ -35,10 +35,8 @@ class UISuite extends SparkFunSuite {
    * It is safe to `get` the SparkUI directly from the SparkContext returned here.
    */
   private def newSparkContext(): SparkContext = {
-    val conf = new SparkConf()
-      .setMaster("local")
-      .setAppName("test")
-      .set("spark.ui.enabled", "true")
+    val conf =
+      new SparkConf().setMaster("local").setAppName("test").set("spark.ui.enabled", "true")
     val sc = new SparkContext(conf)
     assert(sc.ui.isDefined)
     sc
@@ -91,9 +89,9 @@ class UISuite extends SparkFunSuite {
       server = new ServerSocket(0)
       val startPort = server.getLocalPort
       serverInfo1 = JettyUtils.startJettyServer(
-        "0.0.0.0", startPort, sslOptions, Seq[ServletContextHandler](), conf)
+          "0.0.0.0", startPort, sslOptions, Seq[ServletContextHandler](), conf)
       serverInfo2 = JettyUtils.startJettyServer(
-        "0.0.0.0", startPort, sslOptions, Seq[ServletContextHandler](), conf)
+          "0.0.0.0", startPort, sslOptions, Seq[ServletContextHandler](), conf)
       // Allow some wiggle room in case ports on the machine are under contention
       val boundPort1 = serverInfo1.boundPort
       val boundPort2 = serverInfo2.boundPort
@@ -116,9 +114,9 @@ class UISuite extends SparkFunSuite {
       val startPort = server.getLocalPort
       val (conf, sslOptions) = sslEnabledConf()
       serverInfo1 = JettyUtils.startJettyServer(
-        "0.0.0.0", startPort, sslOptions, Seq[ServletContextHandler](), conf, "server1")
+          "0.0.0.0", startPort, sslOptions, Seq[ServletContextHandler](), conf, "server1")
       serverInfo2 = JettyUtils.startJettyServer(
-        "0.0.0.0", startPort, sslOptions, Seq[ServletContextHandler](), conf, "server2")
+          "0.0.0.0", startPort, sslOptions, Seq[ServletContextHandler](), conf, "server2")
       // Allow some wiggle room in case ports on the machine are under contention
       val boundPort1 = serverInfo1.boundPort
       val boundPort2 = serverInfo2.boundPort
@@ -137,8 +135,8 @@ class UISuite extends SparkFunSuite {
     var serverInfo: ServerInfo = null
     val (conf, sslOptions) = sslDisabledConf()
     try {
-      serverInfo = JettyUtils.startJettyServer(
-        "0.0.0.0", 0, sslOptions, Seq[ServletContextHandler](), conf)
+      serverInfo =
+        JettyUtils.startJettyServer("0.0.0.0", 0, sslOptions, Seq[ServletContextHandler](), conf)
       val server = serverInfo.server
       val boundPort = serverInfo.boundPort
       assert(server.getState === "STARTED")
@@ -157,8 +155,8 @@ class UISuite extends SparkFunSuite {
     var serverInfo: ServerInfo = null
     try {
       val (conf, sslOptions) = sslEnabledConf()
-      serverInfo = JettyUtils.startJettyServer(
-        "0.0.0.0", 0, sslOptions, Seq[ServletContextHandler](), conf)
+      serverInfo =
+        JettyUtils.startJettyServer("0.0.0.0", 0, sslOptions, Seq[ServletContextHandler](), conf)
       val server = serverInfo.server
       val boundPort = serverInfo.boundPort
       assert(server.getState === "STARTED")

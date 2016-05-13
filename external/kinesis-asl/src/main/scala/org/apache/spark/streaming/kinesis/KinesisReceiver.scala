@@ -34,9 +34,8 @@ import org.apache.spark.streaming.Duration
 import org.apache.spark.streaming.receiver.{BlockGenerator, BlockGeneratorListener, Receiver}
 import org.apache.spark.util.Utils
 
-private[kinesis]
-case class SerializableAWSCredentials(accessKeyId: String, secretKey: String)
-  extends AWSCredentials {
+private[kinesis] case class SerializableAWSCredentials(accessKeyId: String, secretKey: String)
+    extends AWSCredentials {
   override def getAWSAccessKeyId: String = accessKeyId
   override def getAWSSecretKey: String = secretKey
 }
@@ -81,17 +80,18 @@ case class SerializableAWSCredentials(accessKeyId: String, secretKey: String)
  * @param awsCredentialsOption Optional AWS credentials, used when user directly specifies
  *                             the credentials
  */
-private[kinesis] class KinesisReceiver[T](
-    val streamName: String,
-    endpointUrl: String,
-    regionName: String,
-    initialPositionInStream: InitialPositionInStream,
-    checkpointAppName: String,
-    checkpointInterval: Duration,
-    storageLevel: StorageLevel,
-    messageHandler: Record => T,
-    awsCredentialsOption: Option[SerializableAWSCredentials])
-  extends Receiver[T](storageLevel) with Logging { receiver =>
+private[kinesis] class KinesisReceiver[T](val streamName: String,
+                                          endpointUrl: String,
+                                          regionName: String,
+                                          initialPositionInStream: InitialPositionInStream,
+                                          checkpointAppName: String,
+                                          checkpointInterval: Duration,
+                                          storageLevel: StorageLevel,
+                                          messageHandler: Record => T,
+                                          awsCredentialsOption: Option[SerializableAWSCredentials])
+    extends Receiver[T](storageLevel)
+    with Logging {
+  receiver =>
 
   /*
    * =================================================================================
@@ -151,17 +151,17 @@ private[kinesis] class KinesisReceiver[T](
     val awsCredProvider = resolveAWSCredentialsProvider()
     val kinesisClientLibConfiguration =
       new KinesisClientLibConfiguration(checkpointAppName, streamName, awsCredProvider, workerId)
-      .withKinesisEndpoint(endpointUrl)
-      .withInitialPositionInStream(initialPositionInStream)
-      .withTaskBackoffTimeMillis(500)
-      .withRegionName(regionName)
+        .withKinesisEndpoint(endpointUrl)
+        .withInitialPositionInStream(initialPositionInStream)
+        .withTaskBackoffTimeMillis(500)
+        .withRegionName(regionName)
 
-   /*
-    *  RecordProcessorFactory creates impls of IRecordProcessor.
-    *  IRecordProcessor adapts the KCL to our Spark KinesisReceiver via the
-    *  IRecordProcessor.processRecords() method.
-    *  We're using our custom KinesisRecordProcessor in this case.
-    */
+    /*
+     *  RecordProcessorFactory creates impls of IRecordProcessor.
+     *  IRecordProcessor adapts the KCL to our Spark KinesisReceiver via the
+     *  IRecordProcessor.processRecords() method.
+     *  We're using our custom KinesisRecordProcessor in this case.
+     */
     val recordProcessorFactory = new IRecordProcessorFactory {
       override def createProcessor: IRecordProcessor =
         new KinesisRecordProcessor(receiver, workerId)
@@ -215,8 +215,10 @@ private[kinesis] class KinesisReceiver[T](
   private[kinesis] def addRecords(shardId: String, records: java.util.List[Record]): Unit = {
     if (records.size > 0) {
       val dataIterator = records.iterator().asScala.map(messageHandler)
-      val metadata = SequenceNumberRange(streamName, shardId,
-        records.get(0).getSequenceNumber(), records.get(records.size() - 1).getSequenceNumber())
+      val metadata = SequenceNumberRange(streamName,
+                                         shardId,
+                                         records.get(0).getSequenceNumber(),
+                                         records.get(records.size() - 1).getSequenceNumber())
       blockGenerator.addMultipleDataWithCallback(dataIterator, metadata)
     }
   }
@@ -268,8 +270,9 @@ private[kinesis] class KinesisReceiver[T](
       blockId: StreamBlockId, arrayBuffer: mutable.ArrayBuffer[T]): Unit = {
     val rangesToReportOption = Option(blockIdToSeqNumRanges.remove(blockId))
     if (rangesToReportOption.isEmpty) {
-      stop("Error while storing block into Spark, could not find sequence number ranges " +
-        s"for block $blockId")
+      stop(
+          "Error while storing block into Spark, could not find sequence number ranges " +
+          s"for block $blockId")
       return
     }
 
@@ -309,14 +312,13 @@ private[kinesis] class KinesisReceiver[T](
         logInfo("Using provided AWS credentials")
         new AWSCredentialsProvider {
           override def getCredentials: AWSCredentials = awsCredentials
-          override def refresh(): Unit = { }
+          override def refresh(): Unit = {}
         }
       case None =>
         logInfo("Using DefaultAWSCredentialsProviderChain")
         new DefaultAWSCredentialsProviderChain()
     }
   }
-
 
   /**
    * Class to handle blocks generated by this receiver's block generator. Specifically, in
@@ -349,8 +351,7 @@ private[kinesis] class KinesisReceiver[T](
 
     /** Callback method called when a block is ready to be pushed / stored. */
     def onPushBlock(blockId: StreamBlockId, arrayBuffer: mutable.ArrayBuffer[_]): Unit = {
-      storeBlockWithRanges(blockId,
-        arrayBuffer.asInstanceOf[mutable.ArrayBuffer[T]])
+      storeBlockWithRanges(blockId, arrayBuffer.asInstanceOf[mutable.ArrayBuffer[T]])
     }
 
     /** Callback called in case of any error in internal of the BlockGenerator */

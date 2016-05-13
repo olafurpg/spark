@@ -31,5 +31,4 @@ private[sink] class SparkSinkThreadFactory(nameFormat: String) extends ThreadFac
     t.setDaemon(true)
     t
   }
-
 }

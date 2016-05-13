@@ -53,28 +53,26 @@ object HypothesisTestingExample {
     // summary of the test including the p-value, degrees of freedom
     println(s"$independenceTestResult\n")
 
-    val obs: RDD[LabeledPoint] =
-      sc.parallelize(
+    val obs: RDD[LabeledPoint] = sc.parallelize(
         Seq(
-          LabeledPoint(1.0, Vectors.dense(1.0, 0.0, 3.0)),
-          LabeledPoint(1.0, Vectors.dense(1.0, 2.0, 0.0)),
-          LabeledPoint(-1.0, Vectors.dense(-1.0, 0.0, -0.5)
-          )
+            LabeledPoint(1.0, Vectors.dense(1.0, 0.0, 3.0)),
+            LabeledPoint(1.0, Vectors.dense(1.0, 2.0, 0.0)),
+            LabeledPoint(-1.0, Vectors.dense(-1.0, 0.0, -0.5))
         )
-      ) // (feature, label) pairs.
+    ) // (feature, label) pairs.
 
     // The contingency table is constructed from the raw (feature, label) pairs and used to conduct
     // the independence test. Returns an array containing the ChiSquaredTestResult for every feature
     // against the label.
     val featureTestResults: Array[ChiSqTestResult] = Statistics.chiSqTest(obs)
-    featureTestResults.zipWithIndex.foreach { case (k, v) =>
-      println("Column " + (v + 1).toString + ":")
-      println(k)
-    }  // summary of the test
+    featureTestResults.zipWithIndex.foreach {
+      case (k, v) =>
+        println("Column " + (v + 1).toString + ":")
+        println(k)
+    } // summary of the test
     // $example off$
 
     sc.stop()
   }
 }
 // scalastyle:on println
-

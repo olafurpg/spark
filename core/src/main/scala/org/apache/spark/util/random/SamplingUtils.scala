@@ -31,10 +31,7 @@ private[spark] object SamplingUtils {
    * @return (samples, input size)
    */
   def reservoirSampleAndCount[T: ClassTag](
-      input: Iterator[T],
-      k: Int,
-      seed: Long = Random.nextLong())
-    : (Array[T], Long) = {
+      input: Iterator[T], k: Int, seed: Long = Random.nextLong()): (Array[T], Long) = {
     val reservoir = new Array[T](k)
     // Put the first k elements in the reservoir.
     var i = 0
@@ -90,8 +87,8 @@ private[spark] object SamplingUtils {
    * @param withReplacement whether sampling with replacement
    * @return a sampling rate that guarantees sufficient sample size with 99.99% success rate
    */
-  def computeFractionForSampleSize(sampleSizeLowerBound: Int, total: Long,
-      withReplacement: Boolean): Double = {
+  def computeFractionForSampleSize(
+      sampleSizeLowerBound: Int, total: Long, withReplacement: Boolean): Double = {
     if (withReplacement) {
       PoissonBounds.getUpperBound(sampleSizeLowerBound) / total
     } else {
@@ -148,7 +145,7 @@ private[spark] object BinomialBounds {
    * it is very unlikely to have more than `fraction * n` successes.
    */
   def getLowerBound(delta: Double, n: Long, fraction: Double): Double = {
-    val gamma = - math.log(delta) / n * (2.0 / 3.0)
+    val gamma = -math.log(delta) / n * (2.0 / 3.0)
     fraction + gamma - math.sqrt(gamma * gamma + 3 * gamma * fraction)
   }
 
@@ -157,8 +154,9 @@ private[spark] object BinomialBounds {
    * it is very unlikely to have less than `fraction * n` successes.
    */
   def getUpperBound(delta: Double, n: Long, fraction: Double): Double = {
-    val gamma = - math.log(delta) / n
+    val gamma = -math.log(delta) / n
     math.min(1,
-      math.max(minSamplingRate, fraction + gamma + math.sqrt(gamma * gamma + 2 * gamma * fraction)))
+             math.max(minSamplingRate,
+                      fraction + gamma + math.sqrt(gamma * gamma + 2 * gamma * fraction)))
   }
 }

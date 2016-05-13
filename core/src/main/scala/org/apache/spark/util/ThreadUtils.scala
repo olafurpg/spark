@@ -64,12 +64,12 @@ private[spark] object ThreadUtils {
       prefix: String, maxThreadNumber: Int, keepAliveSeconds: Int = 60): ThreadPoolExecutor = {
     val threadFactory = namedThreadFactory(prefix)
     val threadPool = new ThreadPoolExecutor(
-      maxThreadNumber, // corePoolSize: the max number of threads to create before queuing the tasks
-      maxThreadNumber, // maximumPoolSize: because we use LinkedBlockingDeque, this one is not used
-      keepAliveSeconds,
-      TimeUnit.SECONDS,
-      new LinkedBlockingQueue[Runnable],
-      threadFactory)
+        maxThreadNumber, // corePoolSize: the max number of threads to create before queuing the tasks
+        maxThreadNumber, // maximumPoolSize: because we use LinkedBlockingDeque, this one is not used
+        keepAliveSeconds,
+        TimeUnit.SECONDS,
+        new LinkedBlockingQueue[Runnable],
+        threadFactory)
     threadPool.allowCoreThreadTimeOut(true)
     threadPool
   }
@@ -87,7 +87,8 @@ private[spark] object ThreadUtils {
    * Wrapper over newSingleThreadExecutor.
    */
   def newDaemonSingleThreadExecutor(threadName: String): ExecutorService = {
-    val threadFactory = new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName).build()
+    val threadFactory =
+      new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName).build()
     Executors.newSingleThreadExecutor(threadFactory)
   }
 
@@ -95,7 +96,8 @@ private[spark] object ThreadUtils {
    * Wrapper over ScheduledThreadPoolExecutor.
    */
   def newDaemonSingleThreadScheduledExecutor(threadName: String): ScheduledExecutorService = {
-    val threadFactory = new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName).build()
+    val threadFactory =
+      new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName).build()
     val executor = new ScheduledThreadPoolExecutor(1, threadFactory)
     // By default, a cancelled task is not automatically removed from the work queue until its delay
     // elapses. We have to enable it manually.
@@ -114,9 +116,7 @@ private[spark] object ThreadUtils {
    *   at CallerClass.caller-method (sourcefile.scala)
    *   ...
    */
-  def runInNewThread[T](
-      threadName: String,
-      isDaemon: Boolean = true)(body: => T): T = {
+  def runInNewThread[T](threadName: String, isDaemon: Boolean = true)(body: => T): T = {
     @volatile var exception: Option[Throwable] = None
     @volatile var result: T = null.asInstanceOf[T]
 
@@ -139,18 +139,23 @@ private[spark] object ThreadUtils {
         // Remove the part of the stack that shows method calls into this helper method
         // This means drop everything from the top until the stack element
         // ThreadUtils.runInNewThread(), and then drop that as well (hence the `drop(1)`).
-        val baseStackTrace = Thread.currentThread().getStackTrace().dropWhile(
-          ! _.getClassName.contains(this.getClass.getSimpleName)).drop(1)
+        val baseStackTrace = Thread
+          .currentThread()
+          .getStackTrace()
+          .dropWhile(!_.getClassName.contains(this.getClass.getSimpleName))
+          .drop(1)
 
         // Remove the part of the new thread stack that shows methods call from this helper method
         val extraStackTrace = realException.getStackTrace.takeWhile(
-          ! _.getClassName.contains(this.getClass.getSimpleName))
+            !_.getClassName.contains(this.getClass.getSimpleName))
 
         // Combine the two stack traces, with a place holder just specifying that there
         // was a helper method used, without any further details of the helper
         val placeHolderStackElem = new StackTraceElement(
-          s"... run in separate thread using ${ThreadUtils.getClass.getName.stripSuffix("$")} ..",
-          " ", "", -1)
+            s"... run in separate thread using ${ThreadUtils.getClass.getName.stripSuffix("$")} ..",
+            " ",
+            "",
+            -1)
         val finalStackTrace = extraStackTrace ++ Seq(placeHolderStackElem) ++ baseStackTrace
 
         // Update the stack trace and rethrow the exception in the caller thread
@@ -172,9 +177,10 @@ private[spark] object ThreadUtils {
           setName(prefix + "-" + super.getName)
         }
     }
-    new SForkJoinPool(maxThreadNumber, factory,
-      null, // handler
-      false // asyncMode
+    new SForkJoinPool(maxThreadNumber,
+                      factory,
+                      null, // handler
+                      false // asyncMode
     )
   }
 

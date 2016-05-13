@@ -33,4 +33,3 @@ class SerDeUtilSuite extends SparkFunSuite with SharedSparkContext {
     SerDeUtil.pythonToPairRDD(pythonRdd, false)
   }
 }
-

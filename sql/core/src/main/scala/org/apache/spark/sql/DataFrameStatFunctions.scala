@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql
 
@@ -64,9 +64,7 @@ final class DataFrameStatFunctions private[sql](df: DataFrame) {
    * @since 2.0.0
    */
   def approxQuantile(
-      col: String,
-      probabilities: Array[Double],
-      relativeError: Double): Array[Double] = {
+      col: String, probabilities: Array[Double], relativeError: Double): Array[Double] = {
     StatFunctions.multipleApproxQuantiles(df, Seq(col), probabilities, relativeError).head.toArray
   }
 
@@ -74,9 +72,7 @@ final class DataFrameStatFunctions private[sql](df: DataFrame) {
    * Python-friendly version of [[approxQuantile()]]
    */
   private[spark] def approxQuantile(
-      col: String,
-      probabilities: List[Double],
-      relativeError: Double): java.util.List[Double] = {
+      col: String, probabilities: List[Double], relativeError: Double): java.util.List[Double] = {
     approxQuantile(col, probabilities.toArray, relativeError).toList.asJava
   }
 
@@ -118,8 +114,9 @@ final class DataFrameStatFunctions private[sql](df: DataFrame) {
    * @since 1.4.0
    */
   def corr(col1: String, col2: String, method: String): Double = {
-    require(method == "pearson", "Currently only the calculation of the Pearson Correlation " +
-      "coefficient is supported.")
+    require(
+        method == "pearson",
+        "Currently only the calculation of the Pearson Correlation " + "coefficient is supported.")
     StatFunctions.pearsonCorrelation(df, Seq(col1, col2))
   }
 
@@ -331,7 +328,7 @@ final class DataFrameStatFunctions private[sql](df: DataFrame) {
    */
   def sampleBy[T](col: String, fractions: Map[T, Double], seed: Long): DataFrame = {
     require(fractions.values.forall(p => p >= 0.0 && p <= 1.0),
-      s"Fractions must be in [0, 1], but got $fractions.")
+            s"Fractions must be in [0, 1], but got $fractions.")
     import org.apache.spark.sql.functions.{rand, udf}
     val c = Column(col)
     val r = rand(seed)
@@ -380,8 +377,7 @@ final class DataFrameStatFunctions private[sql](df: DataFrame) {
    * @return a [[CountMinSketch]] over column `colName`
    * @since 2.0.0
    */
-  def countMinSketch(
-      colName: String, eps: Double, confidence: Double, seed: Int): CountMinSketch = {
+  def countMinSketch(colName: String, eps: Double, confidence: Double, seed: Int): CountMinSketch = {
     countMinSketch(Column(colName), eps, confidence, seed)
   }
 
@@ -420,24 +416,34 @@ final class DataFrameStatFunctions private[sql](df: DataFrame) {
     val updater: (CountMinSketch, InternalRow) => Unit = colType match {
       // For string type, we can get bytes of our `UTF8String` directly, and call the `addBinary`
       // instead of `addString` to avoid unnecessary conversion.
-      case StringType => (sketch, row) => sketch.addBinary(row.getUTF8String(0).getBytes)
-      case ByteType => (sketch, row) => sketch.addLong(row.getByte(0))
-      case ShortType => (sketch, row) => sketch.addLong(row.getShort(0))
-      case IntegerType => (sketch, row) => sketch.addLong(row.getInt(0))
-      case LongType => (sketch, row) => sketch.addLong(row.getLong(0))
-      case _ =>
+      case StringType =>
+        (sketch, row) =>
+          sketch.addBinary(row.getUTF8String(0).getBytes)
+        case ByteType =>
+        (sketch, row) =>
+          sketch.addLong(row.getByte(0))
+        case ShortType =>
+        (sketch, row) =>
+          sketch.addLong(row.getShort(0))
+        case IntegerType =>
+        (sketch, row) =>
+          sketch.addLong(row.getInt(0))
+        case LongType =>
+        (sketch, row) =>
+          sketch.addLong(row.getLong(0))
+        case _ =>
         throw new IllegalArgumentException(
-          s"Count-min Sketch only supports string type and integral types, " +
+            s"Count-min Sketch only supports string type and integral types, " +
             s"and does not support type $colType."
         )
     }
 
     singleCol.queryExecution.toRdd.aggregate(zero)(
-      (sketch: CountMinSketch, row: InternalRow) => {
-        updater(sketch, row)
-        sketch
-      },
-      (sketch1, sketch2) => sketch1.mergeInPlace(sketch2)
+        (sketch: CountMinSketch, row: InternalRow) => {
+          updater(sketch, row)
+          sketch
+        },
+        (sketch1, sketch2) => sketch1.mergeInPlace(sketch2)
     )
   }
 
@@ -494,29 +500,39 @@ final class DataFrameStatFunctions private[sql](df: DataFrame) {
     val colType = singleCol.schema.head.dataType
 
     require(colType == StringType || colType.isInstanceOf[IntegralType],
-      s"Bloom filter only supports string type and integral types, but got $colType.")
+            s"Bloom filter only supports string type and integral types, but got $colType.")
 
     val updater: (BloomFilter, InternalRow) => Unit = colType match {
       // For string type, we can get bytes of our `UTF8String` directly, and call the `putBinary`
       // instead of `putString` to avoid unnecessary conversion.
-      case StringType => (filter, row) => filter.putBinary(row.getUTF8String(0).getBytes)
-      case ByteType => (filter, row) => filter.putLong(row.getByte(0))
-      case ShortType => (filter, row) => filter.putLong(row.getShort(0))
-      case IntegerType => (filter, row) => filter.putLong(row.getInt(0))
-      case LongType => (filter, row) => filter.putLong(row.getLong(0))
-      case _ =>
+      case StringType =>
+        (filter, row) =>
+          filter.putBinary(row.getUTF8String(0).getBytes)
+        case ByteType =>
+        (filter, row) =>
+          filter.putLong(row.getByte(0))
+        case ShortType =>
+        (filter, row) =>
+          filter.putLong(row.getShort(0))
+        case IntegerType =>
+        (filter, row) =>
+          filter.putLong(row.getInt(0))
+        case LongType =>
+        (filter, row) =>
+          filter.putLong(row.getLong(0))
+        case _ =>
         throw new IllegalArgumentException(
-          s"Bloom filter only supports string type and integral types, " +
+            s"Bloom filter only supports string type and integral types, " +
             s"and does not support type $colType."
         )
     }
 
     singleCol.queryExecution.toRdd.aggregate(zero)(
-      (filter: BloomFilter, row: InternalRow) => {
-        updater(filter, row)
-        filter
-      },
-      (filter1, filter2) => filter1.mergeInPlace(filter2)
+        (filter: BloomFilter, row: InternalRow) => {
+          updater(filter, row)
+          filter
+        },
+        (filter1, filter2) => filter1.mergeInPlace(filter2)
     )
   }
 }

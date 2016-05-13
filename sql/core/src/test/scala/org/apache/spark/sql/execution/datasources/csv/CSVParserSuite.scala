@@ -42,10 +42,12 @@ class CSVParserSuite extends SparkFunSuite {
     val read = new scala.collection.mutable.StringBuilder()
 
     var done = false
-    do { // read all input one cbuf at a time
-    var numRead = 0
+    do {
+      // read all input one cbuf at a time
+      var numRead = 0
       var n = 0
-      do { // try to fill cbuf
+      do {
+        // try to fill cbuf
         var off = 0
         var len = cbuf.length
         n = reader.read(cbuf, off, len)
@@ -59,7 +61,7 @@ class CSVParserSuite extends SparkFunSuite {
         assert(off >= 0 && off <= cbuf.length)
         read.appendAll(cbuf.take(n))
       } while (n > 0)
-      if(n != -1) {
+      if (n != -1) {
         numRead += n
       } else {
         done = true
@@ -99,7 +101,7 @@ class CSVParserSuite extends SparkFunSuite {
   test("Buffer Regular case") {
     val input = List("This is a string", "This is another string", "Small", "", "\"quoted\"")
     val output = input.mkString("\n") ++ "\n"
-    for(i <- 1 to output.length + 5) {
+    for (i <- 1 to output.length + 5) {
       val read = readBufAll(input.toIterator, i)
       assert(read === output)
     }
@@ -108,7 +110,7 @@ class CSVParserSuite extends SparkFunSuite {
   test("Buffer Empty iter") {
     val input = List[String]()
     val output = ""
-    for(i <- 1 to output.length + 5) {
+    for (i <- 1 to output.length + 5) {
       val read = readBufAll(input.toIterator, 1)
       assert(read === "")
     }
@@ -117,7 +119,7 @@ class CSVParserSuite extends SparkFunSuite {
   test("Buffer Embedded new line") {
     val input = List("This is a string", "This is another string", "Small\n", "", "\"quoted\"")
     val output = input.mkString("\n") ++ "\n"
-    for(i <- 1 to output.length + 5) {
+    for (i <- 1 to output.length + 5) {
       val read = readBufAll(input.toIterator, 1)
       assert(read === output)
     }

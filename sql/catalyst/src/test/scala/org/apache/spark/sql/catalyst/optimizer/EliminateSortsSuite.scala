@@ -33,9 +33,7 @@ class EliminateSortsSuite extends PlanTest {
   val analyzer = new Analyzer(catalog, conf)
 
   object Optimize extends RuleExecutor[LogicalPlan] {
-    val batches =
-      Batch("Eliminate Sorts", Once,
-        EliminateSorts) :: Nil
+    val batches = Batch("Eliminate Sorts", Once, EliminateSorts) :: Nil
   }
 
   val testRelation = LocalRelation('a.int, 'b.int, 'c.int)

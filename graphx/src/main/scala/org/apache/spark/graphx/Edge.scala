@@ -29,11 +29,9 @@ import org.apache.spark.util.collection.SortDataFormat
  * @param dstId The vertex id of the target vertex
  * @param attr The attribute associated with the edge
  */
-case class Edge[@specialized(Char, Int, Boolean, Byte, Long, Float, Double) ED] (
-    var srcId: VertexId = 0,
-    var dstId: VertexId = 0,
-    var attr: ED = null.asInstanceOf[ED])
-  extends Serializable {
+case class Edge[@specialized(Char, Int, Boolean, Byte, Long, Float, Double) ED](
+    var srcId: VertexId = 0, var dstId: VertexId = 0, var attr: ED = null.asInstanceOf[ED])
+    extends Serializable {
 
   /**
    * Given one vertex in the edge return the other vertex.
@@ -80,14 +78,12 @@ object Edge {
     }
 
     override def copyElement(
-        src: Array[Edge[ED]], srcPos: Int,
-        dst: Array[Edge[ED]], dstPos: Int) {
+        src: Array[Edge[ED]], srcPos: Int, dst: Array[Edge[ED]], dstPos: Int) {
       dst(dstPos) = src(srcPos)
     }
 
     override def copyRange(
-        src: Array[Edge[ED]], srcPos: Int,
-        dst: Array[Edge[ED]], dstPos: Int, length: Int) {
+        src: Array[Edge[ED]], srcPos: Int, dst: Array[Edge[ED]], dstPos: Int, length: Int) {
       System.arraycopy(src, srcPos, dst, dstPos, length)
     }
 

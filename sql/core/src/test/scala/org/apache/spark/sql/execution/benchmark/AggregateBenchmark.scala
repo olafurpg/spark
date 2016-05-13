@@ -50,7 +50,7 @@ class AggregateBenchmark extends BenchmarkBase {
     ------------------------------------------------------------------------------------------------
     agg w/o group wholestage off                30136 / 31885         69.6          14.4       1.0X
     agg w/o group wholestage on                   1851 / 1860       1132.9           0.9      16.3X
-     */
+   */
   }
 
   ignore("stat functions") {
@@ -88,7 +88,7 @@ class AggregateBenchmark extends BenchmarkBase {
       -------------------------------------------------------------------------------------------
       kurtosis codegen=false                 14847 / 15084          7.0         142.9       1.0X
       kurtosis codegen=true                    1652 / 2124         63.0          15.9       9.0X
-    */
+   */
   }
 
   ignore("aggregate with linear keys") {
@@ -127,7 +127,7 @@ class AggregateBenchmark extends BenchmarkBase {
     codegen = F                                   6619 / 6780         12.7          78.9       1.0X
     codegen = T hashmap = F                       3935 / 4059         21.3          46.9       1.7X
     codegen = T hashmap = T                        897 /  971         93.5          10.7       7.4X
-    */
+   */
   }
 
   ignore("aggregate with randomized keys") {
@@ -166,15 +166,20 @@ class AggregateBenchmark extends BenchmarkBase {
     codegen = F                                   7445 / 7517         11.3          88.7       1.0X
     codegen = T hashmap = F                       4672 / 4703         18.0          55.7       1.6X
     codegen = T hashmap = T                       1764 / 1958         47.6          21.0       4.2X
-    */
+   */
   }
 
   ignore("aggregate with string key") {
     val N = 20 << 20
 
     val benchmark = new Benchmark("Aggregate w string key", N)
-    def f(): Unit = sparkSession.range(N).selectExpr("id", "cast(id & 1023 as string) as k")
-      .groupBy("k").count().collect()
+    def f(): Unit =
+      sparkSession
+        .range(N)
+        .selectExpr("id", "cast(id & 1023 as string) as k")
+        .groupBy("k")
+        .count()
+        .collect()
 
     benchmark.addCase(s"codegen = F", numIters = 2) { iter =>
       sparkSession.conf.set("spark.sql.codegen.wholeStage", "false")
@@ -203,15 +208,20 @@ class AggregateBenchmark extends BenchmarkBase {
     codegen = F                              3307 / 3376          6.3         157.7       1.0X
     codegen = T hashmap = F                  2364 / 2471          8.9         112.7       1.4X
     codegen = T hashmap = T                  1740 / 1841         12.0          83.0       1.9X
-    */
+   */
   }
 
   ignore("aggregate with decimal key") {
     val N = 20 << 20
 
     val benchmark = new Benchmark("Aggregate w decimal key", N)
-    def f(): Unit = sparkSession.range(N).selectExpr("id", "cast(id & 65535 as decimal) as k")
-      .groupBy("k").count().collect()
+    def f(): Unit =
+      sparkSession
+        .range(N)
+        .selectExpr("id", "cast(id & 65535 as decimal) as k")
+        .groupBy("k")
+        .count()
+        .collect()
 
     benchmark.addCase(s"codegen = F") { iter =>
       sparkSession.conf.set("spark.sql.codegen.wholeStage", "false")
@@ -240,25 +250,26 @@ class AggregateBenchmark extends BenchmarkBase {
     codegen = F                              2756 / 2817          7.6         131.4       1.0X
     codegen = T hashmap = F                  1580 / 1647         13.3          75.4       1.7X
     codegen = T hashmap = T                   641 /  662         32.7          30.6       4.3X
-    */
+   */
   }
 
   ignore("aggregate with multiple key types") {
     val N = 20 << 20
 
     val benchmark = new Benchmark("Aggregate w multiple keys", N)
-    def f(): Unit = sparkSession.range(N)
-      .selectExpr(
-        "id",
-        "(id & 1023) as k1",
-        "cast(id & 1023 as string) as k2",
-        "cast(id & 1023 as int) as k3",
-        "cast(id & 1023 as double) as k4",
-        "cast(id & 1023 as float) as k5",
-        "id > 1023 as k6")
-      .groupBy("k1", "k2", "k3", "k4", "k5", "k6")
-      .sum()
-      .collect()
+    def f(): Unit =
+      sparkSession
+        .range(N)
+        .selectExpr("id",
+                    "(id & 1023) as k1",
+                    "cast(id & 1023 as string) as k2",
+                    "cast(id & 1023 as int) as k3",
+                    "cast(id & 1023 as double) as k4",
+                    "cast(id & 1023 as float) as k5",
+                    "id > 1023 as k6")
+        .groupBy("k1", "k2", "k3", "k4", "k5", "k6")
+        .sum()
+        .collect()
 
     benchmark.addCase(s"codegen = F") { iter =>
       sparkSession.conf.set("spark.sql.codegen.wholeStage", "false")
@@ -287,16 +298,19 @@ class AggregateBenchmark extends BenchmarkBase {
     codegen = F                              5885 / 6091          3.6         280.6       1.0X
     codegen = T hashmap = F                  3625 / 4009          5.8         172.8       1.6X
     codegen = T hashmap = T                  3204 / 3271          6.5         152.8       1.8X
-    */
+   */
   }
-
 
   ignore("cube") {
     val N = 5 << 20
 
     runBenchmark("cube", N) {
-      sparkSession.range(N).selectExpr("id", "id % 1000 as k1", "id & 256 as k2")
-        .cube("k1", "k2").sum("id").collect()
+      sparkSession
+        .range(N)
+        .selectExpr("id", "id % 1000 as k1", "id & 256 as k2")
+        .cube("k1", "k2")
+        .sum("id")
+        .collect()
     }
 
     /**
@@ -305,7 +319,7 @@ class AggregateBenchmark extends BenchmarkBase {
       -------------------------------------------------------------------------------------------
       cube codegen=false                       3188 / 3392          1.6         608.2       1.0X
       cube codegen=true                        1239 / 1394          4.2         236.3       2.6X
-     */
+   */
   }
 
   ignore("hash and BytesToBytesMap") {
@@ -322,7 +336,7 @@ class AggregateBenchmark extends BenchmarkBase {
       while (i < N) {
         key.setInt(0, i % 1000)
         val h = Murmur3_x86_32.hashUnsafeWords(
-          key.getBaseObject, key.getBaseOffset, key.getSizeInBytes, 42)
+            key.getBaseObject, key.getBaseOffset, key.getSizeInBytes, 42)
         s += h
         i += 1
       }
@@ -462,12 +476,11 @@ class AggregateBenchmark extends BenchmarkBase {
         value.pointTo(valueBytes, Platform.BYTE_ARRAY_OFFSET, 16)
         value.setInt(0, 555)
         val taskMemoryManager = new TaskMemoryManager(
-          new StaticMemoryManager(
-            new SparkConf().set("spark.memory.offHeap.enabled", "false"),
-            Long.MaxValue,
-            Long.MaxValue,
-            1),
-          0)
+            new StaticMemoryManager(new SparkConf().set("spark.memory.offHeap.enabled", "false"),
+                                    Long.MaxValue,
+                                    Long.MaxValue,
+                                    1),
+            0)
         val map = new LongToUnsafeRowMap(taskMemoryManager, 64)
         while (i < 65536) {
           value.setInt(0, i)
@@ -493,14 +506,14 @@ class AggregateBenchmark extends BenchmarkBase {
     Seq("off", "on").foreach { heap =>
       benchmark.addCase(s"BytesToBytesMap ($heap Heap)") { iter =>
         val taskMemoryManager = new TaskMemoryManager(
-          new StaticMemoryManager(
-            new SparkConf().set("spark.memory.offHeap.enabled", s"${heap == "off"}")
-              .set("spark.memory.offHeap.size", "102400000"),
-            Long.MaxValue,
-            Long.MaxValue,
-            1),
-          0)
-        val map = new BytesToBytesMap(taskMemoryManager, 1024, 64L<<20)
+            new StaticMemoryManager(new SparkConf()
+                                      .set("spark.memory.offHeap.enabled", s"${heap == "off"}")
+                                      .set("spark.memory.offHeap.size", "102400000"),
+                                    Long.MaxValue,
+                                    Long.MaxValue,
+                                    1),
+            0)
+        val map = new BytesToBytesMap(taskMemoryManager, 1024, 64L << 20)
         val keyBytes = new Array[Byte](16)
         val valueBytes = new Array[Byte](16)
         val key = new UnsafeRow(1)
@@ -511,11 +524,17 @@ class AggregateBenchmark extends BenchmarkBase {
         val numKeys = 65536
         while (i < numKeys) {
           key.setInt(0, i % 65536)
-          val loc = map.lookup(key.getBaseObject, key.getBaseOffset, key.getSizeInBytes,
-            Murmur3_x86_32.hashLong(i % 65536, 42))
+          val loc = map.lookup(key.getBaseObject,
+                               key.getBaseOffset,
+                               key.getSizeInBytes,
+                               Murmur3_x86_32.hashLong(i % 65536, 42))
           if (!loc.isDefined) {
-            loc.append(key.getBaseObject, key.getBaseOffset, key.getSizeInBytes,
-              value.getBaseObject, value.getBaseOffset, value.getSizeInBytes)
+            loc.append(key.getBaseObject,
+                       key.getBaseOffset,
+                       key.getSizeInBytes,
+                       value.getBaseObject,
+                       value.getBaseOffset,
+                       value.getSizeInBytes)
           }
           i += 1
         }
@@ -523,8 +542,10 @@ class AggregateBenchmark extends BenchmarkBase {
         var s = 0
         while (i < N) {
           key.setInt(0, i % 100000)
-          val loc = map.lookup(key.getBaseObject, key.getBaseOffset, key.getSizeInBytes,
-            Murmur3_x86_32.hashLong(i % 100000, 42))
+          val loc = map.lookup(key.getBaseObject,
+                               key.getBaseOffset,
+                               key.getSizeInBytes,
+                               Murmur3_x86_32.hashLong(i % 100000, 42))
           if (loc.isDefined) {
             s += 1
           }
@@ -536,13 +557,11 @@ class AggregateBenchmark extends BenchmarkBase {
     benchmark.addCase("Aggregate HashMap") { iter =>
       var i = 0
       val numKeys = 65536
-      val schema = new StructType()
-        .add("key", LongType)
-        .add("value", LongType)
+      val schema = new StructType().add("key", LongType).add("value", LongType)
       val map = new AggregateHashMap(schema)
       while (i < numKeys) {
         val row = map.findOrInsert(i.toLong)
-        row.setLong(1, row.getLong(1) +  1)
+        row.setLong(1, row.getLong(1) + 1)
         i += 1
       }
       var s = 0
@@ -571,8 +590,7 @@ class AggregateBenchmark extends BenchmarkBase {
     BytesToBytesMap (off Heap)               1300 / 1616         16.1          62.0       0.2X
     BytesToBytesMap (on Heap)                1165 / 1202         18.0          55.5       0.2X
     Aggregate HashMap                         121 /  131        173.3           5.8       2.2X
-    */
+     */
     benchmark.run()
   }
-
 }

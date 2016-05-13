@@ -22,7 +22,6 @@ import scala.util.Random
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.execution.stat.StatFunctions.QuantileSummaries
 
-
 class ApproxQuantileSuite extends SparkFunSuite {
 
   private val r = new Random(1)
@@ -31,10 +30,7 @@ class ApproxQuantileSuite extends SparkFunSuite {
   private val decreasing = "decreasing" -> (n until 0 by -1).map(_.toDouble)
   private val random = "random" -> Seq.fill(n)(math.ceil(r.nextDouble() * 1000))
 
-  private def buildSummary(
-      data: Seq[Double],
-      epsi: Double,
-      threshold: Int): QuantileSummaries = {
+  private def buildSummary(data: Seq[Double], epsi: Double, threshold: Int): QuantileSummaries = {
     var summary = new QuantileSummaries(threshold, epsi)
     data.foreach { x =>
       summary = summary.insert(x)
@@ -48,8 +44,7 @@ class ApproxQuantileSuite extends SparkFunSuite {
     val rank = data.count(_ < approx) // has to be <, not <= to be exact
     val lower = math.floor((quant - summary.relativeError) * data.size)
     val upper = math.ceil((quant + summary.relativeError) * data.size)
-    val msg =
-      s"$rank not in [$lower $upper], requested quantile: $quant, approx returned: $approx"
+    val msg = s"$rank not in [$lower $upper], requested quantile: $quant, approx returned: $approx"
     assert(rank >= lower, msg)
     assert(rank <= upper, msg)
   }
@@ -125,5 +120,4 @@ class ApproxQuantileSuite extends SparkFunSuite {
       checkQuantile(0.001, data, s)
     }
   }
-
 }

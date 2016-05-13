@@ -41,11 +41,13 @@ class InMemoryColumnarQuerySuite extends QueryTest with SharedSQLContext {
 
   test("default size avoids broadcast") {
     // TODO: Improve this test when we have better statistics
-    sparkContext.parallelize(1 to 10).map(i => TestData(i, i.toString))
-      .toDF().registerTempTable("sizeTst")
+    sparkContext
+      .parallelize(1 to 10)
+      .map(i => TestData(i, i.toString))
+      .toDF()
+      .registerTempTable("sizeTst")
     spark.catalog.cacheTable("sizeTst")
-    assert(
-      spark.table("sizeTst").queryExecution.analyzed.statistics.sizeInBytes >
+    assert(spark.table("sizeTst").queryExecution.analyzed.statistics.sizeInBytes >
         spark.conf.get(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD))
   }
 
@@ -53,9 +55,13 @@ class InMemoryColumnarQuerySuite extends QueryTest with SharedSQLContext {
     val plan = spark.executePlan(testData.select('value, 'key).logicalPlan).sparkPlan
     val scan = InMemoryRelation(useCompression = true, 5, MEMORY_ONLY, plan, None)
 
-    checkAnswer(scan, testData.collect().map {
-      case Row(key: Int, value: String) => value -> key
-    }.map(Row.fromTuple))
+    checkAnswer(scan,
+                testData
+                  .collect()
+                  .map {
+                    case Row(key: Int, value: String) => value -> key
+                  }
+                  .map(Row.fromTuple))
   }
 
   test("SPARK-1436 regression: in-memory columns must be able to be accessed multiple times") {
@@ -67,54 +73,42 @@ class InMemoryColumnarQuerySuite extends QueryTest with SharedSQLContext {
   }
 
   test("SPARK-1678 regression: compression must not lose repeated values") {
-    checkAnswer(
-      sql("SELECT * FROM repeatedData"),
-      repeatedData.collect().toSeq.map(Row.fromTuple))
+    checkAnswer(sql("SELECT * FROM repeatedData"), repeatedData.collect().toSeq.map(Row.fromTuple))
 
     spark.catalog.cacheTable("repeatedData")
 
-    checkAnswer(
-      sql("SELECT * FROM repeatedData"),
-      repeatedData.collect().toSeq.map(Row.fromTuple))
+    checkAnswer(sql("SELECT * FROM repeatedData"), repeatedData.collect().toSeq.map(Row.fromTuple))
   }
 
   test("with null values") {
-    checkAnswer(
-      sql("SELECT * FROM nullableRepeatedData"),
-      nullableRepeatedData.collect().toSeq.map(Row.fromTuple))
+    checkAnswer(sql("SELECT * FROM nullableRepeatedData"),
+                nullableRepeatedData.collect().toSeq.map(Row.fromTuple))
 
     spark.catalog.cacheTable("nullableRepeatedData")
 
-    checkAnswer(
-      sql("SELECT * FROM nullableRepeatedData"),
-      nullableRepeatedData.collect().toSeq.map(Row.fromTuple))
+    checkAnswer(sql("SELECT * FROM nullableRepeatedData"),
+                nullableRepeatedData.collect().toSeq.map(Row.fromTuple))
   }
 
   test("SPARK-2729 regression: timestamp data type") {
     val timestamps = (0 to 3).map(i => Tuple1(new Timestamp(i))).toDF("time")
     timestamps.registerTempTable("timestamps")
 
-    checkAnswer(
-      sql("SELECT time FROM timestamps"),
-      timestamps.collect().toSeq)
+    checkAnswer(sql("SELECT time FROM timestamps"), timestamps.collect().toSeq)
 
     spark.catalog.cacheTable("timestamps")
 
-    checkAnswer(
-      sql("SELECT time FROM timestamps"),
-      timestamps.collect().toSeq)
+    checkAnswer(sql("SELECT time FROM timestamps"), timestamps.collect().toSeq)
   }
 
   test("SPARK-3320 regression: batched column buffer building should work with empty partitions") {
     checkAnswer(
-      sql("SELECT * FROM withEmptyParts"),
-      withEmptyParts.collect().toSeq.map(Row.fromTuple))
+        sql("SELECT * FROM withEmptyParts"), withEmptyParts.collect().toSeq.map(Row.fromTuple))
 
     spark.catalog.cacheTable("withEmptyParts")
 
     checkAnswer(
-      sql("SELECT * FROM withEmptyParts"),
-      withEmptyParts.collect().toSeq.map(Row.fromTuple))
+        sql("SELECT * FROM withEmptyParts"), withEmptyParts.collect().toSeq.map(Row.fromTuple))
   }
 
   test("SPARK-4182 Caching complex types") {
@@ -134,34 +128,41 @@ class InMemoryColumnarQuerySuite extends QueryTest with SharedSQLContext {
     assert(df.schema.head.dataType === DecimalType(15, 10))
 
     df.cache().registerTempTable("test_fixed_decimal")
-    checkAnswer(
-      sql("SELECT * FROM test_fixed_decimal"),
-      (1 to 10).map(i => Row(Decimal(i, 15, 10).toJavaBigDecimal)))
+    checkAnswer(sql("SELECT * FROM test_fixed_decimal"),
+                (1 to 10).map(i => Row(Decimal(i, 15, 10).toJavaBigDecimal)))
   }
 
   test("test different data types") {
     // Create the schema.
-    val struct =
-      StructType(
-        StructField("f1", FloatType, true) ::
+    val struct = StructType(StructField("f1", FloatType, true) ::
         StructField("f2", ArrayType(BooleanType), true) :: Nil)
-    val dataTypes =
-      Seq(StringType, BinaryType, NullType, BooleanType,
-        ByteType, ShortType, IntegerType, LongType,
-        FloatType, DoubleType, DecimalType(25, 5), DecimalType(6, 5),
-        DateType, TimestampType,
-        ArrayType(IntegerType), MapType(StringType, LongType), struct)
-    val fields = dataTypes.zipWithIndex.map { case (dataType, index) =>
-      StructField(s"col$index", dataType, true)
+    val dataTypes = Seq(StringType,
+                        BinaryType,
+                        NullType,
+                        BooleanType,
+                        ByteType,
+                        ShortType,
+                        IntegerType,
+                        LongType,
+                        FloatType,
+                        DoubleType,
+                        DecimalType(25, 5),
+                        DecimalType(6, 5),
+                        DateType,
+                        TimestampType,
+                        ArrayType(IntegerType),
+                        MapType(StringType, LongType),
+                        struct)
+    val fields = dataTypes.zipWithIndex.map {
+      case (dataType, index) =>
+        StructField(s"col$index", dataType, true)
     }
     val allColumns = fields.map(_.name).mkString(",")
     val schema = StructType(fields)
 
     // Create a RDD for the schema
-    val rdd =
-      sparkContext.parallelize((1 to 10000), 10).map { i =>
-        Row(
-          s"str${i}: test cache.",
+    val rdd = sparkContext.parallelize((1 to 10000), 10).map { i =>
+      Row(s"str${i}: test cache.",
           s"binary${i}: test cache.".getBytes(StandardCharsets.UTF_8),
           null,
           i % 2 == 0,
@@ -178,25 +179,23 @@ class InMemoryColumnarQuerySuite extends QueryTest with SharedSQLContext {
           (i to i + 10).toSeq,
           (i to i + 10).map(j => s"map_key_$j" -> (Long.MaxValue - j)).toMap,
           Row((i - 0.25).toFloat, Seq(true, false, null)))
-      }
+    }
     spark.createDataFrame(rdd, schema).registerTempTable("InMemoryCache_different_data_types")
     // Cache the table.
     sql("cache table InMemoryCache_different_data_types")
     // Make sure the table is indeed cached.
     spark.table("InMemoryCache_different_data_types").queryExecution.executedPlan
-    assert(
-      spark.catalog.isCached("InMemoryCache_different_data_types"),
-      "InMemoryCache_different_data_types should be cached.")
+    assert(spark.catalog.isCached("InMemoryCache_different_data_types"),
+           "InMemoryCache_different_data_types should be cached.")
     // Issue a query and check the results.
-    checkAnswer(
-      sql(s"SELECT DISTINCT ${allColumns} FROM InMemoryCache_different_data_types"),
-      spark.table("InMemoryCache_different_data_types").collect())
+    checkAnswer(sql(s"SELECT DISTINCT ${allColumns} FROM InMemoryCache_different_data_types"),
+                spark.table("InMemoryCache_different_data_types").collect())
     spark.catalog.dropTempView("InMemoryCache_different_data_types")
   }
 
   test("SPARK-10422: String column in InMemoryColumnarCache needs to override clone method") {
-    val df = spark.range(1, 100).selectExpr("id % 10 as id")
-      .rdd.map(id => Tuple1(s"str_$id")).toDF("i")
+    val df =
+      spark.range(1, 100).selectExpr("id % 10 as id").rdd.map(id => Tuple1(s"str_$id")).toDF("i")
     val cached = df.cache()
     // count triggers the caching action. It should not throw.
     cached.count()
@@ -206,9 +205,8 @@ class InMemoryColumnarQuerySuite extends QueryTest with SharedSQLContext {
 
     // Check result.
     checkAnswer(
-      cached,
-      spark.range(1, 100).selectExpr("id % 10 as id")
-        .rdd.map(id => Tuple1(s"str_$id")).toDF("i")
+        cached,
+        spark.range(1, 100).selectExpr("id % 10 as id").rdd.map(id => Tuple1(s"str_$id")).toDF("i")
     )
 
     // Drop the cache.

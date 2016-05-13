@@ -50,11 +50,10 @@ case object AllTuples extends Distribution
  * within a single partition.
  */
 case class ClusteredDistribution(clustering: Seq[Expression]) extends Distribution {
-  require(
-    clustering != Nil,
-    "The clustering expressions of a ClusteredDistribution should not be Nil. " +
-      "An AllTuples should be used to represent a distribution that only has " +
-      "a single partition.")
+  require(clustering != Nil,
+          "The clustering expressions of a ClusteredDistribution should not be Nil. " +
+          "An AllTuples should be used to represent a distribution that only has " +
+          "a single partition.")
 }
 
 /**
@@ -65,11 +64,10 @@ case class ClusteredDistribution(clustering: Seq[Expression]) extends Distributi
  * partitions.
  */
 case class OrderedDistribution(ordering: Seq[SortOrder]) extends Distribution {
-  require(
-    ordering != Nil,
-    "The ordering expressions of a OrderedDistribution should not be Nil. " +
-      "An AllTuples should be used to represent a distribution that only has " +
-      "a single partition.")
+  require(ordering != Nil,
+          "The ordering expressions of a OrderedDistribution should not be Nil. " +
+          "An AllTuples should be used to represent a distribution that only has " +
+          "a single partition.")
 
   // TODO: This is not really valid...
   def clustering: Set[Expression] = ordering.map(_.child).toSet
@@ -113,6 +111,7 @@ case class BroadcastDistribution(mode: BroadcastMode) extends Distribution
  *
  */
 sealed trait Partitioning {
+
   /** Returns the number of partitions that the data is split across */
   val numPartitions: Int
 
@@ -176,16 +175,19 @@ sealed trait Partitioning {
 object Partitioning {
   def allCompatible(partitionings: Seq[Partitioning]): Boolean = {
     // Note: this assumes transitivity
-    partitionings.sliding(2).map {
-      case Seq(a) => true
-      case Seq(a, b) =>
-        if (a.numPartitions != b.numPartitions) {
-          assert(!a.compatibleWith(b) && !b.compatibleWith(a))
-          false
-        } else {
-          a.compatibleWith(b) && b.compatibleWith(a)
-        }
-    }.forall(_ == true)
+    partitionings
+      .sliding(2)
+      .map {
+        case Seq(a) => true
+        case Seq(a, b) =>
+          if (a.numPartitions != b.numPartitions) {
+            assert(!a.compatibleWith(b) && !b.compatibleWith(a))
+            false
+          } else {
+            a.compatibleWith(b) && b.compatibleWith(a)
+          }
+      }
+      .forall(_ == true)
   }
 }
 
@@ -235,7 +237,9 @@ case object SinglePartition extends Partitioning {
  * in the same partition.
  */
 case class HashPartitioning(expressions: Seq[Expression], numPartitions: Int)
-  extends Expression with Partitioning with Unevaluable {
+    extends Expression
+    with Partitioning
+    with Unevaluable {
 
   override def children: Seq[Expression] = expressions
   override def nullable: Boolean = false
@@ -262,7 +266,8 @@ case class HashPartitioning(expressions: Seq[Expression], numPartitions: Int)
    * Returns an expression that will produce a valid partition ID(i.e. non-negative and is less
    * than numPartitions) based on hashing expressions.
    */
-  def partitionIdExpression: Expression = Pmod(new Murmur3Hash(expressions), Literal(numPartitions))
+  def partitionIdExpression: Expression =
+    Pmod(new Murmur3Hash(expressions), Literal(numPartitions))
 }
 
 /**
@@ -278,7 +283,9 @@ case class HashPartitioning(expressions: Seq[Expression], numPartitions: Int)
  * into its child.
  */
 case class RangePartitioning(ordering: Seq[SortOrder], numPartitions: Int)
-  extends Expression with Partitioning with Unevaluable {
+    extends Expression
+    with Partitioning
+    with Unevaluable {
 
   override def children: Seq[SortOrder] = ordering
   override def nullable: Boolean = false
@@ -319,11 +326,12 @@ case class RangePartitioning(ordering: Seq[SortOrder], numPartitions: Int)
  * Outer Join operators.
  */
 case class PartitioningCollection(partitionings: Seq[Partitioning])
-  extends Expression with Partitioning with Unevaluable {
+    extends Expression
+    with Partitioning
+    with Unevaluable {
 
-  require(
-    partitionings.map(_.numPartitions).distinct.length == 1,
-    s"PartitioningCollection requires all of its partitionings have the same numPartitions.")
+  require(partitionings.map(_.numPartitions).distinct.length == 1,
+          s"PartitioningCollection requires all of its partitionings have the same numPartitions.")
 
   override def children: Seq[Expression] = partitionings.collect {
     case expr: Expression => expr

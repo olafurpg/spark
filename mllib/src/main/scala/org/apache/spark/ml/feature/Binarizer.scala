@@ -36,7 +36,10 @@ import org.apache.spark.sql.types._
  */
 @Experimental
 final class Binarizer(override val uid: String)
-  extends Transformer with HasInputCol with HasOutputCol with DefaultParamsWritable {
+    extends Transformer
+    with HasInputCol
+    with HasOutputCol
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("binarizer"))
 
@@ -47,8 +50,8 @@ final class Binarizer(override val uid: String)
    * Default: 0.0
    * @group param
    */
-  val threshold: DoubleParam =
-    new DoubleParam(this, "threshold", "threshold used to binarize continuous features")
+  val threshold: DoubleParam = new DoubleParam(
+      this, "threshold", "threshold used to binarize continuous features")
 
   /** @group getParam */
   def getThreshold: Double = $(threshold)
@@ -71,7 +74,9 @@ final class Binarizer(override val uid: String)
     val inputType = schema($(inputCol)).dataType
     val td = $(threshold)
 
-    val binarizerDouble = udf { in: Double => if (in > td) 1.0 else 0.0 }
+    val binarizerDouble = udf { in: Double =>
+      if (in > td) 1.0 else 0.0
+    }
     val binarizerVector = udf { (data: Vector) =>
       val indices = ArrayBuilder.make[Int]
       val values = ArrayBuilder.make[Double]
@@ -79,7 +84,7 @@ final class Binarizer(override val uid: String)
       data.foreachActive { (index, value) =>
         if (value > td) {
           indices += index
-          values +=  1.0
+          values += 1.0
         }
       }
 

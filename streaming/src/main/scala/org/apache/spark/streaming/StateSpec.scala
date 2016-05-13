@@ -97,7 +97,6 @@ sealed abstract class StateSpec[KeyType, ValueType, StateType, MappedType] exten
   def timeout(idleDuration: Duration): this.type
 }
 
-
 /**
  * :: Experimental ::
  * Builder object for creating instances of [[org.apache.spark.streaming.StateSpec StateSpec]]
@@ -138,6 +137,7 @@ sealed abstract class StateSpec[KeyType, ValueType, StateType, MappedType] exten
  */
 @Experimental
 object StateSpec {
+
   /**
    * Create a [[org.apache.spark.streaming.StateSpec StateSpec]] for setting all the specifications
    * of the `mapWithState` operation on a
@@ -152,7 +152,7 @@ object StateSpec {
    */
   def function[KeyType, ValueType, StateType, MappedType](
       mappingFunction: (Time, KeyType, Option[ValueType], State[StateType]) => Option[MappedType]
-    ): StateSpec[KeyType, ValueType, StateType, MappedType] = {
+  ): StateSpec[KeyType, ValueType, StateType, MappedType] = {
     ClosureCleaner.clean(mappingFunction, checkSerializable = true)
     new StateSpecImpl(mappingFunction)
   }
@@ -170,12 +170,12 @@ object StateSpec {
    */
   def function[KeyType, ValueType, StateType, MappedType](
       mappingFunction: (KeyType, Option[ValueType], State[StateType]) => MappedType
-    ): StateSpec[KeyType, ValueType, StateType, MappedType] = {
+  ): StateSpec[KeyType, ValueType, StateType, MappedType] = {
     ClosureCleaner.clean(mappingFunction, checkSerializable = true)
-    val wrappedFunction =
-      (time: Time, key: KeyType, value: Option[ValueType], state: State[StateType]) => {
-        Some(mappingFunction(key, value, state))
-      }
+    val wrappedFunction = (time: Time, key: KeyType, value: Option[ValueType],
+    state: State[StateType]) => {
+      Some(mappingFunction(key, value, state))
+    }
     new StateSpecImpl(wrappedFunction)
   }
 
@@ -191,9 +191,9 @@ object StateSpec {
    * @tparam StateType    Class of the states data
    * @tparam MappedType   Class of the mapped data
    */
-  def function[KeyType, ValueType, StateType, MappedType](mappingFunction:
-      JFunction4[Time, KeyType, Optional[ValueType], State[StateType], Optional[MappedType]]):
-    StateSpec[KeyType, ValueType, StateType, MappedType] = {
+  def function[KeyType, ValueType, StateType, MappedType](mappingFunction: JFunction4[
+          Time, KeyType, Optional[ValueType], State[StateType], Optional[MappedType]])
+    : StateSpec[KeyType, ValueType, StateType, MappedType] = {
     val wrappedFunc = (time: Time, k: KeyType, v: Option[ValueType], s: State[StateType]) => {
       val t = mappingFunction.call(time, k, JavaUtils.optionToOptional(v), s)
       if (t.isPresent) {
@@ -217,8 +217,8 @@ object StateSpec {
    * @tparam MappedType   Class of the mapped data
    */
   def function[KeyType, ValueType, StateType, MappedType](
-      mappingFunction: JFunction3[KeyType, Optional[ValueType], State[StateType], MappedType]):
-    StateSpec[KeyType, ValueType, StateType, MappedType] = {
+      mappingFunction: JFunction3[KeyType, Optional[ValueType], State[StateType], MappedType])
+    : StateSpec[KeyType, ValueType, StateType, MappedType] = {
     val wrappedFunc = (k: KeyType, v: Option[ValueType], s: State[StateType]) => {
       mappingFunction.call(k, JavaUtils.optionToOptional(v), s)
     }
@@ -226,11 +226,10 @@ object StateSpec {
   }
 }
 
-
 /** Internal implementation of [[org.apache.spark.streaming.StateSpec]] interface. */
-private[streaming]
-case class StateSpecImpl[K, V, S, T](
-    function: (Time, K, Option[V], State[S]) => Option[T]) extends StateSpec[K, V, S, T] {
+private[streaming] case class StateSpecImpl[K, V, S, T](
+    function: (Time, K, Option[V], State[S]) => Option[T])
+    extends StateSpec[K, V, S, T] {
 
   require(function != null)
 

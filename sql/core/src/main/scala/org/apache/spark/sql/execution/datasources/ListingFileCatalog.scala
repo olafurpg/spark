@@ -26,7 +26,6 @@ import org.apache.hadoop.mapred.{FileInputFormat, JobConf}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
 
-
 /**
  * A [[FileCatalog]] that generates the list of files to process by recursively listing all the
  * files present in `paths`.
@@ -36,12 +35,11 @@ import org.apache.spark.sql.types.StructType
  * @param partitionSchema an optional partition schema that will be use to provide types for the
  *                        discovered partitions
  */
-class ListingFileCatalog(
-    sparkSession: SparkSession,
-    override val paths: Seq[Path],
-    parameters: Map[String, String],
-    partitionSchema: Option[StructType])
-  extends PartitioningAwareFileCatalog(sparkSession, parameters, partitionSchema) {
+class ListingFileCatalog(sparkSession: SparkSession,
+                         override val paths: Seq[Path],
+                         parameters: Map[String, String],
+                         partitionSchema: Option[StructType])
+    extends PartitioningAwareFileCatalog(sparkSession, parameters, partitionSchema) {
 
   @volatile private var cachedLeafFiles: mutable.LinkedHashMap[Path, FileStatus] = _
   @volatile private var cachedLeafDirToChildrenFiles: Map[Path, Array[FileStatus]] = _

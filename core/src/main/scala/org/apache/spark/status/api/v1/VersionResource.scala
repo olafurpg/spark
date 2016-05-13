@@ -24,7 +24,6 @@ private[v1] class VersionResource(ui: UIRoot) {
 
   @GET
   def getVersionInfo(): VersionInfo = new VersionInfo(
-    org.apache.spark.SPARK_VERSION
+      org.apache.spark.SPARK_VERSION
   )
-
 }

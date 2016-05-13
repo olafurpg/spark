@@ -33,7 +33,8 @@ import org.apache.spark.util.Utils
  * for use cases where RDDs build up long lineages that need to be truncated often (e.g. GraphX).
  */
 private[spark] class LocalRDDCheckpointData[T: ClassTag](@transient private val rdd: RDD[T])
-  extends RDDCheckpointData[T](rdd) with Logging {
+    extends RDDCheckpointData[T](rdd)
+    with Logging {
 
   /**
    * Ensure the RDD is fully cached so the partitions can be recovered later.
@@ -56,7 +57,6 @@ private[spark] class LocalRDDCheckpointData[T: ClassTag](@transient private val 
 
     new LocalCheckpointRDD[T](rdd)
   }
-
 }
 
 private[spark] object LocalRDDCheckpointData {

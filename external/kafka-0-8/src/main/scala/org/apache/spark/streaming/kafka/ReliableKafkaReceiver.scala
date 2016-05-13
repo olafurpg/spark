@@ -48,16 +48,11 @@ import org.apache.spark.util.ThreadUtils
  * commit mechanism in Kafka consumer. So setting this configuration manually within kafkaParams
  * will not take effect.
  */
-private[streaming]
-class ReliableKafkaReceiver[
-  K: ClassTag,
-  V: ClassTag,
-  U <: Decoder[_]: ClassTag,
-  T <: Decoder[_]: ClassTag](
-    kafkaParams: Map[String, String],
-    topics: Map[String, Int],
-    storageLevel: StorageLevel)
-    extends Receiver[(K, V)](storageLevel) with Logging {
+private[streaming] class ReliableKafkaReceiver[
+    K: ClassTag, V: ClassTag, U <: Decoder[_]: ClassTag, T <: Decoder[_]: ClassTag](
+    kafkaParams: Map[String, String], topics: Map[String, Int], storageLevel: StorageLevel)
+    extends Receiver[(K, V)](storageLevel)
+    with Logging {
 
   private val groupId = kafkaParams("group.id")
   private val AUTO_OFFSET_COMMIT = "auto.commit.enable"
@@ -101,7 +96,7 @@ class ReliableKafkaReceiver[
 
     if (kafkaParams.contains(AUTO_OFFSET_COMMIT) && kafkaParams(AUTO_OFFSET_COMMIT) == "true") {
       logWarning(s"$AUTO_OFFSET_COMMIT should be set to false in ReliableKafkaReceiver, " +
-        "otherwise we will manually set it to false to turn off auto offset commit in Kafka")
+          "otherwise we will manually set it to false to turn off auto offset commit in Kafka")
     }
 
     val props = new Properties()
@@ -119,24 +114,28 @@ class ReliableKafkaReceiver[
     consumerConnector = Consumer.create(consumerConfig)
     logInfo(s"Connected to Zookeeper: ${consumerConfig.zkConnect}")
 
-    zkClient = new ZkClient(consumerConfig.zkConnect, consumerConfig.zkSessionTimeoutMs,
-      consumerConfig.zkConnectionTimeoutMs, ZKStringSerializer)
+    zkClient = new ZkClient(consumerConfig.zkConnect,
+                            consumerConfig.zkSessionTimeoutMs,
+                            consumerConfig.zkConnectionTimeoutMs,
+                            ZKStringSerializer)
 
-    messageHandlerThreadPool = ThreadUtils.newDaemonFixedThreadPool(
-      topics.values.sum, "KafkaMessageHandler")
+    messageHandlerThreadPool =
+      ThreadUtils.newDaemonFixedThreadPool(topics.values.sum, "KafkaMessageHandler")
 
     blockGenerator.start()
 
-    val keyDecoder = classTag[U].runtimeClass.getConstructor(classOf[VerifiableProperties])
+    val keyDecoder = classTag[U].runtimeClass
+      .getConstructor(classOf[VerifiableProperties])
       .newInstance(consumerConfig.props)
       .asInstanceOf[Decoder[K]]
 
-    val valueDecoder = classTag[T].runtimeClass.getConstructor(classOf[VerifiableProperties])
+    val valueDecoder = classTag[T].runtimeClass
+      .getConstructor(classOf[VerifiableProperties])
       .newInstance(consumerConfig.props)
       .asInstanceOf[Decoder[V]]
 
-    val topicMessageStreams = consumerConnector.createMessageStreams(
-      topics, keyDecoder, valueDecoder)
+    val topicMessageStreams =
+      consumerConnector.createMessageStreams(topics, keyDecoder, valueDecoder)
 
     topicMessageStreams.values.foreach { streams =>
       streams.foreach { stream =>
@@ -178,8 +177,7 @@ class ReliableKafkaReceiver[
   }
 
   /** Store a Kafka message and the associated metadata as a tuple. */
-  private def storeMessageAndMetadata(
-      msgAndMetadata: MessageAndMetadata[K, V]): Unit = {
+  private def storeMessageAndMetadata(msgAndMetadata: MessageAndMetadata[K, V]): Unit = {
     val topicAndPartition = TopicAndPartition(msgAndMetadata.topic, msgAndMetadata.partition)
     val data = (msgAndMetadata.key, msgAndMetadata.message)
     val metadata = (topicAndPartition, msgAndMetadata.offset)
@@ -249,11 +247,13 @@ class ReliableKafkaReceiver[
       } catch {
         case e: Exception =>
           logWarning(s"Exception during commit offset $offset for topic" +
-            s"${topicAndPart.topic}, partition ${topicAndPart.partition}", e)
+                     s"${topicAndPart.topic}, partition ${topicAndPart.partition}",
+                     e)
       }
 
-      logInfo(s"Committed offset $offset for topic ${topicAndPart.topic}, " +
-        s"partition ${topicAndPart.partition}")
+      logInfo(
+          s"Committed offset $offset for topic ${topicAndPart.topic}, " +
+          s"partition ${topicAndPart.partition}")
     }
   }
 

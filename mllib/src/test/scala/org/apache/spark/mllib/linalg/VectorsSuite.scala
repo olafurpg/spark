@@ -41,7 +41,7 @@ class VectorsSuite extends SparkFunSuite with Logging {
   }
 
   test("dense vector construction from a double array") {
-   val vec = Vectors.dense(arr).asInstanceOf[DenseVector]
+    val vec = Vectors.dense(arr).asInstanceOf[DenseVector]
     assert(vec.size === arr.length)
     assert(vec.values.eq(arr))
   }
@@ -182,13 +182,12 @@ class VectorsSuite extends SparkFunSuite with Logging {
   }
 
   test("parse vectors") {
-    val vectors = Seq(
-      Vectors.dense(Array.empty[Double]),
-      Vectors.dense(1.0),
-      Vectors.dense(1.0E6, 0.0, -2.0e-7),
-      Vectors.sparse(0, Array.empty[Int], Array.empty[Double]),
-      Vectors.sparse(1, Array(0), Array(1.0)),
-      Vectors.sparse(3, Array(0, 2), Array(1.0, -2.0)))
+    val vectors = Seq(Vectors.dense(Array.empty[Double]),
+                      Vectors.dense(1.0),
+                      Vectors.dense(1.0E6, 0.0, -2.0e-7),
+                      Vectors.sparse(0, Array.empty[Int], Array.empty[Double]),
+                      Vectors.sparse(1, Array(0), Array(1.0)),
+                      Vectors.sparse(3, Array(0, 2), Array(1.0, -2.0)))
     vectors.foreach { v =>
       val v1 = Vectors.parse(v.toString)
       assert(v.getClass === v1.getClass)
@@ -308,23 +307,27 @@ class VectorsSuite extends SparkFunSuite with Logging {
     val dv = Vectors.dense(0.0, -1.2, 3.1, 0.0, -4.5, 1.9)
     val sv = Vectors.sparse(6, Seq((1, -1.2), (2, 3.1), (3, 0.0), (4, -4.5), (5, 1.9)))
 
-    assert(Vectors.norm(dv, 1.0) ~== dv.toArray.foldLeft(0.0)((a, v) =>
-      a + math.abs(v)) relTol 1E-8)
-    assert(Vectors.norm(sv, 1.0) ~== sv.toArray.foldLeft(0.0)((a, v) =>
-      a + math.abs(v)) relTol 1E-8)
+    assert(
+        Vectors.norm(dv, 1.0) ~== dv.toArray.foldLeft(0.0)((a, v) => a + math.abs(v)) relTol 1E-8)
+    assert(
+        Vectors.norm(sv, 1.0) ~== sv.toArray.foldLeft(0.0)((a, v) => a + math.abs(v)) relTol 1E-8)
 
-    assert(Vectors.norm(dv, 2.0) ~== math.sqrt(dv.toArray.foldLeft(0.0)((a, v) =>
-      a + v * v)) relTol 1E-8)
-    assert(Vectors.norm(sv, 2.0) ~== math.sqrt(sv.toArray.foldLeft(0.0)((a, v) =>
-      a + v * v)) relTol 1E-8)
+    assert(Vectors.norm(dv, 2.0) ~==
+          math.sqrt(dv.toArray.foldLeft(0.0)((a, v) => a + v * v)) relTol 1E-8)
+    assert(Vectors.norm(sv, 2.0) ~==
+          math.sqrt(sv.toArray.foldLeft(0.0)((a, v) => a + v * v)) relTol 1E-8)
 
     assert(Vectors.norm(dv, Double.PositiveInfinity) ~== dv.toArray.map(math.abs).max relTol 1E-8)
     assert(Vectors.norm(sv, Double.PositiveInfinity) ~== sv.toArray.map(math.abs).max relTol 1E-8)
 
-    assert(Vectors.norm(dv, 3.7) ~== math.pow(dv.toArray.foldLeft(0.0)((a, v) =>
-      a + math.pow(math.abs(v), 3.7)), 1.0 / 3.7) relTol 1E-8)
-    assert(Vectors.norm(sv, 3.7) ~== math.pow(sv.toArray.foldLeft(0.0)((a, v) =>
-      a + math.pow(math.abs(v), 3.7)), 1.0 / 3.7) relTol 1E-8)
+    assert(
+        Vectors.norm(dv, 3.7) ~== math.pow(
+            dv.toArray.foldLeft(0.0)((a, v) => a + math.pow(math.abs(v), 3.7)),
+            1.0 / 3.7) relTol 1E-8)
+    assert(
+        Vectors.norm(sv, 3.7) ~== math.pow(
+            sv.toArray.foldLeft(0.0)((a, v) => a + math.pow(math.abs(v), 3.7)),
+            1.0 / 3.7) relTol 1E-8)
   }
 
   test("Vector numActive and numNonzeros") {

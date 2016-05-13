@@ -39,7 +39,7 @@ import org.apache.spark.util.random.XORShiftRandom
  *       dataset support, update.  (We store subsampleWeights as Double for this future extension.)
  */
 private[spark] class BaggedPoint[Datum](val datum: Datum, val subsampleWeights: Array[Double])
-  extends Serializable
+    extends Serializable
 
 private[spark] object BaggedPoint {
 
@@ -55,12 +55,11 @@ private[spark] object BaggedPoint {
    * @param seed Random seed.
    * @return BaggedPoint dataset representation.
    */
-  def convertToBaggedRDD[Datum] (
-      input: RDD[Datum],
-      subsamplingRate: Double,
-      numSubsamples: Int,
-      withReplacement: Boolean,
-      seed: Long = Utils.random.nextLong()): RDD[BaggedPoint[Datum]] = {
+  def convertToBaggedRDD[Datum](input: RDD[Datum],
+                                subsamplingRate: Double,
+                                numSubsamples: Int,
+                                withReplacement: Boolean,
+                                seed: Long = Utils.random.nextLong()): RDD[BaggedPoint[Datum]] = {
     if (withReplacement) {
       convertToBaggedRDDSamplingWithReplacement(input, subsamplingRate, numSubsamples, seed)
     } else {
@@ -72,7 +71,7 @@ private[spark] object BaggedPoint {
     }
   }
 
-  private def convertToBaggedRDDSamplingWithoutReplacement[Datum] (
+  private def convertToBaggedRDDSamplingWithoutReplacement[Datum](
       input: RDD[Datum],
       subsamplingRate: Double,
       numSubsamples: Int,
@@ -96,7 +95,7 @@ private[spark] object BaggedPoint {
     }
   }
 
-  private def convertToBaggedRDDSamplingWithReplacement[Datum] (
+  private def convertToBaggedRDDSamplingWithReplacement[Datum](
       input: RDD[Datum],
       subsample: Double,
       numSubsamples: Int,
@@ -117,9 +116,8 @@ private[spark] object BaggedPoint {
     }
   }
 
-  private def convertToBaggedRDDWithoutSampling[Datum] (
+  private def convertToBaggedRDDWithoutSampling[Datum](
       input: RDD[Datum]): RDD[BaggedPoint[Datum]] = {
     input.map(datum => new BaggedPoint(datum, Array(1.0)))
   }
-
 }

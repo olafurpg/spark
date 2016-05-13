@@ -40,9 +40,12 @@ import org.apache.spark.sql.{Row, SQLContext}
  */
 @Since("1.6.0")
 @Experimental
-class BisectingKMeansModel private[clustering] (
+class BisectingKMeansModel private[clustering](
     private[clustering] val root: ClusteringTreeNode
-  ) extends Serializable with Saveable with Logging {
+)
+    extends Serializable
+    with Saveable
+    with Logging {
 
   /**
    * Leaf cluster centers.
@@ -68,7 +71,9 @@ class BisectingKMeansModel private[clustering] (
    */
   @Since("1.6.0")
   def predict(points: RDD[Vector]): RDD[Int] = {
-    points.map { p => root.predict(p) }
+    points.map { p =>
+      root.predict(p)
+    }
   }
 
   /**
@@ -122,38 +127,55 @@ object BisectingKMeansModel extends Loader[BisectingKMeansModel] {
       case (classNameV1_0, "1.0") =>
         val model = SaveLoadV1_0.load(sc, path, rootId)
         model
-      case _ => throw new Exception(
-        s"BisectingKMeansModel.load did not recognize model with (className, format version):" +
-          s"($loadedClassName, $formatVersion).  Supported:\n" +
-          s"  ($classNameV1_0, 1.0)")
+      case _ =>
+        throw new Exception(
+            s"BisectingKMeansModel.load did not recognize model with (className, format version):" +
+            s"($loadedClassName, $formatVersion).  Supported:\n" + s"  ($classNameV1_0, 1.0)")
     }
   }
 
-  private case class Data(index: Int, size: Long, center: Vector, norm: Double, cost: Double,
-     height: Double, children: Seq[Int])
+  private case class Data(index: Int,
+                          size: Long,
+                          center: Vector,
+                          norm: Double,
+                          cost: Double,
+                          height: Double,
+                          children: Seq[Int])
 
   private object Data {
-    def apply(r: Row): Data = Data(r.getInt(0), r.getLong(1), r.getAs[Vector](2), r.getDouble(3),
-      r.getDouble(4), r.getDouble(5), r.getSeq[Int](6))
+    def apply(r: Row): Data =
+      Data(r.getInt(0),
+           r.getLong(1),
+           r.getAs[Vector](2),
+           r.getDouble(3),
+           r.getDouble(4),
+           r.getDouble(5),
+           r.getSeq[Int](6))
   }
 
   private[clustering] object SaveLoadV1_0 {
     private val thisFormatVersion = "1.0"
 
-    private[clustering]
-    val thisClassName = "org.apache.spark.mllib.clustering.BisectingKMeansModel"
+    private[clustering] val thisClassName =
+      "org.apache.spark.mllib.clustering.BisectingKMeansModel"
 
     def save(sc: SparkContext, model: BisectingKMeansModel, path: String): Unit = {
       val sqlContext = SQLContext.getOrCreate(sc)
       import sqlContext.implicits._
-      val metadata = compact(render(
-        ("class" -> thisClassName) ~ ("version" -> thisFormatVersion)
-          ~ ("rootId" -> model.root.index)))
+      val metadata = compact(
+          render(
+              ("class" -> thisClassName) ~ ("version" -> thisFormatVersion) ~ ("rootId" -> model.root.index)))
       sc.parallelize(Seq(metadata), 1).saveAsTextFile(Loader.metadataPath(path))
 
-      val data = getNodes(model.root).map(node => Data(node.index, node.size,
-        node.centerWithNorm.vector, node.centerWithNorm.norm, node.cost, node.height,
-        node.children.map(_.index)))
+      val data = getNodes(model.root).map(
+          node =>
+            Data(node.index,
+                 node.size,
+                 node.centerWithNorm.vector,
+                 node.centerWithNorm.norm,
+                 node.cost,
+                 node.height,
+                 node.children.map(_.index)))
       val dataRDD = sc.parallelize(data).toDF()
       dataRDD.write.parquet(Loader.dataPath(path))
     }
@@ -179,12 +201,20 @@ object BisectingKMeansModel extends Loader[BisectingKMeansModel] {
     private def buildTree(rootId: Int, nodes: Map[Int, Data]): ClusteringTreeNode = {
       val root = nodes.get(rootId).get
       if (root.children.isEmpty) {
-        new ClusteringTreeNode(root.index, root.size, new VectorWithNorm(root.center, root.norm),
-          root.cost, root.height, new Array[ClusteringTreeNode](0))
+        new ClusteringTreeNode(root.index,
+                               root.size,
+                               new VectorWithNorm(root.center, root.norm),
+                               root.cost,
+                               root.height,
+                               new Array[ClusteringTreeNode](0))
       } else {
         val children = root.children.map(c => buildTree(c, nodes))
-        new ClusteringTreeNode(root.index, root.size, new VectorWithNorm(root.center, root.norm),
-          root.cost, root.height, children.toArray)
+        new ClusteringTreeNode(root.index,
+                               root.size,
+                               new VectorWithNorm(root.center, root.norm),
+                               root.cost,
+                               root.height,
+                               children.toArray)
       }
     }
   }

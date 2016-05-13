@@ -43,15 +43,11 @@ class UnsupportedOperationsSuite extends SparkFunSuite {
   assertSupportedInBatchPlan("local relation", batchRelation)
 
   assertNotSupportedInBatchPlan(
-    "streaming source",
-    streamRelation,
-    Seq("with streaming source", "startStream"))
+      "streaming source", streamRelation, Seq("with streaming source", "startStream"))
 
-  assertNotSupportedInBatchPlan(
-    "select on streaming source",
-    streamRelation.select($"count(*)"),
-    Seq("with streaming source", "startStream"))
-
+  assertNotSupportedInBatchPlan("select on streaming source",
+                                streamRelation.select($"count(*)"),
+                                Seq("with streaming source", "startStream"))
 
   /*
     =======================================================================================
@@ -60,93 +56,79 @@ class UnsupportedOperationsSuite extends SparkFunSuite {
    */
 
   // Batch plan in streaming query
-  testError(
-    "streaming plan - no streaming source",
-    Seq("without streaming source", "startStream")) {
+  testError("streaming plan - no streaming source", Seq("without streaming source", "startStream")) {
     UnsupportedOperationChecker.checkForStreaming(batchRelation.select($"count(*)"), Append)
   }
 
   // Commands
   assertNotSupportedInStreamingPlan(
-    "commmands",
-    DescribeFunction(FunctionIdentifier("func", database = None), true),
-    outputMode = Append,
-    expectedMsgs = "commands" :: Nil)
+      "commmands",
+      DescribeFunction(FunctionIdentifier("func", database = None), true),
+      outputMode = Append,
+      expectedMsgs = "commands" :: Nil)
 
   // Aggregates: Not supported on streams in Append mode
-  assertSupportedInStreamingPlan(
-    "aggregate - batch with update output mode",
-    batchRelation.groupBy("a")("count(*)"),
-    outputMode = Update)
+  assertSupportedInStreamingPlan("aggregate - batch with update output mode",
+                                 batchRelation.groupBy("a")("count(*)"),
+                                 outputMode = Update)
 
-  assertSupportedInStreamingPlan(
-    "aggregate - batch with append output mode",
-    batchRelation.groupBy("a")("count(*)"),
-    outputMode = Append)
+  assertSupportedInStreamingPlan("aggregate - batch with append output mode",
+                                 batchRelation.groupBy("a")("count(*)"),
+                                 outputMode = Append)
 
-  assertSupportedInStreamingPlan(
-    "aggregate - stream with update output mode",
-    streamRelation.groupBy("a")("count(*)"),
-    outputMode = Update)
+  assertSupportedInStreamingPlan("aggregate - stream with update output mode",
+                                 streamRelation.groupBy("a")("count(*)"),
+                                 outputMode = Update)
 
-  assertNotSupportedInStreamingPlan(
-    "aggregate - stream with append output mode",
-    streamRelation.groupBy("a")("count(*)"),
-    outputMode = Append,
-    Seq("aggregation", "append output mode"))
+  assertNotSupportedInStreamingPlan("aggregate - stream with append output mode",
+                                    streamRelation.groupBy("a")("count(*)"),
+                                    outputMode = Append,
+                                    Seq("aggregation", "append output mode"))
 
   // Inner joins: Stream-stream not supported
   testBinaryOperationInStreamingPlan(
-    "inner join",
-    _.join(_, joinType = Inner),
-    streamStreamSupported = false)
+      "inner join", _.join(_, joinType = Inner), streamStreamSupported = false)
 
   // Full outer joins: only batch-batch is allowed
-  testBinaryOperationInStreamingPlan(
-    "full outer join",
-    _.join(_, joinType = FullOuter),
-    streamStreamSupported = false,
-    batchStreamSupported = false,
-    streamBatchSupported = false)
+  testBinaryOperationInStreamingPlan("full outer join",
+                                     _.join(_, joinType = FullOuter),
+                                     streamStreamSupported = false,
+                                     batchStreamSupported = false,
+                                     streamBatchSupported = false)
 
   // Left outer joins: *-stream not allowed
-  testBinaryOperationInStreamingPlan(
-    "left outer join",
-    _.join(_, joinType = LeftOuter),
-    streamStreamSupported = false,
-    batchStreamSupported = false,
-    expectedMsg = "left outer/semi/anti joins")
+  testBinaryOperationInStreamingPlan("left outer join",
+                                     _.join(_, joinType = LeftOuter),
+                                     streamStreamSupported = false,
+                                     batchStreamSupported = false,
+                                     expectedMsg = "left outer/semi/anti joins")
 
   // Left semi joins: stream-* not allowed
-  testBinaryOperationInStreamingPlan(
-    "left semi join",
-    _.join(_, joinType = LeftSemi),
-    streamStreamSupported = false,
-    batchStreamSupported = false,
-    expectedMsg = "left outer/semi/anti joins")
+  testBinaryOperationInStreamingPlan("left semi join",
+                                     _.join(_, joinType = LeftSemi),
+                                     streamStreamSupported = false,
+                                     batchStreamSupported = false,
+                                     expectedMsg = "left outer/semi/anti joins")
 
   // Left anti joins: stream-* not allowed
-  testBinaryOperationInStreamingPlan(
-    "left anti join",
-    _.join(_, joinType = LeftAnti),
-    streamStreamSupported = false,
-    batchStreamSupported = false,
-    expectedMsg = "left outer/semi/anti joins")
+  testBinaryOperationInStreamingPlan("left anti join",
+                                     _.join(_, joinType = LeftAnti),
+                                     streamStreamSupported = false,
+                                     batchStreamSupported = false,
+                                     expectedMsg = "left outer/semi/anti joins")
 
   // Right outer joins: stream-* not allowed
-  testBinaryOperationInStreamingPlan(
-    "right outer join",
-    _.join(_, joinType = RightOuter),
-    streamStreamSupported = false,
-    streamBatchSupported = false)
+  testBinaryOperationInStreamingPlan("right outer join",
+                                     _.join(_, joinType = RightOuter),
+                                     streamStreamSupported = false,
+                                     streamBatchSupported = false)
 
   // Cogroup: only batch-batch is allowed
-  testBinaryOperationInStreamingPlan(
-    "cogroup",
-    genCogroup,
-    streamStreamSupported = false,
-    batchStreamSupported = false,
-    streamBatchSupported = false)
+  testBinaryOperationInStreamingPlan("cogroup",
+                                     genCogroup,
+                                     streamStreamSupported = false,
+                                     batchStreamSupported = false,
+                                     streamBatchSupported = false)
 
   def genCogroup(left: LogicalPlan, right: LogicalPlan): LogicalPlan = {
     def func(k: Int, left: Iterator[Int], right: Iterator[Int]): Iterator[Int] = {
@@ -154,44 +136,32 @@ class UnsupportedOperationsSuite extends SparkFunSuite {
     }
     implicit val intEncoder = ExpressionEncoder[Int]
 
-    left.cogroup[Int, Int, Int, Int](
-      right,
-      func,
-      AppendColumns[Int, Int]((x: Int) => x, left).newColumns,
-      AppendColumns[Int, Int]((x: Int) => x, right).newColumns,
-      left.output,
-      right.output)
+    left.cogroup[Int, Int, Int, Int](right,
+                                     func,
+                                     AppendColumns[Int, Int]((x: Int) => x, left).newColumns,
+                                     AppendColumns[Int, Int]((x: Int) => x, right).newColumns,
+                                     left.output,
+                                     right.output)
   }
 
   // Union: Mixing between stream and batch not supported
   testBinaryOperationInStreamingPlan(
-    "union",
-    _.union(_),
-    streamBatchSupported = false,
-    batchStreamSupported = false)
+      "union", _.union(_), streamBatchSupported = false, batchStreamSupported = false)
 
   // Except: *-stream not supported
   testBinaryOperationInStreamingPlan(
-    "except",
-    _.except(_),
-    streamStreamSupported = false,
-    batchStreamSupported = false)
+      "except", _.except(_), streamStreamSupported = false, batchStreamSupported = false)
 
   // Intersect: stream-stream not supported
-  testBinaryOperationInStreamingPlan(
-    "intersect",
-    _.intersect(_),
-    streamStreamSupported = false)
-
+  testBinaryOperationInStreamingPlan("intersect", _.intersect(_), streamStreamSupported = false)
 
   // Unary operations
   testUnaryOperatorInStreamingPlan("sort", Sort(Nil, true, _))
   testUnaryOperatorInStreamingPlan("sort partitions", SortPartitions(Nil, _), expectedMsg = "sort")
   testUnaryOperatorInStreamingPlan(
-    "sample", Sample(0.1, 1, true, 1L, _)(), expectedMsg = "sampling")
+      "sample", Sample(0.1, 1, true, 1L, _)(), expectedMsg = "sampling")
   testUnaryOperatorInStreamingPlan(
-    "window", Window(Nil, Nil, Nil, _), expectedMsg = "non-time-based windows")
-
+      "window", Window(Nil, Nil, Nil, _), expectedMsg = "non-time-based windows")
 
   /*
     =======================================================================================
@@ -208,86 +178,74 @@ class UnsupportedOperationsSuite extends SparkFunSuite {
    * a streaming plan even if the child plan is a batch plan. This is to test that the operator
    * supports having a batch child plan, forming a batch subplan inside a streaming plan.
    */
-  def testUnaryOperatorInStreamingPlan(
-    operationName: String,
-    logicalPlanGenerator: LogicalPlan => LogicalPlan,
-    outputMode: OutputMode = Append,
-    expectedMsg: String = ""): Unit = {
+  def testUnaryOperatorInStreamingPlan(operationName: String,
+                                       logicalPlanGenerator: LogicalPlan => LogicalPlan,
+                                       outputMode: OutputMode = Append,
+                                       expectedMsg: String = ""): Unit = {
 
     val expectedMsgs = if (expectedMsg.isEmpty) Seq(operationName) else Seq(expectedMsg)
 
-    assertNotSupportedInStreamingPlan(
-      s"$operationName with stream relation",
-      wrapInStreaming(logicalPlanGenerator(streamRelation)),
-      outputMode,
-      expectedMsgs)
+    assertNotSupportedInStreamingPlan(s"$operationName with stream relation",
+                                      wrapInStreaming(logicalPlanGenerator(streamRelation)),
+                                      outputMode,
+                                      expectedMsgs)
 
-    assertSupportedInStreamingPlan(
-      s"$operationName with batch relation",
-      wrapInStreaming(logicalPlanGenerator(batchRelation)),
-      outputMode)
+    assertSupportedInStreamingPlan(s"$operationName with batch relation",
+                                   wrapInStreaming(logicalPlanGenerator(batchRelation)),
+                                   outputMode)
   }
-
 
   /**
    * Test that a binary operator correctly fails support check when it has combinations of
    * streaming and batch child plans. There can be batch sub-plans inside a streaming plan,
    * so it is valid for the operator to have a batch child plan.
    */
-  def testBinaryOperationInStreamingPlan(
-      operationName: String,
-      planGenerator: (LogicalPlan, LogicalPlan) => LogicalPlan,
-      outputMode: OutputMode = Append,
-      streamStreamSupported: Boolean = true,
-      streamBatchSupported: Boolean = true,
-      batchStreamSupported: Boolean = true,
-      expectedMsg: String = ""): Unit = {
+  def testBinaryOperationInStreamingPlan(operationName: String,
+                                         planGenerator: (LogicalPlan, LogicalPlan) => LogicalPlan,
+                                         outputMode: OutputMode = Append,
+                                         streamStreamSupported: Boolean = true,
+                                         streamBatchSupported: Boolean = true,
+                                         batchStreamSupported: Boolean = true,
+                                         expectedMsg: String = ""): Unit = {
 
     val expectedMsgs = if (expectedMsg.isEmpty) Seq(operationName) else Seq(expectedMsg)
 
     if (streamStreamSupported) {
-      assertSupportedInStreamingPlan(
-        s"$operationName with stream-stream relations",
-        planGenerator(streamRelation, streamRelation),
-        outputMode)
+      assertSupportedInStreamingPlan(s"$operationName with stream-stream relations",
+                                     planGenerator(streamRelation, streamRelation),
+                                     outputMode)
     } else {
-      assertNotSupportedInStreamingPlan(
-        s"$operationName with stream-stream relations",
-        planGenerator(streamRelation, streamRelation),
-        outputMode,
-        expectedMsgs)
+      assertNotSupportedInStreamingPlan(s"$operationName with stream-stream relations",
+                                        planGenerator(streamRelation, streamRelation),
+                                        outputMode,
+                                        expectedMsgs)
     }
 
     if (streamBatchSupported) {
-      assertSupportedInStreamingPlan(
-        s"$operationName with stream-batch relations",
-        planGenerator(streamRelation, batchRelation),
-        outputMode)
+      assertSupportedInStreamingPlan(s"$operationName with stream-batch relations",
+                                     planGenerator(streamRelation, batchRelation),
+                                     outputMode)
     } else {
-      assertNotSupportedInStreamingPlan(
-        s"$operationName with stream-batch relations",
-        planGenerator(streamRelation, batchRelation),
-        outputMode,
-        expectedMsgs)
+      assertNotSupportedInStreamingPlan(s"$operationName with stream-batch relations",
+                                        planGenerator(streamRelation, batchRelation),
+                                        outputMode,
+                                        expectedMsgs)
     }
 
     if (batchStreamSupported) {
-      assertSupportedInStreamingPlan(
-        s"$operationName with batch-stream relations",
-        planGenerator(batchRelation, streamRelation),
-        outputMode)
+      assertSupportedInStreamingPlan(s"$operationName with batch-stream relations",
+                                     planGenerator(batchRelation, streamRelation),
+                                     outputMode)
     } else {
-      assertNotSupportedInStreamingPlan(
-        s"$operationName with batch-stream relations",
-        planGenerator(batchRelation, streamRelation),
-        outputMode,
-        expectedMsgs)
+      assertNotSupportedInStreamingPlan(s"$operationName with batch-stream relations",
+                                        planGenerator(batchRelation, streamRelation),
+                                        outputMode,
+                                        expectedMsgs)
     }
 
-    assertSupportedInStreamingPlan(
-      s"$operationName with batch-batch relations",
-      planGenerator(batchRelation, batchRelation),
-      outputMode)
+    assertSupportedInStreamingPlan(s"$operationName with batch-batch relations",
+                                   planGenerator(batchRelation, batchRelation),
+                                   outputMode)
   }
 
   /**
@@ -299,9 +257,7 @@ class UnsupportedOperationsSuite extends SparkFunSuite {
    * subplan inside some streaming plan.
    */
   def assertSupportedInStreamingPlan(
-      name: String,
-      plan: LogicalPlan,
-      outputMode: OutputMode): Unit = {
+      name: String, plan: LogicalPlan, outputMode: OutputMode): Unit = {
     test(s"streaming plan - $name: supported") {
       UnsupportedOperationChecker.checkForStreaming(wrapInStreaming(plan), outputMode)
     }
@@ -315,14 +271,12 @@ class UnsupportedOperationsSuite extends SparkFunSuite {
    * exception simply for not being a streaming plan, even though that plan could exists as batch
    * subplan inside some streaming plan.
    */
-  def assertNotSupportedInStreamingPlan(
-      name: String,
-      plan: LogicalPlan,
-      outputMode: OutputMode,
-      expectedMsgs: Seq[String]): Unit = {
-    testError(
-      s"streaming plan - $name: not supported",
-      expectedMsgs :+ "streaming" :+ "DataFrame" :+ "Dataset" :+ "not supported") {
+  def assertNotSupportedInStreamingPlan(name: String,
+                                        plan: LogicalPlan,
+                                        outputMode: OutputMode,
+                                        expectedMsgs: Seq[String]): Unit = {
+    testError(s"streaming plan - $name: not supported",
+              expectedMsgs :+ "streaming" :+ "DataFrame" :+ "Dataset" :+ "not supported") {
       UnsupportedOperationChecker.checkForStreaming(wrapInStreaming(plan), outputMode)
     }
   }
@@ -336,9 +290,7 @@ class UnsupportedOperationsSuite extends SparkFunSuite {
 
   /** Assert that the logical plan is not supported as a batch plan */
   def assertNotSupportedInBatchPlan(
-      name: String,
-      plan: LogicalPlan,
-      expectedMsgs: Seq[String]): Unit = {
+      name: String, plan: LogicalPlan, expectedMsgs: Seq[String]): Unit = {
     testError(s"batch plan - $name: not supported", expectedMsgs) {
       UnsupportedOperationChecker.checkForBatch(plan)
     }
@@ -356,8 +308,7 @@ class UnsupportedOperationsSuite extends SparkFunSuite {
       }
 
       if (!expectedMsgs.map(_.toLowerCase).forall(e.getMessage.toLowerCase.contains)) {
-        fail(
-          s"""Exception message should contain the following substrings:
+        fail(s"""Exception message should contain the following substrings:
               |
           |  ${expectedMsgs.mkString("\n  ")}
               |

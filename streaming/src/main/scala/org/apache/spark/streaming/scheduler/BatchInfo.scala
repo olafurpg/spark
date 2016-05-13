@@ -39,7 +39,7 @@ case class BatchInfo(
     processingStartTime: Option[Long],
     processingEndTime: Option[Long],
     outputOperationInfos: Map[Int, OutputOperationInfo]
-  ) {
+) {
 
   /**
    * Time taken for the first job of this batch to start processing from the time this batch
@@ -52,19 +52,18 @@ case class BatchInfo(
    * Time taken for the all jobs of this batch to finish processing from the time they started
    * processing. Essentially, it is `processingEndTime` - `processingStartTime`.
    */
-  def processingDelay: Option[Long] = processingEndTime.zip(processingStartTime)
-    .map(x => x._1 - x._2).headOption
+  def processingDelay: Option[Long] =
+    processingEndTime.zip(processingStartTime).map(x => x._1 - x._2).headOption
 
   /**
    * Time taken for all the jobs of this batch to finish processing from the time they
    * were submitted.  Essentially, it is `processingDelay` + `schedulingDelay`.
    */
-  def totalDelay: Option[Long] = schedulingDelay.zip(processingDelay)
-    .map(x => x._1 + x._2).headOption
+  def totalDelay: Option[Long] =
+    schedulingDelay.zip(processingDelay).map(x => x._1 + x._2).headOption
 
   /**
    * The number of recorders received by the receivers in this batch.
    */
   def numRecords: Long = streamIdToInputInfo.values.map(_.numRecords).sum
-
 }

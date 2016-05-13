@@ -38,8 +38,8 @@ import org.apache.spark.unsafe.Platform
  * For input of type [[BinaryType]]
  */
 @ExpressionDescription(
-  usage = "_FUNC_(input) - Returns an MD5 128-bit checksum as a hex string of the input",
-  extended = "> SELECT _FUNC_('Spark');\n '8cde774d6f7333752ed72cacddb05126'")
+    usage = "_FUNC_(input) - Returns an MD5 128-bit checksum as a hex string of the input",
+    extended = "> SELECT _FUNC_('Spark');\n '8cde774d6f7333752ed72cacddb05126'")
 case class Md5(child: Expression) extends UnaryExpression with ImplicitCastInputTypes {
 
   override def dataType: DataType = StringType
@@ -50,8 +50,10 @@ case class Md5(child: Expression) extends UnaryExpression with ImplicitCastInput
     UTF8String.fromString(DigestUtils.md5Hex(input.asInstanceOf[Array[Byte]]))
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    defineCodeGen(ctx, ev, c =>
-      s"UTF8String.fromString(org.apache.commons.codec.digest.DigestUtils.md5Hex($c))")
+    defineCodeGen(
+        ctx,
+        ev,
+        c => s"UTF8String.fromString(org.apache.commons.codec.digest.DigestUtils.md5Hex($c))")
   }
 }
 
@@ -65,13 +67,15 @@ case class Md5(child: Expression) extends UnaryExpression with ImplicitCastInput
  */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
-  usage = """_FUNC_(input, bitLength) - Returns a checksum of SHA-2 family as a hex string of the input.
+    usage = """_FUNC_(input, bitLength) - Returns a checksum of SHA-2 family as a hex string of the input.
             SHA-224, SHA-256, SHA-384, and SHA-512 are supported. Bit length of 0 is equivalent to 256.""",
-  extended = """> SELECT _FUNC_('Spark', 0);
+    extended = """> SELECT _FUNC_('Spark', 0);
                '529bc3b07127ecb7e53a4dcf1991d9152c24537d919178022b2c42657f79a26b'""")
 // scalastyle:on line.size.limit
 case class Sha2(left: Expression, right: Expression)
-  extends BinaryExpression with Serializable with ImplicitCastInputTypes {
+    extends BinaryExpression
+    with Serializable
+    with ImplicitCastInputTypes {
 
   override def dataType: DataType = StringType
   override def nullable: Boolean = true
@@ -136,8 +140,8 @@ case class Sha2(left: Expression, right: Expression)
  * For input of type [[BinaryType]] or [[StringType]]
  */
 @ExpressionDescription(
-  usage = "_FUNC_(input) - Returns a sha1 hash value as a hex string of the input",
-  extended = "> SELECT _FUNC_('Spark');\n '85f5955f4b27a9a4c2aab6ffe5d7189fc298b92c'")
+    usage = "_FUNC_(input) - Returns a sha1 hash value as a hex string of the input",
+    extended = "> SELECT _FUNC_('Spark');\n '85f5955f4b27a9a4c2aab6ffe5d7189fc298b92c'")
 case class Sha1(child: Expression) extends UnaryExpression with ImplicitCastInputTypes {
 
   override def dataType: DataType = StringType
@@ -148,9 +152,10 @@ case class Sha1(child: Expression) extends UnaryExpression with ImplicitCastInpu
     UTF8String.fromString(DigestUtils.sha1Hex(input.asInstanceOf[Array[Byte]]))
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    defineCodeGen(ctx, ev, c =>
-      s"UTF8String.fromString(org.apache.commons.codec.digest.DigestUtils.sha1Hex($c))"
-    )
+    defineCodeGen(
+        ctx,
+        ev,
+        c => s"UTF8String.fromString(org.apache.commons.codec.digest.DigestUtils.sha1Hex($c))")
   }
 }
 
@@ -159,8 +164,8 @@ case class Sha1(child: Expression) extends UnaryExpression with ImplicitCastInpu
  * For input of type [[BinaryType]]
  */
 @ExpressionDescription(
-  usage = "_FUNC_(input) - Returns a cyclic redundancy check value as a bigint of the input",
-  extended = "> SELECT _FUNC_('Spark');\n '1557323817'")
+    usage = "_FUNC_(input) - Returns a cyclic redundancy check value as a bigint of the input",
+    extended = "> SELECT _FUNC_('Spark');\n '1557323817'")
 case class Crc32(child: Expression) extends UnaryExpression with ImplicitCastInputTypes {
 
   override def dataType: DataType = LongType
@@ -184,7 +189,6 @@ case class Crc32(child: Expression) extends UnaryExpression with ImplicitCastInp
     })
   }
 }
-
 
 /**
  * A function that calculates hash value for a group of expressions.  Note that the `seed` argument
@@ -216,6 +220,7 @@ case class Crc32(child: Expression) extends UnaryExpression with ImplicitCastInp
  * Finally we aggregate the hash values for each expression by the same way of struct.
  */
 abstract class HashExpression[E] extends Expression {
+
   /** Seed of the HashExpression. */
   val seed: E
 
@@ -258,13 +263,12 @@ abstract class HashExpression[E] extends Expression {
       $childrenHash""")
   }
 
-  private def nullSafeElementHash(
-      input: String,
-      index: String,
-      nullable: Boolean,
-      elementType: DataType,
-      result: String,
-      ctx: CodegenContext): String = {
+  private def nullSafeElementHash(input: String,
+                                  index: String,
+                                  nullable: Boolean,
+                                  elementType: DataType,
+                                  result: String,
+                                  ctx: CodegenContext): String = {
     val element = ctx.freshName("element")
 
     ctx.nullSafeExec(nullable, s"$input.isNullAt($index)") {
@@ -277,10 +281,7 @@ abstract class HashExpression[E] extends Expression {
 
   @tailrec
   private def computeHash(
-      input: String,
-      dataType: DataType,
-      result: String,
-      ctx: CodegenContext): String = {
+      input: String, dataType: DataType, result: String, ctx: CodegenContext): String = {
     val hasher = hasherClassName
 
     def hashInt(i: String): String = s"$result = $hasher.hashInt($i, $result);"
@@ -337,8 +338,9 @@ abstract class HashExpression[E] extends Expression {
         """
 
       case StructType(fields) =>
-        fields.zipWithIndex.map { case (field, index) =>
-          nullSafeElementHash(input, index.toString, field.nullable, field.dataType, result, ctx)
+        fields.zipWithIndex.map {
+          case (field, index) =>
+            nullSafeElementHash(input, index.toString, field.nullable, field.dataType, result, ctx)
         }.mkString("\n")
 
       case udt: UserDefinedType[_] => computeHash(input, udt.sqlType, result, ctx)
@@ -437,8 +439,7 @@ abstract class InterpretedHashFunction {
  * We should use this hash function for both shuffle and bucket, so that we can guarantee shuffle
  * and bucketing have same data distribution.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(a1, a2, ...) - Returns a hash value of the arguments.")
+@ExpressionDescription(usage = "_FUNC_(a1, a2, ...) - Returns a hash value of the arguments.")
 case class Murmur3Hash(children: Seq[Expression], seed: Int) extends HashExpression[Int] {
   def this(arguments: Seq[Expression]) = this(arguments, 42)
 
@@ -477,8 +478,7 @@ case class PrintToStderr(child: Expression) extends UnaryExpression {
   protected override def nullSafeEval(input: Any): Any = input
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    nullSafeCodeGen(ctx, ev, c =>
-      s"""
+    nullSafeCodeGen(ctx, ev, c => s"""
          | System.err.println("Result of ${child.simpleString} is " + $c);
          | ${ev.value} = $c;
        """.stripMargin)
@@ -489,7 +489,7 @@ case class PrintToStderr(child: Expression) extends UnaryExpression {
  * A function throws an exception if 'condition' is not true.
  */
 @ExpressionDescription(
-  usage = "_FUNC_(condition) - Throw an exception if 'condition' is not true.")
+    usage = "_FUNC_(condition) - Throw an exception if 'condition' is not true.")
 case class AssertTrue(child: Expression) extends UnaryExpression with ImplicitCastInputTypes {
 
   override def nullable: Boolean = true
@@ -500,7 +500,7 @@ case class AssertTrue(child: Expression) extends UnaryExpression with ImplicitCa
 
   override def prettyName: String = "assert_true"
 
-  override def eval(input: InternalRow) : Any = {
+  override def eval(input: InternalRow): Any = {
     val v = child.eval(input)
     if (v == null || java.lang.Boolean.FALSE.equals(v)) {
       throw new RuntimeException(s"'${child.simpleString}' is not true!")
@@ -551,8 +551,7 @@ object XxHash64Function extends InterpretedHashFunction {
  * Returns the current database of the SessionCatalog.
  */
 @ExpressionDescription(
-  usage = "_FUNC_() - Returns the current database.",
-  extended = "> SELECT _FUNC_()")
+    usage = "_FUNC_() - Returns the current database.", extended = "> SELECT _FUNC_()")
 private[sql] case class CurrentDatabase() extends LeafExpression with Unevaluable {
   override def dataType: DataType = StringType
   override def foldable: Boolean = true

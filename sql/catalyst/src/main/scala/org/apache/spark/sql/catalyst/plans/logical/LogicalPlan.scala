@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.trees.CurrentOrigin
 import org.apache.spark.sql.types.StructType
 
-
 abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
 
   private var _analyzed: Boolean = false
@@ -75,7 +74,7 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
    * been analyzed.
    */
   def resolveExpressions(r: PartialFunction[Expression, Expression]): LogicalPlan = {
-    this resolveOperators  {
+    this resolveOperators {
       case p => p.transformExpressions(r)
     }
   }
@@ -132,7 +131,7 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
         case other => sys.error(s"can not handle nested schema yet...  plan $this")
       }.getOrElse {
         throw new AnalysisException(
-          s"Unable to resolve ${field.name} given [${output.map(_.name).mkString(", ")}]")
+            s"Unable to resolve ${field.name} given [${output.map(_.name).mkString(", ")}]")
       }
     }
   }
@@ -142,9 +141,7 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
    * nodes of this LogicalPlan. The attribute is expressed as
    * as string in the following form: `[scope].AttributeName.[nested].[fields]...`.
    */
-  def resolveChildren(
-      nameParts: Seq[String],
-      resolver: Resolver): Option[NamedExpression] =
+  def resolveChildren(nameParts: Seq[String], resolver: Resolver): Option[NamedExpression] =
     resolve(nameParts, children.flatMap(_.output), resolver)
 
   /**
@@ -152,9 +149,7 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
    * LogicalPlan. The attribute is expressed as string in the following form:
    * `[scope].AttributeName.[nested].[fields]...`.
    */
-  def resolve(
-      nameParts: Seq[String],
-      resolver: Resolver): Option[NamedExpression] =
+  def resolve(nameParts: Seq[String], resolver: Resolver): Option[NamedExpression] =
     resolve(nameParts, output, resolver)
 
   /**
@@ -162,9 +157,7 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
    * don't split the name parts quoted by backticks, for example,
    * `ab.cd`.`efg` should be split into two parts "ab.cd" and "efg".
    */
-  def resolveQuoted(
-      name: String,
-      resolver: Resolver): Option[NamedExpression] = {
+  def resolveQuoted(name: String, resolver: Resolver): Option[NamedExpression] = {
     resolve(UnresolvedAttribute.parseAttributeName(name), output, resolver)
   }
 
@@ -175,10 +168,9 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
    * (i.e. table name, alias, or subquery alias).
    * See the comment above `candidates` variable in resolve() for semantics the returned data.
    */
-  private def resolveAsTableColumn(
-      nameParts: Seq[String],
-      resolver: Resolver,
-      attribute: Attribute): Option[(Attribute, List[String])] = {
+  private def resolveAsTableColumn(nameParts: Seq[String],
+                                   resolver: Resolver,
+                                   attribute: Attribute): Option[(Attribute, List[String])] = {
     assert(nameParts.length > 1)
     if (attribute.qualifier.exists(resolver(_, nameParts.head))) {
       // At least one qualifier matches. See if remaining parts match.
@@ -195,10 +187,9 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
    * Different from resolveAsTableColumn, this assumes `name` does NOT start with a qualifier.
    * See the comment above `candidates` variable in resolve() for semantics the returned data.
    */
-  private def resolveAsColumn(
-      nameParts: Seq[String],
-      resolver: Resolver,
-      attribute: Attribute): Option[(Attribute, List[String])] = {
+  private def resolveAsColumn(nameParts: Seq[String],
+                              resolver: Resolver,
+                              attribute: Attribute): Option[(Attribute, List[String])] = {
     if (!attribute.isGenerated && resolver(attribute.name, nameParts.head)) {
       Option((attribute.withName(nameParts.head), nameParts.tail.toList))
     } else {
@@ -207,10 +198,9 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
   }
 
   /** Performs attribute resolution given a name and a sequence of possible attributes. */
-  protected def resolve(
-      nameParts: Seq[String],
-      input: Seq[Attribute],
-      resolver: Resolver): Option[NamedExpression] = {
+  protected def resolve(nameParts: Seq[String],
+                        input: Seq[Attribute],
+                        resolver: Resolver): Option[NamedExpression] = {
 
     // A sequence of possible candidate matches.
     // Each candidate is a tuple. The first element is a resolved attribute, followed by a list
@@ -249,8 +239,8 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
         // For example, consider "a.b.c", where "a" is resolved to an existing attribute.
         // Then this will add ExtractValue("c", ExtractValue("b", a)), and alias the final
         // expression as "c".
-        val fieldExprs = nestedFields.foldLeft(a: Expression)((expr, fieldName) =>
-          ExtractValue(expr, Literal(fieldName), resolver))
+        val fieldExprs = nestedFields.foldLeft(a: Expression)(
+            (expr, fieldName) => ExtractValue(expr, Literal(fieldName), resolver))
         Some(Alias(fieldExprs, nestedFields.last)())
 
       // No matches.
@@ -261,8 +251,7 @@ abstract class LogicalPlan extends QueryPlan[LogicalPlan] with Logging {
       // More than one match.
       case ambiguousReferences =>
         val referenceNames = ambiguousReferences.map(_._1).mkString(", ")
-        throw new AnalysisException(
-          s"Reference '$name' is ambiguous, could be: $referenceNames.")
+        throw new AnalysisException(s"Reference '$name' is ambiguous, could be: $referenceNames.")
     }
   }
 }
@@ -290,10 +279,12 @@ abstract class UnaryNode extends LogicalPlan {
   protected def getAliasedConstraints(projectList: Seq[NamedExpression]): Set[Expression] = {
     projectList.flatMap {
       case a @ Alias(e, _) =>
-        child.constraints.map(_ transform {
-          case expr: Expression if expr.semanticEquals(e) =>
-            a.toAttribute
-        }).union(Set(EqualNullSafe(e, a.toAttribute)))
+        child.constraints
+          .map(_ transform {
+            case expr: Expression if expr.semanticEquals(e) =>
+              a.toAttribute
+          })
+          .union(Set(EqualNullSafe(e, a.toAttribute)))
       case _ =>
         Set.empty[Expression]
     }.toSet

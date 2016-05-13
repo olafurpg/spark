@@ -28,12 +28,12 @@ import org.apache.spark.scheduler.SchedulingMode.SchedulingMode
 /**
  * An Schedulable entity that represents collection of Pools or TaskSetManagers
  */
-private[spark] class Pool(
-    val poolName: String,
-    val schedulingMode: SchedulingMode,
-    initMinShare: Int,
-    initWeight: Int)
-  extends Schedulable with Logging {
+private[spark] class Pool(val poolName: String,
+                          val schedulingMode: SchedulingMode,
+                          initMinShare: Int,
+                          initWeight: Int)
+    extends Schedulable
+    with Logging {
 
   val schedulableQueue = new ConcurrentLinkedQueue[Schedulable]
   val schedulableNameToSchedulable = new ConcurrentHashMap[String, Schedulable]

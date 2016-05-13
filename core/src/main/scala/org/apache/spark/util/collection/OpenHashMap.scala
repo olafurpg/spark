@@ -29,11 +29,10 @@ import scala.reflect.ClassTag
  * NOTE: when using numeric type as the value type, the user of this class should be careful to
  * distinguish between the 0/0.0/0L and non-exist value
  */
-private[spark]
-class OpenHashMap[K : ClassTag, @specialized(Long, Int, Double) V: ClassTag](
+private[spark] class OpenHashMap[K: ClassTag, @specialized(Long, Int, Double) V: ClassTag](
     initialCapacity: Int)
-  extends Iterable[(K, V)]
-  with Serializable {
+    extends Iterable[(K, V)]
+    with Serializable {
 
   def this() = this(64)
 
@@ -123,7 +122,8 @@ class OpenHashMap[K : ClassTag, @specialized(Long, Int, Double) V: ClassTag](
 
     /** Get the next value we should return from next(), or null if we're finished iterating */
     def computeNextPair(): (K, V) = {
-      if (pos == -1) {    // Treat position -1 as looking at the null value
+      if (pos == -1) {
+        // Treat position -1 as looking at the null value
         if (haveNullValue) {
           pos += 1
           return (null.asInstanceOf[K], nullValue)

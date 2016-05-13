@@ -23,7 +23,7 @@ package org.apache.spark.util
  */
 private[spark]
 // scalastyle:off
-abstract class CompletionIterator[ +A, +I <: Iterator[A]](sub: I) extends Iterator[A] {
+abstract class CompletionIterator[+A, +I <: Iterator[A]](sub: I) extends Iterator[A] {
 // scalastyle:on
 
   private[this] var completed = false
@@ -41,7 +41,7 @@ abstract class CompletionIterator[ +A, +I <: Iterator[A]](sub: I) extends Iterat
 }
 
 private[spark] object CompletionIterator {
-  def apply[A, I <: Iterator[A]](sub: I, completionFunction: => Unit) : CompletionIterator[A, I] = {
+  def apply[A, I <: Iterator[A]](sub: I, completionFunction: => Unit): CompletionIterator[A, I] = {
     new CompletionIterator[A, I](sub) {
       def completion(): Unit = completionFunction
     }

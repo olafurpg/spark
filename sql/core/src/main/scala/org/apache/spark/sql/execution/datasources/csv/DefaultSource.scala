@@ -48,10 +48,9 @@ class DefaultSource extends FileFormat with DataSourceRegister {
 
   override def equals(other: Any): Boolean = other.isInstanceOf[DefaultSource]
 
-  override def inferSchema(
-      sparkSession: SparkSession,
-      options: Map[String, String],
-      files: Seq[FileStatus]): Option[StructType] = {
+  override def inferSchema(sparkSession: SparkSession,
+                           options: Map[String, String],
+                           files: Seq[FileStatus]): Option[StructType] = {
     val csvOptions = new CSVOptions(options)
 
     // TODO: Move filtering.
@@ -60,32 +59,35 @@ class DefaultSource extends FileFormat with DataSourceRegister {
     val firstLine = findFirstLine(csvOptions, rdd)
     val firstRow = new LineCsvReader(csvOptions).parseLine(firstLine)
 
-    val header = if (csvOptions.headerFlag) {
-      firstRow.zipWithIndex.map { case (value, index) =>
-        if (value == null || value.isEmpty || value == csvOptions.nullValue) s"_c$index" else value
+    val header =
+      if (csvOptions.headerFlag) {
+        firstRow.zipWithIndex.map {
+          case (value, index) =>
+            if (value == null || value.isEmpty || value == csvOptions.nullValue) s"_c$index"
+            else value
+        }
+      } else {
+        firstRow.zipWithIndex.map { case (value, index) => s"_c$index" }
       }
-    } else {
-      firstRow.zipWithIndex.map { case (value, index) => s"_c$index" }
-    }
 
     val parsedRdd = tokenRdd(sparkSession, csvOptions, header, paths)
-    val schema = if (csvOptions.inferSchemaFlag) {
-      CSVInferSchema.infer(parsedRdd, header, csvOptions)
-    } else {
-      // By default fields are assumed to be StringType
-      val schemaFields = header.map { fieldName =>
-        StructField(fieldName.toString, StringType, nullable = true)
+    val schema =
+      if (csvOptions.inferSchemaFlag) {
+        CSVInferSchema.infer(parsedRdd, header, csvOptions)
+      } else {
+        // By default fields are assumed to be StringType
+        val schemaFields = header.map { fieldName =>
+          StructField(fieldName.toString, StringType, nullable = true)
+        }
+        StructType(schemaFields)
       }
-      StructType(schemaFields)
-    }
     Some(schema)
   }
 
-  override def prepareWrite(
-      sparkSession: SparkSession,
-      job: Job,
-      options: Map[String, String],
-      dataSchema: StructType): OutputWriterFactory = {
+  override def prepareWrite(sparkSession: SparkSession,
+                            job: Job,
+                            options: Map[String, String],
+                            dataSchema: StructType): OutputWriterFactory = {
     val conf = job.getConfiguration
     val csvOptions = new CSVOptions(options)
     csvOptions.compressionCodec.foreach { codec =>
@@ -109,34 +111,32 @@ class DefaultSource extends FileFormat with DataSourceRegister {
     val broadcastedHadoopConf =
       sparkSession.sparkContext.broadcast(new SerializableConfiguration(hadoopConf))
 
-    (file: PartitionedFile) => {
-      val lineIterator = {
-        val conf = broadcastedHadoopConf.value.value
-        new HadoopFileLinesReader(file, conf).map { line =>
-          new String(line.getBytes, 0, line.getLength, csvOptions.charset)
+    (file: PartitionedFile) =>
+      {
+        val lineIterator = {
+          val conf = broadcastedHadoopConf.value.value
+          new HadoopFileLinesReader(file, conf).map { line =>
+            new String(line.getBytes, 0, line.getLength, csvOptions.charset)
+          }
         }
+
+        CSVRelation.dropHeaderLine(file, lineIterator, csvOptions)
+
+        val tokenizedIterator = new BulkCsvReader(lineIterator, csvOptions, headers)
+        val parser = CSVRelation.csvParser(dataSchema, requiredSchema.fieldNames, csvOptions)
+        tokenizedIterator.flatMap(parser(_).toSeq)
       }
-
-      CSVRelation.dropHeaderLine(file, lineIterator, csvOptions)
-
-      val tokenizedIterator = new BulkCsvReader(lineIterator, csvOptions, headers)
-      val parser = CSVRelation.csvParser(dataSchema, requiredSchema.fieldNames, csvOptions)
-      tokenizedIterator.flatMap(parser(_).toSeq)
-    }
   }
 
   private def baseRdd(
-      sparkSession: SparkSession,
-      options: CSVOptions,
-      inputPaths: Seq[String]): RDD[String] = {
+      sparkSession: SparkSession, options: CSVOptions, inputPaths: Seq[String]): RDD[String] = {
     readText(sparkSession, options, inputPaths.mkString(","))
   }
 
-  private def tokenRdd(
-      sparkSession: SparkSession,
-      options: CSVOptions,
-      header: Array[String],
-      inputPaths: Seq[String]): RDD[Array[String]] = {
+  private def tokenRdd(sparkSession: SparkSession,
+                       options: CSVOptions,
+                       header: Array[String],
+                       inputPaths: Seq[String]): RDD[Array[String]] = {
     val rdd = baseRdd(sparkSession, options, inputPaths)
     // Make sure firstLine is materialized before sending to executors
     val firstLine = if (options.headerFlag) findFirstLine(options, rdd) else null
@@ -160,9 +160,7 @@ class DefaultSource extends FileFormat with DataSourceRegister {
   }
 
   private def readText(
-      sparkSession: SparkSession,
-      options: CSVOptions,
-      location: String): RDD[String] = {
+      sparkSession: SparkSession, options: CSVOptions, location: String): RDD[String] = {
     if (Charset.forName(options.charset) == StandardCharsets.UTF_8) {
       sparkSession.sparkContext.textFile(location)
     } else {

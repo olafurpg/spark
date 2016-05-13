@@ -48,12 +48,11 @@ object LinearDataGenerator {
    * @return Java List of input.
    */
   @Since("0.8.0")
-  def generateLinearInputAsList(
-      intercept: Double,
-      weights: Array[Double],
-      nPoints: Int,
-      seed: Int,
-      eps: Double): java.util.List[LabeledPoint] = {
+  def generateLinearInputAsList(intercept: Double,
+                                weights: Array[Double],
+                                nPoints: Int,
+                                seed: Int,
+                                eps: Double): java.util.List[LabeledPoint] = {
     generateLinearInput(intercept, weights, nPoints, seed, eps).asJava
   }
 
@@ -71,14 +70,18 @@ object LinearDataGenerator {
    * @return Seq of input.
    */
   @Since("0.8.0")
-  def generateLinearInput(
-      intercept: Double,
-      weights: Array[Double],
-      nPoints: Int,
-      seed: Int,
-      eps: Double = 0.1): Seq[LabeledPoint] = {
-    generateLinearInput(intercept, weights, Array.fill[Double](weights.length)(0.0),
-      Array.fill[Double](weights.length)(1.0 / 3.0), nPoints, seed, eps)
+  def generateLinearInput(intercept: Double,
+                          weights: Array[Double],
+                          nPoints: Int,
+                          seed: Int,
+                          eps: Double = 0.1): Seq[LabeledPoint] = {
+    generateLinearInput(intercept,
+                        weights,
+                        Array.fill[Double](weights.length)(0.0),
+                        Array.fill[Double](weights.length)(1.0 / 3.0),
+                        nPoints,
+                        seed,
+                        eps)
   }
 
   /**
@@ -94,17 +97,15 @@ object LinearDataGenerator {
    * @return Seq of input.
    */
   @Since("0.8.0")
-  def generateLinearInput(
-      intercept: Double,
-      weights: Array[Double],
-      xMean: Array[Double],
-      xVariance: Array[Double],
-      nPoints: Int,
-      seed: Int,
-      eps: Double): Seq[LabeledPoint] = {
+  def generateLinearInput(intercept: Double,
+                          weights: Array[Double],
+                          xMean: Array[Double],
+                          xVariance: Array[Double],
+                          nPoints: Int,
+                          seed: Int,
+                          eps: Double): Seq[LabeledPoint] = {
     generateLinearInput(intercept, weights, xMean, xVariance, nPoints, seed, eps, 0.0)
   }
-
 
   /**
    * @param intercept Data intercept
@@ -121,35 +122,38 @@ object LinearDataGenerator {
    * @return Seq of input.
    */
   @Since("1.6.0")
-  def generateLinearInput(
-      intercept: Double,
-      weights: Array[Double],
-      xMean: Array[Double],
-      xVariance: Array[Double],
-      nPoints: Int,
-      seed: Int,
-      eps: Double,
-      sparsity: Double): Seq[LabeledPoint] = {
+  def generateLinearInput(intercept: Double,
+                          weights: Array[Double],
+                          xMean: Array[Double],
+                          xVariance: Array[Double],
+                          nPoints: Int,
+                          seed: Int,
+                          eps: Double,
+                          sparsity: Double): Seq[LabeledPoint] = {
     require(0.0 <= sparsity && sparsity <= 1.0)
 
     val rnd = new Random(seed)
-    def rndElement(i: Int) = {(rnd.nextDouble() - 0.5) * math.sqrt(12.0 * xVariance(i)) + xMean(i)}
+    def rndElement(i: Int) = {
+      (rnd.nextDouble() - 0.5) * math.sqrt(12.0 * xVariance(i)) + xMean(i)
+    }
 
     if (sparsity == 0.0) {
       (0 until nPoints).map { _ =>
         val features = Vectors.dense(weights.indices.map { rndElement(_) }.toArray)
-        val label = BLAS.dot(Vectors.dense(weights), features) +
-          intercept + eps * rnd.nextGaussian()
+        val label =
+          BLAS.dot(Vectors.dense(weights), features) + intercept + eps * rnd.nextGaussian()
         // Return LabeledPoints with DenseVector
         LabeledPoint(label, features)
       }
     } else {
       (0 until nPoints).map { _ =>
-        val indices = weights.indices.filter { _ => rnd.nextDouble() <= sparsity}
+        val indices = weights.indices.filter { _ =>
+          rnd.nextDouble() <= sparsity
+        }
         val values = indices.map { rndElement(_) }
         val features = Vectors.sparse(weights.length, indices.toArray, values.toArray)
-        val label = BLAS.dot(Vectors.dense(weights), features) +
-          intercept + eps * rnd.nextGaussian()
+        val label =
+          BLAS.dot(Vectors.dense(weights), features) + intercept + eps * rnd.nextGaussian()
         // Return LabeledPoints with SparseVector
         LabeledPoint(label, features)
       }
@@ -169,13 +173,12 @@ object LinearDataGenerator {
    * @return RDD of LabeledPoint containing sample data.
    */
   @Since("0.8.0")
-  def generateLinearRDD(
-      sc: SparkContext,
-      nexamples: Int,
-      nfeatures: Int,
-      eps: Double,
-      nparts: Int = 2,
-      intercept: Double = 0.0): RDD[LabeledPoint] = {
+  def generateLinearRDD(sc: SparkContext,
+                        nexamples: Int,
+                        nfeatures: Int,
+                        eps: Double,
+                        nparts: Int = 2,
+                        intercept: Double = 0.0): RDD[LabeledPoint] = {
     val random = new Random(42)
     // Random values distributed uniformly in [-0.5, 0.5]
     val w = Array.fill(nfeatures)(random.nextDouble() - 0.5)
@@ -193,7 +196,7 @@ object LinearDataGenerator {
     if (args.length < 2) {
       // scalastyle:off println
       println("Usage: LinearDataGenerator " +
-        "<master> <output_dir> [num_examples] [num_features] [num_partitions]")
+          "<master> <output_dir> [num_examples] [num_features] [num_partitions]")
       // scalastyle:on println
       System.exit(1)
     }

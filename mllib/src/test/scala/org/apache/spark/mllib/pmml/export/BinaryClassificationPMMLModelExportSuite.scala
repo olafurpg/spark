@@ -45,8 +45,8 @@ class BinaryClassificationPMMLModelExportSuite extends SparkFunSuite {
     // with the same number of predictors of the model weights.
     val pmmlRegressionModel = pmml.getModels.get(0).asInstanceOf[RegressionModel]
     assert(pmmlRegressionModel.getRegressionTables.get(0).getTargetCategory === "1")
-    assert(pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size
-      === logisticRegressionModel.weights.size)
+    assert(
+        pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size === logisticRegressionModel.weights.size)
     // verify if there is a second table with target category 0 and no predictors
     assert(pmmlRegressionModel.getRegressionTables.get(1).getTargetCategory === "0")
     assert(pmmlRegressionModel.getRegressionTables.get(1).getNumericPredictors.size === 0)
@@ -63,8 +63,7 @@ class BinaryClassificationPMMLModelExportSuite extends SparkFunSuite {
     // assert that the PMML format is as expected
     assert(svmModelExport.isInstanceOf[PMMLModelExport])
     val pmml = svmModelExport.getPmml
-    assert(pmml.getHeader.getDescription
-      === "linear SVM")
+    assert(pmml.getHeader.getDescription === "linear SVM")
     // check that the number of fields match the weights size
     assert(pmml.getDataDictionary.getNumberOfFields === svmModel.weights.size + 1)
     // This verify that there is a model attached to the pmml object and the model is a regression
@@ -72,13 +71,12 @@ class BinaryClassificationPMMLModelExportSuite extends SparkFunSuite {
     // with the same number of predictors of the model weights.
     val pmmlRegressionModel = pmml.getModels.get(0).asInstanceOf[RegressionModel]
     assert(pmmlRegressionModel.getRegressionTables.get(0).getTargetCategory === "1")
-    assert(pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size
-      === svmModel.weights.size)
+    assert(
+        pmmlRegressionModel.getRegressionTables.get(0).getNumericPredictors.size === svmModel.weights.size)
     // verify if there is a second table with target category 0 and no predictors
     assert(pmmlRegressionModel.getRegressionTables.get(1).getTargetCategory === "0")
     assert(pmmlRegressionModel.getRegressionTables.get(1).getNumericPredictors.size === 0)
     // ensure linear SVM has normalization method set to NONE
     assert(pmmlRegressionModel.getNormalizationMethod() == RegressionNormalizationMethodType.NONE)
   }
-
 }

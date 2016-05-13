@@ -28,7 +28,8 @@ import org.apache.spark.util.random.{BernoulliCellSampler, PoissonSampler}
 
 /** Physical plan for Project. */
 case class ProjectExec(projectList: Seq[NamedExpression], child: SparkPlan)
-  extends UnaryExecNode with CodegenSupport {
+    extends UnaryExecNode
+    with CodegenSupport {
 
   override def output: Seq[Attribute] = projectList.map(_.toAttribute)
 
@@ -51,8 +52,8 @@ case class ProjectExec(projectList: Seq[NamedExpression], child: SparkPlan)
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode], row: ExprCode): String = {
-    val exprs = projectList.map(x =>
-      ExpressionCanonicalizer.execute(BindReferences.bindReference(x, child.output)))
+    val exprs = projectList.map(
+        x => ExpressionCanonicalizer.execute(BindReferences.bindReference(x, child.output)))
     ctx.currentVars = input
     val resultVars = exprs.map(_.genCode(ctx))
     // Evaluation of non-deterministic expressions can't be deferred.
@@ -65,8 +66,8 @@ case class ProjectExec(projectList: Seq[NamedExpression], child: SparkPlan)
 
   protected override def doExecute(): RDD[InternalRow] = {
     child.execute().mapPartitionsInternal { iter =>
-      val project = UnsafeProjection.create(projectList, child.output,
-        subexpressionEliminationEnabled)
+      val project =
+        UnsafeProjection.create(projectList, child.output, subexpressionEliminationEnabled)
       iter.map(project)
     }
   }
@@ -74,10 +75,11 @@ case class ProjectExec(projectList: Seq[NamedExpression], child: SparkPlan)
   override def outputOrdering: Seq[SortOrder] = child.outputOrdering
 }
 
-
 /** Physical plan for Filter. */
 case class FilterExec(condition: Expression, child: SparkPlan)
-  extends UnaryExecNode with CodegenSupport with PredicateHelper {
+    extends UnaryExecNode
+    with CodegenSupport
+    with PredicateHelper {
 
   // Split out all the IsNotNulls from condition.
   private val (notNullPreds, otherPreds) = splitConjunctivePredicates(condition).partition {
@@ -103,7 +105,7 @@ case class FilterExec(condition: Expression, child: SparkPlan)
   }
 
   private[sql] override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     child.asInstanceOf[CodegenSupport].inputRDDs()
@@ -125,11 +127,12 @@ case class FilterExec(condition: Expression, child: SparkPlan)
 
       // Generate the code for the predicate.
       val ev = ExpressionCanonicalizer.execute(bound).genCode(ctx)
-      val nullCheck = if (bound.nullable) {
-        s"${ev.isNull} || "
-      } else {
-        s""
-      }
+      val nullCheck =
+        if (bound.nullable) {
+          s"${ev.isNull} || "
+        } else {
+          s""
+        }
 
       s"""
          |$evaluated
@@ -152,7 +155,9 @@ case class FilterExec(condition: Expression, child: SparkPlan)
     val generatedIsNotNullChecks = new Array[Boolean](notNullPreds.length)
     val generated = otherPreds.map { c =>
       val nullChecks = c.references.map { r =>
-        val idx = notNullPreds.indexWhere { n => n.asInstanceOf[IsNotNull].child.semanticEquals(r)}
+        val idx = notNullPreds.indexWhere { n =>
+          n.asInstanceOf[IsNotNull].child.semanticEquals(r)
+        }
         if (idx != -1 && !generatedIsNotNullChecks(idx)) {
           generatedIsNotNullChecks(idx) = true
           // Use the child's output. The nullability is what the child produced.
@@ -170,21 +175,23 @@ case class FilterExec(condition: Expression, child: SparkPlan)
        """.stripMargin.trim
     }.mkString("\n")
 
-    val nullChecks = notNullPreds.zipWithIndex.map { case (c, idx) =>
-      if (!generatedIsNotNullChecks(idx)) {
-        genPredicate(c, input, child.output)
-      } else {
-        ""
-      }
+    val nullChecks = notNullPreds.zipWithIndex.map {
+      case (c, idx) =>
+        if (!generatedIsNotNullChecks(idx)) {
+          genPredicate(c, input, child.output)
+        } else {
+          ""
+        }
     }.mkString("\n")
 
     // Reset the isNull to false for the not-null columns, then the followed operators could
     // generate better code (remove dead branches).
-    val resultVars = input.zipWithIndex.map { case (ev, i) =>
-      if (notNullAttributes.contains(child.output(i).exprId)) {
-        ev.isNull = "false"
-      }
-      ev
+    val resultVars = input.zipWithIndex.map {
+      case (ev, i) =>
+        if (notNullAttributes.contains(child.output(i).exprId)) {
+          ev.isNull = "false"
+        }
+        ev
     }
 
     s"""
@@ -220,26 +227,28 @@ case class FilterExec(condition: Expression, child: SparkPlan)
  * @param seed the random seed
  * @param child the SparkPlan
  */
-case class SampleExec(
-    lowerBound: Double,
-    upperBound: Double,
-    withReplacement: Boolean,
-    seed: Long,
-    child: SparkPlan) extends UnaryExecNode with CodegenSupport {
+case class SampleExec(lowerBound: Double,
+                      upperBound: Double,
+                      withReplacement: Boolean,
+                      seed: Long,
+                      child: SparkPlan)
+    extends UnaryExecNode
+    with CodegenSupport {
   override def output: Seq[Attribute] = child.output
 
   private[sql] override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   protected override def doExecute(): RDD[InternalRow] = {
     if (withReplacement) {
       // Disable gap sampling since the gap sampling method buffers two rows internally,
       // requiring us to copy the row, which is more expensive than the random number generator.
       new PartitionwiseSampledRDD[InternalRow, InternalRow](
-        child.execute(),
-        new PoissonSampler[InternalRow](upperBound - lowerBound, useGapSamplingIfPossible = false),
-        preservesPartitioning = true,
-        seed)
+          child.execute(),
+          new PoissonSampler[InternalRow](
+              upperBound - lowerBound, useGapSamplingIfPossible = false),
+          preservesPartitioning = true,
+          seed)
     } else {
       child.execute().randomSampleWithRange(lowerBound, upperBound, seed)
     }
@@ -260,11 +269,9 @@ case class SampleExec(
     if (withReplacement) {
       val samplerClass = classOf[PoissonSampler[UnsafeRow]].getName
       val initSampler = ctx.freshName("initSampler")
-      ctx.addMutableState(s"$samplerClass<UnsafeRow>", sampler,
-        s"$initSampler();")
+      ctx.addMutableState(s"$samplerClass<UnsafeRow>", sampler, s"$initSampler();")
 
-      ctx.addNewFunction(initSampler,
-        s"""
+      ctx.addNewFunction(initSampler, s"""
           | private void $initSampler() {
           |   $sampler = new $samplerClass<UnsafeRow>($upperBound - $lowerBound, false);
           |   java.util.Random random = new java.util.Random(${seed}L);
@@ -288,8 +295,7 @@ case class SampleExec(
        """.stripMargin.trim
     } else {
       val samplerClass = classOf[BernoulliCellSampler[UnsafeRow]].getName
-      ctx.addMutableState(s"$samplerClass<UnsafeRow>", sampler,
-        s"""
+      ctx.addMutableState(s"$samplerClass<UnsafeRow>", sampler, s"""
           | $sampler = new $samplerClass<UnsafeRow>($lowerBound, $upperBound, false);
           | $sampler.setSeed(${seed}L + partitionIndex);
          """.stripMargin.trim)
@@ -303,7 +309,6 @@ case class SampleExec(
   }
 }
 
-
 /**
  * Physical plan for range (generating a range of 64 bit numbers.
  *
@@ -313,23 +318,22 @@ case class SampleExec(
  * @param numElements total number of elements to output.
  * @param output output attributes.
  */
-case class RangeExec(
-    start: Long,
-    step: Long,
-    numSlices: Int,
-    numElements: BigInt,
-    output: Seq[Attribute])
-  extends LeafExecNode with CodegenSupport {
+case class RangeExec(start: Long,
+                     step: Long,
+                     numSlices: Int,
+                     numElements: BigInt,
+                     output: Seq[Attribute])
+    extends LeafExecNode
+    with CodegenSupport {
 
   private[sql] override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   // output attributes should not affect the results
   override lazy val cleanArgs: Seq[Any] = Seq(start, step, numSlices, numElements)
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
-    sqlContext.sparkContext.parallelize(0 until numSlices, numSlices)
-      .map(i => InternalRow(i)) :: Nil
+    sqlContext.sparkContext.parallelize(0 until numSlices, numSlices).map(i => InternalRow(i)) :: Nil
   }
 
   protected override def doProduce(ctx: CodegenContext): String = {
@@ -347,14 +351,14 @@ case class RangeExec(
     val value = ctx.freshName("value")
     val ev = ExprCode("", "false", value)
     val BigInt = classOf[java.math.BigInteger].getName
-    val checkEnd = if (step > 0) {
-      s"$number < $partitionEnd"
-    } else {
-      s"$number > $partitionEnd"
-    }
+    val checkEnd =
+      if (step > 0) {
+        s"$number < $partitionEnd"
+      } else {
+        s"$number > $partitionEnd"
+      }
 
-    ctx.addNewFunction("initRange",
-      s"""
+    ctx.addNewFunction("initRange", s"""
         | private void initRange(int idx) {
         |   $BigInt index = $BigInt.valueOf(idx);
         |   $BigInt numSlice = $BigInt.valueOf(${numSlices}L);
@@ -409,10 +413,8 @@ case class RangeExec(
 
   protected override def doExecute(): RDD[InternalRow] = {
     val numOutputRows = longMetric("numOutputRows")
-    sqlContext
-      .sparkContext
-      .parallelize(0 until numSlices, numSlices)
-      .mapPartitionsWithIndex { (i, _) =>
+    sqlContext.sparkContext.parallelize(0 until numSlices, numSlices).mapPartitionsWithIndex {
+      (i, _) =>
         val partitionStart = (i * numElements) / numSlices * step + start
         val partitionEnd = (((i + 1) * numElements) / numSlices) * step + start
         def getSafeMargin(bi: BigInt): Long =
@@ -456,7 +458,7 @@ case class RangeExec(
             unsafeRow
           }
         }
-      }
+    }
   }
 }
 
@@ -465,8 +467,10 @@ case class RangeExec(
  */
 case class UnionExec(children: Seq[SparkPlan]) extends SparkPlan {
   override def output: Seq[Attribute] =
-    children.map(_.output).transpose.map(attrs =>
-      attrs.head.withNullability(attrs.exists(_.nullable)))
+    children
+      .map(_.output)
+      .transpose
+      .map(attrs => attrs.head.withNullability(attrs.exists(_.nullable)))
 
   protected override def doExecute(): RDD[InternalRow] =
     sparkContext.union(children.map(_.execute()))

@@ -35,18 +35,19 @@ import org.apache.spark.sql.types.LongType
  * broadcast relation.  This data is then placed in a Spark broadcast variable.  The streamed
  * relation is not shuffled.
  */
-case class BroadcastHashJoinExec(
-    leftKeys: Seq[Expression],
-    rightKeys: Seq[Expression],
-    joinType: JoinType,
-    buildSide: BuildSide,
-    condition: Option[Expression],
-    left: SparkPlan,
-    right: SparkPlan)
-  extends BinaryExecNode with HashJoin with CodegenSupport {
+case class BroadcastHashJoinExec(leftKeys: Seq[Expression],
+                                 rightKeys: Seq[Expression],
+                                 joinType: JoinType,
+                                 buildSide: BuildSide,
+                                 condition: Option[Expression],
+                                 left: SparkPlan,
+                                 right: SparkPlan)
+    extends BinaryExecNode
+    with HashJoin
+    with CodegenSupport {
 
   override private[sql] lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   override def requiredChildDistribution: Seq[Distribution] = {
     val mode = HashedRelationBroadcastMode(buildKeys)
@@ -85,8 +86,7 @@ case class BroadcastHashJoinExec(
       case LeftAnti => codegenAnti(ctx, input)
       case j: ExistenceJoin => codegenExistence(ctx, input)
       case x =>
-        throw new IllegalArgumentException(
-          s"BroadcastHashJoin should not take $x as the JoinType")
+        throw new IllegalArgumentException(s"BroadcastHashJoin should not take $x as the JoinType")
     }
   }
 
@@ -99,8 +99,9 @@ case class BroadcastHashJoinExec(
     val broadcast = ctx.addReferenceObj("broadcast", broadcastRelation)
     val relationTerm = ctx.freshName("relation")
     val clsName = broadcastRelation.value.getClass.getName
-    ctx.addMutableState(clsName, relationTerm,
-      s"""
+    ctx.addMutableState(clsName,
+                        relationTerm,
+                        s"""
          | $relationTerm = (($clsName) $broadcast.value()).asReadOnlyCopy();
          | incPeakExecutionMemory($relationTerm.estimatedSize());
        """.stripMargin)
@@ -111,9 +112,7 @@ case class BroadcastHashJoinExec(
    * Returns the code for generating join key for stream side, and expression of whether the key
    * has any null in it or not.
    */
-  private def genStreamSideJoinKey(
-      ctx: CodegenContext,
-      input: Seq[ExprCode]): (ExprCode, String) = {
+  private def genStreamSideJoinKey(ctx: CodegenContext, input: Seq[ExprCode]): (ExprCode, String) = {
     ctx.currentVars = input
     if (streamedKeys.length == 1 && streamedKeys.head.dataType == LongType) {
       // generate the join key as Long
@@ -132,15 +131,16 @@ case class BroadcastHashJoinExec(
   private def genBuildSideVars(ctx: CodegenContext, matched: String): Seq[ExprCode] = {
     ctx.currentVars = null
     ctx.INPUT_ROW = matched
-    buildPlan.output.zipWithIndex.map { case (a, i) =>
-      val ev = BoundReference(i, a.dataType, a.nullable).genCode(ctx)
-      if (joinType == Inner) {
-        ev
-      } else {
-        // the variables are needed even there is no matched rows
-        val isNull = ctx.freshName("isNull")
-        val value = ctx.freshName("value")
-        val code = s"""
+    buildPlan.output.zipWithIndex.map {
+      case (a, i) =>
+        val ev = BoundReference(i, a.dataType, a.nullable).genCode(ctx)
+        if (joinType == Inner) {
+          ev
+        } else {
+          // the variables are needed even there is no matched rows
+          val isNull = ctx.freshName("isNull")
+          val value = ctx.freshName("value")
+          val code = s"""
           |boolean $isNull = true;
           |${ctx.javaType(a.dataType)} $value = ${ctx.defaultValue(a.dataType)};
           |if ($matched != null) {
@@ -149,8 +149,8 @@ case class BroadcastHashJoinExec(
           |  $value = ${ev.value};
           |}
          """.stripMargin
-        ExprCode(code, isNull, value)
-      }
+          ExprCode(code, isNull, value)
+        }
     }
   }
 
@@ -158,35 +158,36 @@ case class BroadcastHashJoinExec(
    * Generate the (non-equi) condition used to filter joined rows. This is used in Inner, Left Semi
    * and Left Anti joins.
    */
-  private def getJoinCondition(
-      ctx: CodegenContext,
-      input: Seq[ExprCode],
-      anti: Boolean = false): (String, String, Seq[ExprCode]) = {
+  private def getJoinCondition(ctx: CodegenContext,
+                               input: Seq[ExprCode],
+                               anti: Boolean = false): (String, String, Seq[ExprCode]) = {
     val matched = ctx.freshName("matched")
     val buildVars = genBuildSideVars(ctx, matched)
-    val checkCondition = if (condition.isDefined) {
-      val expr = condition.get
-      // evaluate the variables from build side that used by condition
-      val eval = evaluateRequiredVariables(buildPlan.output, buildVars, expr.references)
-      // filter the output via condition
-      ctx.currentVars = input ++ buildVars
-      val ev =
-        BindReferences.bindReference(expr, streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      val skipRow = if (!anti) {
-        s"${ev.isNull} || !${ev.value}"
-      } else {
-        s"!${ev.isNull} && ${ev.value}"
-      }
-      s"""
+    val checkCondition =
+      if (condition.isDefined) {
+        val expr = condition.get
+        // evaluate the variables from build side that used by condition
+        val eval = evaluateRequiredVariables(buildPlan.output, buildVars, expr.references)
+        // filter the output via condition
+        ctx.currentVars = input ++ buildVars
+        val ev =
+          BindReferences.bindReference(expr, streamedPlan.output ++ buildPlan.output).genCode(ctx)
+        val skipRow =
+          if (!anti) {
+            s"${ev.isNull} || !${ev.value}"
+          } else {
+            s"!${ev.isNull} && ${ev.value}"
+          }
+        s"""
          |$eval
          |${ev.code}
          |if ($skipRow) continue;
        """.stripMargin
-    } else if (anti) {
-      "continue;"
-    } else {
-      ""
-    }
+      } else if (anti) {
+        "continue;"
+      } else {
+        ""
+      }
     (matched, checkCondition, buildVars)
   }
 
@@ -214,7 +215,6 @@ case class BroadcastHashJoinExec(
          |$numOutput.add(1);
          |${consume(ctx, resultVars)}
        """.stripMargin
-
     } else {
       ctx.copyResult = true
       val matches = ctx.freshName("matches")
@@ -247,14 +247,15 @@ case class BroadcastHashJoinExec(
 
     // filter the output via condition
     val conditionPassed = ctx.freshName("conditionPassed")
-    val checkCondition = if (condition.isDefined) {
-      val expr = condition.get
-      // evaluate the variables from build side that used by condition
-      val eval = evaluateRequiredVariables(buildPlan.output, buildVars, expr.references)
-      ctx.currentVars = input ++ buildVars
-      val ev =
-        BindReferences.bindReference(expr, streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      s"""
+    val checkCondition =
+      if (condition.isDefined) {
+        val expr = condition.get
+        // evaluate the variables from build side that used by condition
+        val eval = evaluateRequiredVariables(buildPlan.output, buildVars, expr.references)
+        ctx.currentVars = input ++ buildVars
+        val ev =
+          BindReferences.bindReference(expr, streamedPlan.output ++ buildPlan.output).genCode(ctx)
+        s"""
          |boolean $conditionPassed = true;
          |${eval.trim}
          |${ev.code}
@@ -262,9 +263,9 @@ case class BroadcastHashJoinExec(
          |  $conditionPassed = !${ev.isNull} && ${ev.value};
          |}
        """.stripMargin
-    } else {
-      s"final boolean $conditionPassed = true;"
-    }
+      } else {
+        s"final boolean $conditionPassed = true;"
+      }
 
     val resultVars = buildSide match {
       case BuildLeft => buildVars ++ input
@@ -285,7 +286,6 @@ case class BroadcastHashJoinExec(
          |$numOutput.add(1);
          |${consume(ctx, resultVars)}
        """.stripMargin
-
     } else {
       ctx.copyResult = true
       val matches = ctx.freshName("matches")
@@ -418,22 +418,23 @@ case class BroadcastHashJoinExec(
 
     val matched = ctx.freshName("matched")
     val buildVars = genBuildSideVars(ctx, matched)
-    val checkCondition = if (condition.isDefined) {
-      val expr = condition.get
-      // evaluate the variables from build side that used by condition
-      val eval = evaluateRequiredVariables(buildPlan.output, buildVars, expr.references)
-      // filter the output via condition
-      ctx.currentVars = input ++ buildVars
-      val ev =
-        BindReferences.bindReference(expr, streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      s"""
+    val checkCondition =
+      if (condition.isDefined) {
+        val expr = condition.get
+        // evaluate the variables from build side that used by condition
+        val eval = evaluateRequiredVariables(buildPlan.output, buildVars, expr.references)
+        // filter the output via condition
+        ctx.currentVars = input ++ buildVars
+        val ev =
+          BindReferences.bindReference(expr, streamedPlan.output ++ buildPlan.output).genCode(ctx)
+        s"""
          |$eval
          |${ev.code}
          |$existsVar = !${ev.isNull} && ${ev.value};
        """.stripMargin
-    } else {
-      s"$existsVar = true;"
-    }
+      } else {
+        s"$existsVar = true;"
+      }
 
     val resultVar = input ++ Seq(ExprCode("", "false", existsVar))
     if (broadcastRelation.value.keyIsUnique) {

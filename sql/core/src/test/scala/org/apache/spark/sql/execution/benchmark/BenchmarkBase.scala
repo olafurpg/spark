@@ -50,5 +50,4 @@ private[benchmark] trait BenchmarkBase extends SparkFunSuite {
 
     benchmark.run()
   }
-
 }

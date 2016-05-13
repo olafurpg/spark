@@ -25,7 +25,7 @@ class NumberConverterSuite extends SparkFunSuite {
 
   private[this] def checkConv(n: String, fromBase: Int, toBase: Int, expected: String): Unit = {
     assert(convert(UTF8String.fromString(n).getBytes, fromBase, toBase) ===
-      UTF8String.fromString(expected))
+        UTF8String.fromString(expected))
   }
 
   test("convert") {
@@ -36,5 +36,4 @@ class NumberConverterSuite extends SparkFunSuite {
     checkConv("9223372036854775807", 36, 16, "FFFFFFFFFFFFFFFF")
     checkConv("11abc", 10, 16, "B")
   }
-
 }

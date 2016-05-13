@@ -27,10 +27,9 @@ import org.apache.spark.mllib.util.LinearDataGenerator
 class PMMLModelExportFactorySuite extends SparkFunSuite {
 
   test("PMMLModelExportFactory create KMeansPMMLModelExport when passing a KMeansModel") {
-    val clusterCenters = Array(
-      Vectors.dense(1.0, 2.0, 6.0),
-      Vectors.dense(1.0, 3.0, 0.0),
-      Vectors.dense(1.0, 4.0, 6.0))
+    val clusterCenters = Array(Vectors.dense(1.0, 2.0, 6.0),
+                               Vectors.dense(1.0, 3.0, 0.0),
+                               Vectors.dense(1.0, 4.0, 6.0))
     val kmeansModel = new KMeansModel(clusterCenters)
 
     val modelExport = PMMLModelExportFactory.createPMMLModelExport(kmeansModel)
@@ -38,8 +37,8 @@ class PMMLModelExportFactorySuite extends SparkFunSuite {
     assert(modelExport.isInstanceOf[KMeansPMMLModelExport])
   }
 
-  test("PMMLModelExportFactory create GeneralizedLinearPMMLModelExport when passing a "
-    + "LinearRegressionModel, RidgeRegressionModel or LassoModel") {
+  test("PMMLModelExportFactory create GeneralizedLinearPMMLModelExport when passing a " +
+      "LinearRegressionModel, RidgeRegressionModel or LassoModel") {
     val linearInput = LinearDataGenerator.generateLinearInput(3.0, Array(10.0, 10.0), 1, 17)
 
     val linearRegressionModel =
@@ -57,8 +56,8 @@ class PMMLModelExportFactorySuite extends SparkFunSuite {
     assert(lassoModelExport.isInstanceOf[GeneralizedLinearPMMLModelExport])
   }
 
-  test("PMMLModelExportFactory create BinaryClassificationPMMLModelExport "
-    + "when passing a LogisticRegressionModel or SVMModel") {
+  test("PMMLModelExportFactory create BinaryClassificationPMMLModelExport " +
+      "when passing a LogisticRegressionModel or SVMModel") {
     val linearInput = LinearDataGenerator.generateLinearInput(3.0, Array(10.0, 10.0), 1, 17)
 
     val logisticRegressionModel =
@@ -72,12 +71,15 @@ class PMMLModelExportFactorySuite extends SparkFunSuite {
     assert(svmModelExport.isInstanceOf[BinaryClassificationPMMLModelExport])
   }
 
-  test("PMMLModelExportFactory throw IllegalArgumentException "
-    + "when passing a Multinomial Logistic Regression") {
+  test("PMMLModelExportFactory throw IllegalArgumentException " +
+      "when passing a Multinomial Logistic Regression") {
+
     /** 3 classes, 2 features */
-    val multiclassLogisticRegressionModel = new LogisticRegressionModel(
-      weights = Vectors.dense(0.1, 0.2, 0.3, 0.4), intercept = 1.0,
-      numFeatures = 2, numClasses = 3)
+    val multiclassLogisticRegressionModel =
+      new LogisticRegressionModel(weights = Vectors.dense(0.1, 0.2, 0.3, 0.4),
+                                  intercept = 1.0,
+                                  numFeatures = 2,
+                                  numClasses = 3)
 
     intercept[IllegalArgumentException] {
       PMMLModelExportFactory.createPMMLModelExport(multiclassLogisticRegressionModel)

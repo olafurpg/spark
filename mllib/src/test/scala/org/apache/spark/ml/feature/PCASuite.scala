@@ -38,9 +38,9 @@ class PCASuite extends SparkFunSuite with MLlibTestSparkContext with DefaultRead
 
   test("pca") {
     val data = Array(
-      Vectors.sparse(5, Seq((1, 1.0), (3, 7.0))),
-      Vectors.dense(2.0, 0.0, 3.0, 4.0, 5.0),
-      Vectors.dense(4.0, 0.0, 0.0, 6.0, 7.0)
+        Vectors.sparse(5, Seq((1, 1.0), (3, 7.0))),
+        Vectors.dense(2.0, 0.0, 3.0, 4.0, 5.0),
+        Vectors.dense(4.0, 0.0, 0.0, 6.0, 7.0)
     )
 
     val dataRDD = sc.parallelize(data, 2)
@@ -51,11 +51,7 @@ class PCASuite extends SparkFunSuite with MLlibTestSparkContext with DefaultRead
 
     val df = spark.createDataFrame(dataRDD.zip(expected)).toDF("features", "expected")
 
-    val pca = new PCA()
-      .setInputCol("features")
-      .setOutputCol("pca_features")
-      .setK(3)
-      .fit(df)
+    val pca = new PCA().setInputCol("features").setOutputCol("pca_features").setK(3).fit(df)
 
     // copied model must have the same parent.
     MLTestingUtils.checkCopy(pca)
@@ -67,17 +63,15 @@ class PCASuite extends SparkFunSuite with MLlibTestSparkContext with DefaultRead
   }
 
   test("PCA read/write") {
-    val t = new PCA()
-      .setInputCol("myInputCol")
-      .setOutputCol("myOutputCol")
-      .setK(3)
+    val t = new PCA().setInputCol("myInputCol").setOutputCol("myOutputCol").setK(3)
     testDefaultReadWrite(t)
   }
 
   test("PCAModel read/write") {
-    val instance = new PCAModel("myPCAModel",
-      Matrices.dense(2, 2, Array(0.0, 1.0, 2.0, 3.0)).asInstanceOf[DenseMatrix],
-      Vectors.dense(0.5, 0.5).asInstanceOf[DenseVector])
+    val instance =
+      new PCAModel("myPCAModel",
+                   Matrices.dense(2, 2, Array(0.0, 1.0, 2.0, 3.0)).asInstanceOf[DenseMatrix],
+                   Vectors.dense(0.5, 0.5).asInstanceOf[DenseVector])
     val newInstance = testDefaultReadWrite(instance)
     assert(newInstance.pc === instance.pc)
   }

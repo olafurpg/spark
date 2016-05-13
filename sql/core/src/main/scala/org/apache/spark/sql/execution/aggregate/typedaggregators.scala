@@ -26,7 +26,6 @@ import org.apache.spark.sql.expressions.Aggregator
 // This file defines internal implementations for aggregators.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 class TypedSumDouble[IN](f: IN => Double) extends Aggregator[IN, Double, Double] {
   override def zero: Double = 0.0
   override def reduce(b: Double, a: IN): Double = b + f(a)
@@ -43,7 +42,6 @@ class TypedSumDouble[IN](f: IN => Double) extends Aggregator[IN, Double, Double]
     toColumn.asInstanceOf[TypedColumn[IN, java.lang.Double]]
   }
 }
-
 
 class TypedSumLong[IN](f: IN => Long) extends Aggregator[IN, Long, Long] {
   override def zero: Long = 0L
@@ -62,7 +60,6 @@ class TypedSumLong[IN](f: IN => Long) extends Aggregator[IN, Long, Long] {
   }
 }
 
-
 class TypedCount[IN](f: IN => Any) extends Aggregator[IN, Long, Long] {
   override def zero: Long = 0
   override def reduce(b: Long, a: IN): Long = {
@@ -80,7 +77,6 @@ class TypedCount[IN](f: IN => Any) extends Aggregator[IN, Long, Long] {
     toColumn.asInstanceOf[TypedColumn[IN, java.lang.Long]]
   }
 }
-
 
 class TypedAverage[IN](f: IN => Double) extends Aggregator[IN, (Double, Long), Double] {
   override def zero: (Double, Long) = (0.0, 0L)

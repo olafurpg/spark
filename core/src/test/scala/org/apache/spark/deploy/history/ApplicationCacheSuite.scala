@@ -48,10 +48,9 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
    * subclass with access to the cache internals
    * @param retainedApplications number of retained applications
    */
-  class TestApplicationCache(
-      operations: ApplicationCacheOperations = new StubCacheOperations(),
-      retainedApplications: Int,
-      clock: Clock = new ManualClock(0))
+  class TestApplicationCache(operations: ApplicationCacheOperations = new StubCacheOperations(),
+                             retainedApplications: Int,
+                             clock: Clock = new ManualClock(0))
       extends ApplicationCache(operations, retainedApplications, clock) {
 
     def cache(): LoadingCache[CacheKey, CacheEntry] = appCache
@@ -78,50 +77,47 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
     override def getAppUI(appId: String, attemptId: Option[String]): Option[LoadedAppUI] = {
       logDebug(s"getAppUI($appId, $attemptId)")
       getAppUICount += 1
-      instances.get(CacheKey(appId, attemptId)).map( e =>
-        LoadedAppUI(e.ui, updateProbe(appId, attemptId, e.probeTime)))
+      instances
+        .get(CacheKey(appId, attemptId))
+        .map(e => LoadedAppUI(e.ui, updateProbe(appId, attemptId, e.probeTime)))
     }
 
-    override def attachSparkUI(
-        appId: String,
-        attemptId: Option[String],
-        ui: SparkUI,
-        completed: Boolean): Unit = {
+    override def attachSparkUI(appId: String,
+                               attemptId: Option[String],
+                               ui: SparkUI,
+                               completed: Boolean): Unit = {
       logDebug(s"attachSparkUI($appId, $attemptId, $ui)")
       attachCount += 1
       attached += (CacheKey(appId, attemptId) -> ui)
     }
 
-    def putAndAttach(
-        appId: String,
-        attemptId: Option[String],
-        completed: Boolean,
-        started: Long,
-        ended: Long,
-        timestamp: Long): SparkUI = {
+    def putAndAttach(appId: String,
+                     attemptId: Option[String],
+                     completed: Boolean,
+                     started: Long,
+                     ended: Long,
+                     timestamp: Long): SparkUI = {
       val ui = putAppUI(appId, attemptId, completed, started, ended, timestamp)
       attachSparkUI(appId, attemptId, ui, completed)
       ui
     }
 
-    def putAppUI(
-        appId: String,
-        attemptId: Option[String],
-        completed: Boolean,
-        started: Long,
-        ended: Long,
-        timestamp: Long): SparkUI = {
+    def putAppUI(appId: String,
+                 attemptId: Option[String],
+                 completed: Boolean,
+                 started: Long,
+                 ended: Long,
+                 timestamp: Long): SparkUI = {
       val ui = newUI(appId, attemptId, completed, started, ended)
       putInstance(appId, attemptId, ui, completed, timestamp)
       ui
     }
 
-    def putInstance(
-        appId: String,
-        attemptId: Option[String],
-        ui: SparkUI,
-        completed: Boolean,
-        timestamp: Long): Unit = {
+    def putInstance(appId: String,
+                    attemptId: Option[String],
+                    ui: SparkUI,
+                    completed: Boolean,
+                    timestamp: Long): Unit = {
       instances += (CacheKey(appId, attemptId) ->
           new CacheEntry(ui, completed, updateProbe(appId, attemptId, timestamp), timestamp))
     }
@@ -153,10 +149,8 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
      * @param attemptId attempt to probe
      * @param updateTime timestamp of this UI load
      */
-    private[history] def updateProbe(
-        appId: String,
-        attemptId: Option[String],
-        updateTime: Long)(): Boolean = {
+    private[history] def updateProbe(appId: String, attemptId: Option[String], updateTime: Long)(
+        ): Boolean = {
       updateProbeCount += 1
       logDebug(s"isUpdated($appId, $attemptId, ${updateTime})")
       val entry = instances.get(CacheKey(appId, attemptId)).get
@@ -170,15 +164,25 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
    * Create a new UI. The info/attempt info classes here are from the package
    * `org.apache.spark.status.api.v1`, not the near-equivalents from the history package
    */
-  def newUI(
-      name: String,
-      attemptId: Option[String],
-      completed: Boolean,
-      started: Long,
-      ended: Long): SparkUI = {
-    val info = new ApplicationInfo(name, name, Some(1), Some(1), Some(1), Some(64),
-      Seq(new AttemptInfo(attemptId, new Date(started), new Date(ended),
-        new Date(ended), ended - started, "user", completed)))
+  def newUI(name: String,
+            attemptId: Option[String],
+            completed: Boolean,
+            started: Long,
+            ended: Long): SparkUI = {
+    val info = new ApplicationInfo(name,
+                                   name,
+                                   Some(1),
+                                   Some(1),
+                                   Some(1),
+                                   Some(64),
+                                   Seq(
+                                       new AttemptInfo(attemptId,
+                                                       new Date(started),
+                                                       new Date(ended),
+                                                       new Date(ended),
+                                                       ended - started,
+                                                       "user",
+                                                       completed)))
     val ui = mock[SparkUI]
     when(ui.getApplicationInfoList).thenReturn(List(info).iterator)
     when(ui.getAppName).thenReturn(name)
@@ -326,11 +330,8 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
    * @param expected expected value.
    * @param cache cache
    */
-  def assertMetric(
-      name: String,
-      counter: Counter,
-      expected: Long)
-      (implicit cache: ApplicationCache): Unit = {
+  def assertMetric(name: String, counter: Counter, expected: Long)(
+      implicit cache: ApplicationCache): Unit = {
     val actual = counter.getCount
     if (actual != expected) {
       // this is here because Scalatest loses stack depth
@@ -347,11 +348,8 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
    * @param expected expected value
    * @param cache app cache
    */
-  def assertCacheEntryEquals(
-      appId: String,
-      attemptId: Option[String],
-      expected: CacheEntry)
-      (implicit cache: ApplicationCache): Unit = {
+  def assertCacheEntryEquals(appId: String, attemptId: Option[String], expected: CacheEntry)(
+      implicit cache: ApplicationCache): Unit = {
     val actual = cache.lookupCacheEntry(appId, attemptId)
     val errorText = s"Expected get($appId, $attemptId) -> $expected, but got $actual from $cache"
     assert(expected.ui === actual.ui, errorText + " SparkUI reference")
@@ -367,10 +365,8 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
    * @param attemptId attempt ID
    * @param cache app cache
    */
-  def assertNotFound(
-      appId: String,
-      attemptId: Option[String])
-      (implicit cache: ApplicationCache): Unit = {
+  def assertNotFound(appId: String, attemptId: Option[String])(
+      implicit cache: ApplicationCache): Unit = {
     val ex = intercept[UncheckedExecutionException] {
       cache.get(appId, attemptId)
     }
@@ -386,15 +382,15 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
     val clock = new ManualClock(0)
     val size = 5
     // only two entries are retained, so we expect evictions to occur on lookups
-    implicit val cache: ApplicationCache = new TestApplicationCache(operations,
-      retainedApplications = size, clock = clock)
+    implicit val cache: ApplicationCache =
+      new TestApplicationCache(operations, retainedApplications = size, clock = clock)
 
     val attempt1 = Some("01")
 
     val ids = new ListBuffer[String]()
     // build a list of applications
     val count = 100
-    for (i <- 1 to count ) {
+    for (i <- 1 to count) {
       val appId = f"app-$i%04d"
       ids += appId
       clock.advance(10)
@@ -410,12 +406,12 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
 
     assertMetric("loadCount", metrics.loadCount, count)
     assertMetric("evictionCount", metrics.evictionCount, count - size)
-}
+  }
 
   test("Attempts are Evicted") {
     val operations = new StubCacheOperations()
-    implicit val cache: ApplicationCache = new TestApplicationCache(operations,
-      retainedApplications = 4)
+    implicit val cache: ApplicationCache =
+      new TestApplicationCache(operations, retainedApplications = 4)
     val metrics = cache.metrics
     val appId = "app1"
     val attempt1 = Some("01")
@@ -455,14 +451,13 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
     expectLoadAndEvictionCounts(5, 1)
     cache.get(appId, attempt5)
     expectLoadAndEvictionCounts(5, 1)
-
   }
 
   test("Instantiate Filter") {
     // this is a regression test on the filter being constructable
     val clazz = Utils.classForName(ApplicationCacheCheckFilterRelay.FILTER_NAME)
     val instance = clazz.newInstance()
-    instance shouldBe a [Filter]
+    instance shouldBe a[Filter]
   }
 
   test("redirect includes query params") {
@@ -485,5 +480,4 @@ class ApplicationCacheSuite extends SparkFunSuite with Logging with MockitoSugar
     filter.doFilter(request, resp, null)
     verify(resp).sendRedirect("http://localhost:18080/history/local-123/jobs/job/?id=2")
   }
-
 }

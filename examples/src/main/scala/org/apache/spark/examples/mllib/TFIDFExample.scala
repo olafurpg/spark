@@ -35,8 +35,8 @@ object TFIDFExample {
 
     // $example on$
     // Load documents (one per line).
-    val documents: RDD[Seq[String]] = sc.textFile("data/mllib/kmeans_data.txt")
-      .map(_.split(" ").toSeq)
+    val documents: RDD[Seq[String]] =
+      sc.textFile("data/mllib/kmeans_data.txt").map(_.split(" ").toSeq)
 
     val hashingTF = new HashingTF()
     val tf: RDD[Vector] = hashingTF.transform(documents)

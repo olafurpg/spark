@@ -20,9 +20,8 @@ package org.apache.spark.sql.execution.datasources.jdbc
 /**
  * Options for the JDBC data source.
  */
-private[jdbc] class JDBCOptions(
-    @transient private val parameters: Map[String, String])
-  extends Serializable {
+private[jdbc] class JDBCOptions(@transient private val parameters: Map[String, String])
+    extends Serializable {
 
   // a JDBC URL
   val url = parameters.getOrElse("url", sys.error("Option 'url' not specified"))

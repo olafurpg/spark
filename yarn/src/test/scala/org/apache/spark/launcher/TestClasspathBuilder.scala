@@ -32,5 +32,4 @@ private[spark] class TestClasspathBuilder extends AbstractCommandBuilder {
   /** Not used by the YARN tests. */
   override def buildCommand(env: JMap[String, String]): JList[String] =
     throw new UnsupportedOperationException()
-
 }

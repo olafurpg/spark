@@ -39,10 +39,9 @@ import org.apache.spark.storage.StorageLevel
  */
 @Since("0.8.0")
 @DeveloperApi
-abstract class GeneralizedLinearModel @Since("1.0.0") (
-    @Since("1.0.0") val weights: Vector,
-    @Since("0.8.0") val intercept: Double)
-  extends Serializable {
+abstract class GeneralizedLinearModel @Since("1.0.0")(
+    @Since("1.0.0") val weights: Vector, @Since("0.8.0") val intercept: Double)
+    extends Serializable {
 
   /**
    * Predict the result given a data point and the weights learned.
@@ -102,7 +101,8 @@ abstract class GeneralizedLinearModel @Since("1.0.0") (
 @Since("0.8.0")
 @DeveloperApi
 abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
-  extends Logging with Serializable {
+    extends Logging
+    with Serializable {
 
   protected val validators: Seq[RDD[LabeledPoint] => Boolean] = List()
 
@@ -247,8 +247,8 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
     }
 
     if (input.getStorageLevel == StorageLevel.NONE) {
-      logWarning("The input data is not directly cached, which may hurt performance if its"
-        + " parent RDDs are also uncached.")
+      logWarning("The input data is not directly cached, which may hurt performance if its" +
+          " parent RDDs are also uncached.")
     }
 
     // Check the data properties before running the optimizer
@@ -275,11 +275,12 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
      *
      * Currently, it's only enabled in LogisticRegressionWithLBFGS
      */
-    val scaler = if (useFeatureScaling) {
-      new StandardScaler(withStd = true, withMean = false).fit(input.map(_.features))
-    } else {
-      null
-    }
+    val scaler =
+      if (useFeatureScaling) {
+        new StandardScaler(withStd = true, withMean = false).fit(input.map(_.features))
+      } else {
+        null
+      }
 
     // Prepend an extra variable consisting of all 1.0's for the intercept.
     // TODO: Apply feature scaling to the weight vector instead of input data.
@@ -303,26 +304,30 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
      * from the prior probability distribution of the outcomes; for linear regression,
      * the intercept should be set as the average of response.
      */
-    val initialWeightsWithIntercept = if (addIntercept && numOfLinearPredictor == 1) {
-      appendBias(initialWeights)
-    } else {
-      /** If `numOfLinearPredictor > 1`, initialWeights already contains intercepts. */
-      initialWeights
-    }
+    val initialWeightsWithIntercept =
+      if (addIntercept && numOfLinearPredictor == 1) {
+        appendBias(initialWeights)
+      } else {
+
+        /** If `numOfLinearPredictor > 1`, initialWeights already contains intercepts. */
+        initialWeights
+      }
 
     val weightsWithIntercept = optimizer.optimize(data, initialWeightsWithIntercept)
 
-    val intercept = if (addIntercept && numOfLinearPredictor == 1) {
-      weightsWithIntercept(weightsWithIntercept.size - 1)
-    } else {
-      0.0
-    }
+    val intercept =
+      if (addIntercept && numOfLinearPredictor == 1) {
+        weightsWithIntercept(weightsWithIntercept.size - 1)
+      } else {
+        0.0
+      }
 
-    var weights = if (addIntercept && numOfLinearPredictor == 1) {
-      Vectors.dense(weightsWithIntercept.toArray.slice(0, weightsWithIntercept.size - 1))
-    } else {
-      weightsWithIntercept
-    }
+    var weights =
+      if (addIntercept && numOfLinearPredictor == 1) {
+        Vectors.dense(weightsWithIntercept.toArray.slice(0, weightsWithIntercept.size - 1))
+      } else {
+        weightsWithIntercept
+      }
 
     /**
      * The weights and intercept are trained in the scaled space; we're converting them back to
@@ -336,6 +341,7 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
       if (numOfLinearPredictor == 1) {
         weights = scaler.transform(weights)
       } else {
+
         /**
          * For `numOfLinearPredictor > 1`, we have to transform the weights back to the original
          * scale for each set of linear predictor. Note that the intercepts have to be explicitly
@@ -348,8 +354,8 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
           val start = i * n
           val end = (i + 1) * n - { if (addIntercept) 1 else 0 }
 
-          val partialWeightsArray = scaler.transform(
-            Vectors.dense(weightsArray.slice(start, end))).toArray
+          val partialWeightsArray =
+            scaler.transform(Vectors.dense(weightsArray.slice(start, end))).toArray
 
           System.arraycopy(partialWeightsArray, 0, weightsArray, start, partialWeightsArray.length)
           i += 1
@@ -360,8 +366,8 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
 
     // Warn at the end of the run as well, for increased visibility.
     if (input.getStorageLevel == StorageLevel.NONE) {
-      logWarning("The input data was not directly cached, which may hurt performance if its"
-        + " parent RDDs are also uncached.")
+      logWarning("The input data was not directly cached, which may hurt performance if its" +
+          " parent RDDs are also uncached.")
     }
 
     // Unpersist cached data

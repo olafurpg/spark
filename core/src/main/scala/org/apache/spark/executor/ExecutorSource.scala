@@ -26,14 +26,14 @@ import org.apache.hadoop.fs.FileSystem
 
 import org.apache.spark.metrics.source.Source
 
-private[spark]
-class ExecutorSource(threadPool: ThreadPoolExecutor, executorId: String) extends Source {
+private[spark] class ExecutorSource(threadPool: ThreadPoolExecutor, executorId: String)
+    extends Source {
 
-  private def fileStats(scheme: String) : Option[FileSystem.Statistics] =
+  private def fileStats(scheme: String): Option[FileSystem.Statistics] =
     FileSystem.getAllStatistics.asScala.find(s => s.getScheme.equals(scheme))
 
   private def registerFileSystemStat[T](
-        scheme: String, name: String, f: FileSystem.Statistics => T, defaultValue: T) = {
+      scheme: String, name: String, f: FileSystem.Statistics => T, defaultValue: T) = {
     metricRegistry.register(MetricRegistry.name("filesystem", scheme, name), new Gauge[T] {
       override def getValue: T = fileStats(scheme).map(f).getOrElse(defaultValue)
     })

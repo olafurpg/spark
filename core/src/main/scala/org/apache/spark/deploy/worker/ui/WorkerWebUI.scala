@@ -29,14 +29,13 @@ import org.apache.spark.util.RpcUtils
 /**
  * Web UI server for the standalone worker.
  */
-private[worker]
-class WorkerWebUI(
-    val worker: Worker,
-    val workDir: File,
-    requestedPort: Int)
-  extends WebUI(worker.securityMgr, worker.securityMgr.getSSLOptions("standalone"),
-    requestedPort, worker.conf, name = "WorkerUI")
-  with Logging {
+private[worker] class WorkerWebUI(val worker: Worker, val workDir: File, requestedPort: Int)
+    extends WebUI(worker.securityMgr,
+                  worker.securityMgr.getSSLOptions("standalone"),
+                  requestedPort,
+                  worker.conf,
+                  name = "WorkerUI")
+    with Logging {
 
   private[ui] val timeout = RpcUtils.askRpcTimeout(worker.conf)
 
@@ -48,10 +47,11 @@ class WorkerWebUI(
     attachPage(logPage)
     attachPage(new WorkerPage(this))
     attachHandler(createStaticHandler(WorkerWebUI.STATIC_RESOURCE_BASE, "/static"))
-    attachHandler(createServletHandler("/log",
-      (request: HttpServletRequest) => logPage.renderLog(request),
-      worker.securityMgr,
-      worker.conf))
+    attachHandler(
+        createServletHandler("/log",
+                             (request: HttpServletRequest) => logPage.renderLog(request),
+                             worker.securityMgr,
+                             worker.conf))
   }
 }
 

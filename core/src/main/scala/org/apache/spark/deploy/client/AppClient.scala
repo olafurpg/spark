@@ -38,13 +38,12 @@ import org.apache.spark.util.{RpcUtils, ThreadUtils}
  *
  * @param masterUrls Each url should look like spark://host:port.
  */
-private[spark] class AppClient(
-    rpcEnv: RpcEnv,
-    masterUrls: Array[String],
-    appDescription: ApplicationDescription,
-    listener: AppClientListener,
-    conf: SparkConf)
-  extends Logging {
+private[spark] class AppClient(rpcEnv: RpcEnv,
+                               masterUrls: Array[String],
+                               appDescription: ApplicationDescription,
+                               listener: AppClientListener,
+                               conf: SparkConf)
+    extends Logging {
 
   private val masterRpcAddresses = masterUrls.map(RpcAddress.fromSparkURL(_))
 
@@ -55,8 +54,9 @@ private[spark] class AppClient(
   private val appId = new AtomicReference[String]
   private val registered = new AtomicBoolean(false)
 
-  private class ClientEndpoint(override val rpcEnv: RpcEnv) extends ThreadSafeRpcEndpoint
-    with Logging {
+  private class ClientEndpoint(override val rpcEnv: RpcEnv)
+      extends ThreadSafeRpcEndpoint
+      with Logging {
 
     private var master: Option[RpcEndpointRef] = None
     // To avoid calling listener.disconnected() multiple times
@@ -70,8 +70,8 @@ private[spark] class AppClient(
     // action, this thread pool must be able to create "masterRpcAddresses.size" threads at the same
     // time so that we can register with all masters.
     private val registerMasterThreadPool = ThreadUtils.newDaemonCachedThreadPool(
-      "appclient-register-master-threadpool",
-      masterRpcAddresses.length // Make sure we can register with all masters at the same time
+        "appclient-register-master-threadpool",
+        masterRpcAddresses.length // Make sure we can register with all masters at the same time
     )
 
     // A scheduled executor for scheduling the registration actions
@@ -100,17 +100,18 @@ private[spark] class AppClient(
     private def tryRegisterAllMasters(): Array[JFuture[_]] = {
       for (masterAddress <- masterRpcAddresses) yield {
         registerMasterThreadPool.submit(new Runnable {
-          override def run(): Unit = try {
-            if (registered.get) {
-              return
+          override def run(): Unit =
+            try {
+              if (registered.get) {
+                return
+              }
+              logInfo("Connecting to master " + masterAddress.toSparkURL + "...")
+              val masterRef = rpcEnv.setupEndpointRef(masterAddress, Master.ENDPOINT_NAME)
+              masterRef.send(RegisterApplication(appDescription, self))
+            } catch {
+              case ie: InterruptedException => // Cancelled
+              case NonFatal(e) => logWarning(s"Failed to connect to master $masterAddress", e)
             }
-            logInfo("Connecting to master " + masterAddress.toSparkURL + "...")
-            val masterRef = rpcEnv.setupEndpointRef(masterAddress, Master.ENDPOINT_NAME)
-            masterRef.send(RegisterApplication(appDescription, self))
-          } catch {
-            case ie: InterruptedException => // Cancelled
-            case NonFatal(e) => logWarning(s"Failed to connect to master $masterAddress", e)
-          }
         })
       }
     }
@@ -172,8 +173,9 @@ private[spark] class AppClient(
 
       case ExecutorAdded(id: Int, workerId: String, hostPort: String, cores: Int, memory: Int) =>
         val fullId = appId + "/" + id
-        logInfo("Executor added: %s on %s (%s) with %d cores".format(fullId, workerId, hostPort,
-          cores))
+        logInfo(
+            "Executor added: %s on %s (%s) with %d cores".format(
+                fullId, workerId, hostPort, cores))
         listener.executorAdded(fullId, workerId, hostPort, cores, memory)
 
       case ExecutorUpdated(id, state, message, exitStatus) =>
@@ -216,12 +218,11 @@ private[spark] class AppClient(
     }
 
     private def askAndReplyAsync[T](
-        endpointRef: RpcEndpointRef,
-        context: RpcCallContext,
-        msg: T): Unit = {
+        endpointRef: RpcEndpointRef, context: RpcCallContext, msg: T): Unit = {
       // Create a thread to ask a message and reply with the result.  Allow thread to be
       // interrupted during shutdown, otherwise context must be notified of NonFatal errors.
-      askAndReplyThreadPool.execute(new Runnable {
+      askAndReplyThreadPool.execute(
+          new Runnable {
         override def run(): Unit = {
           try {
             context.reply(endpointRef.askWithRetry[Boolean](msg))
@@ -273,7 +274,6 @@ private[spark] class AppClient(
       registerMasterThreadPool.shutdownNow()
       askAndReplyThreadPool.shutdownNow()
     }
-
   }
 
   def start() {
@@ -321,5 +321,4 @@ private[spark] class AppClient(
       false
     }
   }
-
 }

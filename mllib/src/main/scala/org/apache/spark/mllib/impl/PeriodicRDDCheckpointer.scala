@@ -21,7 +21,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
-
 /**
  * This class helps with persisting and checkpointing RDDs.
  * Specifically, it automatically handles persisting and (optionally) checkpointing, as well as
@@ -74,10 +73,8 @@ import org.apache.spark.storage.StorageLevel
  *
  * TODO: Move this out of MLlib?
  */
-private[spark] class PeriodicRDDCheckpointer[T](
-    checkpointInterval: Int,
-    sc: SparkContext)
-  extends PeriodicCheckpointer[RDD[T]](checkpointInterval, sc) {
+private[spark] class PeriodicRDDCheckpointer[T](checkpointInterval: Int, sc: SparkContext)
+    extends PeriodicCheckpointer[RDD[T]](checkpointInterval, sc) {
 
   override protected def checkpoint(data: RDD[T]): Unit = data.checkpoint()
 

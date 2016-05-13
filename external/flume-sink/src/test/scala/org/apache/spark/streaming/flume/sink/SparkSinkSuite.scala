@@ -88,8 +88,8 @@ class SparkSinkSuite extends FunSuite {
   }
 
   test("Failure with timeout") {
-    val (channel, sink, latch) = initializeChannelAndSink(Map(SparkSinkConfig
-      .CONF_TRANSACTION_TIMEOUT -> 1.toString))
+    val (channel, sink, latch) =
+      initializeChannelAndSink(Map(SparkSinkConfig.CONF_TRANSACTION_TIMEOUT -> 1.toString))
     channel.start()
     sink.start()
     putEvents(channel, eventsPerBatch)
@@ -115,8 +115,8 @@ class SparkSinkSuite extends FunSuite {
   }
 
   def testMultipleConsumers(failSome: Boolean): Unit = {
-    implicit val executorContext = ExecutionContext
-      .fromExecutorService(Executors.newFixedThreadPool(5))
+    implicit val executorContext =
+      ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(5))
     val (channel, sink, latch) = initializeChannelAndSink(Map.empty, 5)
     channel.start()
     sink.start()
@@ -149,7 +149,7 @@ class SparkSinkSuite extends FunSuite {
     batchCounter.await()
     latch.await(1, TimeUnit.SECONDS)
     executorContext.shutdown()
-    if(failSome) {
+    if (failSome) {
       assert(availableChannelSlots(channel) === 3000)
     } else {
       assertChannelIsEmpty(channel)
@@ -159,8 +159,9 @@ class SparkSinkSuite extends FunSuite {
     transceiversAndClients.foreach(x => x._1.close())
   }
 
-  private def initializeChannelAndSink(overrides: Map[String, String] = Map.empty,
-    batchCounter: Int = 1): (MemoryChannel, SparkSink, CountDownLatch) = {
+  private def initializeChannelAndSink(
+      overrides: Map[String, String] = Map.empty,
+      batchCounter: Int = 1): (MemoryChannel, SparkSink, CountDownLatch) = {
     val channel = new MemoryChannel()
     val channelContext = new Context()
 
@@ -185,18 +186,19 @@ class SparkSinkSuite extends FunSuite {
   private def putEvents(ch: MemoryChannel, count: Int): Unit = {
     val tx = ch.getTransaction
     tx.begin()
-    (1 to count).foreach(x =>
-      ch.put(EventBuilder.withBody(x.toString.getBytes(StandardCharsets.UTF_8))))
+    (1 to count).foreach(
+        x => ch.put(EventBuilder.withBody(x.toString.getBytes(StandardCharsets.UTF_8))))
     tx.commit()
     tx.close()
   }
 
-  private def getTransceiverAndClient(address: InetSocketAddress,
-    count: Int): Seq[(NettyTransceiver, SparkFlumeProtocol.Callback)] = {
+  private def getTransceiverAndClient(
+      address: InetSocketAddress,
+      count: Int): Seq[(NettyTransceiver, SparkFlumeProtocol.Callback)] = {
 
     (1 to count).map(_ => {
       lazy val channelFactoryExecutor = Executors.newCachedThreadPool(
-        new SparkSinkThreadFactory("Flume Receiver Channel Thread - %d"))
+          new SparkSinkThreadFactory("Flume Receiver Channel Thread - %d"))
       lazy val channelFactory =
         new NioClientSocketChannelFactory(channelFactoryExecutor, channelFactoryExecutor)
       val transceiver = new NettyTransceiver(address, channelFactory)

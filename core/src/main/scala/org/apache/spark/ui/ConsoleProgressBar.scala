@@ -37,11 +37,12 @@ private[spark] class ConsoleProgressBar(sc: SparkContext) extends Logging {
   val FIRST_DELAY = 500L
 
   // The width of terminal
-  val TerminalWidth = if (!sys.env.getOrElse("COLUMNS", "").isEmpty) {
-    sys.env.get("COLUMNS").get.toInt
-  } else {
-    80
-  }
+  val TerminalWidth =
+    if (!sys.env.getOrElse("COLUMNS", "").isEmpty) {
+      sys.env.get("COLUMNS").get.toInt
+    } else {
+      80
+    }
 
   var lastFinishTime = 0L
   var lastUpdateTime = 0L
@@ -49,7 +50,7 @@ private[spark] class ConsoleProgressBar(sc: SparkContext) extends Logging {
 
   // Schedule a refresh thread to run periodically
   private val timer = new Timer("refresh progress", true)
-  timer.schedule(new TimerTask{
+  timer.schedule(new TimerTask {
     override def run() {
       refresh()
     }
@@ -64,10 +65,13 @@ private[spark] class ConsoleProgressBar(sc: SparkContext) extends Logging {
       return
     }
     val stageIds = sc.statusTracker.getActiveStageIds()
-    val stages = stageIds.flatMap(sc.statusTracker.getStageInfo).filter(_.numTasks() > 1)
-      .filter(now - _.submissionTime() > FIRST_DELAY).sortBy(_.stageId())
+    val stages = stageIds
+      .flatMap(sc.statusTracker.getStageInfo)
+      .filter(_.numTasks() > 1)
+      .filter(now - _.submissionTime() > FIRST_DELAY)
+      .sortBy(_.stageId())
     if (stages.length > 0) {
-      show(now, stages.take(3))  // display at most 3 stages in same time
+      show(now, stages.take(3)) // display at most 3 stages in same time
     }
   }
 
@@ -83,14 +87,15 @@ private[spark] class ConsoleProgressBar(sc: SparkContext) extends Logging {
       val header = s"[Stage ${s.stageId()}:"
       val tailer = s"(${s.numCompletedTasks()} + ${s.numActiveTasks()}) / $total]"
       val w = width - header.length - tailer.length
-      val bar = if (w > 0) {
-        val percent = w * s.numCompletedTasks() / total
-        (0 until w).map { i =>
-          if (i < percent) "=" else if (i == percent) ">" else " "
-        }.mkString("")
-      } else {
-        ""
-      }
+      val bar =
+        if (w > 0) {
+          val percent = w * s.numCompletedTasks() / total
+          (0 until w).map { i =>
+            if (i < percent) "=" else if (i == percent) ">" else " "
+          }.mkString("")
+        } else {
+          ""
+        }
       header + bar + tailer
     }.mkString("")
 

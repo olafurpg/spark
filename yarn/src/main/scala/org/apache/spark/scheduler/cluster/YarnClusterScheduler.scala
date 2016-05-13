@@ -38,5 +38,4 @@ private[spark] class YarnClusterScheduler(sc: SparkContext) extends YarnSchedule
     super.stop()
     ApplicationMaster.sparkContextStopped(sc)
   }
-
 }

@@ -144,7 +144,9 @@ class KMeansSuite extends SparkFunSuite with MLlibTestSparkContext with DefaultR
 object KMeansSuite {
   def generateKMeansData(spark: SparkSession, rows: Int, dim: Int, k: Int): DataFrame = {
     val sc = spark.sparkContext
-    val rdd = sc.parallelize(1 to rows).map(i => Vectors.dense(Array.fill(dim)((i % k).toDouble)))
+    val rdd = sc
+      .parallelize(1 to rows)
+      .map(i => Vectors.dense(Array.fill(dim)((i % k).toDouble)))
       .map(v => new TestRow(v))
     spark.createDataFrame(rdd)
   }
@@ -155,9 +157,9 @@ object KMeansSuite {
    * This excludes input columns to simplify some tests.
    */
   val allParamSettings: Map[String, Any] = Map(
-    "predictionCol" -> "myPrediction",
-    "k" -> 3,
-    "maxIter" -> 2,
-    "tol" -> 0.01
+      "predictionCol" -> "myPrediction",
+      "k" -> 3,
+      "maxIter" -> 2,
+      "tol" -> 0.01
   )
 }

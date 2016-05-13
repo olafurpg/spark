@@ -36,8 +36,8 @@ class DataFrameStatSuite extends QueryTest with SharedSQLContext {
     val n = 100
     val data = sparkContext.parallelize(1 to n, 2).toDF("id")
     checkAnswer(
-      data.sample(withReplacement = true, 0.05, seed = 13),
-      Seq(5, 10, 52, 73).map(Row(_))
+        data.sample(withReplacement = true, 0.05, seed = 13),
+        Seq(5, 10, 52, 73).map(Row(_))
     )
   }
 
@@ -45,8 +45,8 @@ class DataFrameStatSuite extends QueryTest with SharedSQLContext {
     val n = 100
     val data = sparkContext.parallelize(1 to n, 2).toDF("id")
     checkAnswer(
-      data.sample(withReplacement = false, 0.05, seed = 13),
-      Seq(3, 17, 27, 58, 62).map(Row(_))
+        data.sample(withReplacement = false, 0.05, seed = 13),
+        Seq(3, 17, 27, 58, 62).map(Row(_))
     )
   }
 
@@ -58,7 +58,8 @@ class DataFrameStatSuite extends QueryTest with SharedSQLContext {
       assert(splits.length == 3, "wrong number of splits")
 
       assert(splits.reduce((a, b) => a.union(b)).sort("id").collect().toList ==
-        data.collect().toList, "incomplete or wrong split")
+             data.collect().toList,
+             "incomplete or wrong split")
 
       val s = splits.map(_.count())
       assert(math.abs(s(0) - 100) < 50) // std =  9.13
@@ -173,11 +174,11 @@ class DataFrameStatSuite extends QueryTest with SharedSQLContext {
 
   test("special crosstab elements (., '', null, ``)") {
     val data = Seq(
-      ("a", Double.NaN, "ho"),
-      (null, 2.0, "ho"),
-      ("a.b", Double.NegativeInfinity, ""),
-      ("b", Double.PositiveInfinity, "`ha`"),
-      ("a", 1.0, null)
+        ("a", Double.NaN, "ho"),
+        (null, 2.0, "ho"),
+        ("a.b", Double.NegativeInfinity, ""),
+        ("b", Double.PositiveInfinity, "`ha`"),
+        ("a", 1.0, null)
     )
     val df = data.toDF("1", "2", "3")
     val ct1 = df.stat.crosstab("1", "2")
@@ -223,7 +224,8 @@ class DataFrameStatSuite extends QueryTest with SharedSQLContext {
     // counts than those that existed in the map when the map was full. This test should also fail
     // if anything like SPARK-9614 is observed once again
     val df = rows.mapPartitionsWithIndex { (idx, iter) =>
-      if (idx == 3) { // must come from one of the later merges, therefore higher partition index
+      if (idx == 3) {
+        // must come from one of the later merges, therefore higher partition index
         Iterator("3", "3", "3", "3", "3")
       } else {
         Iterator("0", "1", "2", "3", "4")
@@ -238,9 +240,7 @@ class DataFrameStatSuite extends QueryTest with SharedSQLContext {
   test("sampleBy") {
     val df = spark.range(0, 100).select((col("id") % 3).as("key"))
     val sampled = df.stat.sampleBy("key", Map(0 -> 0.1, 1 -> 0.2), 0L)
-    checkAnswer(
-      sampled.groupBy("key").count().orderBy("key"),
-      Seq(Row(0, 6), Row(1, 11)))
+    checkAnswer(sampled.groupBy("key").count().orderBy("key"), Seq(Row(0, 6), Row(1, 11)))
   }
 
   // This test case only verifies that `DataFrame.countMinSketch()` methods do return
@@ -299,7 +299,6 @@ class DataFrameStatSuite extends QueryTest with SharedSQLContext {
   }
 }
 
-
 class DataFrameStatPerfSuite extends QueryTest with SharedSQLContext with Logging {
 
   // Turn on this test if you want to test the performance of approximate quantiles.
@@ -333,5 +332,4 @@ class DataFrameStatPerfSuite extends QueryTest with SharedSQLContext with Loggin
     }
     logDebug(s"T1 = $t1, T2 = $t2")
   }
-
 }

@@ -29,14 +29,15 @@ import org.apache.spark.internal.Logging
  * This allows drivers to be restarted on failure with previously computed state.
  */
 private[spark] class ReliableRDDCheckpointData[T: ClassTag](@transient private val rdd: RDD[T])
-  extends RDDCheckpointData[T](rdd) with Logging {
+    extends RDDCheckpointData[T](rdd)
+    with Logging {
 
   // The directory to which the associated RDD has been checkpointed to
   // This is assumed to be a non-local path that points to some reliable storage
   private val cpDir: String =
-    ReliableRDDCheckpointData.checkpointPath(rdd.context, rdd.id)
-      .map(_.toString)
-      .getOrElse { throw new SparkException("Checkpoint dir must be specified.") }
+    ReliableRDDCheckpointData.checkpointPath(rdd.context, rdd.id).map(_.toString).getOrElse {
+      throw new SparkException("Checkpoint dir must be specified.")
+    }
 
   /**
    * Return the directory to which this RDD was checkpointed.
@@ -67,14 +68,15 @@ private[spark] class ReliableRDDCheckpointData[T: ClassTag](@transient private v
     logInfo(s"Done checkpointing RDD ${rdd.id} to $cpDir, new parent is RDD ${newRDD.id}")
     newRDD
   }
-
 }
 
 private[spark] object ReliableRDDCheckpointData extends Logging {
 
   /** Return the path of the directory to which this RDD's checkpoint data is written. */
   def checkpointPath(sc: SparkContext, rddId: Int): Option[Path] = {
-    sc.checkpointDir.map { dir => new Path(dir, s"rdd-$rddId") }
+    sc.checkpointDir.map { dir =>
+      new Path(dir, s"rdd-$rddId")
+    }
   }
 
   /** Clean up the files associated with the checkpoint data for this RDD. */

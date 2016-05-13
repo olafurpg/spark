@@ -44,7 +44,6 @@ trait LocalSparkSession extends BeforeAndAfterEach with BeforeAndAfterAll { self
     LocalSparkSession.stop(spark)
     spark = null
   }
-
 }
 
 object LocalSparkSession {
@@ -64,5 +63,4 @@ object LocalSparkSession {
       stop(sc)
     }
   }
-
 }

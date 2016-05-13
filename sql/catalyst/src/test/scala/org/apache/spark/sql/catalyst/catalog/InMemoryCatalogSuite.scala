@@ -17,7 +17,6 @@
 
 package org.apache.spark.sql.catalyst.catalog
 
-
 /** Test suite for the [[InMemoryCatalog]]. */
 class InMemoryCatalogSuite extends ExternalCatalogSuite {
 
@@ -26,5 +25,4 @@ class InMemoryCatalogSuite extends ExternalCatalogSuite {
     override val tableOutputFormat: String = "org.apache.park.SequenceFileOutputFormat"
     override def newEmptyCatalog(): ExternalCatalog = new InMemoryCatalog
   }
-
 }

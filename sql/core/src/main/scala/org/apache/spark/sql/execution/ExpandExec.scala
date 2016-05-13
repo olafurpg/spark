@@ -33,14 +33,12 @@ import org.apache.spark.sql.execution.metric.SQLMetrics
  * @param output      The output Schema
  * @param child       Child operator
  */
-case class ExpandExec(
-    projections: Seq[Seq[Expression]],
-    output: Seq[Attribute],
-    child: SparkPlan)
-  extends UnaryExecNode with CodegenSupport {
+case class ExpandExec(projections: Seq[Seq[Expression]], output: Seq[Attribute], child: SparkPlan)
+    extends UnaryExecNode
+    with CodegenSupport {
 
   private[sql] override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   // The GroupExpressions can output data with arbitrary partitioning, so set it
   // as UNKNOWN partitioning
@@ -49,8 +47,8 @@ case class ExpandExec(
   override def references: AttributeSet =
     AttributeSet(projections.flatten.flatMap(_.references))
 
-  private[this] val projection =
-    (exprs: Seq[Expression]) => UnsafeProjection.create(exprs, child.output)
+  private[this] val projection = (exprs: Seq[Expression]) =>
+    UnsafeProjection.create(exprs, child.output)
 
   protected override def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
     val numOutputRows = longMetric("numOutputRows")
@@ -59,7 +57,7 @@ case class ExpandExec(
       val groups = projections.map(projection).toArray
       new Iterator[InternalRow] {
         private[this] var result: InternalRow = _
-        private[this] var idx = -1  // -1 means the initial state
+        private[this] var idx = -1 // -1 means the initial state
         private[this] var input: InternalRow = _
 
         override final def hasNext: Boolean = (-1 < idx && idx < groups.length) || iter.hasNext
@@ -162,21 +160,21 @@ case class ExpandExec(
     }
 
     // Part 2: switch/case statements
-    val cases = projections.zipWithIndex.map { case (exprs, row) =>
-      var updateCode = ""
-      for (col <- exprs.indices) {
-        if (!sameOutput(col)) {
-          val ev = BindReferences.bindReference(exprs(col), child.output).genCode(ctx)
-          updateCode +=
-            s"""
+    val cases = projections.zipWithIndex.map {
+      case (exprs, row) =>
+        var updateCode = ""
+        for (col <- exprs.indices) {
+          if (!sameOutput(col)) {
+            val ev = BindReferences.bindReference(exprs(col), child.output).genCode(ctx)
+            updateCode += s"""
                |${ev.code}
                |${outputColumns(col).isNull} = ${ev.isNull};
                |${outputColumns(col).value} = ${ev.value};
             """.stripMargin
+          }
         }
-      }
 
-      s"""
+        s"""
          |case $row:
          |  ${updateCode.trim}
          |  break;

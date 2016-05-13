@@ -30,7 +30,7 @@ import org.apache.spark.util.Utils
  * The data type representing `Double` values. Please use the singleton [[DataTypes.DoubleType]].
  */
 @DeveloperApi
-class DoubleType private() extends FractionalType {
+class DoubleType private () extends FractionalType {
   // The companion object and this class is separated so the companion object also subclasses
   // this type. Otherwise, the companion object would be of type "DoubleType$" in byte code.
   // Defined with a private constructor so the companion object is the only possible instantiation.

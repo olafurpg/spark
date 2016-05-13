@@ -36,8 +36,10 @@ import org.apache.spark.sql.{Row, SQLContext}
  * A clustering model for K-means. Each point belongs to the cluster with the closest center.
  */
 @Since("0.8.0")
-class KMeansModel @Since("1.1.0") (@Since("1.0.0") val clusterCenters: Array[Vector])
-  extends Saveable with Serializable with PMMLExportable {
+class KMeansModel @Since("1.1.0")(@Since("1.0.0") val clusterCenters: Array[Vector])
+    extends Saveable
+    with Serializable
+    with PMMLExportable {
 
   /**
    * A Java-friendly constructor that takes an Iterable of Vectors.
@@ -114,23 +116,25 @@ object KMeansModel extends Loader[KMeansModel] {
     }
   }
 
-  private[clustering]
-  object SaveLoadV1_0 {
+  private[clustering] object SaveLoadV1_0 {
 
     private val thisFormatVersion = "1.0"
 
-    private[clustering]
-    val thisClassName = "org.apache.spark.mllib.clustering.KMeansModel"
+    private[clustering] val thisClassName = "org.apache.spark.mllib.clustering.KMeansModel"
 
     def save(sc: SparkContext, model: KMeansModel, path: String): Unit = {
       val sqlContext = SQLContext.getOrCreate(sc)
       import sqlContext.implicits._
-      val metadata = compact(render(
-        ("class" -> thisClassName) ~ ("version" -> thisFormatVersion) ~ ("k" -> model.k)))
+      val metadata = compact(
+          render(("class" -> thisClassName) ~ ("version" -> thisFormatVersion) ~ ("k" -> model.k)))
       sc.parallelize(Seq(metadata), 1).saveAsTextFile(Loader.metadataPath(path))
-      val dataRDD = sc.parallelize(model.clusterCenters.zipWithIndex).map { case (point, id) =>
-        Cluster(id, point)
-      }.toDF()
+      val dataRDD = sc
+        .parallelize(model.clusterCenters.zipWithIndex)
+        .map {
+          case (point, id) =>
+            Cluster(id, point)
+        }
+        .toDF()
       dataRDD.write.parquet(Loader.dataPath(path))
     }
 

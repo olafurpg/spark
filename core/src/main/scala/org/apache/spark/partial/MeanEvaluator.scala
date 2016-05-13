@@ -25,7 +25,7 @@ import org.apache.spark.util.StatCounter
  * An ApproximateEvaluator for means.
  */
 private[spark] class MeanEvaluator(totalOutputs: Int, confidence: Double)
-  extends ApproximateEvaluator[StatCounter, BoundedDouble] {
+    extends ApproximateEvaluator[StatCounter, BoundedDouble] {
 
   var outputsMerged = 0
   var counter = new StatCounter
@@ -48,7 +48,8 @@ private[spark] class MeanEvaluator(totalOutputs: Int, confidence: Double)
           new NormalDistribution().inverseCumulativeProbability(1 - (1 - confidence) / 2)
         } else {
           val degreesOfFreedom = (counter.count - 1).toInt
-          new TDistribution(degreesOfFreedom).inverseCumulativeProbability(1 - (1 - confidence) / 2)
+          new TDistribution(degreesOfFreedom)
+            .inverseCumulativeProbability(1 - (1 - confidence) / 2)
         }
       }
       val low = mean - confFactor * stdev

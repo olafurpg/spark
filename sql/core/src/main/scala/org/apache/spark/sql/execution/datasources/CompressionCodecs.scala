@@ -24,14 +24,13 @@ import org.apache.hadoop.io.compress.{BZip2Codec, DeflateCodec, GzipCodec, Lz4Co
 import org.apache.spark.util.Utils
 
 private[datasources] object CompressionCodecs {
-  private val shortCompressionCodecNames = Map(
-    "none" -> null,
-    "uncompressed" -> null,
-    "bzip2" -> classOf[BZip2Codec].getName,
-    "deflate" -> classOf[DeflateCodec].getName,
-    "gzip" -> classOf[GzipCodec].getName,
-    "lz4" -> classOf[Lz4Codec].getName,
-    "snappy" -> classOf[SnappyCodec].getName)
+  private val shortCompressionCodecNames = Map("none" -> null,
+                                               "uncompressed" -> null,
+                                               "bzip2" -> classOf[BZip2Codec].getName,
+                                               "deflate" -> classOf[DeflateCodec].getName,
+                                               "gzip" -> classOf[GzipCodec].getName,
+                                               "lz4" -> classOf[Lz4Codec].getName,
+                                               "snappy" -> classOf[SnappyCodec].getName)
 
   /**
    * Return the full version of the given codec class.
@@ -48,7 +47,7 @@ private[datasources] object CompressionCodecs {
     } catch {
       case e: ClassNotFoundException =>
         throw new IllegalArgumentException(s"Codec [$codecName] " +
-          s"is not available. Known codecs are ${shortCompressionCodecNames.keys.mkString(", ")}.")
+            s"is not available. Known codecs are ${shortCompressionCodecNames.keys.mkString(", ")}.")
     }
   }
 

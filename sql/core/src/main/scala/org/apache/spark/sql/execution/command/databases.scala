@@ -21,7 +21,6 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
 import org.apache.spark.sql.types.StringType
 
-
 /**
  * A command for users to list the databases/schemas.
  * If a databasePattern is supplied then the databases that only matches the
@@ -40,12 +39,12 @@ case class ShowDatabasesCommand(databasePattern: Option[String]) extends Runnabl
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val catalog = sparkSession.sessionState.catalog
-    val databases =
-      databasePattern.map(catalog.listDatabases).getOrElse(catalog.listDatabases())
-    databases.map { d => Row(d) }
+    val databases = databasePattern.map(catalog.listDatabases).getOrElse(catalog.listDatabases())
+    databases.map { d =>
+      Row(d)
+    }
   }
 }
-
 
 /**
  * Command for setting the current database.

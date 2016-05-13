@@ -36,7 +36,10 @@ import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
  */
 @Experimental
 final class Bucketizer(override val uid: String)
-  extends Model[Bucketizer] with HasInputCol with HasOutputCol with DefaultParamsWritable {
+    extends Model[Bucketizer]
+    with HasInputCol
+    with HasOutputCol
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("bucketizer"))
 
@@ -48,13 +51,15 @@ final class Bucketizer(override val uid: String)
    * otherwise, values outside the splits specified will be treated as errors.
    * @group param
    */
-  val splits: DoubleArrayParam = new DoubleArrayParam(this, "splits",
-    "Split points for mapping continuous features into buckets. With n+1 splits, there are n " +
+  val splits: DoubleArrayParam = new DoubleArrayParam(
+      this,
+      "splits",
+      "Split points for mapping continuous features into buckets. With n+1 splits, there are n " +
       "buckets. A bucket defined by splits x,y holds values in the range [x,y) except the last " +
       "bucket, which also includes y. The splits should be strictly increasing. " +
       "Values at -inf, inf must be explicitly provided to cover all Double values; " +
       "otherwise, values outside the splits specified will be treated as errors.",
-    Bucketizer.checkSplits)
+      Bucketizer.checkSplits)
 
   /** @group getParam */
   def getSplits: Array[Double] = $(splits)
@@ -81,8 +86,8 @@ final class Bucketizer(override val uid: String)
 
   private def prepOutputField(schema: StructType): StructField = {
     val buckets = $(splits).sliding(2).map(bucket => bucket.mkString(", ")).toArray
-    val attr = new NominalAttribute(name = Some($(outputCol)), isOrdinal = Some(true),
-      values = Some(buckets))
+    val attr = new NominalAttribute(
+        name = Some($(outputCol)), isOrdinal = Some(true), values = Some(buckets))
     attr.toStructField()
   }
 
@@ -127,9 +132,10 @@ object Bucketizer extends DefaultParamsReadable[Bucketizer] {
       } else {
         val insertPos = -idx - 1
         if (insertPos == 0 || insertPos == splits.length) {
-          throw new SparkException(s"Feature value $feature out of Bucketizer bounds" +
-            s" [${splits.head}, ${splits.last}].  Check your features, or loosen " +
-            s"the lower/upper bound constraints.")
+          throw new SparkException(
+              s"Feature value $feature out of Bucketizer bounds" +
+              s" [${splits.head}, ${splits.last}].  Check your features, or loosen " +
+              s"the lower/upper bound constraints.")
         } else {
           insertPos - 1
         }

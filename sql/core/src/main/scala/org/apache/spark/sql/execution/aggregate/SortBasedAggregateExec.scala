@@ -26,15 +26,14 @@ import org.apache.spark.sql.catalyst.plans.physical.{AllTuples, ClusteredDistrib
 import org.apache.spark.sql.execution.{SparkPlan, UnaryExecNode}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 
-case class SortBasedAggregateExec(
-    requiredChildDistributionExpressions: Option[Seq[Expression]],
-    groupingExpressions: Seq[NamedExpression],
-    aggregateExpressions: Seq[AggregateExpression],
-    aggregateAttributes: Seq[Attribute],
-    initialInputBufferOffset: Int,
-    resultExpressions: Seq[NamedExpression],
-    child: SparkPlan)
-  extends UnaryExecNode {
+case class SortBasedAggregateExec(requiredChildDistributionExpressions: Option[Seq[Expression]],
+                                  groupingExpressions: Seq[NamedExpression],
+                                  aggregateExpressions: Seq[AggregateExpression],
+                                  aggregateAttributes: Seq[Attribute],
+                                  initialInputBufferOffset: Int,
+                                  resultExpressions: Seq[NamedExpression],
+                                  child: SparkPlan)
+    extends UnaryExecNode {
 
   private[this] val aggregateBufferAttributes = {
     aggregateExpressions.flatMap(_.aggregateFunction.aggBufferAttributes)
@@ -42,11 +41,11 @@ case class SortBasedAggregateExec(
 
   override def producedAttributes: AttributeSet =
     AttributeSet(aggregateAttributes) ++
-      AttributeSet(resultExpressions.diff(groupingExpressions).map(_.toAttribute)) ++
-      AttributeSet(aggregateBufferAttributes)
+    AttributeSet(resultExpressions.diff(groupingExpressions).map(_.toAttribute)) ++
+    AttributeSet(aggregateBufferAttributes)
 
   override private[sql] lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   override def output: Seq[Attribute] = resultExpressions.map(_.toAttribute)
 
@@ -78,16 +77,16 @@ case class SortBasedAggregateExec(
         Iterator[UnsafeRow]()
       } else {
         val outputIter = new SortBasedAggregationIterator(
-          groupingExpressions,
-          child.output,
-          iter,
-          aggregateExpressions,
-          aggregateAttributes,
-          initialInputBufferOffset,
-          resultExpressions,
-          (expressions, inputSchema) =>
-            newMutableProjection(expressions, inputSchema, subexpressionEliminationEnabled),
-          numOutputRows)
+            groupingExpressions,
+            child.output,
+            iter,
+            aggregateExpressions,
+            aggregateAttributes,
+            initialInputBufferOffset,
+            resultExpressions,
+            (expressions, inputSchema) =>
+              newMutableProjection(expressions, inputSchema, subexpressionEliminationEnabled),
+            numOutputRows)
         if (!hasInput && groupingExpressions.isEmpty) {
           // There is no input and there is no grouping expressions.
           // We need to output a single row as the output.

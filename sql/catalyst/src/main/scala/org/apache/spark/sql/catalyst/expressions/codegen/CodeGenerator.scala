@@ -131,8 +131,9 @@ class CodegenContext {
   def declareMutableStates(): String = {
     // It's possible that we add same mutable state twice, e.g. the `mergeExpressions` in
     // `TypedAggregateExpression`, we should call `distinct` here to remove the duplicated ones.
-    mutableStates.distinct.map { case (javaType, variableName, _) =>
-      s"private $javaType $variableName;"
+    mutableStates.distinct.map {
+      case (javaType, variableName, _) =>
+        s"private $javaType $variableName;"
     }.mkString("\n")
   }
 
@@ -145,8 +146,7 @@ class CodegenContext {
   /**
    * Holding all the functions those will be added into generated class.
    */
-  val addedFunctions: mutable.Map[String, String] =
-    mutable.Map.empty[String, String]
+  val addedFunctions: mutable.Map[String, String] = mutable.Map.empty[String, String]
 
   def addNewFunction(funcName: String, funcCode: String): Unit = {
     addedFunctions += ((funcName, funcCode))
@@ -203,11 +203,12 @@ class CodegenContext {
    * Returns a term name that is unique within this instance of a `CodegenContext`.
    */
   def freshName(name: String): String = synchronized {
-    val fullName = if (freshNamePrefix == "") {
-      name
-    } else {
-      s"${freshNamePrefix}_$name"
-    }
+    val fullName =
+      if (freshNamePrefix == "") {
+        name
+      } else {
+        s"${freshNamePrefix}_$name"
+      }
     if (freshNameIds.contains(fullName)) {
       val id = freshNameIds(fullName)
       freshNameIds(fullName) = id + 1
@@ -258,13 +259,12 @@ class CodegenContext {
    *
    * @param isVectorized True if the underlying row is of type `ColumnarBatch.Row`, false otherwise
    */
-  def updateColumn(
-      row: String,
-      dataType: DataType,
-      ordinal: Int,
-      ev: ExprCode,
-      nullable: Boolean,
-      isVectorized: Boolean = false): String = {
+  def updateColumn(row: String,
+                   dataType: DataType,
+                   ordinal: Int,
+                   ev: ExprCode,
+                   nullable: Boolean,
+                   isVectorized: Boolean = false): String = {
     if (nullable) {
       // Can't call setNullAt on DecimalType, because we need to keep the offset
       if (!isVectorized && dataType.isInstanceOf[DecimalType]) {
@@ -292,8 +292,8 @@ class CodegenContext {
   /**
    * Returns the specialized code to set a given value in a column vector for a given `DataType`.
    */
-  def setValue(batch: String, row: String, dataType: DataType, ordinal: Int,
-      value: String): String = {
+  def setValue(
+      batch: String, row: String, dataType: DataType, ordinal: Int, value: String): String = {
     val jt = javaType(dataType)
     dataType match {
       case _ if isPrimitiveType(jt) =>
@@ -309,13 +309,12 @@ class CodegenContext {
    * Returns the specialized code to set a given value in a column vector for a given `DataType`
    * that could potentially be nullable.
    */
-  def updateColumn(
-      batch: String,
-      row: String,
-      dataType: DataType,
-      ordinal: Int,
-      ev: ExprCode,
-      nullable: Boolean): String = {
+  def updateColumn(batch: String,
+                   row: String,
+                   dataType: DataType,
+                   ordinal: Int,
+                   ev: ExprCode,
+                   nullable: Boolean): String = {
     if (nullable) {
       s"""
          if (!${ev.isNull}) {
@@ -418,7 +417,8 @@ class CodegenContext {
   def genEqual(dataType: DataType, c1: String, c2: String): String = dataType match {
     case BinaryType => s"java.util.Arrays.equals($c1, $c2)"
     case FloatType => s"(java.lang.Float.isNaN($c1) && java.lang.Float.isNaN($c2)) || $c1 == $c2"
-    case DoubleType => s"(java.lang.Double.isNaN($c1) && java.lang.Double.isNaN($c2)) || $c1 == $c2"
+    case DoubleType =>
+      s"(java.lang.Double.isNaN($c1) && java.lang.Double.isNaN($c2)) || $c1 == $c2"
     case dt: DataType if isPrimitiveType(dt) => s"$c1 == $c2"
     case udt: UserDefinedType[_] => genEqual(udt.sqlType, c1, c2)
     case other => s"$c1.equals($c2)"
@@ -448,8 +448,7 @@ class CodegenContext {
       val isNullB = freshName("isNullB")
       val compareFunc = freshName("compareArray")
       val minLength = freshName("minLength")
-      val funcCode: String =
-        s"""
+      val funcCode: String = s"""
           public int $compareFunc(ArrayData a, ArrayData b) {
             int lengthA = a.numElements();
             int lengthB = b.numElements();
@@ -486,8 +485,7 @@ class CodegenContext {
     case schema: StructType =>
       val comparisons = GenerateOrdering.genComparisons(this, schema)
       val compareFunc = freshName("compareStruct")
-      val funcCode: String =
-        s"""
+      val funcCode: String = s"""
           public int $compareFunc(InternalRow a, InternalRow b) {
             InternalRow i = null;
             $comparisons
@@ -537,8 +535,8 @@ class CodegenContext {
   /**
    * List of java data types that have special accessors and setters in [[InternalRow]].
    */
-  val primitiveTypes =
-    Seq(JAVA_BOOLEAN, JAVA_BYTE, JAVA_SHORT, JAVA_INT, JAVA_LONG, JAVA_FLOAT, JAVA_DOUBLE)
+  val primitiveTypes = Seq(
+      JAVA_BOOLEAN, JAVA_BYTE, JAVA_SHORT, JAVA_INT, JAVA_LONG, JAVA_FLOAT, JAVA_DOUBLE)
 
   /**
    * Returns true if the Java type has a special accessor and setter in [[InternalRow]].
@@ -572,15 +570,16 @@ class CodegenContext {
       blocks.head
     } else {
       val apply = freshName("apply")
-      val functions = blocks.zipWithIndex.map { case (body, i) =>
-        val name = s"${apply}_$i"
-        val code = s"""
+      val functions = blocks.zipWithIndex.map {
+        case (body, i) =>
+          val name = s"${apply}_$i"
+          val code = s"""
            |private void $name(InternalRow $row) {
            |  $body
            |}
          """.stripMargin
-        addNewFunction(name, code)
-        name
+          addNewFunction(name, code)
+          name
       }
 
       functions.map(name => s"$name($row);").mkString("\n")
@@ -659,8 +658,7 @@ class CodegenContext {
 
       // Generate the code for this expression tree and wrap it in a function.
       val code = expr.genCode(this)
-      val fn =
-        s"""
+      val fn = s"""
            |private void $fnName(InternalRow $INPUT_ROW) {
            |  ${code.code.trim}
            |  $isNull = ${code.isNull};
@@ -687,8 +685,7 @@ class CodegenContext {
       // Currently, we will do this for all non-leaf only expression trees (i.e. expr trees with
       // at least two nodes) as the cost of doing it is expected to be low.
       addMutableState("boolean", isNull, s"$isNull = false;")
-      addMutableState(javaType(expr.dataType), value,
-        s"$value = ${defaultValue(expr.dataType)};")
+      addMutableState(javaType(expr.dataType), value, s"$value = ${defaultValue(expr.dataType)};")
 
       subexprFunctions += s"$fnName($INPUT_ROW);"
       val state = SubExprEliminationState(isNull, value)
@@ -701,8 +698,8 @@ class CodegenContext {
    * elimination will be performed. Subexpression elimination assumes that the code will for each
    * expression will be combined in the `expressions` order.
    */
-  def generateExpressions(expressions: Seq[Expression],
-      doSubexpressionElimination: Boolean = false): Seq[ExprCode] = {
+  def generateExpressions(
+      expressions: Seq[Expression], doSubexpressionElimination: Boolean = false): Seq[ExprCode] = {
     if (doSubexpressionElimination) subexpressionElimination(expressions)
     expressions.map(e => e.genCode(this))
   }
@@ -757,6 +754,7 @@ abstract class CodeGenerator[InType <: AnyRef, OutType <: AnyRef] extends Loggin
 }
 
 object CodeGenerator extends Logging {
+
   /**
    * Compile the Java source code into a Java class, using Janino.
    */
@@ -772,20 +770,21 @@ object CodeGenerator extends Logging {
     evaluator.setParentClassLoader(Utils.getContextOrSparkClassLoader)
     // Cannot be under package codegen, or fail with java.lang.InstantiationException
     evaluator.setClassName("org.apache.spark.sql.catalyst.expressions.GeneratedClass")
-    evaluator.setDefaultImports(Array(
-      classOf[Platform].getName,
-      classOf[InternalRow].getName,
-      classOf[UnsafeRow].getName,
-      classOf[UTF8String].getName,
-      classOf[Decimal].getName,
-      classOf[CalendarInterval].getName,
-      classOf[ArrayData].getName,
-      classOf[UnsafeArrayData].getName,
-      classOf[MapData].getName,
-      classOf[UnsafeMapData].getName,
-      classOf[MutableRow].getName,
-      classOf[Expression].getName
-    ))
+    evaluator.setDefaultImports(
+        Array(
+            classOf[Platform].getName,
+            classOf[InternalRow].getName,
+            classOf[UnsafeRow].getName,
+            classOf[UTF8String].getName,
+            classOf[Decimal].getName,
+            classOf[CalendarInterval].getName,
+            classOf[ArrayData].getName,
+            classOf[UnsafeArrayData].getName,
+            classOf[MapData].getName,
+            classOf[UnsafeMapData].getName,
+            classOf[MutableRow].getName,
+            classOf[Expression].getName
+        ))
     evaluator.setExtendedClass(classOf[GeneratedClass])
 
     def formatted = CodeFormatter.format(code)
@@ -816,17 +815,17 @@ object CodeGenerator extends Logging {
    * automatically, in order to constrain its memory footprint.  Note that this cache does not use
    * weak keys/values and thus does not respond to memory pressure.
    */
-  private val cache = CacheBuilder.newBuilder()
+  private val cache = CacheBuilder
+    .newBuilder()
     .maximumSize(100)
-    .build(
-      new CacheLoader[String, GeneratedClass]() {
-        override def load(code: String): GeneratedClass = {
-          val startTime = System.nanoTime()
-          val result = doCompile(code)
-          val endTime = System.nanoTime()
-          def timeMs: Double = (endTime - startTime).toDouble / 1000000
-          logInfo(s"Code generated in $timeMs ms")
-          result
-        }
-      })
+    .build(new CacheLoader[String, GeneratedClass]() {
+      override def load(code: String): GeneratedClass = {
+        val startTime = System.nanoTime()
+        val result = doCompile(code)
+        val endTime = System.nanoTime()
+        def timeMs: Double = (endTime - startTime).toDouble / 1000000
+        logInfo(s"Code generated in $timeMs ms")
+        result
+      }
+    })
 }

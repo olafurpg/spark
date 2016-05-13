@@ -40,14 +40,13 @@ import org.apache.spark.sql.internal.SQLConf
  * @param blockSize the block size.
  * @param action the file action. Must be either "add" or "delete".
  */
-case class SinkFileStatus(
-    path: String,
-    size: Long,
-    isDir: Boolean,
-    modificationTime: Long,
-    blockReplication: Int,
-    blockSize: Long,
-    action: String) {
+case class SinkFileStatus(path: String,
+                          size: Long,
+                          isDir: Boolean,
+                          modificationTime: Long,
+                          blockReplication: Int,
+                          blockSize: Long,
+                          action: String) {
 
   def toFileStatus: FileStatus = {
     new FileStatus(size, isDir, blockReplication, blockSize, modificationTime, new Path(path))
@@ -56,14 +55,13 @@ case class SinkFileStatus(
 
 object SinkFileStatus {
   def apply(f: FileStatus): SinkFileStatus = {
-    SinkFileStatus(
-      path = f.getPath.toUri.toString,
-      size = f.getLen,
-      isDir = f.isDirectory,
-      modificationTime = f.getModificationTime,
-      blockReplication = f.getReplication,
-      blockSize = f.getBlockSize,
-      action = FileStreamSinkLog.ADD_ACTION)
+    SinkFileStatus(path = f.getPath.toUri.toString,
+                   size = f.getLen,
+                   isDir = f.isDirectory,
+                   modificationTime = f.getModificationTime,
+                   blockReplication = f.getReplication,
+                   blockSize = f.getBlockSize,
+                   action = FileStreamSinkLog.ADD_ACTION)
   }
 }
 
@@ -80,7 +78,7 @@ object SinkFileStatus {
  * (drops the deleted files).
  */
 class FileStreamSinkLog(sparkSession: SparkSession, path: String)
-  extends HDFSMetadataLog[Seq[SinkFileStatus]](sparkSession, path) {
+    extends HDFSMetadataLog[Seq[SinkFileStatus]](sparkSession, path) {
 
   import FileStreamSinkLog._
 
@@ -99,8 +97,8 @@ class FileStreamSinkLog(sparkSession: SparkSession, path: String)
 
   private val compactInterval = sparkSession.conf.get(SQLConf.FILE_SINK_LOG_COMPACT_INTERVAL)
   require(compactInterval > 0,
-    s"Please set ${SQLConf.FILE_SINK_LOG_COMPACT_INTERVAL.key} (was $compactInterval) " +
-      "to a positive value.")
+          s"Please set ${SQLConf.FILE_SINK_LOG_COMPACT_INTERVAL.key} (was $compactInterval) " +
+          "to a positive value.")
 
   override def batchIdToPath(batchId: Long): Path = {
     if (isCompactionBatch(batchId, compactInterval)) {
@@ -205,21 +203,23 @@ class FileStreamSinkLog(sparkSession: SparkSession, path: String)
    */
   private def deleteExpiredLog(compactionBatchId: Long): Unit = {
     val expiredTime = System.currentTimeMillis() - fileCleanupDelayMs
-    fileManager.list(metadataPath, new PathFilter {
-      override def accept(path: Path): Boolean = {
-        try {
-          val batchId = getBatchIdFromFileName(path.getName)
-          batchId < compactionBatchId
-        } catch {
-          case _: NumberFormatException =>
-            false
+    fileManager
+      .list(metadataPath, new PathFilter {
+        override def accept(path: Path): Boolean = {
+          try {
+            val batchId = getBatchIdFromFileName(path.getName)
+            batchId < compactionBatchId
+          } catch {
+            case _: NumberFormatException =>
+              false
+          }
+        }
+      })
+      .foreach { f =>
+        if (f.getModificationTime <= expiredTime) {
+          fileManager.delete(f.getPath)
         }
       }
-    }).foreach { f =>
-      if (f.getModificationTime <= expiredTime) {
-        fileManager.delete(f.getPath)
-      }
-    }
   }
 }
 
@@ -251,10 +251,9 @@ object FileStreamSinkLog {
    * `Seq(2, 3, 4)` (Note: it includes the previous compaction batch 2).
    */
   def getValidBatchesBeforeCompactionBatch(
-      compactionBatchId: Long,
-      compactInterval: Int): Seq[Long] = {
+      compactionBatchId: Long, compactInterval: Int): Seq[Long] = {
     assert(isCompactionBatch(compactionBatchId, compactInterval),
-      s"$compactionBatchId is not a compaction batch")
+           s"$compactionBatchId is not a compaction batch")
     (math.max(0, compactionBatchId - compactInterval)) until compactionBatchId
   }
 

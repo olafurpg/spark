@@ -25,17 +25,20 @@ import org.apache.spark.mllib.util.MLlibTestSparkContext
 import org.apache.spark.sql.{DataFrame, Row}
 
 class IsotonicRegressionSuite
-  extends SparkFunSuite with MLlibTestSparkContext with DefaultReadWriteTest {
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   private def generateIsotonicInput(labels: Seq[Double]): DataFrame = {
-    spark.createDataFrame(
-      labels.zipWithIndex.map { case (label, i) => (label, i.toDouble, 1.0) }
-    ).toDF("label", "features", "weight")
+    spark
+      .createDataFrame(
+          labels.zipWithIndex.map { case (label, i) => (label, i.toDouble, 1.0) }
+      )
+      .toDF("label", "features", "weight")
   }
 
   private def generatePredictionInput(features: Seq[Double]): DataFrame = {
-    spark.createDataFrame(features.map(Tuple1.apply))
-      .toDF("features")
+    spark.createDataFrame(features.map(Tuple1.apply)).toDF("features")
   }
 
   test("isotonic regression predictions") {
@@ -46,9 +49,13 @@ class IsotonicRegressionSuite
 
     val predictions = model
       .transform(dataset)
-      .select("prediction").rdd.map { case Row(pred) =>
-        pred
-      }.collect()
+      .select("prediction")
+      .rdd
+      .map {
+        case Row(pred) =>
+          pred
+      }
+      .collect()
 
     assert(predictions === Array(1, 2, 2, 2, 6, 16.5, 16.5, 17, 18))
 
@@ -66,9 +73,12 @@ class IsotonicRegressionSuite
 
     val predictions = model
       .transform(features)
-      .select("prediction").rdd.map {
+      .select("prediction")
+      .rdd
+      .map {
         case Row(pred) => pred
-      }.collect()
+      }
+      .collect()
 
     assert(predictions === Array(7, 7, 6, 5.5, 5, 4, 1))
   }
@@ -96,9 +106,7 @@ class IsotonicRegressionSuite
     // copied model must have the same parent.
     MLTestingUtils.checkCopy(model)
 
-    model.transform(dataset)
-      .select("label", "features", "prediction", "weight")
-      .collect()
+    model.transform(dataset).select("label", "features", "prediction", "weight").collect()
 
     assert(model.getLabelCol === "label")
     assert(model.getFeaturesCol === "features")
@@ -145,14 +153,13 @@ class IsotonicRegressionSuite
   }
 
   test("vector features column with feature index") {
-    val dataset = spark.createDataFrame(Seq(
-      (4.0, Vectors.dense(0.0, 1.0)),
-      (3.0, Vectors.dense(0.0, 2.0)),
-      (5.0, Vectors.sparse(2, Array(1), Array(3.0))))
-    ).toDF("label", "features")
+    val dataset = spark
+      .createDataFrame(Seq((4.0, Vectors.dense(0.0, 1.0)),
+                           (3.0, Vectors.dense(0.0, 2.0)),
+                           (5.0, Vectors.sparse(2, Array(1), Array(3.0)))))
+      .toDF("label", "features")
 
-    val ir = new IsotonicRegression()
-      .setFeatureIndex(1)
+    val ir = new IsotonicRegression().setFeatureIndex(1)
 
     val model = ir.fit(dataset)
 
@@ -160,9 +167,12 @@ class IsotonicRegressionSuite
 
     val predictions = model
       .transform(features)
-      .select("prediction").rdd.map {
-      case Row(pred) => pred
-    }.collect()
+      .select("prediction")
+      .rdd
+      .map {
+        case Row(pred) => pred
+      }
+      .collect()
 
     assert(predictions === Array(3.5, 5.0, 5.0, 5.0))
   }
@@ -177,17 +187,17 @@ class IsotonicRegressionSuite
     }
 
     val ir = new IsotonicRegression()
-    testEstimatorAndModelReadWrite(ir, dataset, IsotonicRegressionSuite.allParamSettings,
-      checkModelData)
+    testEstimatorAndModelReadWrite(
+        ir, dataset, IsotonicRegressionSuite.allParamSettings, checkModelData)
   }
 
   test("should support all NumericType labels and not support other types") {
     val ir = new IsotonicRegression()
     MLTestingUtils.checkNumericTypes[IsotonicRegressionModel, IsotonicRegression](
-      ir, spark, isClassification = false) { (expected, actual) =>
-        assert(expected.boundaries === actual.boundaries)
-        assert(expected.predictions === actual.predictions)
-      }
+        ir, spark, isClassification = false) { (expected, actual) =>
+      assert(expected.boundaries === actual.boundaries)
+      assert(expected.predictions === actual.predictions)
+    }
   }
 }
 
@@ -199,8 +209,8 @@ object IsotonicRegressionSuite {
    * This excludes input columns to simplify some tests.
    */
   val allParamSettings: Map[String, Any] = Map(
-    "predictionCol" -> "myPrediction",
-    "isotonic" -> true,
-    "featureIndex" -> 0
+      "predictionCol" -> "myPrediction",
+      "isotonic" -> true,
+      "featureIndex" -> 0
   )
 }

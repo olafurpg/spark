@@ -35,11 +35,10 @@ import org.apache.commons.lang3.SystemUtils
  *
  * If outputPerIteration is true, the timing for each run will be printed to stdout.
  */
-private[spark] class Benchmark(
-    name: String,
-    valuesPerIteration: Long,
-    defaultNumIters: Int = 5,
-    outputPerIteration: Boolean = false) {
+private[spark] class Benchmark(name: String,
+                               valuesPerIteration: Long,
+                               defaultNumIters: Int = 5,
+                               outputPerIteration: Boolean = false) {
   val benchmarks = mutable.ArrayBuffer.empty[Benchmark.Case]
 
   /**
@@ -83,16 +82,21 @@ private[spark] class Benchmark(
     // The results are going to be processor specific so it is useful to include that.
     println(Benchmark.getJVMOSInfo())
     println(Benchmark.getProcessorName())
-    printf("%-40s %16s %12s %13s %10s\n", name + ":", "Best/Avg Time(ms)", "Rate(M/s)",
-      "Per Row(ns)", "Relative")
+    printf("%-40s %16s %12s %13s %10s\n",
+           name + ":",
+           "Best/Avg Time(ms)",
+           "Rate(M/s)",
+           "Per Row(ns)",
+           "Relative")
     println("-" * 96)
-    results.zip(benchmarks).foreach { case (result, benchmark) =>
-      printf("%-40s %16s %12s %13s %10s\n",
-        benchmark.name,
-        "%5.0f / %4.0f" format (result.bestMs, result.avgMs),
-        "%10.1f" format result.bestRate,
-        "%6.1f" format (1000 / result.bestRate),
-        "%3.1fX" format (firstBest / result.bestMs))
+    results.zip(benchmarks).foreach {
+      case (result, benchmark) =>
+        printf("%-40s %16s %12s %13s %10s\n",
+               benchmark.name,
+               "%5.0f / %4.0f" format (result.bestMs, result.avgMs),
+               "%10.1f" format result.bestRate,
+               "%6.1f" format (1000 / result.bestRate),
+               "%3.1fX" format (firstBest / result.bestMs))
     }
     println
     // scalastyle:on
@@ -135,17 +139,20 @@ private[spark] object Benchmark {
    * This should return something like "Intel(R) Core(TM) i7-4870HQ CPU @ 2.50GHz"
    */
   def getProcessorName(): String = {
-    val cpu = if (SystemUtils.IS_OS_MAC_OSX) {
-      Utils.executeAndGetOutput(Seq("/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"))
-    } else if (SystemUtils.IS_OS_LINUX) {
-      Try {
-        val grepPath = Utils.executeAndGetOutput(Seq("which", "grep")).stripLineEnd
-        Utils.executeAndGetOutput(Seq(grepPath, "-m", "1", "model name", "/proc/cpuinfo"))
-        .stripLineEnd.replaceFirst("model name[\\s*]:[\\s*]", "")
-      }.getOrElse("Unknown processor")
-    } else {
-      System.getenv("PROCESSOR_IDENTIFIER")
-    }
+    val cpu =
+      if (SystemUtils.IS_OS_MAC_OSX) {
+        Utils.executeAndGetOutput(Seq("/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"))
+      } else if (SystemUtils.IS_OS_LINUX) {
+        Try {
+          val grepPath = Utils.executeAndGetOutput(Seq("which", "grep")).stripLineEnd
+          Utils
+            .executeAndGetOutput(Seq(grepPath, "-m", "1", "model name", "/proc/cpuinfo"))
+            .stripLineEnd
+            .replaceFirst("model name[\\s*]:[\\s*]", "")
+        }.getOrElse("Unknown processor")
+      } else {
+        System.getenv("PROCESSOR_IDENTIFIER")
+      }
     cpu
   }
 
@@ -187,4 +194,3 @@ private[spark] object Benchmark {
     Result(avg / 1000000.0, num / (best / 1000.0), best / 1000000.0)
   }
 }
-

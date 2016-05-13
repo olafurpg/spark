@@ -38,38 +38,38 @@ private[csv] object CSVInferSchema {
    *     2. Merge row types to find common type
    *     3. Replace any null types with string type
    */
-  def infer(
-      tokenRdd: RDD[Array[String]],
-      header: Array[String],
-      options: CSVOptions): StructType = {
+  def infer(tokenRdd: RDD[Array[String]], header: Array[String], options: CSVOptions): StructType = {
     val startType: Array[DataType] = Array.fill[DataType](header.length)(NullType)
     val rootTypes: Array[DataType] =
       tokenRdd.aggregate(startType)(inferRowType(options), mergeRowTypes)
 
-    val structFields = header.zip(rootTypes).map { case (thisHeader, rootType) =>
-      val dType = rootType match {
-        case _: NullType => StringType
-        case other => other
-      }
-      StructField(thisHeader, dType, nullable = true)
+    val structFields = header.zip(rootTypes).map {
+      case (thisHeader, rootType) =>
+        val dType = rootType match {
+          case _: NullType => StringType
+          case other => other
+        }
+        StructField(thisHeader, dType, nullable = true)
     }
 
     StructType(structFields)
   }
 
-  private def inferRowType(options: CSVOptions)
-      (rowSoFar: Array[DataType], next: Array[String]): Array[DataType] = {
+  private def inferRowType(options: CSVOptions)(
+      rowSoFar: Array[DataType], next: Array[String]): Array[DataType] = {
     var i = 0
-    while (i < math.min(rowSoFar.length, next.length)) {  // May have columns on right missing.
+    while (i < math.min(rowSoFar.length, next.length)) {
+      // May have columns on right missing.
       rowSoFar(i) = inferField(rowSoFar(i), next(i), options)
-      i+=1
+      i += 1
     }
     rowSoFar
   }
 
   def mergeRowTypes(first: Array[DataType], second: Array[DataType]): Array[DataType] = {
-    first.zipAll(second, NullType, NullType).map { case (a, b) =>
-      findTightestCommonType(a, b).getOrElse(NullType)
+    first.zipAll(second, NullType, NullType).map {
+      case (a, b) =>
+        findTightestCommonType(a, b).getOrElse(NullType)
     }
   }
 
@@ -113,20 +113,21 @@ private[csv] object CSVInferSchema {
   }
 
   private def tryParseDecimal(field: String, options: CSVOptions): DataType = {
-    val decimalTry = allCatch opt {
-      // `BigDecimal` conversion can fail when the `field` is not a form of number.
-      val bigDecimal = new BigDecimal(field)
-      // Because many other formats do not support decimal, it reduces the cases for
-      // decimals by disallowing values having scale (eg. `1.1`).
-      if (bigDecimal.scale <= 0) {
-        // `DecimalType` conversion can fail when
-        //   1. The precision is bigger than 38.
-        //   2. scale is bigger than precision.
-        DecimalType(bigDecimal.precision, bigDecimal.scale)
-      } else {
-        tryParseDouble(field, options)
+    val decimalTry =
+      allCatch opt {
+        // `BigDecimal` conversion can fail when the `field` is not a form of number.
+        val bigDecimal = new BigDecimal(field)
+        // Because many other formats do not support decimal, it reduces the cases for
+        // decimals by disallowing values having scale (eg. `1.1`).
+        if (bigDecimal.scale <= 0) {
+          // `DecimalType` conversion can fail when
+          //   1. The precision is bigger than 38.
+          //   2. scale is bigger than precision.
+          DecimalType(bigDecimal.precision, bigDecimal.scale)
+        } else {
+          tryParseDouble(field, options)
+        }
       }
-    }
     decimalTry.getOrElse(tryParseDouble(field, options))
   }
 
@@ -232,11 +233,10 @@ private[csv] object CSVTypeCast {
    * @param datum string value
    * @param castType SparkSQL type
    */
-  def castTo(
-      datum: String,
-      castType: DataType,
-      nullable: Boolean = true,
-      options: CSVOptions = CSVOptions()): Any = {
+  def castTo(datum: String,
+             castType: DataType,
+             nullable: Boolean = true,
+             options: CSVOptions = CSVOptions()): Any = {
 
     castType match {
       case _: ByteType => if (datum == options.nullValue && nullable) null else datum.toByte
@@ -284,7 +284,7 @@ private[csv] object CSVTypeCast {
       case _: TimestampType =>
         // This one will lose microseconds parts.
         // See https://issues.apache.org/jira/browse/SPARK-10681.
-        DateTimeUtils.stringToTime(datum).getTime  * 1000L
+        DateTimeUtils.stringToTime(datum).getTime * 1000L
       case _: DateType if options.dateFormat != null =>
         DateTimeUtils.millisToDays(options.dateFormat.parse(datum).getTime)
       case _: DateType =>
@@ -302,8 +302,7 @@ private[csv] object CSVTypeCast {
   @throws[IllegalArgumentException]
   def toChar(str: String): Char = {
     if (str.charAt(0) == '\\') {
-      str.charAt(1)
-      match {
+      str.charAt(1) match {
         case 't' => '\t'
         case 'r' => '\r'
         case 'b' => '\b'

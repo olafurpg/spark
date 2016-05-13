@@ -82,24 +82,26 @@ class TextSuite extends QueryTest with SharedSQLContext {
       val tempDirPath = Utils.createTempDir().getAbsolutePath
       testDf.write.option("compression", "illegal").mode(SaveMode.Overwrite).text(tempDirPath)
     }
-    assert(errMsg.getMessage.contains("Codec [illegal] is not available. " +
-      "Known codecs are"))
+    assert(errMsg.getMessage.contains("Codec [illegal] is not available. " + "Known codecs are"))
   }
 
   test("SPARK-13543 Write the output as uncompressed via option()") {
     val extraOptions = Map[String, String](
-      "mapreduce.output.fileoutputformat.compress" -> "true",
-      "mapreduce.output.fileoutputformat.compress.type" -> CompressionType.BLOCK.toString,
-      "mapreduce.map.output.compress" -> "true",
-      "mapreduce.output.fileoutputformat.compress.codec" -> classOf[GzipCodec].getName,
-      "mapreduce.map.output.compress.codec" -> classOf[GzipCodec].getName
+        "mapreduce.output.fileoutputformat.compress" -> "true",
+        "mapreduce.output.fileoutputformat.compress.type" -> CompressionType.BLOCK.toString,
+        "mapreduce.map.output.compress" -> "true",
+        "mapreduce.output.fileoutputformat.compress.codec" -> classOf[GzipCodec].getName,
+        "mapreduce.map.output.compress.codec" -> classOf[GzipCodec].getName
     )
     withTempDir { dir =>
       val testDf = spark.read.text(testFile)
       val tempDir = Utils.createTempDir()
       val tempDirPath = tempDir.getAbsolutePath
-      testDf.write.option("compression", "none")
-        .options(extraOptions).mode(SaveMode.Overwrite).text(tempDirPath)
+      testDf.write
+        .option("compression", "none")
+        .options(extraOptions)
+        .mode(SaveMode.Overwrite)
+        .text(tempDirPath)
       val compressedFiles = new File(tempDirPath).listFiles()
       assert(compressedFiles.exists(!_.getName.endsWith(".txt.gz")))
       verifyFrame(spark.read.options(extraOptions).text(tempDirPath).toDF())

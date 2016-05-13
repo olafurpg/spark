@@ -37,7 +37,7 @@ import org.apache.spark.rdd.RDD
  * @param withStd True by default. Scales the data to unit standard deviation.
  */
 @Since("1.1.0")
-class StandardScaler @Since("1.1.0") (withMean: Boolean, withStd: Boolean) extends Logging {
+class StandardScaler @Since("1.1.0")(withMean: Boolean, withStd: Boolean) extends Logging {
 
   @Since("1.1.0")
   def this() = this(false, true)
@@ -56,13 +56,12 @@ class StandardScaler @Since("1.1.0") (withMean: Boolean, withStd: Boolean) exten
   def fit(data: RDD[Vector]): StandardScalerModel = {
     // TODO: skip computation if both withMean and withStd are false
     val summary = data.treeAggregate(new MultivariateOnlineSummarizer)(
-      (aggregator, data) => aggregator.add(data),
-      (aggregator1, aggregator2) => aggregator1.merge(aggregator2))
-    new StandardScalerModel(
-      Vectors.dense(summary.variance.toArray.map(v => math.sqrt(v))),
-      summary.mean,
-      withStd,
-      withMean)
+        (aggregator, data) => aggregator.add(data),
+        (aggregator1, aggregator2) => aggregator1.merge(aggregator2))
+    new StandardScalerModel(Vectors.dense(summary.variance.toArray.map(v => math.sqrt(v))),
+                            summary.mean,
+                            withStd,
+                            withMean)
   }
 }
 
@@ -75,22 +74,21 @@ class StandardScaler @Since("1.1.0") (withMean: Boolean, withStd: Boolean) exten
  * @param withMean whether to center the data before scaling
  */
 @Since("1.1.0")
-class StandardScalerModel @Since("1.3.0") (
-    @Since("1.3.0") val std: Vector,
-    @Since("1.1.0") val mean: Vector,
-    @Since("1.3.0") var withStd: Boolean,
-    @Since("1.3.0") var withMean: Boolean) extends VectorTransformer {
+class StandardScalerModel @Since("1.3.0")(@Since("1.3.0") val std: Vector,
+                                          @Since("1.1.0") val mean: Vector,
+                                          @Since("1.3.0") var withStd: Boolean,
+                                          @Since("1.3.0") var withMean: Boolean)
+    extends VectorTransformer {
 
   /**
    */
   @Since("1.3.0")
   def this(std: Vector, mean: Vector) {
     this(std, mean, withStd = std != null, withMean = mean != null)
-    require(this.withStd || this.withMean,
-      "at least one of std or mean vectors must be provided")
+    require(this.withStd || this.withMean, "at least one of std or mean vectors must be provided")
     if (this.withStd && this.withMean) {
-      require(mean.size == std.size,
-        "mean and std vectors must have equal size if both are provided")
+      require(
+          mean.size == std.size, "mean and std vectors must have equal size if both are provided")
     }
   }
 
@@ -108,8 +106,7 @@ class StandardScalerModel @Since("1.3.0") (
   @Since("1.3.0")
   @DeveloperApi
   def setWithStd(withStd: Boolean): this.type = {
-    require(!(withStd && this.std == null),
-      "cannot set withStd to true while std is null")
+    require(!(withStd && this.std == null), "cannot set withStd to true while std is null")
     this.withStd = withStd
     this
   }
@@ -160,7 +157,7 @@ class StandardScalerModel @Since("1.3.0") (
           val values = vs.clone()
           val size = values.length
           var i = 0
-          while(i < size) {
+          while (i < size) {
             values(i) *= (if (std(i) != 0.0) 1.0 / std(i) else 0.0)
             i += 1
           }

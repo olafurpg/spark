@@ -46,5 +46,4 @@ class ExperimentalMethods private[sql]() {
 
   @Experimental
   @volatile var extraOptimizations: Seq[Rule[LogicalPlan]] = Nil
-
 }

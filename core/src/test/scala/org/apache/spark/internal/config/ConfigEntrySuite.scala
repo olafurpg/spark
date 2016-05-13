@@ -108,8 +108,7 @@ class ConfigEntrySuite extends SparkFunSuite {
 
   test("conf entry: transformation") {
     val conf = new SparkConf()
-    val transformationConf = ConfigBuilder("spark.transformation")
-      .stringConf
+    val transformationConf = ConfigBuilder("spark.transformation").stringConf
       .transform(_.toLowerCase())
       .createWithDefault("FOO")
 
@@ -120,10 +119,8 @@ class ConfigEntrySuite extends SparkFunSuite {
 
   test("conf entry: valid values check") {
     val conf = new SparkConf()
-    val enum = ConfigBuilder("spark.enum")
-      .stringConf
-      .checkValues(Set("a", "b", "c"))
-      .createWithDefault("a")
+    val enum =
+      ConfigBuilder("spark.enum").stringConf.checkValues(Set("a", "b", "c")).createWithDefault("a")
     assert(conf.get(enum) === "a")
 
     conf.set(enum, "b")
@@ -133,7 +130,8 @@ class ConfigEntrySuite extends SparkFunSuite {
     val enumError = intercept[IllegalArgumentException] {
       conf.get(enum)
     }
-    assert(enumError.getMessage === s"The value of ${enum.key} should be one of a, b, c, but was d")
+    assert(
+        enumError.getMessage === s"The value of ${enum.key} should be one of a, b, c, but was d")
   }
 
   test("conf entry: conversion error") {
@@ -151,5 +149,4 @@ class ConfigEntrySuite extends SparkFunSuite {
     val stringConf = ConfigBuilder("spark.string").stringConf.createWithDefault(null)
     assert(conf.get(stringConf) === null)
   }
-
 }

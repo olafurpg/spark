@@ -35,33 +35,31 @@ import org.apache.spark.sql.types._
 
 object CSVRelation extends Logging {
 
-  def univocityTokenizer(
-      file: RDD[String],
-      header: Seq[String],
-      firstLine: String,
-      params: CSVOptions): RDD[Array[String]] = {
+  def univocityTokenizer(file: RDD[String],
+                         header: Seq[String],
+                         firstLine: String,
+                         params: CSVOptions): RDD[Array[String]] = {
     // If header is set, make sure firstLine is materialized before sending to executors.
     file.mapPartitions { iter =>
-      new BulkCsvReader(
-        if (params.headerFlag) iter.filterNot(_ == firstLine) else iter,
-        params,
-        headers = header)
+      new BulkCsvReader(if (params.headerFlag) iter.filterNot(_ == firstLine) else iter,
+                        params,
+                        headers = header)
     }
   }
 
-  def csvParser(
-      schema: StructType,
-      requiredColumns: Array[String],
-      params: CSVOptions): Array[String] => Option[InternalRow] = {
+  def csvParser(schema: StructType,
+                requiredColumns: Array[String],
+                params: CSVOptions): Array[String] => Option[InternalRow] = {
     val schemaFields = schema.fields
     val requiredFields = StructType(requiredColumns.map(schema(_))).fields
-    val safeRequiredFields = if (params.dropMalformed) {
-      // If `dropMalformed` is enabled, then it needs to parse all the values
-      // so that we can decide which row is malformed.
-      requiredFields ++ schemaFields.filterNot(requiredFields.contains(_))
-    } else {
-      requiredFields
-    }
+    val safeRequiredFields =
+      if (params.dropMalformed) {
+        // If `dropMalformed` is enabled, then it needs to parse all the values
+        // so that we can decide which row is malformed.
+        requiredFields ++ schemaFields.filterNot(requiredFields.contains(_))
+      } else {
+        requiredFields
+      }
     val safeRequiredIndices = new Array[Int](safeRequiredFields.length)
     schemaFields.zipWithIndex.filter {
       case (field, _) => safeRequiredFields.contains(field)
@@ -71,56 +69,57 @@ object CSVRelation extends Logging {
     val requiredSize = requiredFields.length
     val row = new GenericMutableRow(requiredSize)
 
-    (tokens: Array[String]) => {
-      if (params.dropMalformed && schemaFields.length != tokens.length) {
-        logWarning(s"Dropping malformed line: ${tokens.mkString(params.delimiter.toString)}")
-        None
-      } else if (params.failFast && schemaFields.length != tokens.length) {
-        throw new RuntimeException(s"Malformed line in FAILFAST mode: " +
-          s"${tokens.mkString(params.delimiter.toString)}")
-      } else {
-        val indexSafeTokens = if (params.permissive && schemaFields.length > tokens.length) {
-          tokens ++ new Array[String](schemaFields.length - tokens.length)
-        } else if (params.permissive && schemaFields.length < tokens.length) {
-          tokens.take(schemaFields.length)
+    (tokens: Array[String]) =>
+      {
+        if (params.dropMalformed && schemaFields.length != tokens.length) {
+          logWarning(s"Dropping malformed line: ${tokens.mkString(params.delimiter.toString)}")
+          None
+        } else if (params.failFast && schemaFields.length != tokens.length) {
+          throw new RuntimeException(s"Malformed line in FAILFAST mode: " +
+              s"${tokens.mkString(params.delimiter.toString)}")
         } else {
-          tokens
-        }
-        try {
-          var index: Int = 0
-          var subIndex: Int = 0
-          while (subIndex < safeRequiredIndices.length) {
-            index = safeRequiredIndices(subIndex)
-            val field = schemaFields(index)
-            // It anyway needs to try to parse since it decides if this row is malformed
-            // or not after trying to cast in `DROPMALFORMED` mode even if the casted
-            // value is not stored in the row.
-            val value = CSVTypeCast.castTo(
-              indexSafeTokens(index),
-              field.dataType,
-              field.nullable,
-              params)
-            if (subIndex < requiredSize) {
-              row(subIndex) = value
+          val indexSafeTokens =
+            if (params.permissive && schemaFields.length > tokens.length) {
+              tokens ++ new Array[String](schemaFields.length - tokens.length)
+            } else if (params.permissive && schemaFields.length < tokens.length) {
+              tokens.take(schemaFields.length)
+            } else {
+              tokens
             }
-            subIndex = subIndex + 1
+          try {
+            var index: Int = 0
+            var subIndex: Int = 0
+            while (subIndex < safeRequiredIndices.length) {
+              index = safeRequiredIndices(subIndex)
+              val field = schemaFields(index)
+              // It anyway needs to try to parse since it decides if this row is malformed
+              // or not after trying to cast in `DROPMALFORMED` mode even if the casted
+              // value is not stored in the row.
+              val value = CSVTypeCast.castTo(indexSafeTokens(index),
+                                             field.dataType,
+                                             field.nullable,
+                                             params)
+              if (subIndex < requiredSize) {
+                row(subIndex) = value
+              }
+              subIndex = subIndex + 1
+            }
+            Some(row)
+          } catch {
+            case NonFatal(e) if params.dropMalformed =>
+              logWarning(
+                  "Parse exception. " +
+                  s"Dropping malformed line: ${tokens.mkString(params.delimiter.toString)}")
+              None
           }
-          Some(row)
-        } catch {
-          case NonFatal(e) if params.dropMalformed =>
-            logWarning("Parse exception. " +
-              s"Dropping malformed line: ${tokens.mkString(params.delimiter.toString)}")
-            None
         }
       }
-    }
   }
 
-  def parseCsv(
-      tokenizedRDD: RDD[Array[String]],
-      schema: StructType,
-      requiredColumns: Array[String],
-      options: CSVOptions): RDD[InternalRow] = {
+  def parseCsv(tokenizedRDD: RDD[Array[String]],
+               schema: StructType,
+               requiredColumns: Array[String],
+               options: CSVOptions): RDD[InternalRow] = {
     val parser = csvParser(schema, requiredColumns, options)
     tokenizedRDD.flatMap(parser(_).toSeq)
   }
@@ -130,14 +129,15 @@ object CSVRelation extends Logging {
       file: PartitionedFile, lines: Iterator[String], csvOptions: CSVOptions): Unit = {
     // TODO What if the first partitioned file consists of only comments and empty lines?
     if (csvOptions.headerFlag && file.start == 0) {
-      val nonEmptyLines = if (csvOptions.isCommentSet) {
-        val commentPrefix = csvOptions.comment.toString
-        lines.dropWhile { line =>
-          line.trim.isEmpty || line.trim.startsWith(commentPrefix)
+      val nonEmptyLines =
+        if (csvOptions.isCommentSet) {
+          val commentPrefix = csvOptions.comment.toString
+          lines.dropWhile { line =>
+            line.trim.isEmpty || line.trim.startsWith(commentPrefix)
+          }
+        } else {
+          lines.dropWhile(_.trim.isEmpty)
         }
-      } else {
-        lines.dropWhile(_.trim.isEmpty)
-      }
 
       if (nonEmptyLines.hasNext) nonEmptyLines.drop(1)
     }
@@ -145,21 +145,19 @@ object CSVRelation extends Logging {
 }
 
 private[sql] class CSVOutputWriterFactory(params: CSVOptions) extends OutputWriterFactory {
-  override def newInstance(
-      path: String,
-      bucketId: Option[Int],
-      dataSchema: StructType,
-      context: TaskAttemptContext): OutputWriter = {
+  override def newInstance(path: String,
+                           bucketId: Option[Int],
+                           dataSchema: StructType,
+                           context: TaskAttemptContext): OutputWriter = {
     if (bucketId.isDefined) sys.error("csv doesn't support bucketing")
     new CsvOutputWriter(path, dataSchema, context, params)
   }
 }
 
 private[sql] class CsvOutputWriter(
-    path: String,
-    dataSchema: StructType,
-    context: TaskAttemptContext,
-    params: CSVOptions) extends OutputWriter with Logging {
+    path: String, dataSchema: StructType, context: TaskAttemptContext, params: CSVOptions)
+    extends OutputWriter
+    with Logging {
 
   // create the Generator without separator inserted between 2 records
   private[this] val text = new Text()
@@ -188,7 +186,8 @@ private[sql] class CsvOutputWriter(
     }
   }
 
-  override def write(row: Row): Unit = throw new UnsupportedOperationException("call writeInternal")
+  override def write(row: Row): Unit =
+    throw new UnsupportedOperationException("call writeInternal")
 
   override protected[sql] def writeInternal(row: InternalRow): Unit = {
     // TODO: Instead of converting and writing every row, we should use the univocity buffer

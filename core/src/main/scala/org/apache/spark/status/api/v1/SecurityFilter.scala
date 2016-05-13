@@ -26,10 +26,10 @@ private[v1] class SecurityFilter extends ContainerRequestFilter with UIRootFromS
     val user = Option(req.getSecurityContext.getUserPrincipal).map { _.getName }.orNull
     if (!uiRoot.securityManager.checkUIViewPermissions(user)) {
       req.abortWith(
-        Response
-          .status(Response.Status.FORBIDDEN)
-          .entity(raw"""user "$user"is not authorized""")
-          .build()
+          Response
+            .status(Response.Status.FORBIDDEN)
+            .entity(raw"""user "$user"is not authorized""")
+            .build()
       )
     }
   }

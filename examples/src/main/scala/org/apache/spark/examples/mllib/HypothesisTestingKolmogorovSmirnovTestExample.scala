@@ -32,7 +32,7 @@ object HypothesisTestingKolmogorovSmirnovTestExample {
     val sc = new SparkContext(conf)
 
     // $example on$
-    val data: RDD[Double] = sc.parallelize(Seq(0.1, 0.15, 0.2, 0.3, 0.25))  // an RDD of sample data
+    val data: RDD[Double] = sc.parallelize(Seq(0.1, 0.15, 0.2, 0.3, 0.25)) // an RDD of sample data
 
     // run a KS test for the sample versus a standard normal distribution
     val testResult = Statistics.kolmogorovSmirnovTest(data, "norm", 0, 1)
@@ -51,4 +51,3 @@ object HypothesisTestingKolmogorovSmirnovTestExample {
   }
 }
 // scalastyle:on println
-

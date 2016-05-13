@@ -25,12 +25,13 @@ import org.apache.spark.ui.JettyUtils._
 /**
  * Web UI server for the standalone master.
  */
-private[master]
-class MasterWebUI(
-    val master: Master,
-    requestedPort: Int)
-  extends WebUI(master.securityMgr, master.securityMgr.getSSLOptions("standalone"),
-    requestedPort, master.conf, name = "MasterUI") with Logging {
+private[master] class MasterWebUI(val master: Master, requestedPort: Int)
+    extends WebUI(master.securityMgr,
+                  master.securityMgr.getSSLOptions("standalone"),
+                  requestedPort,
+                  master.conf,
+                  name = "MasterUI")
+    with Logging {
 
   val masterEndpointRef = master.self
   val killEnabled = master.conf.getBoolean("spark.ui.killEnabled", true)
@@ -44,9 +45,9 @@ class MasterWebUI(
     attachPage(masterPage)
     attachHandler(createStaticHandler(MasterWebUI.STATIC_RESOURCE_DIR, "/static"))
     attachHandler(createRedirectHandler(
-      "/app/kill", "/", masterPage.handleAppKillRequest, httpMethods = Set("POST")))
+            "/app/kill", "/", masterPage.handleAppKillRequest, httpMethods = Set("POST")))
     attachHandler(createRedirectHandler(
-      "/driver/kill", "/", masterPage.handleDriverKillRequest, httpMethods = Set("POST")))
+            "/driver/kill", "/", masterPage.handleDriverKillRequest, httpMethods = Set("POST")))
   }
 }
 

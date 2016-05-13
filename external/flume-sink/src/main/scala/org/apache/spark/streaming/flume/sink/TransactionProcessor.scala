@@ -40,13 +40,18 @@ import org.apache.flume.{Channel, Transaction}
  *                           without waiting for an ACK from Spark
  * @param parent The parent [[SparkAvroCallbackHandler]] instance, for reporting timeouts
  */
-private class TransactionProcessor(val channel: Channel, val seqNum: String,
-  var maxBatchSize: Int, val transactionTimeout: Int, val backOffInterval: Int,
-  val parent: SparkAvroCallbackHandler) extends Callable[Void] with Logging {
+private class TransactionProcessor(val channel: Channel,
+                                   val seqNum: String,
+                                   var maxBatchSize: Int,
+                                   val transactionTimeout: Int,
+                                   val backOffInterval: Int,
+                                   val parent: SparkAvroCallbackHandler)
+    extends Callable[Void]
+    with Logging {
 
   // If a real batch is not returned, we always have to return an error batch.
-  @volatile private var eventBatch: EventBatch = new EventBatch("Unknown Error", "",
-    util.Collections.emptyList())
+  @volatile private var eventBatch: EventBatch = new EventBatch(
+      "Unknown Error", "", util.Collections.emptyList())
 
   // Synchronization primitives
   val batchGeneratedLatch = new CountDownLatch(1)
@@ -106,9 +111,9 @@ private class TransactionProcessor(val channel: Channel, val seqNum: String,
   private def populateEvents() {
     try {
       txOpt = Option(channel.getTransaction)
-      if(txOpt.isEmpty) {
-        eventBatch.setErrorMsg("Something went wrong. Channel was " +
-          "unable to create a transaction!")
+      if (txOpt.isEmpty) {
+        eventBatch.setErrorMsg(
+            "Something went wrong. Channel was " + "unable to create a transaction!")
       }
       txOpt.foreach { tx =>
         tx.begin()
@@ -117,18 +122,18 @@ private class TransactionProcessor(val channel: Channel, val seqNum: String,
         var gotEventsInThisTxn = false
         var loopCounter: Int = 0
         loop.breakable {
-          while (!stopped && events.size() < maxBatchSize
-            && loopCounter < totalAttemptsToRemoveFromChannel) {
+          while (!stopped && events.size() < maxBatchSize &&
+                 loopCounter < totalAttemptsToRemoveFromChannel) {
             loopCounter += 1
             Option(channel.take()) match {
               case Some(event) =>
                 events.add(new SparkSinkEvent(toCharSequenceMap(event.getHeaders),
-                  ByteBuffer.wrap(event.getBody)))
+                                              ByteBuffer.wrap(event.getBody)))
                 gotEventsInThisTxn = true
               case None =>
                 if (!gotEventsInThisTxn && !stopped) {
-                  logDebug("Sleeping for " + backOffInterval + " millis as no events were read in" +
-                    " the current transaction")
+                  logDebug("Sleeping for " + backOffInterval +
+                      " millis as no events were read in" + " the current transaction")
                   TimeUnit.MILLISECONDS.sleep(backOffInterval)
                 } else {
                   loop.break()
@@ -137,8 +142,7 @@ private class TransactionProcessor(val channel: Channel, val seqNum: String,
           }
         }
         if (!gotEventsInThisTxn && !stopped) {
-          val msg = "Tried several times, " +
-            "but did not get any events from the channel!"
+          val msg = "Tried several times, " + "but did not get any events from the channel!"
           logWarning(msg)
           eventBatch.setErrorMsg(msg)
         } else {
@@ -181,8 +185,10 @@ private class TransactionProcessor(val channel: Channel, val seqNum: String,
           tx.commit()
         } catch {
           case e: Exception =>
-            logWarning("Error while attempting to commit transaction. Transaction will be rolled " +
-              "back", e)
+            logWarning(
+                "Error while attempting to commit transaction. Transaction will be rolled " +
+                "back",
+                e)
             rollbackAndClose(tx, close = false) // tx will be closed later anyway
         } finally {
           tx.close()
@@ -208,7 +214,7 @@ private class TransactionProcessor(val channel: Channel, val seqNum: String,
   private def rollbackAndClose(tx: Transaction, close: Boolean) {
     try {
       logWarning("Spark was unable to successfully process the events. Transaction is being " +
-        "rolled back.")
+          "rolled back.")
       tx.rollback()
     } catch {
       case e: Exception =>
@@ -225,8 +231,8 @@ private class TransactionProcessor(val channel: Channel, val seqNum: String,
    * @param inMap The map to be converted
    * @return The converted map
    */
-  private def toCharSequenceMap(inMap: java.util.Map[String, String]): java.util.Map[CharSequence,
-    CharSequence] = {
+  private def toCharSequenceMap(
+      inMap: java.util.Map[String, String]): java.util.Map[CharSequence, CharSequence] = {
     val charSeqMap = new util.HashMap[CharSequence, CharSequence](inMap.size())
     charSeqMap.putAll(inMap)
     charSeqMap

@@ -29,16 +29,15 @@ import org.apache.spark.sql.types.{DataType, StructType}
  * (private[classification])  Params for probabilistic classification.
  */
 private[classification] trait ProbabilisticClassifierParams
-  extends ClassifierParams with HasProbabilityCol with HasThresholds {
+    extends ClassifierParams
+    with HasProbabilityCol
+    with HasThresholds {
   override protected def validateAndTransformSchema(
-      schema: StructType,
-      fitting: Boolean,
-      featuresDataType: DataType): StructType = {
+      schema: StructType, fitting: Boolean, featuresDataType: DataType): StructType = {
     val parentSchema = super.validateAndTransformSchema(schema, fitting, featuresDataType)
     SchemaUtils.appendColumn(parentSchema, $(probabilityCol), new VectorUDT)
   }
 }
-
 
 /**
  * :: DeveloperApi ::
@@ -50,11 +49,11 @@ private[classification] trait ProbabilisticClassifierParams
  * @tparam M  Concrete Model type
  */
 @DeveloperApi
-abstract class ProbabilisticClassifier[
-    FeaturesType,
-    E <: ProbabilisticClassifier[FeaturesType, E, M],
-    M <: ProbabilisticClassificationModel[FeaturesType, M]]
-  extends Classifier[FeaturesType, E, M] with ProbabilisticClassifierParams {
+abstract class ProbabilisticClassifier[FeaturesType,
+                                       E <: ProbabilisticClassifier[FeaturesType, E, M],
+                                       M <: ProbabilisticClassificationModel[FeaturesType, M]]
+    extends Classifier[FeaturesType, E, M]
+    with ProbabilisticClassifierParams {
 
   /** @group setParam */
   def setProbabilityCol(value: String): E = set(probabilityCol, value).asInstanceOf[E]
@@ -62,7 +61,6 @@ abstract class ProbabilisticClassifier[
   /** @group setParam */
   def setThresholds(value: Array[Double]): E = set(thresholds, value).asInstanceOf[E]
 }
-
 
 /**
  * :: DeveloperApi ::
@@ -75,9 +73,9 @@ abstract class ProbabilisticClassifier[
  */
 @DeveloperApi
 abstract class ProbabilisticClassificationModel[
-    FeaturesType,
-    M <: ProbabilisticClassificationModel[FeaturesType, M]]
-  extends ClassificationModel[FeaturesType, M] with ProbabilisticClassifierParams {
+    FeaturesType, M <: ProbabilisticClassificationModel[FeaturesType, M]]
+    extends ClassificationModel[FeaturesType, M]
+    with ProbabilisticClassifierParams {
 
   /** @group setParam */
   def setProbabilityCol(value: String): M = set(probabilityCol, value).asInstanceOf[M]
@@ -98,9 +96,10 @@ abstract class ProbabilisticClassificationModel[
   override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
     if (isDefined(thresholds)) {
-      require($(thresholds).length == numClasses, this.getClass.getSimpleName +
-        ".transform() called with non-matching numClasses and thresholds.length." +
-        s" numClasses=$numClasses, but thresholds has length ${$(thresholds).length}")
+      require($(thresholds).length == numClasses,
+              this.getClass.getSimpleName +
+              ".transform() called with non-matching numClasses and thresholds.length." +
+              s" numClasses=$numClasses, but thresholds has length ${$(thresholds).length}")
     }
 
     // Output selected columns only.
@@ -115,35 +114,37 @@ abstract class ProbabilisticClassificationModel[
       numColsOutput += 1
     }
     if ($(probabilityCol).nonEmpty) {
-      val probUDF = if ($(rawPredictionCol).nonEmpty) {
-        udf(raw2probability _).apply(col($(rawPredictionCol)))
-      } else {
-        val probabilityUDF = udf { (features: Any) =>
-          predictProbability(features.asInstanceOf[FeaturesType])
+      val probUDF =
+        if ($(rawPredictionCol).nonEmpty) {
+          udf(raw2probability _).apply(col($(rawPredictionCol)))
+        } else {
+          val probabilityUDF = udf { (features: Any) =>
+            predictProbability(features.asInstanceOf[FeaturesType])
+          }
+          probabilityUDF(col($(featuresCol)))
         }
-        probabilityUDF(col($(featuresCol)))
-      }
       outputData = outputData.withColumn($(probabilityCol), probUDF)
       numColsOutput += 1
     }
     if ($(predictionCol).nonEmpty) {
-      val predUDF = if ($(rawPredictionCol).nonEmpty) {
-        udf(raw2prediction _).apply(col($(rawPredictionCol)))
-      } else if ($(probabilityCol).nonEmpty) {
-        udf(probability2prediction _).apply(col($(probabilityCol)))
-      } else {
-        val predictUDF = udf { (features: Any) =>
-          predict(features.asInstanceOf[FeaturesType])
+      val predUDF =
+        if ($(rawPredictionCol).nonEmpty) {
+          udf(raw2prediction _).apply(col($(rawPredictionCol)))
+        } else if ($(probabilityCol).nonEmpty) {
+          udf(probability2prediction _).apply(col($(probabilityCol)))
+        } else {
+          val predictUDF = udf { (features: Any) =>
+            predict(features.asInstanceOf[FeaturesType])
+          }
+          predictUDF(col($(featuresCol)))
         }
-        predictUDF(col($(featuresCol)))
-      }
       outputData = outputData.withColumn($(predictionCol), predUDF)
       numColsOutput += 1
     }
 
     if (numColsOutput == 0) {
       this.logWarning(s"$uid: ProbabilisticClassificationModel.transform() was called as NOOP" +
-        " since no output columns were set.")
+          " since no output columns were set.")
     }
     outputData.toDF
   }
@@ -196,10 +197,10 @@ abstract class ProbabilisticClassificationModel[
       probability.argmax
     } else {
       val thresholds: Array[Double] = getThresholds
-      val scaledProbability: Array[Double] =
-        probability.toArray.zip(thresholds).map { case (p, t) =>
+      val scaledProbability: Array[Double] = probability.toArray.zip(thresholds).map {
+        case (p, t) =>
           if (t == 0.0) Double.PositiveInfinity else p / t
-        }
+      }
       Vectors.dense(scaledProbability).argmax
     }
   }

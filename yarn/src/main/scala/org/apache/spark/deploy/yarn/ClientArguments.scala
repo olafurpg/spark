@@ -56,22 +56,20 @@ private[spark] class ClientArguments(args: Array[String]) {
           args = tail
 
         case Nil =>
-
         case _ =>
           throw new IllegalArgumentException(getUsageMessage(args))
       }
     }
 
     if (primaryPyFile != null && primaryRFile != null) {
-      throw new IllegalArgumentException("Cannot have primary-py-file and primary-r-file" +
-        " at the same time")
+      throw new IllegalArgumentException(
+          "Cannot have primary-py-file and primary-r-file" + " at the same time")
     }
   }
 
   private def getUsageMessage(unknownParam: List[String] = null): String = {
     val message = if (unknownParam != null) s"Unknown/unsupported param $unknownParam\n" else ""
-    message +
-      s"""
+    message + s"""
       |Usage: org.apache.spark.deploy.yarn.Client [options]
       |Options:
       |  --jar JAR_PATH           Path to your application's JAR file (required in yarn-cluster

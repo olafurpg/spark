@@ -40,8 +40,11 @@ import org.apache.spark.streaming.receiver.BlockManagerBasedStoreResult
 import org.apache.spark.streaming.scheduler.ReceivedBlockInfo
 import org.apache.spark.util.Utils
 
-abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFunSuite
-  with Eventually with BeforeAndAfter with BeforeAndAfterAll {
+abstract class KinesisStreamTests(aggregateTestData: Boolean)
+    extends KinesisFunSuite
+    with Eventually
+    with BeforeAndAfter
+    with BeforeAndAfterAll {
 
   // This is the name that KCL will use to save metadata to DynamoDB
   private val appName = s"KinesisStreamSuite-${math.abs(Random.nextLong())}"
@@ -58,9 +61,8 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
   private var sc: SparkContext = null
 
   override def beforeAll(): Unit = {
-    val conf = new SparkConf()
-      .setMaster("local[4]")
-      .setAppName("KinesisStreamSuite") // Setting Spark app name to Kinesis app name
+    val conf =
+      new SparkConf().setMaster("local[4]").setAppName("KinesisStreamSuite") // Setting Spark app name to Kinesis app name
     sc = new SparkContext(conf)
 
     runIfTestsEnabled("Prepare KinesisTestUtils") {
@@ -99,51 +101,70 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
   }
 
   test("KinesisUtils API") {
-    val kinesisStream1 = KinesisUtils.createStream(ssc, "myAppName", "mySparkStream",
-      dummyEndpointUrl, dummyRegionName,
-      InitialPositionInStream.LATEST, Seconds(2), StorageLevel.MEMORY_AND_DISK_2)
-    val kinesisStream2 = KinesisUtils.createStream(ssc, "myAppName", "mySparkStream",
-      dummyEndpointUrl, dummyRegionName,
-      InitialPositionInStream.LATEST, Seconds(2), StorageLevel.MEMORY_AND_DISK_2,
-      dummyAWSAccessKey, dummyAWSSecretKey)
+    val kinesisStream1 = KinesisUtils.createStream(ssc,
+                                                   "myAppName",
+                                                   "mySparkStream",
+                                                   dummyEndpointUrl,
+                                                   dummyRegionName,
+                                                   InitialPositionInStream.LATEST,
+                                                   Seconds(2),
+                                                   StorageLevel.MEMORY_AND_DISK_2)
+    val kinesisStream2 = KinesisUtils.createStream(ssc,
+                                                   "myAppName",
+                                                   "mySparkStream",
+                                                   dummyEndpointUrl,
+                                                   dummyRegionName,
+                                                   InitialPositionInStream.LATEST,
+                                                   Seconds(2),
+                                                   StorageLevel.MEMORY_AND_DISK_2,
+                                                   dummyAWSAccessKey,
+                                                   dummyAWSSecretKey)
   }
 
   test("RDD generation") {
-    val inputStream = KinesisUtils.createStream(ssc, appName, "dummyStream",
-      dummyEndpointUrl, dummyRegionName, InitialPositionInStream.LATEST, Seconds(2),
-      StorageLevel.MEMORY_AND_DISK_2, dummyAWSAccessKey, dummyAWSSecretKey)
+    val inputStream = KinesisUtils.createStream(ssc,
+                                                appName,
+                                                "dummyStream",
+                                                dummyEndpointUrl,
+                                                dummyRegionName,
+                                                InitialPositionInStream.LATEST,
+                                                Seconds(2),
+                                                StorageLevel.MEMORY_AND_DISK_2,
+                                                dummyAWSAccessKey,
+                                                dummyAWSSecretKey)
     assert(inputStream.isInstanceOf[KinesisInputDStream[Array[Byte]]])
 
     val kinesisStream = inputStream.asInstanceOf[KinesisInputDStream[Array[Byte]]]
     val time = Time(1000)
 
     // Generate block info data for testing
-    val seqNumRanges1 = SequenceNumberRanges(
-      SequenceNumberRange("fakeStream", "fakeShardId", "xxx", "yyy"))
+    val seqNumRanges1 =
+      SequenceNumberRanges(SequenceNumberRange("fakeStream", "fakeShardId", "xxx", "yyy"))
     val blockId1 = StreamBlockId(kinesisStream.id, 123)
     val blockInfo1 = ReceivedBlockInfo(
-      0, None, Some(seqNumRanges1), new BlockManagerBasedStoreResult(blockId1, None))
+        0, None, Some(seqNumRanges1), new BlockManagerBasedStoreResult(blockId1, None))
 
-    val seqNumRanges2 = SequenceNumberRanges(
-      SequenceNumberRange("fakeStream", "fakeShardId", "aaa", "bbb"))
+    val seqNumRanges2 =
+      SequenceNumberRanges(SequenceNumberRange("fakeStream", "fakeShardId", "aaa", "bbb"))
     val blockId2 = StreamBlockId(kinesisStream.id, 345)
     val blockInfo2 = ReceivedBlockInfo(
-      0, None, Some(seqNumRanges2), new BlockManagerBasedStoreResult(blockId2, None))
+        0, None, Some(seqNumRanges2), new BlockManagerBasedStoreResult(blockId2, None))
 
     // Verify that the generated KinesisBackedBlockRDD has the all the right information
     val blockInfos = Seq(blockInfo1, blockInfo2)
     val nonEmptyRDD = kinesisStream.createBlockRDD(time, blockInfos)
-    nonEmptyRDD shouldBe a [KinesisBackedBlockRDD[_]]
+    nonEmptyRDD shouldBe a[KinesisBackedBlockRDD[_]]
     val kinesisRDD = nonEmptyRDD.asInstanceOf[KinesisBackedBlockRDD[_]]
     assert(kinesisRDD.regionName === dummyRegionName)
     assert(kinesisRDD.endpointUrl === dummyEndpointUrl)
     assert(kinesisRDD.retryTimeoutMs === batchDuration.milliseconds)
     assert(kinesisRDD.awsCredentialsOption ===
-      Some(SerializableAWSCredentials(dummyAWSAccessKey, dummyAWSSecretKey)))
+        Some(SerializableAWSCredentials(dummyAWSAccessKey, dummyAWSSecretKey)))
     assert(nonEmptyRDD.partitions.size === blockInfos.size)
-    nonEmptyRDD.partitions.foreach { _ shouldBe a [KinesisBackedBlockRDDPartition] }
+    nonEmptyRDD.partitions.foreach { _ shouldBe a[KinesisBackedBlockRDDPartition] }
     val partitions = nonEmptyRDD.partitions.map {
-      _.asInstanceOf[KinesisBackedBlockRDDPartition] }.toSeq
+      _.asInstanceOf[KinesisBackedBlockRDDPartition]
+    }.toSeq
     assert(partitions.map { _.seqNumberRanges } === Seq(seqNumRanges1, seqNumRanges2))
     assert(partitions.map { _.blockId } === Seq(blockId1, blockId2))
     assert(partitions.forall { _.isBlockIdValid === true })
@@ -152,7 +173,7 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
     val emptyRDD = kinesisStream.createBlockRDD(time, Seq.empty)
     // Verify it's KinesisBackedBlockRDD[_] rather than KinesisBackedBlockRDD[Array[Byte]], because
     // the type parameter will be erased at runtime
-    emptyRDD shouldBe a [KinesisBackedBlockRDD[_]]
+    emptyRDD shouldBe a[KinesisBackedBlockRDD[_]]
     emptyRDD.partitions shouldBe empty
 
     // Verify that the KinesisBackedBlockRDD has isBlockValid = false when blocks are invalid
@@ -161,7 +182,6 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
       assert(partition.asInstanceOf[KinesisBackedBlockRDDPartition].isBlockIdValid === false)
     }
   }
-
 
   /**
    * Test the stream by sending data to a Kinesis stream and receiving from it.
@@ -173,13 +193,21 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
    */
   testIfEnabled("basic operation") {
     val awsCredentials = KinesisTestUtils.getAWSCredentials()
-    val stream = KinesisUtils.createStream(ssc, appName, testUtils.streamName,
-      testUtils.endpointUrl, testUtils.regionName, InitialPositionInStream.LATEST,
-      Seconds(10), StorageLevel.MEMORY_ONLY,
-      awsCredentials.getAWSAccessKeyId, awsCredentials.getAWSSecretKey)
+    val stream = KinesisUtils.createStream(ssc,
+                                           appName,
+                                           testUtils.streamName,
+                                           testUtils.endpointUrl,
+                                           testUtils.regionName,
+                                           InitialPositionInStream.LATEST,
+                                           Seconds(10),
+                                           StorageLevel.MEMORY_ONLY,
+                                           awsCredentials.getAWSAccessKeyId,
+                                           awsCredentials.getAWSSecretKey)
 
     val collected = new mutable.HashSet[Int]
-    stream.map { bytes => new String(bytes).toInt }.foreachRDD { rdd =>
+    stream.map { bytes =>
+      new String(bytes).toInt
+    }.foreachRDD { rdd =>
       collected.synchronized {
         collected ++= rdd.collect()
         logInfo("Collected = " + collected.mkString(", "))
@@ -191,7 +219,7 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
     eventually(timeout(120 seconds), interval(10 second)) {
       testUtils.pushData(testData, aggregateTestData)
       assert(collected.synchronized { collected === testData.toSet },
-        "\nData received does not match data sent")
+             "\nData received does not match data sent")
     }
     ssc.stop(stopSparkContext = false)
   }
@@ -199,12 +227,19 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
   testIfEnabled("custom message handling") {
     val awsCredentials = KinesisTestUtils.getAWSCredentials()
     def addFive(r: Record): Int = JavaUtils.bytesToString(r.getData).toInt + 5
-    val stream = KinesisUtils.createStream(ssc, appName, testUtils.streamName,
-      testUtils.endpointUrl, testUtils.regionName, InitialPositionInStream.LATEST,
-      Seconds(10), StorageLevel.MEMORY_ONLY, addFive,
-      awsCredentials.getAWSAccessKeyId, awsCredentials.getAWSSecretKey)
+    val stream = KinesisUtils.createStream(ssc,
+                                           appName,
+                                           testUtils.streamName,
+                                           testUtils.endpointUrl,
+                                           testUtils.regionName,
+                                           InitialPositionInStream.LATEST,
+                                           Seconds(10),
+                                           StorageLevel.MEMORY_ONLY,
+                                           addFive,
+                                           awsCredentials.getAWSAccessKeyId,
+                                           awsCredentials.getAWSSecretKey)
 
-    stream shouldBe a [ReceiverInputDStream[_]]
+    stream shouldBe a[ReceiverInputDStream[_]]
 
     val collected = new mutable.HashSet[Int]
     stream.foreachRDD { rdd =>
@@ -220,7 +255,7 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
       testUtils.pushData(testData, aggregateTestData)
       val modData = testData.map(_ + 5)
       assert(collected.synchronized { collected === modData.toSet },
-        "\nData received does not match data sent")
+             "\nData received does not match data sent")
     }
     ssc.stop(stopSparkContext = false)
   }
@@ -235,15 +270,24 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
     val awsCredentials = KinesisTestUtils.getAWSCredentials()
     val collectedData = new mutable.HashMap[Time, (Array[SequenceNumberRanges], Seq[Int])]
 
-    val kinesisStream = KinesisUtils.createStream(ssc, appName, testUtils.streamName,
-      testUtils.endpointUrl, testUtils.regionName, InitialPositionInStream.LATEST,
-      Seconds(10), StorageLevel.MEMORY_ONLY,
-      awsCredentials.getAWSAccessKeyId, awsCredentials.getAWSSecretKey)
+    val kinesisStream = KinesisUtils.createStream(ssc,
+                                                  appName,
+                                                  testUtils.streamName,
+                                                  testUtils.endpointUrl,
+                                                  testUtils.regionName,
+                                                  InitialPositionInStream.LATEST,
+                                                  Seconds(10),
+                                                  StorageLevel.MEMORY_ONLY,
+                                                  awsCredentials.getAWSAccessKeyId,
+                                                  awsCredentials.getAWSSecretKey)
 
     // Verify that the generated RDDs are KinesisBackedBlockRDDs, and collect the data in each batch
-    kinesisStream.foreachRDD((rdd: RDD[Array[Byte]], time: Time) => {
+    kinesisStream.foreachRDD(
+        (rdd: RDD[Array[Byte]], time: Time) => {
       val kRdd = rdd.asInstanceOf[KinesisBackedBlockRDD[Array[Byte]]]
-      val data = rdd.map { bytes => new String(bytes).toInt }.collect().toSeq
+      val data = rdd.map { bytes =>
+        new String(bytes).toInt
+      }.collect().toSeq
       collectedData.synchronized {
         collectedData(time) = (kRdd.arrayOfseqNumberRanges, data)
       }
@@ -264,7 +308,7 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
       testUtils.pushData(1 to 5, aggregateTestData)
       assert(isCheckpointPresent && numBatchesWithData > 10)
     }
-    ssc.stop(stopSparkContext = true)  // stop the SparkContext so that the blocks are not reused
+    ssc.stop(stopSparkContext = true) // stop the SparkContext so that the blocks are not reused
 
     // Restart the context from checkpoint and verify whether the
     logInfo("Restarting from checkpoint")
@@ -284,12 +328,15 @@ abstract class KinesisStreamTests(aggregateTestData: Boolean) extends KinesisFun
         // Verify the recovered sequence ranges
         val kRdd = rdd.asInstanceOf[KinesisBackedBlockRDD[Array[Byte]]]
         assert(kRdd.arrayOfseqNumberRanges.size === arrayOfSeqNumRanges.size)
-        arrayOfSeqNumRanges.zip(kRdd.arrayOfseqNumberRanges).foreach { case (expected, found) =>
-          assert(expected.ranges.toSeq === found.ranges.toSeq)
+        arrayOfSeqNumRanges.zip(kRdd.arrayOfseqNumberRanges).foreach {
+          case (expected, found) =>
+            assert(expected.ranges.toSeq === found.ranges.toSeq)
         }
 
         // Verify the recovered data
-        assert(rdd.map { bytes => new String(bytes).toInt }.collect().toSeq === data)
+        assert(rdd.map { bytes =>
+          new String(bytes).toInt
+        }.collect().toSeq === data)
       }
     }
     ssc.stop()

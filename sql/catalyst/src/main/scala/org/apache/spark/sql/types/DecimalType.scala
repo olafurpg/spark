@@ -24,7 +24,6 @@ import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.ScalaReflectionLock
 import org.apache.spark.sql.catalyst.expressions.Expression
 
-
 /**
  * :: DeveloperApi ::
  * The data type representing `java.math.BigDecimal` values.
@@ -42,7 +41,7 @@ case class DecimalType(precision: Int, scale: Int) extends FractionalType {
 
   if (scale > precision) {
     throw new AnalysisException(
-      s"Decimal scale ($scale) cannot be greater than precision ($precision).")
+        s"Decimal scale ($scale) cannot be greater than precision ($precision).")
   }
 
   if (precision > DecimalType.MAX_PRECISION) {
@@ -99,7 +98,6 @@ case class DecimalType(precision: Int, scale: Int) extends FractionalType {
 
   private[spark] override def asNullable: DecimalType = this
 }
-
 
 /** Extra factory methods and pattern matchers for Decimals */
 object DecimalType extends AbstractDataType {

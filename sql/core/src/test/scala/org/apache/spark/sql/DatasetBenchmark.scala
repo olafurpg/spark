@@ -78,8 +78,8 @@ object DatasetBenchmark {
     val df = spark.range(1, numRows).select($"id".as("l"), $"id".cast(StringType).as("s"))
     val benchmark = new Benchmark("back-to-back filter", numRows)
     val func = (d: Data, i: Int) => d.l % (100L + i) == 0L
-    val funcs = 0.until(numChains).map { i =>
-      (d: Data) => func(d, i)
+    val funcs = 0.until(numChains).map { i => (d: Data) =>
+      func(d, i)
     }
 
     val rdd = spark.sparkContext.range(1, numRows).map(l => Data(l, l.toString))
@@ -157,10 +157,7 @@ object DatasetBenchmark {
   }
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder
-      .master("local[*]")
-      .appName("Dataset benchmark")
-      .getOrCreate()
+    val spark = SparkSession.builder.master("local[*]").appName("Dataset benchmark").getOrCreate()
 
     val numRows = 100000000
     val numChains = 10
@@ -177,7 +174,7 @@ object DatasetBenchmark {
     RDD                                      1935 / 2105         51.7          19.3       1.0X
     DataFrame                                 756 /  799        132.3           7.6       2.6X
     Dataset                                  7359 / 7506         13.6          73.6       0.3X
-    */
+     */
     benchmark.run()
 
     /*
@@ -188,7 +185,7 @@ object DatasetBenchmark {
     RDD                                      1974 / 2036         50.6          19.7       1.0X
     DataFrame                                 103 /  127        967.4           1.0      19.1X
     Dataset                                  4343 / 4477         23.0          43.4       0.5X
-    */
+     */
     benchmark2.run()
 
     /*
@@ -200,7 +197,7 @@ object DatasetBenchmark {
     DataFrame sum                              92 /  128       1085.3           0.9      23.1X
     Dataset sum using Aggregator             4111 / 4282         24.3          41.1       0.5X
     Dataset complex Aggregator               8782 / 9036         11.4          87.8       0.2X
-    */
+     */
     benchmark3.run()
   }
 }

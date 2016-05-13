@@ -52,4 +52,3 @@ object DriverRegistry extends Logging {
     }
   }
 }
-

@@ -34,10 +34,9 @@ private[sql] class ResolveDataSource(sparkSession: SparkSession) extends Rule[Lo
   def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
     case u: UnresolvedRelation if u.tableIdentifier.database.isDefined =>
       try {
-        val dataSource = DataSource(
-          sparkSession,
-          paths = u.tableIdentifier.table :: Nil,
-          className = u.tableIdentifier.database.get)
+        val dataSource = DataSource(sparkSession,
+                                    paths = u.tableIdentifier.table :: Nil,
+                                    className = u.tableIdentifier.database.get)
         val plan = LogicalRelation(dataSource.resolveRelation())
         u.alias.map(a => SubqueryAlias(u.alias.get, plan)).getOrElse(plan)
       } catch {
@@ -56,27 +55,26 @@ private[sql] class ResolveDataSource(sparkSession: SparkSession) extends Rule[Lo
  */
 private[sql] object PreInsertCastAndRename extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
-      // Wait until children are resolved.
-      case p: LogicalPlan if !p.childrenResolved => p
+    // Wait until children are resolved.
+    case p: LogicalPlan if !p.childrenResolved => p
 
-      // We are inserting into an InsertableRelation or HadoopFsRelation.
-      case i @ InsertIntoTable(
-      l @ LogicalRelation(_: InsertableRelation | _: HadoopFsRelation, _, _), _, child, _, _) =>
-        // First, make sure the data to be inserted have the same number of fields with the
-        // schema of the relation.
-        if (l.output.size != child.output.size) {
-          sys.error(
+    // We are inserting into an InsertableRelation or HadoopFsRelation.
+    case i @ InsertIntoTable(
+        l @ LogicalRelation(_: InsertableRelation | _: HadoopFsRelation, _, _), _, child, _, _) =>
+      // First, make sure the data to be inserted have the same number of fields with the
+      // schema of the relation.
+      if (l.output.size != child.output.size) {
+        sys.error(
             s"$l requires that the query in the SELECT clause of the INSERT INTO/OVERWRITE " +
-              s"statement generates the same number of columns as its schema.")
-        }
-        castAndRenameChildOutput(i, l.output, child)
+            s"statement generates the same number of columns as its schema.")
+      }
+      castAndRenameChildOutput(i, l.output, child)
   }
 
   /** If necessary, cast data types and rename fields to the expected types and names. */
-  def castAndRenameChildOutput(
-      insertInto: InsertIntoTable,
-      expectedOutput: Seq[Attribute],
-      child: LogicalPlan): InsertIntoTable = {
+  def castAndRenameChildOutput(insertInto: InsertIntoTable,
+                               expectedOutput: Seq[Attribute],
+                               child: LogicalPlan): InsertIntoTable = {
     val newChildOutput = expectedOutput.zip(child.output).map {
       case (expected, actual) =>
         val needCast = !expected.dataType.sameType(actual.dataType)
@@ -102,15 +100,17 @@ private[sql] object PreInsertCastAndRename extends Rule[LogicalPlan] {
  * A rule to do various checks before inserting into or writing to a data source table.
  */
 private[sql] case class PreWriteCheck(conf: SQLConf, catalog: SessionCatalog)
-  extends (LogicalPlan => Unit) {
+    extends (LogicalPlan => Unit) {
 
   def failAnalysis(msg: String): Unit = { throw new AnalysisException(msg) }
 
   def apply(plan: LogicalPlan): Unit = {
     plan.foreach {
-      case i @ logical.InsertIntoTable(
-        l @ LogicalRelation(t: InsertableRelation, _, _),
-        partition, query, overwrite, ifNotExists) =>
+      case i @ logical.InsertIntoTable(l @ LogicalRelation(t: InsertableRelation, _, _),
+                                       partition,
+                                       query,
+                                       overwrite,
+                                       ifNotExists) =>
         // Right now, we do not support insert into a data source table with partition specs.
         if (partition.nonEmpty) {
           failAnalysis(s"Insert into a partition is not allowed because $l is not partitioned.")
@@ -120,38 +120,36 @@ private[sql] case class PreWriteCheck(conf: SQLConf, catalog: SessionCatalog)
             case LogicalRelation(src: BaseRelation, _, _) => src
           }
           if (srcRelations.contains(t)) {
-            failAnalysis(
-              "Cannot insert overwrite into table that is also being read from.")
+            failAnalysis("Cannot insert overwrite into table that is also being read from.")
           } else {
             // OK
           }
         }
 
       case logical.InsertIntoTable(
-        LogicalRelation(r: HadoopFsRelation, _, _), part, query, overwrite, _) =>
+          LogicalRelation(r: HadoopFsRelation, _, _), part, query, overwrite, _) =>
         // We need to make sure the partition columns specified by users do match partition
         // columns of the relation.
         val existingPartitionColumns = r.partitionSchema.fieldNames.toSet
         val specifiedPartitionColumns = part.keySet
         if (existingPartitionColumns != specifiedPartitionColumns) {
-          failAnalysis(s"Specified partition columns " +
-            s"(${specifiedPartitionColumns.mkString(", ")}) " +
-            s"do not match the partition columns of the table. Please use " +
-            s"(${existingPartitionColumns.mkString(", ")}) as the partition columns.")
+          failAnalysis(
+              s"Specified partition columns " + s"(${specifiedPartitionColumns.mkString(", ")}) " +
+              s"do not match the partition columns of the table. Please use " +
+              s"(${existingPartitionColumns.mkString(", ")}) as the partition columns.")
         } else {
           // OK
         }
 
         PartitioningUtils.validatePartitionColumnDataTypes(
-          r.schema, part.keySet.toSeq, conf.caseSensitiveAnalysis)
+            r.schema, part.keySet.toSeq, conf.caseSensitiveAnalysis)
 
         // Get all input data source relations of the query.
         val srcRelations = query.collect {
           case LogicalRelation(src: BaseRelation, _, _) => src
         }
         if (srcRelations.contains(r)) {
-          failAnalysis(
-            "Cannot insert overwrite into table that is also being read from.")
+          failAnalysis("Cannot insert overwrite into table that is also being read from.")
         } else {
           // OK
         }
@@ -182,7 +180,7 @@ private[sql] case class PreWriteCheck(conf: SQLConf, catalog: SessionCatalog)
               }
               if (srcRelations.contains(dest)) {
                 failAnalysis(
-                  s"Cannot overwrite table ${c.tableIdent} that is also being read from.")
+                    s"Cannot overwrite table ${c.tableIdent} that is also being read from.")
               } else {
                 // OK
               }
@@ -194,7 +192,7 @@ private[sql] case class PreWriteCheck(conf: SQLConf, catalog: SessionCatalog)
         }
 
         PartitioningUtils.validatePartitionColumnDataTypes(
-          c.child.schema, c.partitionColumns, conf.caseSensitiveAnalysis)
+            c.child.schema, c.partitionColumns, conf.caseSensitiveAnalysis)
 
         for {
           spec <- c.bucketSpec

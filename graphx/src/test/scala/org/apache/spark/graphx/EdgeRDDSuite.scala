@@ -32,5 +32,4 @@ class EdgeRDDSuite extends SparkFunSuite with LocalSparkContext {
       assert(edges.getStorageLevel == StorageLevel.MEMORY_ONLY)
     }
   }
-
 }

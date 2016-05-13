@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql.execution.stat
 
@@ -29,12 +29,13 @@ private[sql] object FrequentItems extends Logging {
   /** A helper class wrapping `MutableMap[Any, Long]` for simplicity. */
   private class FreqItemCounter(size: Int) extends Serializable {
     val baseMap: MutableMap[Any, Long] = MutableMap.empty[Any, Long]
+
     /**
      * Add a new example to the counts if it exists, otherwise deduct the count
      * from existing items.
      */
     def add(key: Any, count: Long): this.type = {
-      if (baseMap.contains(key))  {
+      if (baseMap.contains(key)) {
         baseMap(key) += count
       } else {
         if (baseMap.size < size) {
@@ -59,8 +60,9 @@ private[sql] object FrequentItems extends Logging {
      * @param other The map containing the counts for that partition
      */
     def merge(other: FreqItemCounter): this.type = {
-      other.baseMap.foreach { case (k, v) =>
-        add(k, v)
+      other.baseMap.foreach {
+        case (k, v) =>
+          add(k, v)
       }
       this
     }
@@ -80,9 +82,7 @@ private[sql] object FrequentItems extends Logging {
    * @return A Local DataFrame with the Array of frequent items for each column.
    */
   private[sql] def singlePassFreqItems(
-      df: DataFrame,
-      cols: Seq[String],
-      support: Double): DataFrame = {
+      df: DataFrame, cols: Seq[String], support: Double): DataFrame = {
     require(support >= 1e-4, s"support ($support) must be greater than 1e-4.")
     val numCols = cols.length
     // number of max items to keep counts for
@@ -94,28 +94,31 @@ private[sql] object FrequentItems extends Logging {
       (name, originalSchema.fields(index).dataType)
     }.toArray
 
-    val freqItems = df.select(cols.map(Column(_)) : _*).rdd.aggregate(countMaps)(
-      seqOp = (counts, row) => {
-        var i = 0
-        while (i < numCols) {
-          val thisMap = counts(i)
-          val key = row.get(i)
-          thisMap.add(key, 1L)
-          i += 1
-        }
-        counts
-      },
-      combOp = (baseCounts, counts) => {
-        var i = 0
-        while (i < numCols) {
-          baseCounts(i).merge(counts(i))
-          i += 1
-        }
-        baseCounts
-      }
-    )
+    val freqItems = df
+      .select(cols.map(Column(_)): _*)
+      .rdd
+      .aggregate(countMaps)(
+          seqOp = (counts, row) => {
+            var i = 0
+            while (i < numCols) {
+              val thisMap = counts(i)
+              val key = row.get(i)
+              thisMap.add(key, 1L)
+              i += 1
+            }
+            counts
+          },
+          combOp = (baseCounts, counts) => {
+            var i = 0
+            while (i < numCols) {
+              baseCounts(i).merge(counts(i))
+              i += 1
+            }
+            baseCounts
+          }
+      )
     val justItems = freqItems.map(m => m.baseMap.keys.toArray)
-    val resultRow = Row(justItems : _*)
+    val resultRow = Row(justItems: _*)
     // append frequent Items to the column name for easy debugging
     val outputCols = colInfo.map { v =>
       StructField(v._1 + "_freqItems", ArrayType(v._2, false))

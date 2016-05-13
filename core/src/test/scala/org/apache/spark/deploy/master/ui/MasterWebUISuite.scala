@@ -33,7 +33,6 @@ import org.apache.spark.deploy.DeployTestUtils._
 import org.apache.spark.deploy.master._
 import org.apache.spark.rpc.{RpcEndpointRef, RpcEnv}
 
-
 class MasterWebUISuite extends SparkFunSuite with BeforeAndAfterAll {
 
   val conf = new SparkConf
@@ -60,8 +59,8 @@ class MasterWebUISuite extends SparkFunSuite with BeforeAndAfterAll {
   test("kill application") {
     val appDesc = createAppDesc()
     // use new start date so it isn't filtered by UI
-    val activeApp = new ApplicationInfo(
-      new Date().getTime, "app-0", appDesc, new Date(), null, Int.MaxValue)
+    val activeApp =
+      new ApplicationInfo(new Date().getTime, "app-0", appDesc, new Date(), null, Int.MaxValue)
 
     when(master.idToApp).thenReturn(HashMap[String, ApplicationInfo]((activeApp.id, activeApp)))
 
@@ -93,10 +92,7 @@ class MasterWebUISuite extends SparkFunSuite with BeforeAndAfterAll {
    * Send an HTTP request to the given URL using the method and the body specified.
    * Return the connection object.
    */
-  private def sendHttpRequest(
-      url: String,
-      method: String,
-      body: String = ""): HttpURLConnection = {
+  private def sendHttpRequest(url: String, method: String, body: String = ""): HttpURLConnection = {
     val conn = new URL(url).openConnection().asInstanceOf[HttpURLConnection]
     conn.setRequestMethod(method)
     if (body.nonEmpty) {

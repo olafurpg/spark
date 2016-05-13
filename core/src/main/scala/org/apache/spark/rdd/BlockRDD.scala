@@ -26,9 +26,9 @@ private[spark] class BlockRDDPartition(val blockId: BlockId, idx: Int) extends P
   val index = idx
 }
 
-private[spark]
-class BlockRDD[T: ClassTag](sc: SparkContext, @transient val blockIds: Array[BlockId])
-  extends RDD[T](sc, Nil) {
+private[spark] class BlockRDD[T: ClassTag](
+    sc: SparkContext, @transient val blockIds: Array[BlockId])
+    extends RDD[T](sc, Nil) {
 
   @transient lazy val _locations = BlockManager.blockIdsToHosts(blockIds, SparkEnv.get)
   @volatile private var _isValid = true
@@ -80,7 +80,7 @@ class BlockRDD[T: ClassTag](sc: SparkContext, @transient val blockIds: Array[Blo
   private[spark] def assertValid() {
     if (!isValid) {
       throw new SparkException(
-        "Attempted to use %s after its blocks have been removed!".format(toString))
+          "Attempted to use %s after its blocks have been removed!".format(toString))
     }
   }
 
@@ -88,4 +88,3 @@ class BlockRDD[T: ClassTag](sc: SparkContext, @transient val blockIds: Array[Blo
     _locations
   }
 }
-

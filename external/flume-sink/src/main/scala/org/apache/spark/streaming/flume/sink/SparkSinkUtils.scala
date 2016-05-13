@@ -17,6 +17,7 @@
 package org.apache.spark.streaming.flume.sink
 
 private[flume] object SparkSinkUtils {
+
   /**
    * This method determines if this batch represents an error or not.
    * @param batch - The batch to check

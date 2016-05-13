@@ -27,7 +27,6 @@ import org.apache.spark.sql.catalyst.plans.PlanTest
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules._
 
-
 class EliminateSubqueryAliasesSuite extends PlanTest with PredicateHelper {
 
   object Optimize extends RuleExecutor[LogicalPlan] {
@@ -53,17 +52,13 @@ class EliminateSubqueryAliasesSuite extends PlanTest with PredicateHelper {
   test("eliminate mid-tree subquery") {
     val input = LocalRelation('a.int, 'b.int)
     val query = Filter(TrueLiteral, SubqueryAlias("a", input))
-    comparePlans(
-      afterOptimization(query),
-      Filter(TrueLiteral, LocalRelation('a.int, 'b.int)))
+    comparePlans(afterOptimization(query), Filter(TrueLiteral, LocalRelation('a.int, 'b.int)))
   }
 
   test("eliminate multiple subqueries") {
     val input = LocalRelation('a.int, 'b.int)
-    val query = Filter(TrueLiteral,
-      SubqueryAlias("c", SubqueryAlias("b", SubqueryAlias("a", input))))
-    comparePlans(
-      afterOptimization(query),
-      Filter(TrueLiteral, LocalRelation('a.int, 'b.int)))
+    val query =
+      Filter(TrueLiteral, SubqueryAlias("c", SubqueryAlias("b", SubqueryAlias("a", input))))
+    comparePlans(afterOptimization(query), Filter(TrueLiteral, LocalRelation('a.int, 'b.int)))
   }
 }

@@ -27,15 +27,15 @@ import org.apache.spark.sql.execution.{BinaryExecNode, SparkPlan}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.util.collection.{BitSet, CompactBuffer}
 
-case class BroadcastNestedLoopJoinExec(
-    left: SparkPlan,
-    right: SparkPlan,
-    buildSide: BuildSide,
-    joinType: JoinType,
-    condition: Option[Expression]) extends BinaryExecNode {
+case class BroadcastNestedLoopJoinExec(left: SparkPlan,
+                                       right: SparkPlan,
+                                       buildSide: BuildSide,
+                                       joinType: JoinType,
+                                       condition: Option[Expression])
+    extends BinaryExecNode {
 
   override private[sql] lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   /** BuildRight means the right relation <=> the broadcast relation. */
   private val (streamed, broadcast) = buildSide match {
@@ -57,7 +57,7 @@ case class BroadcastNestedLoopJoinExec(
       // Always put the stream side on left to simplify implementation
       // both of left and right side could be null
       UnsafeProjection.create(
-        output, (streamed.output ++ broadcast.output).map(_.withNullability(true)))
+          output, (streamed.output ++ broadcast.output).map(_.withNullability(true)))
   }
 
   override def output: Seq[Attribute] = {
@@ -76,15 +76,15 @@ case class BroadcastNestedLoopJoinExec(
         left.output
       case x =>
         throw new IllegalArgumentException(
-          s"BroadcastNestedLoopJoin should not take $x as the JoinType")
+            s"BroadcastNestedLoopJoin should not take $x as the JoinType")
     }
   }
 
   @transient private lazy val boundCondition = {
     if (condition.isDefined) {
       newPredicate(condition.get, streamed.output ++ broadcast.output)
-    } else {
-      (r: InternalRow) => true
+    } else { (r: InternalRow) =>
+      true
     }
   }
 
@@ -177,17 +177,14 @@ case class BroadcastNestedLoopJoinExec(
    *   Anti with BuildRight
    */
   private def leftExistenceJoin(
-      relation: Broadcast[Array[InternalRow]],
-      exists: Boolean): RDD[InternalRow] = {
+      relation: Broadcast[Array[InternalRow]], exists: Boolean): RDD[InternalRow] = {
     assert(buildSide == BuildRight)
     streamed.execute().mapPartitionsInternal { streamedIter =>
       val buildRows = relation.value
       val joinedRow = new JoinedRow
 
       if (condition.isDefined) {
-        streamedIter.filter(l =>
-          buildRows.exists(r => boundCondition(joinedRow(l, r))) == exists
-        )
+        streamedIter.filter(l => buildRows.exists(r => boundCondition(joinedRow(l, r))) == exists)
       } else if (buildRows.nonEmpty == exists) {
         streamedIter
       } else {
@@ -229,6 +226,7 @@ case class BroadcastNestedLoopJoinExec(
    *   ExistenceJoin with BuildLeft
    */
   private def defaultJoin(relation: Broadcast[Array[InternalRow]]): RDD[InternalRow] = {
+
     /** All rows that either match both-way, or rows from streamed joined with nulls. */
     val streamRdd = streamed.execute()
 
@@ -250,7 +248,7 @@ case class BroadcastNestedLoopJoinExec(
     }
 
     val matchedBroadcastRows = matchedBuildRows.fold(
-      new BitSet(relation.value.length)
+        new BitSet(relation.value.length)
     )(_ | _)
 
     joinType match {
@@ -332,8 +330,8 @@ case class BroadcastNestedLoopJoinExec(
     }
 
     sparkContext.union(
-      matchedStreamRows,
-      sparkContext.makeRDD(notMatchedBroadcastRows)
+        matchedStreamRows,
+        sparkContext.makeRDD(notMatchedBroadcastRows)
     )
   }
 

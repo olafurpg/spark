@@ -59,7 +59,7 @@ private[ui] class ExecutorThreadDumpPage(parent: ExecutorsTab) extends WebUIPage
         </tr>
       }
 
-    <div class="row-fluid">
+      <div class="row-fluid">
       <p>Updated at {UIUtils.formatDate(time)}</p>
       {
         // scalastyle:off

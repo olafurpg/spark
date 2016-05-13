@@ -28,10 +28,7 @@ import org.apache.spark.sql.SparkSession
 
 object RandomForestRegressorExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("RandomForestRegressorExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("RandomForestRegressorExample").getOrCreate()
 
     // $example on$
     // Load and parse the data file, converting it to a DataFrame.
@@ -49,13 +46,10 @@ object RandomForestRegressorExample {
     val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
 
     // Train a RandomForest model.
-    val rf = new RandomForestRegressor()
-      .setLabelCol("label")
-      .setFeaturesCol("indexedFeatures")
+    val rf = new RandomForestRegressor().setLabelCol("label").setFeaturesCol("indexedFeatures")
 
     // Chain indexer and forest in a Pipeline.
-    val pipeline = new Pipeline()
-      .setStages(Array(featureIndexer, rf))
+    val pipeline = new Pipeline().setStages(Array(featureIndexer, rf))
 
     // Train model. This also runs the indexer.
     val model = pipeline.fit(trainingData)

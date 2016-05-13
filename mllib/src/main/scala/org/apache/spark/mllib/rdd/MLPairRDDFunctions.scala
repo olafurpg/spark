@@ -29,6 +29,7 @@ import org.apache.spark.util.BoundedPriorityQueue
  */
 @DeveloperApi
 class MLPairRDDFunctions[K: ClassTag, V: ClassTag](self: RDD[(K, V)]) extends Serializable {
+
   /**
    * Returns the top k (largest) elements for each key from this RDD as defined by the specified
    * implicit Ordering[T].
@@ -39,19 +40,22 @@ class MLPairRDDFunctions[K: ClassTag, V: ClassTag](self: RDD[(K, V)]) extends Se
    * @return an RDD that contains the top k values for each key
    */
   def topByKey(num: Int)(implicit ord: Ordering[V]): RDD[(K, Array[V])] = {
-    self.aggregateByKey(new BoundedPriorityQueue[V](num)(ord))(
-      seqOp = (queue, item) => {
-        queue += item
-      },
-      combOp = (queue1, queue2) => {
-        queue1 ++= queue2
-      }
-    ).mapValues(_.toArray.sorted(ord.reverse))  // This is an min-heap, so we reverse the order.
+    self
+      .aggregateByKey(new BoundedPriorityQueue[V](num)(ord))(
+          seqOp = (queue, item) => {
+            queue += item
+          },
+          combOp = (queue1, queue2) => {
+            queue1 ++= queue2
+          }
+      )
+      .mapValues(_.toArray.sorted(ord.reverse)) // This is an min-heap, so we reverse the order.
   }
 }
 
 @DeveloperApi
 object MLPairRDDFunctions {
+
   /** Implicit conversion from a pair RDD to MLPairRDDFunctions. */
   implicit def fromPairRDD[K: ClassTag, V: ClassTag](rdd: RDD[(K, V)]): MLPairRDDFunctions[K, V] =
     new MLPairRDDFunctions[K, V](rdd)

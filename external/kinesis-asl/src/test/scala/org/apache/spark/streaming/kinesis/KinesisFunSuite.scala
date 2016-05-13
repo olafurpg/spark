@@ -23,7 +23,7 @@ import org.apache.spark.SparkFunSuite
  * Helper class that runs Kinesis real data transfer tests or
  * ignores them based on env variable is set or not.
  */
-trait KinesisFunSuite extends SparkFunSuite  {
+trait KinesisFunSuite extends SparkFunSuite {
   import KinesisTestUtils._
 
   /** Run the test if environment variable is set or ignore the test */

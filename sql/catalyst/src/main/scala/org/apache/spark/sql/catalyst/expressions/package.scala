@@ -50,7 +50,7 @@ import org.apache.spark.sql.types.{StructField, StructType}
  * ==Evaluation==
  * The result of expressions can be evaluated using the `Expression.apply(Row)` method.
  */
-package object expressions  {
+package object expressions {
 
   /**
    * Used as input into expressions whose output does not depend on any input value.
@@ -82,11 +82,11 @@ package object expressions  {
     def target(row: MutableRow): MutableProjection
   }
 
-
   /**
    * Helper functions for working with `Seq[Attribute]`.
    */
   implicit class AttributeSeq(attrs: Seq[Attribute]) {
+
     /** Creates a StructType with a schema matching this `Seq[Attribute]`. */
     def toStructType: StructType = {
       StructType(attrs.map(a => StructField(a.name, a.dataType, a.nullable)))

@@ -29,7 +29,6 @@ class TestSerializer extends Serializer {
   override def newInstance(): TestSerializerInstance = new TestSerializerInstance
 }
 
-
 class TestSerializerInstance extends SerializerInstance {
   override def serialize[T: ClassTag](t: T): ByteBuffer = throw new UnsupportedOperationException
 
@@ -45,7 +44,6 @@ class TestSerializerInstance extends SerializerInstance {
   override def deserialize[T: ClassTag](bytes: ByteBuffer, loader: ClassLoader): T =
     throw new UnsupportedOperationException
 }
-
 
 class TestDeserializationStream extends DeserializationStream {
 

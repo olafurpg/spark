@@ -34,8 +34,11 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Milliseconds, StreamingContext}
 import org.apache.spark.util.Utils
 
-class ReliableKafkaStreamSuite extends SparkFunSuite
-    with BeforeAndAfterAll with BeforeAndAfter with Eventually {
+class ReliableKafkaStreamSuite
+    extends SparkFunSuite
+    with BeforeAndAfterAll
+    with BeforeAndAfter
+    with Eventually {
 
   private val sparkConf = new SparkConf()
     .setMaster("local[4]")
@@ -56,9 +59,9 @@ class ReliableKafkaStreamSuite extends SparkFunSuite
 
     groupId = s"test-consumer-${Random.nextInt(10000)}"
     kafkaParams = Map(
-      "zookeeper.connect" -> kafkaTestUtils.zkAddress,
-      "group.id" -> groupId,
-      "auto.offset.reset" -> "smallest"
+        "zookeeper.connect" -> kafkaTestUtils.zkAddress,
+        "group.id" -> groupId,
+        "auto.offset.reset" -> "smallest"
     )
 
     tempDirectory = Utils.createTempDir()
@@ -94,15 +97,15 @@ class ReliableKafkaStreamSuite extends SparkFunSuite
     assert(getCommitOffset(groupId, topic, 0) === None)
 
     val stream = KafkaUtils.createStream[String, String, StringDecoder, StringDecoder](
-      ssc, kafkaParams, Map(topic -> 1), StorageLevel.MEMORY_ONLY)
+        ssc, kafkaParams, Map(topic -> 1), StorageLevel.MEMORY_ONLY)
     val result = new mutable.HashMap[String, Long]()
     stream.map { case (k, v) => v }.foreachRDD { r =>
-        val ret = r.collect()
-        ret.foreach { v =>
-          val count = result.getOrElseUpdate(v, 0) + 1
-          result.put(v, count)
-        }
+      val ret = r.collect()
+      ret.foreach { v =>
+        val count = result.getOrElseUpdate(v, 0) + 1
+        result.put(v, count)
       }
+    }
     ssc.start()
 
     eventually(timeout(20000 milliseconds), interval(200 milliseconds)) {
@@ -110,7 +113,9 @@ class ReliableKafkaStreamSuite extends SparkFunSuite
       // Verify whether received message number is equal to the sent message number.
       assert(data.size === result.size)
       // Verify whether each message is the same as the data to be verified.
-      data.keys.foreach { k => assert(data(k) === result(k).toInt) }
+      data.keys.foreach { k =>
+        assert(data(k) === result(k).toInt)
+      }
       // Verify the offset number whether it is equal to the total message number.
       assert(getCommitOffset(groupId, topic, 0) === Some(29L))
     }
@@ -118,9 +123,10 @@ class ReliableKafkaStreamSuite extends SparkFunSuite
 
   test("Reliable Kafka input stream with multiple topics") {
     val topics = Map("topic1" -> 1, "topic2" -> 1, "topic3" -> 1)
-    topics.foreach { case (t, _) =>
-      kafkaTestUtils.createTopic(t)
-      kafkaTestUtils.sendMessages(t, data)
+    topics.foreach {
+      case (t, _) =>
+        kafkaTestUtils.createTopic(t)
+        kafkaTestUtils.sendMessages(t, data)
     }
 
     // Before started, verify all the group/topic/partition offsets are 0.
@@ -128,7 +134,7 @@ class ReliableKafkaStreamSuite extends SparkFunSuite
 
     // Consuming all the data sent to the broker which will potential commit the offsets internally.
     val stream = KafkaUtils.createStream[String, String, StringDecoder, StringDecoder](
-      ssc, kafkaParams, topics, StorageLevel.MEMORY_ONLY)
+        ssc, kafkaParams, topics, StorageLevel.MEMORY_ONLY)
     stream.foreachRDD(_ => Unit)
     ssc.start()
 
@@ -137,7 +143,6 @@ class ReliableKafkaStreamSuite extends SparkFunSuite
       topics.foreach { case (t, _) => assert(getCommitOffset(groupId, t, 0) === Some(29L)) }
     }
   }
-
 
   /** Getting partition offset from Zookeeper. */
   private def getCommitOffset(groupId: String, topic: String, partition: Int): Option[Long] = {

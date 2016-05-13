@@ -26,7 +26,6 @@ import org.apache.spark.scheduler.AccumulableInfo
 import org.apache.spark.storage.{BlockId, BlockStatus}
 import org.apache.spark.util.{AccumulatorContext, AccumulatorMetadata, AccumulatorV2, LongAccumulator}
 
-
 /**
  * :: DeveloperApi ::
  * Metrics tracked during the execution of a task.
@@ -41,7 +40,7 @@ import org.apache.spark.util.{AccumulatorContext, AccumulatorMetadata, Accumulat
  * be sent to the driver.
  */
 @DeveloperApi
-class TaskMetrics private[spark] () extends Serializable {
+class TaskMetrics private[spark]() extends Serializable {
   // Each metric is internally represented as an accumulator
   private val _executorDeserializeTime = new LongAccumulator
   private val _executorRunTime = new LongAccumulator
@@ -175,32 +174,32 @@ class TaskMetrics private[spark] () extends Serializable {
   // Only used for test
   private[spark] val testAccum = sys.props.get("spark.testing").map(_ => new LongAccumulator)
 
-
   import InternalAccumulator._
-  @transient private[spark] lazy val nameToAccums = LinkedHashMap(
-    EXECUTOR_DESERIALIZE_TIME -> _executorDeserializeTime,
-    EXECUTOR_RUN_TIME -> _executorRunTime,
-    RESULT_SIZE -> _resultSize,
-    JVM_GC_TIME -> _jvmGCTime,
-    RESULT_SERIALIZATION_TIME -> _resultSerializationTime,
-    MEMORY_BYTES_SPILLED -> _memoryBytesSpilled,
-    DISK_BYTES_SPILLED -> _diskBytesSpilled,
-    PEAK_EXECUTION_MEMORY -> _peakExecutionMemory,
-    UPDATED_BLOCK_STATUSES -> _updatedBlockStatuses,
-    shuffleRead.REMOTE_BLOCKS_FETCHED -> shuffleReadMetrics._remoteBlocksFetched,
-    shuffleRead.LOCAL_BLOCKS_FETCHED -> shuffleReadMetrics._localBlocksFetched,
-    shuffleRead.REMOTE_BYTES_READ -> shuffleReadMetrics._remoteBytesRead,
-    shuffleRead.LOCAL_BYTES_READ -> shuffleReadMetrics._localBytesRead,
-    shuffleRead.FETCH_WAIT_TIME -> shuffleReadMetrics._fetchWaitTime,
-    shuffleRead.RECORDS_READ -> shuffleReadMetrics._recordsRead,
-    shuffleWrite.BYTES_WRITTEN -> shuffleWriteMetrics._bytesWritten,
-    shuffleWrite.RECORDS_WRITTEN -> shuffleWriteMetrics._recordsWritten,
-    shuffleWrite.WRITE_TIME -> shuffleWriteMetrics._writeTime,
-    input.BYTES_READ -> inputMetrics._bytesRead,
-    input.RECORDS_READ -> inputMetrics._recordsRead,
-    output.BYTES_WRITTEN -> outputMetrics._bytesWritten,
-    output.RECORDS_WRITTEN -> outputMetrics._recordsWritten
-  ) ++ testAccum.map(TEST_ACCUM -> _)
+  @transient private[spark] lazy val nameToAccums =
+    LinkedHashMap(
+        EXECUTOR_DESERIALIZE_TIME -> _executorDeserializeTime,
+        EXECUTOR_RUN_TIME -> _executorRunTime,
+        RESULT_SIZE -> _resultSize,
+        JVM_GC_TIME -> _jvmGCTime,
+        RESULT_SERIALIZATION_TIME -> _resultSerializationTime,
+        MEMORY_BYTES_SPILLED -> _memoryBytesSpilled,
+        DISK_BYTES_SPILLED -> _diskBytesSpilled,
+        PEAK_EXECUTION_MEMORY -> _peakExecutionMemory,
+        UPDATED_BLOCK_STATUSES -> _updatedBlockStatuses,
+        shuffleRead.REMOTE_BLOCKS_FETCHED -> shuffleReadMetrics._remoteBlocksFetched,
+        shuffleRead.LOCAL_BLOCKS_FETCHED -> shuffleReadMetrics._localBlocksFetched,
+        shuffleRead.REMOTE_BYTES_READ -> shuffleReadMetrics._remoteBytesRead,
+        shuffleRead.LOCAL_BYTES_READ -> shuffleReadMetrics._localBytesRead,
+        shuffleRead.FETCH_WAIT_TIME -> shuffleReadMetrics._fetchWaitTime,
+        shuffleRead.RECORDS_READ -> shuffleReadMetrics._recordsRead,
+        shuffleWrite.BYTES_WRITTEN -> shuffleWriteMetrics._bytesWritten,
+        shuffleWrite.RECORDS_WRITTEN -> shuffleWriteMetrics._recordsWritten,
+        shuffleWrite.WRITE_TIME -> shuffleWriteMetrics._writeTime,
+        input.BYTES_READ -> inputMetrics._bytesRead,
+        input.RECORDS_READ -> inputMetrics._recordsRead,
+        output.BYTES_WRITTEN -> outputMetrics._bytesWritten,
+        output.RECORDS_WRITTEN -> outputMetrics._recordsWritten
+    ) ++ testAccum.map(TEST_ACCUM -> _)
 
   @transient private[spark] lazy val internalAccums: Seq[AccumulatorV2[_, _]] =
     nameToAccums.values.toIndexedSeq
@@ -227,7 +226,6 @@ class TaskMetrics private[spark] () extends Serializable {
   private[spark] def accumulators(): Seq[AccumulatorV2[_, _]] = internalAccums ++ externalAccums
 }
 
-
 private[spark] object TaskMetrics extends Logging {
   import InternalAccumulator._
 
@@ -236,8 +234,9 @@ private[spark] object TaskMetrics extends Logging {
    */
   def empty: TaskMetrics = {
     val tm = new TaskMetrics
-    tm.nameToAccums.foreach { case (name, acc) =>
-      acc.metadata = AccumulatorMetadata(AccumulatorContext.newId(), Some(name), true)
+    tm.nameToAccums.foreach {
+      case (name, acc) =>
+        acc.metadata = AccumulatorMetadata(AccumulatorContext.newId(), Some(name), true)
     }
     tm
   }
@@ -261,9 +260,11 @@ private[spark] object TaskMetrics extends Logging {
       if (name == UPDATED_BLOCK_STATUSES) {
         tm.setUpdatedBlockStatuses(value.asInstanceOf[Seq[(BlockId, BlockStatus)]])
       } else {
-        tm.nameToAccums.get(name).foreach(
-          _.asInstanceOf[LongAccumulator].setValue(value.asInstanceOf[Long])
-        )
+        tm.nameToAccums
+          .get(name)
+          .foreach(
+              _.asInstanceOf[LongAccumulator].setValue(value.asInstanceOf[Long])
+          )
       }
     }
     tm
@@ -288,9 +289,8 @@ private[spark] object TaskMetrics extends Logging {
   }
 }
 
-
 private[spark] class BlockStatusesAccumulator
-  extends AccumulatorV2[(BlockId, BlockStatus), Seq[(BlockId, BlockStatus)]] {
+    extends AccumulatorV2[(BlockId, BlockStatus), Seq[(BlockId, BlockStatus)]] {
   private var _seq = ArrayBuffer.empty[(BlockId, BlockStatus)]
 
   override def isZero(): Boolean = _seq.isEmpty
@@ -307,12 +307,14 @@ private[spark] class BlockStatusesAccumulator
 
   override def add(v: (BlockId, BlockStatus)): Unit = _seq += v
 
-  override def merge(other: AccumulatorV2[(BlockId, BlockStatus), Seq[(BlockId, BlockStatus)]])
-  : Unit = other match {
-    case o: BlockStatusesAccumulator => _seq ++= o.value
-    case _ => throw new UnsupportedOperationException(
-      s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
-  }
+  override def merge(
+      other: AccumulatorV2[(BlockId, BlockStatus), Seq[(BlockId, BlockStatus)]]): Unit =
+    other match {
+      case o: BlockStatusesAccumulator => _seq ++= o.value
+      case _ =>
+        throw new UnsupportedOperationException(
+            s"Cannot merge ${this.getClass.getName} with ${other.getClass.getName}")
+    }
 
   override def value: Seq[(BlockId, BlockStatus)] = _seq
 

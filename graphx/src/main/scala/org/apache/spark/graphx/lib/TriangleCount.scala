@@ -62,11 +62,10 @@ object TriangleCount {
     }
   }
 
-
   def runPreCanonicalized[VD: ClassTag, ED: ClassTag](graph: Graph[VD, ED]): Graph[Int, ED] = {
     // Construct set representations of the neighborhoods
-    val nbrSets: VertexRDD[VertexSet] =
-      graph.collectNeighborIds(EdgeDirection.Either).mapValues { (vid, nbrs) =>
+    val nbrSets: VertexRDD[VertexSet] = graph.collectNeighborIds(EdgeDirection.Either).mapValues {
+      (vid, nbrs) =>
         val set = new VertexSet(nbrs.length)
         var i = 0
         while (i < nbrs.length) {
@@ -77,20 +76,21 @@ object TriangleCount {
           i += 1
         }
         set
-      }
+    }
 
     // join the sets with the graph
-    val setGraph: Graph[VertexSet, ED] = graph.outerJoinVertices(nbrSets) {
-      (vid, _, optSet) => optSet.getOrElse(null)
+    val setGraph: Graph[VertexSet, ED] = graph.outerJoinVertices(nbrSets) { (vid, _, optSet) =>
+      optSet.getOrElse(null)
     }
 
     // Edge function computes intersection of smaller vertex with larger vertex
     def edgeFunc(ctx: EdgeContext[VertexSet, ED, Int]) {
-      val (smallSet, largeSet) = if (ctx.srcAttr.size < ctx.dstAttr.size) {
-        (ctx.srcAttr, ctx.dstAttr)
-      } else {
-        (ctx.dstAttr, ctx.srcAttr)
-      }
+      val (smallSet, largeSet) =
+        if (ctx.srcAttr.size < ctx.dstAttr.size) {
+          (ctx.srcAttr, ctx.dstAttr)
+        } else {
+          (ctx.dstAttr, ctx.srcAttr)
+        }
       val iter = smallSet.iterator
       var counter: Int = 0
       while (iter.hasNext) {

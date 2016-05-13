@@ -27,7 +27,8 @@ import org.apache.spark.ui.{SparkUI, SparkUITab}
  * This assumes the given SparkContext has enabled its SparkUI.
  */
 private[spark] class StreamingTab(val ssc: StreamingContext)
-  extends SparkUITab(StreamingTab.getSparkUI(ssc), "streaming") with Logging {
+    extends SparkUITab(StreamingTab.getSparkUI(ssc), "streaming")
+    with Logging {
 
   import StreamingTab._
 

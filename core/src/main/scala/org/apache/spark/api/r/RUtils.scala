@@ -33,7 +33,7 @@ private[spark] object RUtils {
   def localSparkRPackagePath: Option[String] = {
     val sparkHome = sys.env.get("SPARK_HOME").orElse(sys.props.get("spark.test.home"))
     sparkHome.map(
-      Seq(_, "R", "lib").mkString(File.separator)
+        Seq(_, "R", "lib").mkString(File.separator)
     )
   }
 
@@ -77,7 +77,7 @@ private[spark] object RUtils {
       // Otherwise, assume the package is local
       // TODO: support this for Mesos
       val sparkRPkgPath = localSparkRPackagePath.getOrElse {
-          throw new SparkException("SPARK_HOME not set. Can't locate SparkR package.")
+        throw new SparkException("SPARK_HOME not set. Can't locate SparkR package.")
       }
       if (!rPackages.isEmpty) {
         Seq(sparkRPkgPath, rPackages.get)

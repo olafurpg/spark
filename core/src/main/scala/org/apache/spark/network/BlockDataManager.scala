@@ -22,8 +22,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.network.buffer.ManagedBuffer
 import org.apache.spark.storage.{BlockId, StorageLevel}
 
-private[spark]
-trait BlockDataManager {
+private[spark] trait BlockDataManager {
 
   /**
    * Interface to get local block data. Throws an exception if the block cannot be found or
@@ -37,11 +36,10 @@ trait BlockDataManager {
    * Returns true if the block was stored and false if the put operation failed or the block
    * already existed.
    */
-  def putBlockData(
-      blockId: BlockId,
-      data: ManagedBuffer,
-      level: StorageLevel,
-      classTag: ClassTag[_]): Boolean
+  def putBlockData(blockId: BlockId,
+                   data: ManagedBuffer,
+                   level: StorageLevel,
+                   classTag: ClassTag[_]): Boolean
 
   /**
    * Release locks acquired by [[putBlockData()]] and [[getBlockData()]].

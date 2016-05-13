@@ -24,6 +24,7 @@ import org.scalatest.PrivateMethodTester
 import org.apache.spark.SparkFunSuite
 
 class DecimalSuite extends SparkFunSuite with PrivateMethodTester {
+
   /** Check that a Decimal has the given string representation, precision and scale */
   private def checkDecimal(d: Decimal, string: String, precision: Int, scale: Int): Unit = {
     assert(d.toString === string)
@@ -64,6 +65,7 @@ class DecimalSuite extends SparkFunSuite with PrivateMethodTester {
   }
 
   test("double and long values") {
+
     /** Check that a Decimal converts to the given double and long values */
     def checkValues(d: Decimal, doubleValue: Double, longValue: Long): Unit = {
       assert(d.toDouble === doubleValue)
@@ -110,9 +112,9 @@ class DecimalSuite extends SparkFunSuite with PrivateMethodTester {
     checkCompact(Decimal(1e16.toLong), true)
     checkCompact(Decimal(1e17.toLong), true)
     checkCompact(Decimal(1e18.toLong - 1), true)
-    checkCompact(Decimal(- 1e18.toLong + 1), true)
+    checkCompact(Decimal(-1e18.toLong + 1), true)
     checkCompact(Decimal(1e18.toLong - 1, 30, 10), true)
-    checkCompact(Decimal(- 1e18.toLong + 1, 30, 10), true)
+    checkCompact(Decimal(-1e18.toLong + 1, 30, 10), true)
     checkCompact(Decimal(1e18.toLong), false)
     checkCompact(Decimal(-1e18.toLong), false)
     checkCompact(Decimal(1e18.toLong, 30, 10), false)

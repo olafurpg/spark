@@ -33,13 +33,14 @@ import org.apache.spark.util.collection.OpenHashSet
  *
  * TODO Clean up the metadata files periodically
  */
-class FileStreamSource(
-    sparkSession: SparkSession,
-    path: String,
-    fileFormatClassName: String,
-    override val schema: StructType,
-    metadataPath: String,
-    options: Map[String, String]) extends Source with Logging {
+class FileStreamSource(sparkSession: SparkSession,
+                       path: String,
+                       fileFormatClassName: String,
+                       override val schema: StructType,
+                       metadataPath: String,
+                       options: Map[String, String])
+    extends Source
+    with Logging {
 
   private val fs = new Path(path).getFileSystem(sparkSession.sessionState.newHadoopConf())
   private val qualifiedBasePath = fs.makeQualified(new Path(path)) // can contains glob patterns
@@ -47,8 +48,9 @@ class FileStreamSource(
   private var maxBatchId = metadataLog.getLatest().map(_._1).getOrElse(-1L)
 
   private val seenFiles = new OpenHashSet[String]
-  metadataLog.get(None, Some(maxBatchId)).foreach { case (batchId, files) =>
-    files.foreach(seenFiles.add)
+  metadataLog.get(None, Some(maxBatchId)).foreach {
+    case (batchId, files) =>
+      files.foreach(seenFiles.add)
   }
 
   /**
@@ -104,13 +106,11 @@ class FileStreamSource(
     logInfo(s"Processing ${files.length} files from ${startId + 1}:$endId")
     logTrace(s"Files are:\n\t" + files.mkString("\n\t"))
     val newOptions = new CaseInsensitiveMap(options).filterKeys(_ != "path")
-    val newDataSource =
-      DataSource(
-        sparkSession,
-        paths = files,
-        userSpecifiedSchema = Some(schema),
-        className = fileFormatClassName,
-        options = newOptions)
+    val newDataSource = DataSource(sparkSession,
+                                   paths = files,
+                                   userSpecifiedSchema = Some(schema),
+                                   className = fileFormatClassName,
+                                   options = newOptions)
     Dataset.ofRows(sparkSession, LogicalRelation(newDataSource.resolveRelation()))
   }
 

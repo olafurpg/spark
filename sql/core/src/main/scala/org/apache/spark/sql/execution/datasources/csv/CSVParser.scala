@@ -95,8 +95,8 @@ private[sql] class LineCsvWriter(params: CSVOptions, headers: Seq[String]) exten
  *
  * @param params Parameters object
  */
-private[sql] class LineCsvReader(params: CSVOptions)
-  extends CsvReader(params, null) {
+private[sql] class LineCsvReader(params: CSVOptions) extends CsvReader(params, null) {
+
   /**
    * parse a line
    *
@@ -118,11 +118,9 @@ private[sql] class LineCsvReader(params: CSVOptions)
  * @param params Parameters object
  * @param headers headers for the columns
  */
-private[sql] class BulkCsvReader(
-    iter: Iterator[String],
-    params: CSVOptions,
-    headers: Seq[String])
-  extends CsvReader(params, headers) with Iterator[Array[String]] {
+private[sql] class BulkCsvReader(iter: Iterator[String], params: CSVOptions, headers: Seq[String])
+    extends CsvReader(params, headers)
+    with Iterator[Array[String]] {
 
   private val reader = new StringIteratorReader(iter)
   parser.beginParsing(reader)
@@ -134,7 +132,7 @@ private[sql] class BulkCsvReader(
    */
   override def next(): Array[String] = {
     val curRecord = nextRecord
-    if(curRecord != null) {
+    if (curRecord != null) {
       nextRecord = parser.parseNext()
     } else {
       throw new NoSuchElementException("next record is null")
@@ -143,7 +141,6 @@ private[sql] class BulkCsvReader(
   }
 
   override def hasNext: Boolean = nextRecord != null
-
 }
 
 /**
@@ -155,9 +152,9 @@ private[sql] class BulkCsvReader(
 private class StringIteratorReader(val iter: Iterator[String]) extends java.io.Reader {
 
   private var next: Long = 0
-  private var length: Long = 0  // length of input so far
+  private var length: Long = 0 // length of input so far
   private var start: Long = 0
-  private var str: String = null   // current string from iter
+  private var str: String = null // current string from iter
 
   /**
    * fetch next string from iter, if done with current one
@@ -195,13 +192,14 @@ private class StringIteratorReader(val iter: Iterator[String]) extends java.io.R
   override def read(cbuf: Array[Char], off: Int, len: Int): Int = {
     refill()
     var n = 0
-    if ((off < 0) || (off > cbuf.length) || (len < 0) ||
-      ((off + len) > cbuf.length) || ((off + len) < 0)) {
+    if ((off < 0) || (off > cbuf.length) || (len < 0) || ((off + len) > cbuf.length) ||
+        ((off + len) < 0)) {
       throw new IndexOutOfBoundsException()
     } else if (len == 0) {
       n = 0
     } else {
-      if (next >= length) {   // end of input
+      if (next >= length) {
+        // end of input
         n = -1
       } else {
         n = Math.min(length - next, len).toInt // lesser of amount of input available or buf size
@@ -213,8 +211,8 @@ private class StringIteratorReader(val iter: Iterator[String]) extends java.io.R
         }
         next += n
         if (n < len) {
-          val m = read(cbuf, off + n, len - n)  // have more space, fetch more input from iter
-          if(m != -1) n += m
+          val m = read(cbuf, off + n, len - n) // have more space, fetch more input from iter
+          if (m != -1) n += m
         }
       }
     }
@@ -241,5 +239,5 @@ private class StringIteratorReader(val iter: Iterator[String]) extends java.io.R
     throw new IllegalArgumentException("Mark and hence reset not implemented")
   }
 
-  override def close(): Unit = { }
+  override def close(): Unit = {}
 }

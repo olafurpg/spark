@@ -44,10 +44,8 @@ private case class CleanCheckpoint(rddId: Int) extends CleanupTask
  * CleanupTaskWeakReference is automatically added to the given reference queue.
  */
 private class CleanupTaskWeakReference(
-    val task: CleanupTask,
-    referent: AnyRef,
-    referenceQueue: ReferenceQueue[AnyRef])
-  extends WeakReference(referent, referenceQueue)
+    val task: CleanupTask, referent: AnyRef, referenceQueue: ReferenceQueue[AnyRef])
+    extends WeakReference(referent, referenceQueue)
 
 /**
  * An asynchronous cleaner for RDD, shuffle, and broadcast state.
@@ -64,7 +62,7 @@ private[spark] class ContextCleaner(sc: SparkContext) extends Logging {
 
   private val listeners = new ConcurrentLinkedQueue[CleanerListener]()
 
-  private val cleaningThread = new Thread() { override def run() { keepCleaning() }}
+  private val cleaningThread = new Thread() { override def run() { keepCleaning() } }
 
   private val periodicGCService: ScheduledExecutorService =
     ThreadUtils.newDaemonSingleThreadScheduledExecutor("context-cleaner-periodic-gc")
@@ -90,8 +88,8 @@ private[spark] class ContextCleaner(sc: SparkContext) extends Logging {
    * for instance, when the driver performs a GC and cleans up all broadcast blocks that are no
    * longer in scope.
    */
-  private val blockOnCleanupTasks = sc.conf.getBoolean(
-    "spark.cleaner.referenceTracking.blocking", true)
+  private val blockOnCleanupTasks =
+    sc.conf.getBoolean("spark.cleaner.referenceTracking.blocking", true)
 
   /**
    * Whether the cleaning thread will block on shuffle cleanup tasks.
@@ -103,8 +101,8 @@ private[spark] class ContextCleaner(sc: SparkContext) extends Logging {
    * until the real RPC issue (referred to in the comment above `blockOnCleanupTasks`) is
    * resolved.
    */
-  private val blockOnShuffleCleanupTasks = sc.conf.getBoolean(
-    "spark.cleaner.referenceTracking.blocking.shuffle", false)
+  private val blockOnShuffleCleanupTasks =
+    sc.conf.getBoolean("spark.cleaner.referenceTracking.blocking.shuffle", false)
 
   @volatile private var stopped = false
 
@@ -259,8 +257,7 @@ private[spark] class ContextCleaner(sc: SparkContext) extends Logging {
       ReliableRDDCheckpointData.cleanCheckpoint(sc, rddId)
       listeners.asScala.foreach(_.checkpointCleaned(rddId))
       logInfo("Cleaned rdd checkpoint data " + rddId)
-    }
-    catch {
+    } catch {
       case e: Exception => logError("Error cleaning rdd checkpoint data " + rddId, e)
     }
   }

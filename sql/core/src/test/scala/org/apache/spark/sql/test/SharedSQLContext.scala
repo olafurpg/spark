@@ -20,7 +20,6 @@ package org.apache.spark.sql.test
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SparkSession, SQLContext}
 
-
 /**
  * Helper trait for SQL test suites where all tests share a single [[TestSparkSession]].
  */

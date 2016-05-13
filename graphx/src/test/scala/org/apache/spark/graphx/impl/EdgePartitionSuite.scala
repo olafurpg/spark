@@ -52,7 +52,7 @@ class EdgePartitionSuite extends SparkFunSuite {
     }
     val edgePartition = builder.toEdgePartition
     assert(edgePartition.map(e => e.srcId + e.dstId).iterator.map(_.copy()).toList ===
-      edges.map(e => e.copy(attr = e.srcId + e.dstId)))
+        edges.map(e => e.copy(attr = e.srcId + e.dstId)))
   }
 
   test("filter") {
@@ -68,7 +68,7 @@ class EdgePartitionSuite extends SparkFunSuite {
 
   test("groupEdges") {
     val edges = List(
-      Edge(0, 1, 1), Edge(1, 2, 2), Edge(2, 0, 4), Edge(0, 1, 8), Edge(1, 2, 16), Edge(2, 0, 32))
+        Edge(0, 1, 1), Edge(1, 2, 2), Edge(2, 0, 4), Edge(0, 1, 8), Edge(1, 2, 16), Edge(2, 0, 32))
     val groupedEdges = List(Edge(0, 1, 9), Edge(1, 2, 18), Edge(2, 0, 36))
     val builder = new EdgePartitionBuilder[Int, Nothing]
     for (e <- edges) {
@@ -84,8 +84,14 @@ class EdgePartitionSuite extends SparkFunSuite {
     val a = makeEdgePartition(aList)
     val b = makeEdgePartition(bList)
 
-    assert(a.innerJoin(b) { (src, dst, a, b) => a }.iterator.map(_.copy()).toList ===
-      List(Edge(0, 1, 0), Edge(1, 0, 0), Edge(5, 5, 0)))
+    assert(
+        a.innerJoin(b) { (src, dst, a, b) =>
+        a
+      }
+          .iterator
+          .map(_.copy())
+          .toList ===
+        List(Edge(0, 1, 0), Edge(1, 0, 0), Edge(5, 5, 0)))
   }
 
   test("isActive, numActives, replaceActives") {

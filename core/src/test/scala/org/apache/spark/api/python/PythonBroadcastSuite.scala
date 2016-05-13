@@ -37,7 +37,7 @@ class PythonBroadcastSuite extends SparkFunSuite with Matchers with SharedSparkC
       val source = Source.fromFile(broadcast.path)
       val contents = source.mkString
       source.close()
-      contents should be (broadcastedString)
+      contents should be(broadcastedString)
     }
     try {
       val broadcastDataFile: File = {

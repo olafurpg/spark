@@ -23,6 +23,7 @@ package org.apache.spark.sql.execution
  * DataFrame that queries this relation.
  */
 private[sql] trait FileRelation {
+
   /** Returns the list of files that will be read when scanning this relation. */
   def inputFiles: Array[String]
 }

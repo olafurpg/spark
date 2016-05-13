@@ -61,8 +61,8 @@ class ContinuousQueryManager(sparkSession: SparkSession) {
    * @since 2.0.0
    */
   def get(name: String): ContinuousQuery = activeQueriesLock.synchronized {
-    activeQueries.getOrElse(name,
-      throw new IllegalArgumentException(s"There is no active query with name $name"))
+    activeQueries.getOrElse(
+        name, throw new IllegalArgumentException(s"There is no active query with name $name"))
   }
 
   /**
@@ -170,18 +170,17 @@ class ContinuousQueryManager(sparkSession: SparkSession) {
   }
 
   /** Start a query */
-  private[sql] def startQuery(
-      name: String,
-      checkpointLocation: String,
-      df: DataFrame,
-      sink: Sink,
-      trigger: Trigger = ProcessingTime(0),
-      triggerClock: Clock = new SystemClock(),
-      outputMode: OutputMode = Append): ContinuousQuery = {
+  private[sql] def startQuery(name: String,
+                              checkpointLocation: String,
+                              df: DataFrame,
+                              sink: Sink,
+                              trigger: Trigger = ProcessingTime(0),
+                              triggerClock: Clock = new SystemClock(),
+                              outputMode: OutputMode = Append): ContinuousQuery = {
     activeQueriesLock.synchronized {
       if (activeQueries.contains(name)) {
         throw new IllegalArgumentException(
-          s"Cannot start query with name $name as a query with that name is already active")
+            s"Cannot start query with name $name as a query with that name is already active")
       }
       val analyzedPlan = df.queryExecution.analyzed
       df.queryExecution.assertAnalyzed()
@@ -202,15 +201,14 @@ class ContinuousQueryManager(sparkSession: SparkSession) {
           // "df.logicalPlan" has already used attributes of the previous `output`.
           StreamingExecutionRelation(source, output)
       }
-      val query = new StreamExecution(
-        sparkSession,
-        name,
-        checkpointLocation,
-        logicalPlan,
-        sink,
-        trigger,
-        triggerClock,
-        outputMode)
+      val query = new StreamExecution(sparkSession,
+                                      name,
+                                      checkpointLocation,
+                                      logicalPlan,
+                                      sink,
+                                      trigger,
+                                      triggerClock,
+                                      outputMode)
       query.start()
       activeQueries.put(name, query)
       query

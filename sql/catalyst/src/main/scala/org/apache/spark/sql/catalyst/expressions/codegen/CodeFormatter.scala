@@ -59,7 +59,8 @@ private class CodeFormatter {
     // We currently infer the level of indentation of a given line based on a simple heuristic that
     // examines the number of parenthesis and braces in that line. This isn't the most robust
     // implementation but works for all code that we generate.
-    val indentChange = line.count(c => "({".indexOf(c) >= 0) - line.count(c => ")}".indexOf(c) >= 0)
+    val indentChange =
+      line.count(c => "({".indexOf(c) >= 0) - line.count(c => ")}".indexOf(c) >= 0)
     var newIndentLevel = math.max(0, indentLevel + indentChange)
 
     // Please note that while we try to format the comment blocks in exactly the same way as the
@@ -84,11 +85,12 @@ private class CodeFormatter {
 
     // Lines starting with '}' should be de-indented even if they contain '{' after;
     // in addition, lines ending with ':' are typically labels
-    val thisLineIndent = if (line.startsWith("}") || line.startsWith(")") || line.endsWith(":")) {
-      " " * (indentSize * (indentLevel - 1))
-    } else {
-      indentString
-    }
+    val thisLineIndent =
+      if (line.startsWith("}") || line.startsWith(")") || line.endsWith(":")) {
+        " " * (indentSize * (indentLevel - 1))
+      } else {
+        indentString
+      }
     code.append(f"/* ${currentLine}%03d */ ")
     code.append(thisLineIndent)
     code.append(line)

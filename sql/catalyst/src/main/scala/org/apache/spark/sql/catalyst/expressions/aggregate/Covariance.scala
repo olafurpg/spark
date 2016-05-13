@@ -52,10 +52,10 @@ abstract class Covariance(x: Expression, y: Expression) extends DeclarativeAggre
 
     val isNull = IsNull(x) || IsNull(y)
     Seq(
-      If(isNull, n, newN),
-      If(isNull, xAvg, newXAvg),
-      If(isNull, yAvg, newYAvg),
-      If(isNull, ck, newCk)
+        If(isNull, n, newN),
+        If(isNull, xAvg, newXAvg),
+        If(isNull, yAvg, newYAvg),
+        If(isNull, ck, newCk)
     )
   }
 
@@ -77,23 +77,21 @@ abstract class Covariance(x: Expression, y: Expression) extends DeclarativeAggre
 }
 
 @ExpressionDescription(
-  usage = "_FUNC_(x,y) - Returns the population covariance of a set of number pairs.")
+    usage = "_FUNC_(x,y) - Returns the population covariance of a set of number pairs.")
 case class CovPopulation(left: Expression, right: Expression) extends Covariance(left, right) {
   override val evaluateExpression: Expression = {
-    If(n === Literal(0.0), Literal.create(null, DoubleType),
-      ck / n)
+    If(n === Literal(0.0), Literal.create(null, DoubleType), ck / n)
   }
   override def prettyName: String = "covar_pop"
 }
 
-
 @ExpressionDescription(
-  usage = "_FUNC_(x,y) - Returns the sample covariance of a set of number pairs.")
+    usage = "_FUNC_(x,y) - Returns the sample covariance of a set of number pairs.")
 case class CovSample(left: Expression, right: Expression) extends Covariance(left, right) {
   override val evaluateExpression: Expression = {
-    If(n === Literal(0.0), Literal.create(null, DoubleType),
-      If(n === Literal(1.0), Literal(Double.NaN),
-        ck / (n - Literal(1.0))))
+    If(n === Literal(0.0),
+       Literal.create(null, DoubleType),
+       If(n === Literal(1.0), Literal(Double.NaN), ck / (n - Literal(1.0))))
   }
   override def prettyName: String = "covar_samp"
 }

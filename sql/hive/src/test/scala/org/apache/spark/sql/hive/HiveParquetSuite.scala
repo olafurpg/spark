@@ -42,9 +42,8 @@ class HiveParquetSuite extends QueryTest with ParquetTest with TestHiveSingleton
 
   test("Simple column projection + filter on Parquet table") {
     withParquetTable((1 to 4).map(i => (i % 2 == 0, i, s"val_$i")), "t") {
-      checkAnswer(
-        sql("SELECT `_1`, `_3` FROM t WHERE `_1` = true"),
-        Seq(Row(true, "val_2"), Row(true, "val_4")))
+      checkAnswer(sql("SELECT `_1`, `_3` FROM t WHERE `_1` = true"),
+                  Seq(Row(true, "val_2"), Row(true, "val_4")))
     }
   }
 
@@ -53,9 +52,8 @@ class HiveParquetSuite extends QueryTest with ParquetTest with TestHiveSingleton
       sql("SELECT * FROM src").write.parquet(dir.getCanonicalPath)
       hiveContext.read.parquet(dir.getCanonicalPath).registerTempTable("p")
       withTempTable("p") {
-        checkAnswer(
-          sql("SELECT * FROM src ORDER BY key"),
-          sql("SELECT * from p ORDER BY key").collect().toSeq)
+        checkAnswer(sql("SELECT * FROM src ORDER BY key"),
+                    sql("SELECT * from p ORDER BY key").collect().toSeq)
       }
     }
   }

@@ -42,14 +42,15 @@ class StreamingLinearRegressionSuite extends SparkFunSuite with TestSuiteBase {
   // Assert that two values are equal within tolerance epsilon
   def assertEqual(v1: Double, v2: Double, epsilon: Double) {
     def errorMessage = v1.toString + " did not equal " + v2.toString
-    assert(math.abs(v1-v2) <= epsilon, errorMessage)
+    assert(math.abs(v1 - v2) <= epsilon, errorMessage)
   }
 
   // Assert that model predictions are correct
   def validatePrediction(predictions: Seq[Double], input: Seq[LabeledPoint]) {
-    val numOffPredictions = predictions.zip(input).count { case (prediction, expected) =>
-      // A prediction is off if the prediction is more than 0.5 away from expected value.
-      math.abs(prediction - expected.label) > 0.5
+    val numOffPredictions = predictions.zip(input).count {
+      case (prediction, expected) =>
+        // A prediction is off if the prediction is more than 0.5 away from expected value.
+        math.abs(prediction - expected.label) > 0.5
     }
     // At least 80% of the predictions should be on.
     assert(numOffPredictions < input.length / 5)
@@ -84,8 +85,8 @@ class StreamingLinearRegressionSuite extends SparkFunSuite with TestSuiteBase {
 
     // check accuracy of predictions
     val validationData = LinearDataGenerator.generateLinearInput(0.0, Array(10.0, 10.0), 100, 17)
-    validatePrediction(validationData.map(row => model.latestModel().predict(row.features)),
-      validationData)
+    validatePrediction(
+        validationData.map(row => model.latestModel().predict(row.features)), validationData)
   }
 
   // Test that parameter estimates improve when learning Y = 10*X1 on streaming data
@@ -186,12 +187,10 @@ class StreamingLinearRegressionSuite extends SparkFunSuite with TestSuiteBase {
     val numBatches = 10
     val nPoints = 100
     val emptyInput = Seq.empty[Seq[LabeledPoint]]
-    ssc = setupStreams(emptyInput,
-      (inputDStream: DStream[LabeledPoint]) => {
-        model.trainOn(inputDStream)
-        model.predictOnValues(inputDStream.map(x => (x.label, x.features)))
-      }
-    )
+    ssc = setupStreams(emptyInput, (inputDStream: DStream[LabeledPoint]) => {
+      model.trainOn(inputDStream)
+      model.predictOnValues(inputDStream.map(x => (x.label, x.features)))
+    })
     val output: Seq[Seq[(Double, Double)]] = runStreams(ssc, numBatches, numBatches)
   }
 }

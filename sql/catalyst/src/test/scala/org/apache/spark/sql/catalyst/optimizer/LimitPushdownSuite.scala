@@ -29,13 +29,13 @@ class LimitPushdownSuite extends PlanTest {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches =
-      Batch("Subqueries", Once,
-        EliminateSubqueryAliases) ::
-      Batch("Limit pushdown", FixedPoint(100),
-        LimitPushDown,
-        CombineLimits,
-        ConstantFolding,
-        BooleanSimplification) :: Nil
+      Batch("Subqueries", Once, EliminateSubqueryAliases) ::
+      Batch("Limit pushdown",
+            FixedPoint(100),
+            LimitPushDown,
+            CombineLimits,
+            ConstantFolding,
+            BooleanSimplification) :: Nil
   }
 
   private val testRelation = LocalRelation('a.int, 'b.int, 'c.int)
@@ -142,4 +142,3 @@ class LimitPushdownSuite extends PlanTest {
     comparePlans(optimized, correctAnswer)
   }
 }
-

@@ -36,7 +36,8 @@ import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
  */
 @Experimental
 class NGram(override val uid: String)
-  extends UnaryTransformer[Seq[String], Seq[String], NGram] with DefaultParamsWritable {
+    extends UnaryTransformer[Seq[String], Seq[String], NGram]
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("ngram"))
 
@@ -45,8 +46,8 @@ class NGram(override val uid: String)
    * Default: 2, bigram features
    * @group param
    */
-  val n: IntParam = new IntParam(this, "n", "number elements per n-gram (>=1)",
-    ParamValidators.gtEq(1))
+  val n: IntParam = new IntParam(
+      this, "n", "number elements per n-gram (>=1)", ParamValidators.gtEq(1))
 
   /** @group setParam */
   def setN(value: Int): this.type = set(n, value)
@@ -62,7 +63,7 @@ class NGram(override val uid: String)
 
   override protected def validateInputType(inputType: DataType): Unit = {
     require(inputType.sameType(ArrayType(StringType)),
-      s"Input type must be ArrayType(StringType) but got $inputType.")
+            s"Input type must be ArrayType(StringType) but got $inputType.")
   }
 
   override protected def outputDataType: DataType = new ArrayType(StringType, false)

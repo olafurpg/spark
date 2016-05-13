@@ -37,8 +37,7 @@ class StateStoreCoordinatorSuite extends SparkFunSuite with SharedSparkContext {
       coordinatorRef.reportActiveInstance(id, "hostX", "exec1")
       eventually(timeout(5 seconds)) {
         assert(coordinatorRef.verifyIfInstanceActive(id, "exec1") === true)
-        assert(
-          coordinatorRef.getLocation(id) ===
+        assert(coordinatorRef.getLocation(id) ===
             Some(ExecutorCacheTaskLocation("hostX", "exec1").toString))
       }
 
@@ -48,8 +47,7 @@ class StateStoreCoordinatorSuite extends SparkFunSuite with SharedSparkContext {
         assert(coordinatorRef.verifyIfInstanceActive(id, "exec1") === false)
         assert(coordinatorRef.verifyIfInstanceActive(id, "exec2") === true)
 
-        assert(
-          coordinatorRef.getLocation(id) ===
+        assert(coordinatorRef.getLocation(id) ===
             Some(ExecutorCacheTaskLocation("hostX", "exec2").toString))
       }
     }
@@ -80,8 +78,7 @@ class StateStoreCoordinatorSuite extends SparkFunSuite with SharedSparkContext {
       assert(coordinatorRef.verifyIfInstanceActive(id3, exec) === false)
 
       assert(coordinatorRef.getLocation(id1) === None)
-      assert(
-        coordinatorRef.getLocation(id2) ===
+      assert(coordinatorRef.getLocation(id2) ===
           Some(ExecutorCacheTaskLocation(host, exec).toString))
       assert(coordinatorRef.getLocation(id3) === None)
 
@@ -101,8 +98,7 @@ class StateStoreCoordinatorSuite extends SparkFunSuite with SharedSparkContext {
 
       eventually(timeout(5 seconds)) {
         assert(coordRef2.verifyIfInstanceActive(id, "exec1") === true)
-        assert(
-          coordRef2.getLocation(id) ===
+        assert(coordRef2.getLocation(id) ===
             Some(ExecutorCacheTaskLocation("hostX", "exec1").toString))
       }
     }

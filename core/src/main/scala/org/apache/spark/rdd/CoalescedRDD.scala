@@ -38,7 +38,8 @@ private[spark] case class CoalescedRDDPartition(
     index: Int,
     @transient rdd: RDD[_],
     parentsIndices: Array[Int],
-    @transient preferredLocation: Option[String] = None) extends Partition {
+    @transient preferredLocation: Option[String] = None)
+    extends Partition {
   var parents: Seq[Partition] = parentsIndices.map(rdd.partitions(_))
 
   @throws(classOf[IOException])
@@ -76,10 +77,11 @@ private[spark] class CoalescedRDD[T: ClassTag](
     @transient var prev: RDD[T],
     maxPartitions: Int,
     partitionCoalescer: Option[PartitionCoalescer] = None)
-  extends RDD[T](prev.context, Nil) {  // Nil since we implement getDependencies
+    extends RDD[T](prev.context, Nil) {
+  // Nil since we implement getDependencies
 
   require(maxPartitions > 0 || maxPartitions == prev.partitions.length,
-    s"Number of partitions ($maxPartitions) must be positive.")
+          s"Number of partitions ($maxPartitions) must be positive.")
 
   override def getPartitions: Array[Partition] = {
     val pc = partitionCoalescer.getOrElse(new DefaultPartitionCoalescer())
@@ -98,7 +100,8 @@ private[spark] class CoalescedRDD[T: ClassTag](
   }
 
   override def getDependencies: Seq[Dependency[_]] = {
-    Seq(new NarrowDependency(prev) {
+    Seq(
+        new NarrowDependency(prev) {
       def getParents(id: Int): Seq[Int] =
         partitions(id).asInstanceOf[CoalescedRDDPartition].parentsIndices
     })
@@ -149,10 +152,10 @@ private[spark] class CoalescedRDD[T: ClassTag](
  * in terms of balance, the algorithm will assign partitions according to locality.
  * (contact alig for questions)
  */
-
 private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
-  extends PartitionCoalescer {
-  def compare(o1: PartitionGroup, o2: PartitionGroup): Boolean = o1.numPartitions < o2.numPartitions
+    extends PartitionCoalescer {
+  def compare(o1: PartitionGroup, o2: PartitionGroup): Boolean =
+    o1.numPartitions < o2.numPartitions
   def compare(o1: Option[PartitionGroup], o2: Option[PartitionGroup]): Boolean =
     if (o1 == None) false else if (o2 == None) true else compare(o1.get, o2.get)
 
@@ -167,7 +170,7 @@ private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
   // hash used for the first maxPartitions (to avoid duplicates)
   val initialHash = mutable.Set[Partition]()
 
-  var noLocality = true  // if true if no preferredLocations exists for parent RDD
+  var noLocality = true // if true if no preferredLocations exists for parent RDD
 
   class PartitionLocations(prev: RDD[_]) {
 
@@ -183,23 +186,23 @@ private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
     def getAllPrefLocs(prev: RDD[_]) {
       val tmpPartsWithLocs = mutable.LinkedHashMap[Partition, Seq[String]]()
       // first get the locations for each partition, only do this once since it can be expensive
-      prev.partitions.foreach(p => {
-          val locs = prev.context.getPreferredLocs(prev, p.index).map(tl => tl.host)
-          if (locs.size > 0) {
-            tmpPartsWithLocs.put(p, locs)
-          } else {
-            partsWithoutLocs += p
-          }
+      prev.partitions.foreach(
+          p => {
+        val locs = prev.context.getPreferredLocs(prev, p.index).map(tl => tl.host)
+        if (locs.size > 0) {
+          tmpPartsWithLocs.put(p, locs)
+        } else {
+          partsWithoutLocs += p
         }
-      )
+      })
       // convert it into an array of host to partition
-      (0 to 2).map(x =>
-        tmpPartsWithLocs.foreach(parts => {
+      (0 to 2).map(
+          x =>
+            tmpPartsWithLocs.foreach(parts => {
           val p = parts._1
           val locs = parts._2
           if (locs.size > x) partsWithLocs += ((locs(x), p))
-        } )
-      )
+        }))
     }
   }
 
@@ -216,7 +219,7 @@ private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
 
   def addPartToPGroup(part: Partition, pgroup: PartitionGroup): Boolean = {
     if (!initialHash.contains(part)) {
-      pgroup.partitions += part           // already assign this element
+      pgroup.partitions += part // already assign this element
       initialHash += part // needed to avoid assigning partitions to multiple buckets
       true
     } else { false }
@@ -238,7 +241,7 @@ private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
 
     noLocality = false
     // number of iterations needed to be certain that we've seen most preferred locations
-    val expectedCoupons2 = 2 * (math.log(targetLen)*targetLen + targetLen + 0.5).toInt
+    val expectedCoupons2 = 2 * (math.log(targetLen) * targetLen + targetLen + 0.5).toInt
     var numCreated = 0
     var tries = 0
 
@@ -281,11 +284,10 @@ private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
    *                     imbalance in favor of locality
    * @return partition group (bin to be put in)
    */
-  def pickBin(
-      p: Partition,
-      prev: RDD[_],
-      balanceSlack: Double,
-      partitionLocs: PartitionLocations): PartitionGroup = {
+  def pickBin(p: Partition,
+              prev: RDD[_],
+              balanceSlack: Double,
+              partitionLocs: PartitionLocations): PartitionGroup = {
     val slack = (balanceSlack * prev.partitions.length).toInt
     val preflocs = partitionLocs.partsWithLocs.filter(_._2 == p).map(_._1).toSeq
     // least loaded pref locs
@@ -297,8 +299,7 @@ private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
     val minPowerOfTwo = {
       if (groupArr(r1).numPartitions < groupArr(r2).numPartitions) {
         groupArr(r1)
-      }
-      else {
+      } else {
         groupArr(r2)
       }
     }
@@ -311,26 +312,31 @@ private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
 
     // more imbalance than the slack allows
     if (minPowerOfTwo.numPartitions + slack <= prefPartActual.numPartitions) {
-      minPowerOfTwo  // prefer balance over locality
+      minPowerOfTwo // prefer balance over locality
     } else {
       prefPartActual // prefer locality over balance
     }
   }
 
-  def throwBalls(
-      maxPartitions: Int,
-      prev: RDD[_],
-      balanceSlack: Double, partitionLocs: PartitionLocations) {
-    if (noLocality) {  // no preferredLocations in parent RDD, no randomization needed
-      if (maxPartitions > groupArr.size) { // just return prev.partitions
+  def throwBalls(maxPartitions: Int,
+                 prev: RDD[_],
+                 balanceSlack: Double,
+                 partitionLocs: PartitionLocations) {
+    if (noLocality) {
+      // no preferredLocations in parent RDD, no randomization needed
+      if (maxPartitions > groupArr.size) {
+        // just return prev.partitions
         for ((p, i) <- prev.partitions.zipWithIndex) {
           groupArr(i).partitions += p
         }
-      } else { // no locality available, then simply split partitions based on positions in array
+      } else {
+        // no locality available, then simply split partitions based on positions in array
         for (i <- 0 until maxPartitions) {
           val rangeStart = ((i.toLong * prev.partitions.length) / maxPartitions).toInt
           val rangeEnd = (((i.toLong + 1) * prev.partitions.length) / maxPartitions).toInt
-          (rangeStart until rangeEnd).foreach{ j => groupArr(i).partitions += prev.partitions(j) }
+          (rangeStart until rangeEnd).foreach { j =>
+            groupArr(i).partitions += prev.partitions(j)
+          }
         }
       }
     } else {
@@ -365,19 +371,20 @@ private class DefaultPartitionCoalescer(val balanceSlack: Double = 0.10)
       }
 
       // finally pick bin for the rest
-      for (p <- prev.partitions if (!initialHash.contains(p))) { // throw every partition into group
+      for (p <- prev.partitions if (!initialHash.contains(p))) {
+        // throw every partition into group
         pickBin(p, prev, balanceSlack, partitionLocs).partitions += p
       }
     }
   }
 
-  def getPartitions: Array[PartitionGroup] = groupArr.filter( pg => pg.numPartitions > 0).toArray
+  def getPartitions: Array[PartitionGroup] = groupArr.filter(pg => pg.numPartitions > 0).toArray
 
   /**
    * Runs the packing algorithm and returns an array of PartitionGroups that if possible are
    * load balanced and grouped by locality
-    *
-    * @return array of partition groups
+   *
+   * @return array of partition groups
    */
   def coalesce(maxPartitions: Int, prev: RDD[_]): Array[PartitionGroup] = {
     val partitionLocs = new PartitionLocations(prev)

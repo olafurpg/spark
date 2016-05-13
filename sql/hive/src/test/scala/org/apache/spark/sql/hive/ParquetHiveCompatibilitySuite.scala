@@ -27,6 +27,7 @@ import org.apache.spark.sql.hive.test.TestHiveSingleton
 import org.apache.spark.sql.internal.SQLConf
 
 class ParquetHiveCompatibilitySuite extends ParquetCompatibilityTest with TestHiveSingleton {
+
   /**
    * Set the staging directory (and hence path to ignore Parquet files under)
    * to the default value of hive.exec.stagingdir.
@@ -38,8 +39,7 @@ class ParquetHiveCompatibilitySuite extends ParquetCompatibilityTest with TestHi
       !path.getName.startsWith("_") && !path.getName.startsWith(stagingDir)
     })
 
-    logInfo(
-      s"""Schema of the Parquet file written by parquet-avro:
+    logInfo(s"""Schema of the Parquet file written by parquet-avro:
          |$schema
        """.stripMargin)
   }
@@ -57,16 +57,14 @@ class ParquetHiveCompatibilitySuite extends ParquetCompatibilityTest with TestHi
           withTempTable("data") {
             val fields = hiveTypes.zipWithIndex.map { case (typ, index) => s"  col_$index $typ" }
 
-            val ddl =
-              s"""CREATE TABLE parquet_compat(
+            val ddl = s"""CREATE TABLE parquet_compat(
                  |${fields.mkString(",\n")}
                  |)
                  |STORED AS PARQUET
                  |LOCATION '$path'
                """.stripMargin
 
-            logInfo(
-              s"""Creating testing Parquet table with the following DDL:
+            logInfo(s"""Creating testing Parquet table with the following DDL:
                  |$ddl
                """.stripMargin)
 
@@ -91,9 +89,15 @@ class ParquetHiveCompatibilitySuite extends ParquetCompatibilityTest with TestHi
   }
 
   test("simple primitives") {
-    testParquetHiveCompatibility(
-      Row(true, 1.toByte, 2.toShort, 3, 4.toLong, 5.1f, 6.1d, "foo"),
-      "BOOLEAN", "TINYINT", "SMALLINT", "INT", "BIGINT", "FLOAT", "DOUBLE", "STRING")
+    testParquetHiveCompatibility(Row(true, 1.toByte, 2.toShort, 3, 4.toLong, 5.1f, 6.1d, "foo"),
+                                 "BOOLEAN",
+                                 "TINYINT",
+                                 "SMALLINT",
+                                 "INT",
+                                 "BIGINT",
+                                 "FLOAT",
+                                 "DOUBLE",
+                                 "STRING")
   }
 
   test("SPARK-10177 timestamp") {
@@ -102,39 +106,29 @@ class ParquetHiveCompatibilitySuite extends ParquetCompatibilityTest with TestHi
 
   test("array") {
     testParquetHiveCompatibility(
-      Row(
-        Seq[Integer](1: Integer, null, 2: Integer, null),
-        Seq[String]("foo", null, "bar", null),
-        Seq[Seq[Integer]](
-          Seq[Integer](1: Integer, null),
-          Seq[Integer](2: Integer, null))),
-      "ARRAY<INT>",
-      "ARRAY<STRING>",
-      "ARRAY<ARRAY<INT>>")
+        Row(Seq[Integer](1: Integer, null, 2: Integer, null),
+            Seq[String]("foo", null, "bar", null),
+            Seq[Seq[Integer]](Seq[Integer](1: Integer, null), Seq[Integer](2: Integer, null))),
+        "ARRAY<INT>",
+        "ARRAY<STRING>",
+        "ARRAY<ARRAY<INT>>")
   }
 
   test("map") {
     testParquetHiveCompatibility(
-      Row(
-        Map[Integer, String](
-          (1: Integer) -> "foo",
-          (2: Integer) -> null)),
-      "MAP<INT, STRING>")
+        Row(Map[Integer, String]((1: Integer) -> "foo", (2: Integer) -> null)),
+        "MAP<INT, STRING>")
   }
 
   // HIVE-11625: Parquet map entries with null keys are dropped by Hive
   ignore("map entries with null keys") {
-    testParquetHiveCompatibility(
-      Row(
-        Map[Integer, String](
-          null.asInstanceOf[Integer] -> "bar",
-          null.asInstanceOf[Integer] -> null)),
-      "MAP<INT, STRING>")
+    testParquetHiveCompatibility(Row(Map[Integer, String](null.asInstanceOf[Integer] -> "bar",
+                                                          null.asInstanceOf[Integer] -> null)),
+                                 "MAP<INT, STRING>")
   }
 
   test("struct") {
     testParquetHiveCompatibility(
-      Row(Row(1, Seq("foo", "bar", null))),
-      "STRUCT<f0: INT, f1: ARRAY<STRING>>")
+        Row(Row(1, Seq("foo", "bar", null))), "STRUCT<f0: INT, f1: ARRAY<STRING>>")
   }
 }

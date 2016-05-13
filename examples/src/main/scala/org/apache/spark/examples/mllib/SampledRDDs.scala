@@ -33,7 +33,7 @@ import org.apache.spark.mllib.util.MLUtils
 object SampledRDDs {
 
   case class Params(input: String = "data/mllib/sample_binary_classification_data.txt")
-    extends AbstractParams[Params]
+      extends AbstractParams[Params]
 
   def main(args: Array[String]) {
     val defaultParams = Params()
@@ -43,8 +43,7 @@ object SampledRDDs {
       opt[String]("input")
         .text(s"Input path to labeled examples in LIBSVM format, default: ${defaultParams.input}")
         .action((x, c) => c.copy(input = x))
-      note(
-        """
+      note("""
         |For example, the following command runs this app:
         |
         | bin/spark-submit --class org.apache.spark.examples.mllib.SampledRDDs \
@@ -83,7 +82,9 @@ object SampledRDDs {
     println()
 
     // Example: RDD.sampleByKey() and RDD.sampleByKeyExact()
-    val keyedRDD = examples.map { lp => (lp.label.toInt, lp.features) }
+    val keyedRDD = examples.map { lp =>
+      (lp.label.toInt, lp.features)
+    }
     println(s"  Keyed data using label (Int) as key ==> Orig")
     //  Count examples per label in original data.
     val keyCounts = keyedRDD.countByKey()
@@ -94,7 +95,7 @@ object SampledRDDs {
     val keyCountsB = sampledByKeyRDD.countByKey()
     val sizeB = keyCountsB.values.sum
     println(s"  Sampled $sizeB examples using approximate stratified sampling (by label)." +
-      " ==> Approx Sample")
+        " ==> Approx Sample")
 
     //  Subsample, and count examples per label in sampled data. (approximate)
     val sampledByKeyRDDExact =
@@ -102,23 +103,25 @@ object SampledRDDs {
     val keyCountsBExact = sampledByKeyRDDExact.countByKey()
     val sizeBExact = keyCountsBExact.values.sum
     println(s"  Sampled $sizeBExact examples using exact stratified sampling (by label)." +
-      " ==> Exact Sample")
+        " ==> Exact Sample")
 
     //  Compare samples
     println(s"   \tFractions of examples with key")
     println(s"Key\tOrig\tApprox Sample\tExact Sample")
     keyCounts.keys.toSeq.sorted.foreach { key =>
       val origFrac = keyCounts(key) / numExamples.toDouble
-      val approxFrac = if (sizeB != 0) {
-        keyCountsB.getOrElse(key, 0L) / sizeB.toDouble
-      } else {
-        0
-      }
-      val exactFrac = if (sizeBExact != 0) {
-        keyCountsBExact.getOrElse(key, 0L) / sizeBExact.toDouble
-      } else {
-        0
-      }
+      val approxFrac =
+        if (sizeB != 0) {
+          keyCountsB.getOrElse(key, 0L) / sizeB.toDouble
+        } else {
+          0
+        }
+      val exactFrac =
+        if (sizeBExact != 0) {
+          keyCountsBExact.getOrElse(key, 0L) / sizeBExact.toDouble
+        } else {
+          0
+        }
       println(s"$key\t$origFrac\t$approxFrac\t$exactFrac")
     }
 

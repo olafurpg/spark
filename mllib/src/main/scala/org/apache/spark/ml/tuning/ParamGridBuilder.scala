@@ -111,11 +111,12 @@ class ParamGridBuilder @Since("1.2.0") {
   @Since("1.2.0")
   def build(): Array[ParamMap] = {
     var paramMaps = Array(new ParamMap)
-    paramGrid.foreach { case (param, values) =>
-      val newParamMaps = values.flatMap { v =>
-        paramMaps.map(_.copy.put(param.asInstanceOf[Param[Any]], v))
-      }
-      paramMaps = newParamMaps.toArray
+    paramGrid.foreach {
+      case (param, values) =>
+        val newParamMaps = values.flatMap { v =>
+          paramMaps.map(_.copy.put(param.asInstanceOf[Param[Any]], v))
+        }
+        paramMaps = newParamMaps.toArray
     }
     paramMaps
   }

@@ -40,7 +40,6 @@ object UnsafeProjectionBenchmark {
 
     val benchmark = new Benchmark("unsafe projection", iters * numRows)
 
-
     val schema1 = new StructType().add("l", LongType, false)
     val attrs1 = schema1.toAttributes
     val rows1 = generateRows(schema1, numRows)
@@ -73,7 +72,6 @@ object UnsafeProjectionBenchmark {
       }
     }
 
-
     val schema3 = new StructType()
       .add("boolean", BooleanType, false)
       .add("byte", ByteType, false)
@@ -97,7 +95,6 @@ object UnsafeProjectionBenchmark {
       }
     }
 
-
     val schema4 = new StructType()
       .add("boolean", BooleanType, true)
       .add("byte", ByteType, true)
@@ -120,7 +117,6 @@ object UnsafeProjectionBenchmark {
         }
       }
     }
-
 
     /*
     Intel(R) Core(TM) i7-4960HQ CPU @ 2.60GHz

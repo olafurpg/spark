@@ -56,8 +56,8 @@ import org.apache.spark.sql.execution.SparkPlan
  */
 private[sql] object FileSourceStrategy extends Strategy with Logging {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-    case PhysicalOperation(projects, filters,
-      l @ LogicalRelation(files: HadoopFsRelation, _, table)) =>
+    case PhysicalOperation(
+        projects, filters, l @ LogicalRelation(files: HadoopFsRelation, _, table)) =>
       // Filters on this relation fall into four categories based on where we can use them to avoid
       // reading unneeded data:
       //  - partition keys only - used to prune directories to read
@@ -79,8 +79,8 @@ private[sql] object FileSourceStrategy extends Strategy with Logging {
       val partitionColumns =
         l.resolve(files.partitionSchema, files.sparkSession.sessionState.analyzer.resolver)
       val partitionSet = AttributeSet(partitionColumns)
-      val partitionKeyFilters =
-        ExpressionSet(normalizedFilters.filter(_.references.subsetOf(partitionSet)))
+      val partitionKeyFilters = ExpressionSet(
+          normalizedFilters.filter(_.references.subsetOf(partitionSet)))
       logInfo(s"Pruning directories with: ${partitionKeyFilters.mkString(",")}")
 
       val dataColumns =
@@ -100,9 +100,7 @@ private[sql] object FileSourceStrategy extends Strategy with Logging {
       val requiredAttributes = AttributeSet(requiredExpressions)
 
       val readDataColumns =
-        dataColumns
-          .filter(requiredAttributes.contains)
-          .filterNot(partitionColumns.contains)
+        dataColumns.filter(requiredAttributes.contains).filterNot(partitionColumns.contains)
       val prunedDataSchema = readDataColumns.toStructType
       logInfo(s"Pruned Data Schema: ${prunedDataSchema.simpleString(5)}")
 
@@ -110,28 +108,27 @@ private[sql] object FileSourceStrategy extends Strategy with Logging {
       logInfo(s"Pushed Filters: ${pushedDownFilters.mkString(",")}")
 
       val readFile = files.fileFormat.buildReaderWithPartitionValues(
-        sparkSession = files.sparkSession,
-        dataSchema = files.dataSchema,
-        partitionSchema = files.partitionSchema,
-        requiredSchema = prunedDataSchema,
-        filters = pushedDownFilters,
-        options = files.options,
-        hadoopConf = files.sparkSession.sessionState.newHadoopConfWithOptions(files.options))
+          sparkSession = files.sparkSession,
+          dataSchema = files.dataSchema,
+          partitionSchema = files.partitionSchema,
+          requiredSchema = prunedDataSchema,
+          filters = pushedDownFilters,
+          options = files.options,
+          hadoopConf = files.sparkSession.sessionState.newHadoopConfWithOptions(files.options))
 
       val plannedPartitions = files.bucketSpec match {
         case Some(bucketing) if files.sparkSession.sessionState.conf.bucketingEnabled =>
           logInfo(s"Planning with ${bucketing.numBuckets} buckets")
-          val bucketed =
-            selectedPartitions.flatMap { p =>
-              p.files.map { f =>
-                val hosts = getBlockHosts(getBlockLocations(f), 0, f.getLen)
-                PartitionedFile(p.values, f.getPath.toUri.toString, 0, f.getLen, hosts)
-              }
-            }.groupBy { f =>
-              BucketingUtils
-                .getBucketId(new Path(f.filePath).getName)
-                .getOrElse(sys.error(s"Invalid bucket file ${f.filePath}"))
+          val bucketed = selectedPartitions.flatMap { p =>
+            p.files.map { f =>
+              val hosts = getBlockHosts(getBlockLocations(f), 0, f.getLen)
+              PartitionedFile(p.values, f.getPath.toUri.toString, 0, f.getLen, hosts)
             }
+          }.groupBy { f =>
+            BucketingUtils
+              .getBucketId(new Path(f.filePath).getName)
+              .getOrElse(sys.error(s"Invalid bucket file ${f.filePath}"))
+          }
 
           (0 until bucketing.numBuckets).map { bucketId =>
             FilePartition(bucketId, bucketed.getOrElse(bucketId, Nil))
@@ -143,10 +140,11 @@ private[sql] object FileSourceStrategy extends Strategy with Logging {
           val defaultParallelism = files.sparkSession.sparkContext.defaultParallelism
           val totalBytes = selectedPartitions.flatMap(_.files.map(_.getLen + openCostInBytes)).sum
           val bytesPerCore = totalBytes / defaultParallelism
-          val maxSplitBytes = Math.min(defaultMaxSplitBytes,
-            Math.max(openCostInBytes, bytesPerCore))
-          logInfo(s"Planning scan with bin packing, max size: $maxSplitBytes bytes, " +
-            s"open cost is considered as scanning $openCostInBytes bytes.")
+          val maxSplitBytes =
+            Math.min(defaultMaxSplitBytes, Math.max(openCostInBytes, bytesPerCore))
+          logInfo(
+              s"Planning scan with bin packing, max size: $maxSplitBytes bytes, " +
+              s"open cost is considered as scanning $openCostInBytes bytes.")
 
           val splitFiles = selectedPartitions.flatMap { partition =>
             partition.files.flatMap { file =>
@@ -174,9 +172,7 @@ private[sql] object FileSourceStrategy extends Strategy with Logging {
           def closePartition(): Unit = {
             if (currentFiles.nonEmpty) {
               val newPartition =
-                FilePartition(
-                  partitions.size,
-                  currentFiles.toArray.toSeq) // Copy to a new Array.
+                FilePartition(partitions.size, currentFiles.toArray.toSeq) // Copy to a new Array.
               partitions.append(newPartition)
             }
             currentFiles.clear()
@@ -195,30 +191,26 @@ private[sql] object FileSourceStrategy extends Strategy with Logging {
           partitions
       }
 
-      val meta = Map(
-        "Format" -> files.fileFormat.toString,
-        "ReadSchema" -> prunedDataSchema.simpleString,
-        PUSHED_FILTERS -> pushedDownFilters.mkString("[", ", ", "]"),
-        INPUT_PATHS -> files.location.paths.mkString(", "))
+      val meta = Map("Format" -> files.fileFormat.toString,
+                     "ReadSchema" -> prunedDataSchema.simpleString,
+                     PUSHED_FILTERS -> pushedDownFilters.mkString("[", ", ", "]"),
+                     INPUT_PATHS -> files.location.paths.mkString(", "))
 
-      val scan =
-        DataSourceScanExec.create(
+      val scan = DataSourceScanExec.create(
           readDataColumns ++ partitionColumns,
-          new FileScanRDD(
-            files.sparkSession,
-            readFile,
-            plannedPartitions),
+          new FileScanRDD(files.sparkSession, readFile, plannedPartitions),
           files,
           meta,
           table)
 
       val afterScanFilter = afterScanFilters.toSeq.reduceOption(expressions.And)
       val withFilter = afterScanFilter.map(execution.FilterExec(_, scan)).getOrElse(scan)
-      val withProjections = if (projects == withFilter.output) {
-        withFilter
-      } else {
-        execution.ProjectExec(projects, withFilter)
-      }
+      val withProjections =
+        if (projects == withFilter.output) {
+          withFilter
+        } else {
+          execution.ProjectExec(projects, withFilter)
+        }
 
       withProjections :: Nil
 
@@ -252,8 +244,9 @@ private[sql] object FileSourceStrategy extends Strategy with Logging {
       // The fragment doesn't intersect with this block
       case b =>
         b.getHosts -> 0L
-    }.filter { case (hosts, size) =>
-      size > 0L
+    }.filter {
+      case (hosts, size) =>
+        size > 0L
     }
 
     if (candidates.isEmpty) {

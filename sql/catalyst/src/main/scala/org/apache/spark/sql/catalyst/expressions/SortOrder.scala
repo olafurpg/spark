@@ -41,7 +41,8 @@ case object Descending extends SortDirection {
  * transformations over expression will descend into its child.
  */
 case class SortOrder(child: Expression, direction: SortDirection)
-  extends UnaryExpression with Unevaluable {
+    extends UnaryExpression
+    with Unevaluable {
 
   /** Sort order is not foldable because we don't have an eval for it. */
   override def foldable: Boolean = false
@@ -88,23 +89,23 @@ case class SortPrefix(child: SortOrder) extends UnaryExpression {
       case StringType => (0L, s"$input.getPrefix()")
       case BinaryType => (0L, s"$BinaryPrefixCmp.computePrefix($input)")
       case dt: DecimalType if dt.precision - dt.scale <= Decimal.MAX_LONG_DIGITS =>
-        val prefix = if (dt.precision <= Decimal.MAX_LONG_DIGITS) {
-          s"$input.toUnscaledLong()"
-        } else {
-          // reduce the scale to fit in a long
-          val p = Decimal.MAX_LONG_DIGITS
-          val s = p - (dt.precision - dt.scale)
-          s"$input.changePrecision($p, $s) ? $input.toUnscaledLong() : ${Long.MinValue}L"
-        }
+        val prefix =
+          if (dt.precision <= Decimal.MAX_LONG_DIGITS) {
+            s"$input.toUnscaledLong()"
+          } else {
+            // reduce the scale to fit in a long
+            val p = Decimal.MAX_LONG_DIGITS
+            val s = p - (dt.precision - dt.scale)
+            s"$input.changePrecision($p, $s) ? $input.toUnscaledLong() : ${Long.MinValue}L"
+          }
         (Long.MinValue, prefix)
       case dt: DecimalType =>
         (DoublePrefixComparator.computePrefix(Double.NegativeInfinity),
-          s"$DoublePrefixCmp.computePrefix($input.toDouble())")
+         s"$DoublePrefixCmp.computePrefix($input.toDouble())")
       case _ => (0L, "0L")
     }
 
-    ev.copy(code = childCode.code +
-      s"""
+    ev.copy(code = childCode.code + s"""
          |long ${ev.value} = ${nullValue}L;
          |boolean ${ev.isNull} = false;
          |if (!${childCode.isNull}) {

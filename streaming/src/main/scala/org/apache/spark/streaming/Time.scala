@@ -27,19 +27,19 @@ case class Time(private val millis: Long) {
 
   def milliseconds: Long = millis
 
-  def < (that: Time): Boolean = (this.millis < that.millis)
+  def <(that: Time): Boolean = (this.millis < that.millis)
 
-  def <= (that: Time): Boolean = (this.millis <= that.millis)
+  def <=(that: Time): Boolean = (this.millis <= that.millis)
 
-  def > (that: Time): Boolean = (this.millis > that.millis)
+  def >(that: Time): Boolean = (this.millis > that.millis)
 
-  def >= (that: Time): Boolean = (this.millis >= that.millis)
+  def >=(that: Time): Boolean = (this.millis >= that.millis)
 
-  def + (that: Duration): Time = new Time(millis + that.milliseconds)
+  def +(that: Duration): Time = new Time(millis + that.milliseconds)
 
-  def - (that: Time): Duration = new Duration(millis - that.millis)
+  def -(that: Time): Duration = new Duration(millis - that.millis)
 
-  def - (that: Duration): Time = new Time(millis - that.milliseconds)
+  def -(that: Duration): Time = new Time(millis - that.milliseconds)
 
   // Java-friendlier versions of the above.
 
@@ -56,7 +56,6 @@ case class Time(private val millis: Long) {
   def minus(that: Time): Duration = this - that
 
   def minus(that: Duration): Time = this - that
-
 
   def floor(that: Duration): Time = {
     val t = that.milliseconds
@@ -83,9 +82,7 @@ case class Time(private val millis: Long) {
     (this.milliseconds) to (that.milliseconds) by (interval.milliseconds) map (new Time(_))
   }
 
-
   override def toString: String = (millis.toString + " ms")
-
 }
 
 object Time {

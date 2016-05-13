@@ -22,16 +22,14 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeProjection}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 
-
 /**
  * Physical plan node for scanning data from a local collection.
  */
-private[sql] case class LocalTableScanExec(
-    output: Seq[Attribute],
-    rows: Seq[InternalRow]) extends LeafExecNode {
+private[sql] case class LocalTableScanExec(output: Seq[Attribute], rows: Seq[InternalRow])
+    extends LeafExecNode {
 
   private[sql] override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+      "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   private val unsafeRows: Array[InternalRow] = {
     val proj = UnsafeProjection.create(output, output)

@@ -32,14 +32,13 @@ class StreamSuite extends StreamTest with SharedSQLContext {
     val inputData = MemoryStream[Int]
     val mapped = inputData.toDS().map(_ + 1)
 
-    testStream(mapped)(
-      AddData(inputData, 1, 2, 3),
-      StartStream(),
-      CheckAnswer(2, 3, 4),
-      StopStream,
-      AddData(inputData, 4, 5, 6),
-      StartStream(),
-      CheckAnswer(2, 3, 4, 5, 6, 7))
+    testStream(mapped)(AddData(inputData, 1, 2, 3),
+                       StartStream(),
+                       CheckAnswer(2, 3, 4),
+                       StopStream,
+                       AddData(inputData, 4, 5, 6),
+                       StartStream(),
+                       CheckAnswer(2, 3, 4, 5, 6, 7))
   }
 
   test("join") {
@@ -50,11 +49,10 @@ class StreamSuite extends StreamTest with SharedSQLContext {
     val inputData = MemoryStream[Int]
     val joined = inputData.toDS().toDF().join(smallTable, $"value" === $"number")
 
-    testStream(joined)(
-      AddData(inputData, 1, 2, 3),
-      CheckAnswer(Row(1, 1, "one"), Row(2, 2, "two")),
-      AddData(inputData, 4),
-      CheckAnswer(Row(1, 1, "one"), Row(2, 2, "two"), Row(4, 4, "four")))
+    testStream(joined)(AddData(inputData, 1, 2, 3),
+                       CheckAnswer(Row(1, 1, "one"), Row(2, 2, "two")),
+                       AddData(inputData, 4),
+                       CheckAnswer(Row(1, 1, "one"), Row(2, 2, "two"), Row(4, 4, "four")))
   }
 
   test("union two streams") {
@@ -63,16 +61,15 @@ class StreamSuite extends StreamTest with SharedSQLContext {
 
     val unioned = inputData1.toDS().union(inputData2.toDS())
 
-    testStream(unioned)(
-      AddData(inputData1, 1, 3, 5),
-      CheckAnswer(1, 3, 5),
-      AddData(inputData2, 2, 4, 6),
-      CheckAnswer(1, 2, 3, 4, 5, 6),
-      StopStream,
-      AddData(inputData1, 7),
-      StartStream(),
-      AddData(inputData2, 8),
-      CheckAnswer(1, 2, 3, 4, 5, 6, 7, 8))
+    testStream(unioned)(AddData(inputData1, 1, 3, 5),
+                        CheckAnswer(1, 3, 5),
+                        AddData(inputData2, 2, 4, 6),
+                        CheckAnswer(1, 2, 3, 4, 5, 6),
+                        StopStream,
+                        AddData(inputData1, 7),
+                        StartStream(),
+                        AddData(inputData2, 8),
+                        CheckAnswer(1, 2, 3, 4, 5, 6, 7, 8))
   }
 
   test("sql queries") {
@@ -80,16 +77,15 @@ class StreamSuite extends StreamTest with SharedSQLContext {
     inputData.toDF().registerTempTable("stream")
     val evens = sql("SELECT * FROM stream WHERE value % 2 = 0")
 
-    testStream(evens)(
-      AddData(inputData, 1, 2, 3, 4),
-      CheckAnswer(2, 4))
+    testStream(evens)(AddData(inputData, 1, 2, 3, 4), CheckAnswer(2, 4))
   }
 
   test("DataFrame reuse") {
     def assertDF(df: DataFrame) {
       withTempDir { outputDir =>
         withTempDir { checkpointDir =>
-          val query = df.write.format("parquet")
+          val query = df.write
+            .format("parquet")
             .option("checkpointLocation", checkpointDir.getAbsolutePath)
             .startStream(outputDir.getAbsolutePath)
           try {
@@ -116,23 +112,31 @@ class StreamSuite extends StreamTest with SharedSQLContext {
       val e = intercept[AnalysisException] {
         body
       }
-      expectedMsgs.foreach { s => assert(e.getMessage.contains(s)) }
+      expectedMsgs.foreach { s =>
+        assert(e.getMessage.contains(s))
+      }
     }
 
     // Running streaming plan as a batch query
     assertError("startStream" :: Nil) {
-      streamInput.toDS.map { i => i }.count()
+      streamInput.toDS.map { i =>
+        i
+      }.count()
     }
 
     // Running non-streaming plan with as a streaming query
     assertError("without streaming sources" :: "startStream" :: Nil) {
-      val ds = batchInput.map { i => i }
+      val ds = batchInput.map { i =>
+        i
+      }
       testStream(ds)()
     }
 
     // Running streaming plan that cannot be incrementalized
     assertError("not supported" :: "streaming" :: Nil) {
-      val ds = streamInput.toDS.map { i => i }.sort()
+      val ds = streamInput.toDS.map { i =>
+        i
+      }.sort()
       testStream(ds)()
     }
   }
@@ -142,15 +146,14 @@ class StreamSuite extends StreamTest with SharedSQLContext {
   // Let's enable this after SPARK-14942: Reduce delay between batch construction and execution
   ignore("minimize delay between batch construction and execution") {
     val inputData = MemoryStream[Int]
-    testStream(inputData.toDS())(
-      StartStream(ProcessingTime("10 seconds"), new ManualClock),
-      /* -- batch 0 ----------------------- */
-      AddData(inputData, 1),
-      AddData(inputData, 2),
-      AddData(inputData, 3),
-      AdvanceManualClock(10 * 1000), // 10 seconds
-      /* -- batch 1 ----------------------- */
-      CheckAnswer(1, 2, 3))
+    testStream(inputData.toDS())(StartStream(ProcessingTime("10 seconds"), new ManualClock),
+                                 /* -- batch 0 ----------------------- */
+                                 AddData(inputData, 1),
+                                 AddData(inputData, 2),
+                                 AddData(inputData, 3),
+                                 AdvanceManualClock(10 * 1000), // 10 seconds
+                                 /* -- batch 1 ----------------------- */
+                                 CheckAnswer(1, 2, 3))
   }
 }
 
@@ -161,18 +164,17 @@ class FakeDefaultSource extends StreamSourceProvider {
 
   private val fakeSchema = StructType(StructField("a", IntegerType) :: Nil)
 
-  override def sourceSchema(
-      spark: SQLContext,
-      schema: Option[StructType],
-      providerName: String,
-      parameters: Map[String, String]): (String, StructType) = ("fakeSource", fakeSchema)
+  override def sourceSchema(spark: SQLContext,
+                            schema: Option[StructType],
+                            providerName: String,
+                            parameters: Map[String, String]): (String, StructType) =
+    ("fakeSource", fakeSchema)
 
-  override def createSource(
-      spark: SQLContext,
-      metadataPath: String,
-      schema: Option[StructType],
-      providerName: String,
-      parameters: Map[String, String]): Source = {
+  override def createSource(spark: SQLContext,
+                            metadataPath: String,
+                            schema: Option[StructType],
+                            providerName: String,
+                            parameters: Map[String, String]): Source = {
     // Create a fake Source that emits 0 to 10.
     new Source {
       private var offset = -1L

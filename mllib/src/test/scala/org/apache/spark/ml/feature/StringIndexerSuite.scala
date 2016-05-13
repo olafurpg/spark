@@ -27,7 +27,9 @@ import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
 
 class StringIndexerSuite
-  extends SparkFunSuite with MLlibTestSparkContext with DefaultReadWriteTest {
+    extends SparkFunSuite
+    with MLlibTestSparkContext
+    with DefaultReadWriteTest {
 
   test("params") {
     ParamsSuite.checkParams(new StringIndexer)
@@ -40,21 +42,23 @@ class StringIndexerSuite
   test("StringIndexer") {
     val data = sc.parallelize(Seq((0, "a"), (1, "b"), (2, "c"), (3, "a"), (4, "a"), (5, "c")), 2)
     val df = spark.createDataFrame(data).toDF("id", "label")
-    val indexer = new StringIndexer()
-      .setInputCol("label")
-      .setOutputCol("labelIndex")
-      .fit(df)
+    val indexer = new StringIndexer().setInputCol("label").setOutputCol("labelIndex").fit(df)
 
     // copied model must have the same parent.
     MLTestingUtils.checkCopy(indexer)
 
     val transformed = indexer.transform(df)
-    val attr = Attribute.fromStructField(transformed.schema("labelIndex"))
-      .asInstanceOf[NominalAttribute]
+    val attr =
+      Attribute.fromStructField(transformed.schema("labelIndex")).asInstanceOf[NominalAttribute]
     assert(attr.values.get === Array("a", "c", "b"))
-    val output = transformed.select("id", "labelIndex").rdd.map { r =>
-      (r.getInt(0), r.getDouble(1))
-    }.collect().toSet
+    val output = transformed
+      .select("id", "labelIndex")
+      .rdd
+      .map { r =>
+        (r.getInt(0), r.getDouble(1))
+      }
+      .collect()
+      .toSet
     // a -> 0, b -> 2, c -> 1
     val expected = Set((0, 0.0), (1, 2.0), (2, 1.0), (3, 0.0), (4, 0.0), (5, 1.0))
     assert(output === expected)
@@ -65,10 +69,7 @@ class StringIndexerSuite
     val data2 = sc.parallelize(Seq((0, "a"), (1, "b"), (2, "c")), 2)
     val df = spark.createDataFrame(data).toDF("id", "label")
     val df2 = spark.createDataFrame(data2).toDF("id", "label")
-    val indexer = new StringIndexer()
-      .setInputCol("label")
-      .setOutputCol("labelIndex")
-      .fit(df)
+    val indexer = new StringIndexer().setInputCol("label").setOutputCol("labelIndex").fit(df)
     // Verify we throw by default with unseen values
     intercept[SparkException] {
       indexer.transform(df2).collect()
@@ -80,12 +81,17 @@ class StringIndexerSuite
       .fit(df)
     // Verify that we skip the c record
     val transformed = indexerSkipInvalid.transform(df2)
-    val attr = Attribute.fromStructField(transformed.schema("labelIndex"))
-      .asInstanceOf[NominalAttribute]
+    val attr =
+      Attribute.fromStructField(transformed.schema("labelIndex")).asInstanceOf[NominalAttribute]
     assert(attr.values.get === Array("b", "a"))
-    val output = transformed.select("id", "labelIndex").rdd.map { r =>
-      (r.getInt(0), r.getDouble(1))
-    }.collect().toSet
+    val output = transformed
+      .select("id", "labelIndex")
+      .rdd
+      .map { r =>
+        (r.getInt(0), r.getDouble(1))
+      }
+      .collect()
+      .toSet
     // a -> 1, b -> 0
     val expected = Set((0, 1.0), (1, 0.0))
     assert(output === expected)
@@ -94,17 +100,19 @@ class StringIndexerSuite
   test("StringIndexer with a numeric input column") {
     val data = sc.parallelize(Seq((0, 100), (1, 200), (2, 300), (3, 100), (4, 100), (5, 300)), 2)
     val df = spark.createDataFrame(data).toDF("id", "label")
-    val indexer = new StringIndexer()
-      .setInputCol("label")
-      .setOutputCol("labelIndex")
-      .fit(df)
+    val indexer = new StringIndexer().setInputCol("label").setOutputCol("labelIndex").fit(df)
     val transformed = indexer.transform(df)
-    val attr = Attribute.fromStructField(transformed.schema("labelIndex"))
-      .asInstanceOf[NominalAttribute]
+    val attr =
+      Attribute.fromStructField(transformed.schema("labelIndex")).asInstanceOf[NominalAttribute]
     assert(attr.values.get === Array("100", "300", "200"))
-    val output = transformed.select("id", "labelIndex").rdd.map { r =>
-      (r.getInt(0), r.getDouble(1))
-    }.collect().toSet
+    val output = transformed
+      .select("id", "labelIndex")
+      .rdd
+      .map { r =>
+        (r.getInt(0), r.getDouble(1))
+      }
+      .collect()
+      .toSet
     // 100 -> 0, 200 -> 2, 300 -> 1
     val expected = Set((0, 0.0), (1, 2.0), (2, 1.0), (3, 0.0), (4, 0.0), (5, 1.0))
     assert(output === expected)
@@ -120,10 +128,7 @@ class StringIndexerSuite
 
   test("StringIndexerModel can't overwrite output column") {
     val df = spark.createDataFrame(Seq((1, 2), (3, 4))).toDF("input", "output")
-    val indexer = new StringIndexer()
-      .setInputCol("input")
-      .setOutputCol("output")
-      .fit(df)
+    val indexer = new StringIndexer().setInputCol("input").setOutputCol("output").fit(df)
     intercept[IllegalArgumentException] {
       indexer.transform(df)
     }
@@ -153,14 +158,17 @@ class StringIndexerSuite
 
   test("IndexToString.transform") {
     val labels = Array("a", "b", "c")
-    val df0 = spark.createDataFrame(Seq(
-      (0, "a"), (1, "b"), (2, "c"), (0, "a")
-    )).toDF("index", "expected")
+    val df0 = spark
+      .createDataFrame(Seq(
+              (0, "a"),
+              (1, "b"),
+              (2, "c"),
+              (0, "a")
+          ))
+      .toDF("index", "expected")
 
-    val idxToStr0 = new IndexToString()
-      .setInputCol("index")
-      .setOutputCol("actual")
-      .setLabels(labels)
+    val idxToStr0 =
+      new IndexToString().setInputCol("index").setOutputCol("actual").setLabels(labels)
     idxToStr0.transform(df0).select("actual", "expected").collect().foreach {
       case Row(actual, expected) =>
         assert(actual === expected)
@@ -169,9 +177,7 @@ class StringIndexerSuite
     val attr = NominalAttribute.defaultAttr.withValues(labels)
     val df1 = df0.select(col("index").as("indexWithAttr", attr.toMetadata()), col("expected"))
 
-    val idxToStr1 = new IndexToString()
-      .setInputCol("indexWithAttr")
-      .setOutputCol("actual")
+    val idxToStr1 = new IndexToString().setInputCol("indexWithAttr").setOutputCol("actual")
     idxToStr1.transform(df1).select("actual", "expected").collect().foreach {
       case Row(actual, expected) =>
         assert(actual === expected)
@@ -181,10 +187,7 @@ class StringIndexerSuite
   test("StringIndexer, IndexToString are inverses") {
     val data = sc.parallelize(Seq((0, "a"), (1, "b"), (2, "c"), (3, "a"), (4, "a"), (5, "c")), 2)
     val df = spark.createDataFrame(data).toDF("id", "label")
-    val indexer = new StringIndexer()
-      .setInputCol("label")
-      .setOutputCol("labelIndex")
-      .fit(df)
+    val indexer = new StringIndexer().setInputCol("label").setOutputCol("labelIndex").fit(df)
     val transformed = indexer.transform(df)
     val idx2str = new IndexToString()
       .setInputCol("labelIndex")
@@ -214,10 +217,7 @@ class StringIndexerSuite
   test("StringIndexer metadata") {
     val data = sc.parallelize(Seq((0, "a"), (1, "b"), (2, "c"), (3, "a"), (4, "a"), (5, "c")), 2)
     val df = spark.createDataFrame(data).toDF("id", "label")
-    val indexer = new StringIndexer()
-      .setInputCol("label")
-      .setOutputCol("labelIndex")
-      .fit(df)
+    val indexer = new StringIndexer().setInputCol("label").setOutputCol("labelIndex").fit(df)
     val transformed = indexer.transform(df)
     val attrs =
       NominalAttribute.decodeStructField(transformed.schema("labelIndex"), preserveName = true)

@@ -28,6 +28,7 @@ import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.types.StructType
 
 private[orc] object OrcFileOperator extends Logging {
+
   /**
    * Retrieves a ORC file reader from a given path.  The path can point to either a directory or a
    * single ORC file.  If it points to an directory, it picks any non-empty ORC file within that
@@ -50,8 +51,7 @@ private[orc] object OrcFileOperator extends Logging {
     def isWithNonEmptySchema(path: Path, reader: Reader): Boolean = {
       reader.getObjectInspector match {
         case oi: StructObjectInspector if oi.getAllStructFieldRefs.size() == 0 =>
-          logInfo(
-            s"ORC file $path has empty schema, it probably contains no rows. " +
+          logInfo(s"ORC file $path has empty schema, it probably contains no rows. " +
               "Trying to read another ORC file to figure out the schema.")
           false
         case _ => true
@@ -91,7 +91,8 @@ private[orc] object OrcFileOperator extends Logging {
     // TODO: Check if the paths coming in are already qualified and simplify.
     val origPath = new Path(pathStr)
     val fs = origPath.getFileSystem(conf)
-    val paths = SparkHadoopUtil.get.listLeafStatuses(fs, origPath)
+    val paths = SparkHadoopUtil.get
+      .listLeafStatuses(fs, origPath)
       .filterNot(_.isDirectory)
       .map(_.getPath)
       .filterNot(_.getName.startsWith("_"))

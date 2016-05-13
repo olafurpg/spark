@@ -37,6 +37,7 @@ package object analysis {
   val caseSensitiveResolution = (a: String, b: String) => a == b
 
   implicit class AnalysisErrorAt(t: TreeNode[_]) {
+
     /** Fails the analysis at the point where a specific tree node was parsed. */
     def failAnalysis(msg: String): Nothing = {
       throw new AnalysisException(msg, t.origin.line, t.origin.startPosition)

@@ -41,13 +41,12 @@ import org.apache.spark.sql.hive.HiveShim.{ShimFileSinkDesc => FileSinkDesc}
 import org.apache.spark.SparkException
 import org.apache.spark.util.SerializableJobConf
 
-
-case class InsertIntoHiveTable(
-    table: MetastoreRelation,
-    partition: Map[String, Option[String]],
-    child: SparkPlan,
-    overwrite: Boolean,
-    ifNotExists: Boolean) extends UnaryExecNode {
+case class InsertIntoHiveTable(table: MetastoreRelation,
+                               partition: Map[String, Option[String]],
+                               child: SparkPlan,
+                               overwrite: Boolean,
+                               ifNotExists: Boolean)
+    extends UnaryExecNode {
 
   @transient private val sessionState = sqlContext.sessionState.asInstanceOf[HiveSessionState]
   @transient private val client = sessionState.metadataHive
@@ -73,8 +72,7 @@ case class InsertIntoHiveTable(
       } else {
         inputPathName.substring(0, inputPathName.indexOf(stagingDir) + stagingDir.length)
       }
-    val dir: Path =
-      fs.makeQualified(
+    val dir: Path = fs.makeQualified(
         new Path(stagingPathName + "_" + executionId + "-" + TaskRunner.getTaskRunnerID))
     logDebug("Created staging dir = " + dir + " for path = " + inputPath)
     try {
@@ -82,12 +80,10 @@ case class InsertIntoHiveTable(
         throw new IllegalStateException("Cannot create staging directory  '" + dir.toString + "'")
       }
       fs.deleteOnExit(dir)
-    }
-    catch {
+    } catch {
       case e: IOException =>
         throw new RuntimeException(
-          "Cannot create staging directory '" + dir.toString + "': " + e.getMessage, e)
-
+            "Cannot create staging directory '" + dir.toString + "': " + e.getMessage, e)
     }
     return dir
   }
@@ -109,12 +105,11 @@ case class InsertIntoHiveTable(
     new Path(getStagingDir(path, hadoopConf), "-ext-10000") // Hive uses 10000
   }
 
-  private def saveAsHiveFile(
-      rdd: RDD[InternalRow],
-      valueClass: Class[_],
-      fileSinkConf: FileSinkDesc,
-      conf: SerializableJobConf,
-      writerContainer: SparkHiveWriterContainer): Unit = {
+  private def saveAsHiveFile(rdd: RDD[InternalRow],
+                             valueClass: Class[_],
+                             fileSinkConf: FileSinkDesc,
+                             conf: SerializableJobConf,
+                             writerContainer: SparkHiveWriterContainer): Unit = {
     assert(valueClass != null, "Output value class not set")
     conf.value.setOutputValueClass(valueClass)
 
@@ -123,8 +118,8 @@ case class InsertIntoHiveTable(
     conf.value.set("mapred.output.format.class", outputFileFormatClassName)
 
     FileOutputFormat.setOutputPath(
-      conf.value,
-      SparkHiveWriterContainer.createPathFromString(fileSinkConf.getDirName, conf.value))
+        conf.value,
+        SparkHiveWriterContainer.createPathFromString(fileSinkConf.getDirName, conf.value))
     log.debug("Saving as hadoop file of type " + valueClass.getSimpleName)
     writerContainer.driverSideSetup()
     sqlContext.sparkContext.runJob(rdd, writerContainer.writeToFile _)
@@ -173,7 +168,7 @@ case class InsertIntoHiveTable(
     // By this time, the partition map must match the table's partition columns
     if (partitionColumnNames.toSet != partition.keySet) {
       throw new SparkException(
-        s"""Requested partitioning does not match the ${table.tableName} table:
+          s"""Requested partitioning does not match the ${table.tableName} table:
            |Requested partitions: ${partition.keys.mkString(",")}
            |Table partitions: ${table.partitionKeys.map(_.name).mkString(",")}""".stripMargin)
     }
@@ -186,10 +181,9 @@ case class InsertIntoHiveTable(
       }
 
       // Report error if dynamic partition strict mode is on but no static partition is found
-      if (numStaticPartitions == 0 &&
-          sessionState.conf.getConfString(
-            "hive.exec.dynamic.partition.mode", "strict").equalsIgnoreCase("strict"))
-      {
+      if (numStaticPartitions == 0 && sessionState.conf
+            .getConfString("hive.exec.dynamic.partition.mode", "strict")
+            .equalsIgnoreCase("strict")) {
         throw new SparkException(ErrorMsg.DYNAMIC_PARTITION_STRICT_MODE.getMsg)
       }
 
@@ -210,27 +204,23 @@ case class InsertIntoHiveTable(
     if (speculationEnabled && outputCommitterClass.contains("Direct")) {
       val warningMessage =
         s"$outputCommitterClass may be an output committer that writes data directly to " +
-          "the final location. Because speculation is enabled, this output committer may " +
-          "cause data loss (see the case in SPARK-10063). If possible, please use a output " +
-          "committer that does not have this behavior (e.g. FileOutputCommitter)."
+        "the final location. Because speculation is enabled, this output committer may " +
+        "cause data loss (see the case in SPARK-10063). If possible, please use a output " +
+        "committer that does not have this behavior (e.g. FileOutputCommitter)."
       logWarning(warningMessage)
     }
 
-    val writerContainer = if (numDynamicPartitions > 0) {
-      val dynamicPartColNames = partitionColumnNames.takeRight(numDynamicPartitions)
-      new SparkHiveDynamicPartitionWriterContainer(
-        jobConf,
-        fileSinkConf,
-        dynamicPartColNames,
-        child.output,
-        table)
-    } else {
-      new SparkHiveWriterContainer(
-        jobConf,
-        fileSinkConf,
-        child.output,
-        table)
-    }
+    val writerContainer =
+      if (numDynamicPartitions > 0) {
+        val dynamicPartColNames = partitionColumnNames.takeRight(numDynamicPartitions)
+        new SparkHiveDynamicPartitionWriterContainer(jobConf,
+                                                     fileSinkConf,
+                                                     dynamicPartColNames,
+                                                     child.output,
+                                                     table)
+      } else {
+        new SparkHiveWriterContainer(jobConf, fileSinkConf, child.output, table)
+      }
 
     @transient val outputClass = writerContainer.newSerializer(table.tableDesc).getSerializedClass
     saveAsHiveFile(child.execute(), outputClass, fileSinkConf, jobConfSer, writerContainer)
@@ -257,42 +247,37 @@ case class InsertIntoHiveTable(
       val isSkewedStoreAsSubdir = false
       if (numDynamicPartitions > 0) {
         client.synchronized {
-          client.loadDynamicPartitions(
-            outputPath.toString,
-            qualifiedTableName,
-            orderedPartitionSpec,
-            overwrite,
-            numDynamicPartitions,
-            holdDDLTime,
-            isSkewedStoreAsSubdir)
+          client.loadDynamicPartitions(outputPath.toString,
+                                       qualifiedTableName,
+                                       orderedPartitionSpec,
+                                       overwrite,
+                                       numDynamicPartitions,
+                                       holdDDLTime,
+                                       isSkewedStoreAsSubdir)
         }
       } else {
         // scalastyle:off
         // ifNotExists is only valid with static partition, refer to
         // https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DML#LanguageManualDML-InsertingdataintoHiveTablesfromqueries
         // scalastyle:on
-        val oldPart =
-          client.getPartitionOption(
-            client.getTable(table.databaseName, table.tableName),
-            partitionSpec)
+        val oldPart = client.getPartitionOption(
+            client.getTable(table.databaseName, table.tableName), partitionSpec)
 
         if (oldPart.isEmpty || !ifNotExists) {
-            client.loadPartition(
-              outputPath.toString,
-              qualifiedTableName,
-              orderedPartitionSpec,
-              overwrite,
-              holdDDLTime,
-              inheritTableSpecs,
-              isSkewedStoreAsSubdir)
+          client.loadPartition(outputPath.toString,
+                               qualifiedTableName,
+                               orderedPartitionSpec,
+                               overwrite,
+                               holdDDLTime,
+                               inheritTableSpecs,
+                               isSkewedStoreAsSubdir)
         }
       }
     } else {
-      client.loadTable(
-        outputPath.toString, // TODO: URI
-        qualifiedTableName,
-        overwrite,
-        holdDDLTime)
+      client.loadTable(outputPath.toString, // TODO: URI
+                       qualifiedTableName,
+                       overwrite,
+                       holdDDLTime)
     }
 
     // Invalidate the cache.

@@ -27,30 +27,31 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.CalendarInterval
 
 case class TimeWindow(
-    timeColumn: Expression,
-    windowDuration: Long,
-    slideDuration: Long,
-    startTime: Long) extends UnaryExpression
-  with ImplicitCastInputTypes
-  with Unevaluable
-  with NonSQLExpression {
+    timeColumn: Expression, windowDuration: Long, slideDuration: Long, startTime: Long)
+    extends UnaryExpression
+    with ImplicitCastInputTypes
+    with Unevaluable
+    with NonSQLExpression {
 
   //////////////////////////
   // SQL Constructors
   //////////////////////////
 
-  def this(
-      timeColumn: Expression,
-      windowDuration: Expression,
-      slideDuration: Expression,
-      startTime: Expression) = {
-    this(timeColumn, TimeWindow.parseExpression(windowDuration),
-      TimeWindow.parseExpression(windowDuration), TimeWindow.parseExpression(startTime))
+  def this(timeColumn: Expression,
+           windowDuration: Expression,
+           slideDuration: Expression,
+           startTime: Expression) = {
+    this(timeColumn,
+         TimeWindow.parseExpression(windowDuration),
+         TimeWindow.parseExpression(windowDuration),
+         TimeWindow.parseExpression(startTime))
   }
 
   def this(timeColumn: Expression, windowDuration: Expression, slideDuration: Expression) = {
-    this(timeColumn, TimeWindow.parseExpression(windowDuration),
-      TimeWindow.parseExpression(windowDuration), 0)
+    this(timeColumn,
+         TimeWindow.parseExpression(windowDuration),
+         TimeWindow.parseExpression(windowDuration),
+         0)
   }
 
   def this(timeColumn: Expression, windowDuration: Expression) = {
@@ -59,9 +60,10 @@ case class TimeWindow(
 
   override def child: Expression = timeColumn
   override def inputTypes: Seq[AbstractDataType] = Seq(TimestampType)
-  override def dataType: DataType = new StructType()
-    .add(StructField("start", TimestampType))
-    .add(StructField("end", TimestampType))
+  override def dataType: DataType =
+    new StructType()
+      .add(StructField("start", TimestampType))
+      .add(StructField("end", TimestampType))
 
   // This expression is replaced in the analyzer.
   override lazy val resolved = false
@@ -83,12 +85,14 @@ case class TimeWindow(
         return TypeCheckFailure(s"The start time ($startTime) must be greater than or equal to 0.")
       }
       if (slideDuration > windowDuration) {
-        return TypeCheckFailure(s"The slide duration ($slideDuration) must be less than or equal" +
-          s" to the windowDuration ($windowDuration).")
+        return TypeCheckFailure(
+            s"The slide duration ($slideDuration) must be less than or equal" +
+            s" to the windowDuration ($windowDuration).")
       }
       if (startTime >= slideDuration) {
-        return TypeCheckFailure(s"The start time ($startTime) must be less than the " +
-          s"slideDuration ($slideDuration).")
+        return TypeCheckFailure(
+            s"The start time ($startTime) must be less than the " +
+            s"slideDuration ($slideDuration).")
       }
     }
     dataTypeCheck
@@ -96,6 +100,7 @@ case class TimeWindow(
 }
 
 object TimeWindow {
+
   /**
    * Parses the interval string for a valid time duration. CalendarInterval expects interval
    * strings to start with the string `interval`. For usability, we prepend `interval` to the string
@@ -108,21 +113,22 @@ object TimeWindow {
   private def getIntervalInMicroSeconds(interval: String): Long = {
     if (StringUtils.isBlank(interval)) {
       throw new IllegalArgumentException(
-        "The window duration, slide duration and start time cannot be null or blank.")
+          "The window duration, slide duration and start time cannot be null or blank.")
     }
-    val intervalString = if (interval.startsWith("interval")) {
-      interval
-    } else {
-      "interval " + interval
-    }
+    val intervalString =
+      if (interval.startsWith("interval")) {
+        interval
+      } else {
+        "interval " + interval
+      }
     val cal = CalendarInterval.fromString(intervalString)
     if (cal == null) {
       throw new IllegalArgumentException(
-        s"The provided interval ($interval) did not correspond to a valid interval string.")
+          s"The provided interval ($interval) did not correspond to a valid interval string.")
     }
     if (cal.months > 0) {
       throw new IllegalArgumentException(
-        s"Intervals greater than a month is not supported ($interval).")
+          s"Intervals greater than a month is not supported ($interval).")
     }
     cal.microseconds
   }
@@ -135,19 +141,20 @@ object TimeWindow {
     case NonNullLiteral(s, StringType) => getIntervalInMicroSeconds(s.toString)
     case IntegerLiteral(i) => i.toLong
     case NonNullLiteral(l, LongType) => l.toString.toLong
-    case _ => throw new AnalysisException("The duration and time inputs to window must be " +
-      "an integer, long or string literal.")
+    case _ =>
+      throw new AnalysisException(
+          "The duration and time inputs to window must be " +
+          "an integer, long or string literal.")
   }
 
-  def apply(
-      timeColumn: Expression,
-      windowDuration: String,
-      slideDuration: String,
-      startTime: String): TimeWindow = {
+  def apply(timeColumn: Expression,
+            windowDuration: String,
+            slideDuration: String,
+            startTime: String): TimeWindow = {
     TimeWindow(timeColumn,
-      getIntervalInMicroSeconds(windowDuration),
-      getIntervalInMicroSeconds(slideDuration),
-      getIntervalInMicroSeconds(startTime))
+               getIntervalInMicroSeconds(windowDuration),
+               getIntervalInMicroSeconds(slideDuration),
+               getIntervalInMicroSeconds(startTime))
   }
 }
 
@@ -160,8 +167,7 @@ case class PreciseTimestamp(child: Expression) extends UnaryExpression with Expe
   override def dataType: DataType = LongType
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val eval = child.genCode(ctx)
-    ev.copy(code = eval.code +
-      s"""boolean ${ev.isNull} = ${eval.isNull};
+    ev.copy(code = eval.code + s"""boolean ${ev.isNull} = ${eval.isNull};
          |${ctx.javaType(dataType)} ${ev.value} = ${eval.value};
        """.stripMargin)
   }

@@ -27,7 +27,7 @@ import org.apache.spark.util.StatCounter
  * a variance for the result and compute a confidence interval.
  */
 private[spark] class SumEvaluator(totalOutputs: Int, confidence: Double)
-  extends ApproximateEvaluator[StatCounter, BoundedDouble] {
+    extends ApproximateEvaluator[StatCounter, BoundedDouble] {
 
   // modified in merge
   var outputsMerged = 0
@@ -54,21 +54,24 @@ private[spark] class SumEvaluator(totalOutputs: Int, confidence: Double)
       // branch at this point because counter.count == 1 implies counter.sampleVariance == Nan
       // and we don't want to ever return a bound of NaN
       if (meanVar.isNaN || counter.count == 1) {
-        new BoundedDouble(sumEstimate, confidence, Double.NegativeInfinity, Double.PositiveInfinity)
+        new BoundedDouble(
+            sumEstimate, confidence, Double.NegativeInfinity, Double.PositiveInfinity)
       } else {
         val countVar = (counter.count + 1) * (1 - p) / (p * p)
-        val sumVar = (meanEstimate * meanEstimate * countVar) +
-          (countEstimate * countEstimate * meanVar) +
+        val sumVar =
+          (meanEstimate * meanEstimate * countVar) + (countEstimate * countEstimate * meanVar) +
           (meanVar * countVar)
         val sumStdev = math.sqrt(sumVar)
-        val confFactor = if (counter.count > 100) {
-          new NormalDistribution().inverseCumulativeProbability(1 - (1 - confidence) / 2)
-        } else {
-          // note that if this goes to 0, TDistribution will throw an exception.
-          // Hence special casing 1 above.
-          val degreesOfFreedom = (counter.count - 1).toInt
-          new TDistribution(degreesOfFreedom).inverseCumulativeProbability(1 - (1 - confidence) / 2)
-        }
+        val confFactor =
+          if (counter.count > 100) {
+            new NormalDistribution().inverseCumulativeProbability(1 - (1 - confidence) / 2)
+          } else {
+            // note that if this goes to 0, TDistribution will throw an exception.
+            // Hence special casing 1 above.
+            val degreesOfFreedom = (counter.count - 1).toInt
+            new TDistribution(degreesOfFreedom)
+              .inverseCumulativeProbability(1 - (1 - confidence) / 2)
+          }
 
         val low = sumEstimate - confFactor * sumStdev
         val high = sumEstimate + confFactor * sumStdev

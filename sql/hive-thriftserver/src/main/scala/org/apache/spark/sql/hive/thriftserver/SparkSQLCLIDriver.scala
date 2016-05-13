@@ -32,8 +32,7 @@ import org.apache.hadoop.hive.common.{HiveInterruptCallback, HiveInterruptUtils}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.Driver
 import org.apache.hadoop.hive.ql.exec.Utilities
-import org.apache.hadoop.hive.ql.processors.{AddResourceProcessor, CommandProcessor,
-  CommandProcessorFactory, SetProcessor}
+import org.apache.hadoop.hive.ql.processors.{AddResourceProcessor, CommandProcessor, CommandProcessorFactory, SetProcessor}
 import org.apache.hadoop.hive.ql.session.SessionState
 import org.apache.thrift.transport.TSocket
 
@@ -115,7 +114,9 @@ private[hive] object SparkSQLCLIDriver extends Logging {
     SessionState.start(sessionState)
 
     // Clean up after we exit
-    ShutdownHookManager.addShutdownHook { () => SparkSQLEnv.stop() }
+    ShutdownHookManager.addShutdownHook { () =>
+      SparkSQLEnv.stop()
+    }
 
     val remoteMode = isRemoteMode(sessionState)
     // "-h" option has been passed, so connect to Hive thrift server.
@@ -150,8 +151,7 @@ private[hive] object SparkSQLCLIDriver extends Logging {
     }
 
     if (sessionState.database != null) {
-      SparkSQLEnv.sqlContext.sessionState.catalog.setCurrentDatabase(
-        s"${sessionState.database}")
+      SparkSQLEnv.sqlContext.sessionState.catalog.setCurrentDatabase(s"${sessionState.database}")
     }
 
     // Execute -i init files (always in silent mode)
@@ -185,12 +185,12 @@ private[hive] object SparkSQLCLIDriver extends Logging {
         reader.setHistory(new FileHistory(new File(historyFile)))
       } else {
         logWarning("WARNING: Directory for Hive history file: " + historyDirectory +
-                           " does not exist.   History will not be available during this session.")
+            " does not exist.   History will not be available during this session.")
       }
     } catch {
       case e: Exception =>
         logWarning("WARNING: Encountered an error while trying to initialize Hive's " +
-                           "history file.  History will not be available during this session.")
+            "history file.  History will not be available during this session.")
         logWarning(e.getMessage)
     }
 
@@ -209,22 +209,25 @@ private[hive] object SparkSQLCLIDriver extends Logging {
     }
 
     // TODO: missing
-/*
+    /*
     val clientTransportTSocketField = classOf[CliSessionState].getDeclaredField("transport")
     clientTransportTSocketField.setAccessible(true)
 
     transport = clientTransportTSocketField.get(sessionState).asInstanceOf[TSocket]
-*/
+     */
     transport = null
 
     var ret = 0
     var prefix = ""
-    val currentDB = ReflectionUtils.invokeStatic(classOf[CliDriver], "getFormattedDb",
-      classOf[HiveConf] -> conf, classOf[CliSessionState] -> sessionState)
+    val currentDB = ReflectionUtils.invokeStatic(classOf[CliDriver],
+                                                 "getFormattedDb",
+                                                 classOf[HiveConf] -> conf,
+                                                 classOf[CliSessionState] -> sessionState)
 
     def promptWithCurrentDB: String = s"$prompt$currentDB"
-    def continuedPromptWithDBSpaces: String = continuedPrompt + ReflectionUtils.invokeStatic(
-      classOf[CliDriver], "spacesForString", classOf[String] -> currentDB)
+    def continuedPromptWithDBSpaces: String =
+      continuedPrompt + ReflectionUtils.invokeStatic(
+          classOf[CliDriver], "spacesForString", classOf[String] -> currentDB)
 
     var currentPrompt = promptWithCurrentDB
     var line = reader.readLine(currentPrompt + "> ")
@@ -253,12 +256,10 @@ private[hive] object SparkSQLCLIDriver extends Logging {
     System.exit(ret)
   }
 
-
   def isRemoteMode(state: CliSessionState): Boolean = {
     //    sessionState.isRemoteMode
     state.isHiveServerQuery
   }
-
 }
 
 private[hive] class SparkSQLCLIDriver extends CliDriver with Logging {
@@ -289,15 +290,12 @@ private[hive] class SparkSQLCLIDriver extends CliDriver with Logging {
     val cmd_lower = cmd_trimmed.toLowerCase(Locale.ENGLISH)
     val tokens: Array[String] = cmd_trimmed.split("\\s+")
     val cmd_1: String = cmd_trimmed.substring(tokens(0).length()).trim()
-    if (cmd_lower.equals("quit") ||
-      cmd_lower.equals("exit")) {
+    if (cmd_lower.equals("quit") || cmd_lower.equals("exit")) {
       sessionState.close()
       System.exit(0)
     }
-    if (tokens(0).toLowerCase(Locale.ENGLISH).equals("source") ||
-      cmd_trimmed.startsWith("!") ||
-      tokens(0).toLowerCase.equals("list") ||
-      isRemoteMode) {
+    if (tokens(0).toLowerCase(Locale.ENGLISH).equals("source") || cmd_trimmed.startsWith("!") ||
+        tokens(0).toLowerCase.equals("list") || isRemoteMode) {
       val start = System.currentTimeMillis()
       super.processCmd(cmd)
       val end = System.currentTimeMillis()
@@ -312,7 +310,7 @@ private[hive] class SparkSQLCLIDriver extends CliDriver with Logging {
       if (proc != null) {
         // scalastyle:off println
         if (proc.isInstanceOf[Driver] || proc.isInstanceOf[SetProcessor] ||
-          proc.isInstanceOf[AddResourceProcessor]) {
+            proc.isInstanceOf[AddResourceProcessor]) {
           val driver = new SparkSQLDriver
 
           driver.init()
@@ -330,7 +328,7 @@ private[hive] class SparkSQLCLIDriver extends CliDriver with Logging {
           if (ret != 0) {
             // For analysis exception, only the error is printed out to the console.
             rc.getException() match {
-              case e : AnalysisException =>
+              case e: AnalysisException =>
                 err.println(s"""Error in query: ${e.getMessage}""")
               case _ => err.println(rc.getErrorMessage())
             }
@@ -358,8 +356,7 @@ private[hive] class SparkSQLCLIDriver extends CliDriver with Logging {
             }
           } catch {
             case e: IOException =>
-              console.printError(
-                s"""Failed with exception ${e.getClass.getName}: ${e.getMessage}
+              console.printError(s"""Failed with exception ${e.getClass.getName}: ${e.getMessage}
                    |${org.apache.hadoop.util.StringUtils.stringifyException(e)}
                  """.stripMargin)
               ret = 1
@@ -389,4 +386,3 @@ private[hive] class SparkSQLCLIDriver extends CliDriver with Logging {
     }
   }
 }
-

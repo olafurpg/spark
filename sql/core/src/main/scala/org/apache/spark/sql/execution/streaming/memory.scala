@@ -34,7 +34,7 @@ object MemoryStream {
   protected val currentBlockId = new AtomicInteger(0)
   protected val memoryStreamId = new AtomicInteger(0)
 
-  def apply[A : Encoder](implicit sqlContext: SQLContext): MemoryStream[A] =
+  def apply[A: Encoder](implicit sqlContext: SQLContext): MemoryStream[A] =
     new MemoryStream[A](memoryStreamId.getAndIncrement(), sqlContext)
 }
 
@@ -43,8 +43,7 @@ object MemoryStream {
  * is primarily intended for use in unit tests as it can only replay data when the object is still
  * available.
  */
-case class MemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
-    extends Source with Logging {
+case class MemoryStream[A: Encoder](id: Int, sqlContext: SQLContext) extends Source with Logging {
   protected val encoder = encoderFor[A]
   protected val logicalPlan = StreamingExecutionRelation(this)
   protected val output = logicalPlan.output
@@ -100,13 +99,10 @@ case class MemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
     val newBlocks = synchronized { batches.slice(startOrdinal, endOrdinal) }
 
     logDebug(
-      s"MemoryBatch [$startOrdinal, $endOrdinal]: ${newBlocks.flatMap(_.collect()).mkString(", ")}")
-    newBlocks
-      .map(_.toDF())
-      .reduceOption(_ union _)
-      .getOrElse {
-        sys.error("No data selected!")
-      }
+        s"MemoryBatch [$startOrdinal, $endOrdinal]: ${newBlocks.flatMap(_.collect()).mkString(", ")}")
+    newBlocks.map(_.toDF()).reduceOption(_ union _).getOrElse {
+      sys.error("No data selected!")
+    }
   }
 }
 
@@ -115,6 +111,7 @@ case class MemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
  * tests and does not provide durability.
  */
 class MemorySink(val schema: StructType) extends Sink with Logging {
+
   /** An order list of batches that have been written to this [[Sink]]. */
   @GuardedBy("this")
   private val batches = new ArrayBuffer[Array[Row]]()
@@ -127,11 +124,12 @@ class MemorySink(val schema: StructType) extends Sink with Logging {
   def lastBatch: Seq[Row] = synchronized { batches.last }
 
   def toDebugString: String = synchronized {
-    batches.zipWithIndex.map { case (b, i) =>
-      val dataStr = try b.mkString(" ") catch {
-        case NonFatal(e) => "[Error converting to string]"
-      }
-      s"$i: $dataStr"
+    batches.zipWithIndex.map {
+      case (b, i) =>
+        val dataStr = try b.mkString(" ") catch {
+          case NonFatal(e) => "[Error converting to string]"
+        }
+        s"$i: $dataStr"
     }.mkString("\n")
   }
 

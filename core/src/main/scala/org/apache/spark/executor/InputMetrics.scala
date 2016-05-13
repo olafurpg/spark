@@ -20,7 +20,6 @@ package org.apache.spark.executor
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.util.LongAccumulator
 
-
 /**
  * :: DeveloperApi ::
  * Method by which input data was read. Network means that the data was read over the network
@@ -33,13 +32,12 @@ object DataReadMethod extends Enumeration with Serializable {
   val Memory, Disk, Hadoop, Network = Value
 }
 
-
 /**
  * :: DeveloperApi ::
  * A collection of accumulators that represents metrics about reading data from external systems.
  */
 @DeveloperApi
-class InputMetrics private[spark] () extends Serializable {
+class InputMetrics private[spark]() extends Serializable {
   private[executor] val _bytesRead = new LongAccumulator
   private[executor] val _recordsRead = new LongAccumulator
 

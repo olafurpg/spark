@@ -301,7 +301,7 @@ object DateTimeUtils {
           } else {
             return None
           }
-          if (i == 6  && b != '.') {
+          if (i == 6 && b != '.') {
             i += 1
           }
         } else {
@@ -333,8 +333,9 @@ object DateTimeUtils {
       digitsMilli += 1
     }
 
-    if (!justTime && (segments(0) < 0 || segments(0) > 9999 || segments(1) < 1 ||
-        segments(1) > 12 || segments(2) < 1 || segments(2) > 31)) {
+    if (!justTime &&
+        (segments(0) < 0 || segments(0) > 9999 || segments(1) < 1 || segments(1) > 12 ||
+            segments(2) < 1 || segments(2) > 31)) {
       return None
     }
 
@@ -349,12 +350,13 @@ object DateTimeUtils {
       return None
     }
 
-    val c = if (timeZone.isEmpty) {
-      Calendar.getInstance()
-    } else {
-      Calendar.getInstance(
-        TimeZone.getTimeZone(f"GMT${timeZone.get.toChar}${segments(7)}%02d:${segments(8)}%02d"))
-    }
+    val c =
+      if (timeZone.isEmpty) {
+        Calendar.getInstance()
+      } else {
+        Calendar.getInstance(TimeZone.getTimeZone(
+                f"GMT${timeZone.get.toChar}${segments(7)}%02d:${segments(8)}%02d"))
+      }
     c.set(Calendar.MILLISECOND, 0)
 
     if (justTime) {
@@ -468,7 +470,7 @@ object DateTimeUtils {
    * The second year of a 400 year period (year 1) starts on day 365.
    */
   private[this] def yearBoundary(year: Int): Int = {
-    year * 365 + ((year / 4 ) - (year / 100) + (year / 400))
+    year * 365 + ((year / 4) - (year / 100) + (year / 400))
   }
 
   /**
@@ -690,8 +692,8 @@ object DateTimeUtils {
    * The year is expressed in years since year zero (17999 BC), starting from 0.
    */
   private def getDateFromYear(absoluteYear: Int): SQLDate = {
-    val absoluteDays = (absoluteYear * 365 + absoluteYear / 400 - absoluteYear / 100
-      + absoluteYear / 4)
+    val absoluteDays =
+      (absoluteYear * 365 + absoluteYear / 400 - absoluteYear / 100 + absoluteYear / 4)
     absoluteDays - toYearZero
   }
 
@@ -709,12 +711,13 @@ object DateTimeUtils {
     val leapDay = if (currentMonthInYear == 1 && isLeapYear(currentYear + YearZero)) 1 else 0
     val lastDayOfMonth = monthDays(currentMonthInYear) + leapDay
 
-    val currentDayInMonth = if (daysToMonthEnd == 0 || dayOfMonth >= lastDayOfMonth) {
-      // last day of the month
-      lastDayOfMonth
-    } else {
-      dayOfMonth
-    }
+    val currentDayInMonth =
+      if (daysToMonthEnd == 0 || dayOfMonth >= lastDayOfMonth) {
+        // last day of the month
+        lastDayOfMonth
+      } else {
+        dayOfMonth
+      }
     firstDayOfMonth(nonNegativeMonth) + currentDayInMonth - 1
   }
 

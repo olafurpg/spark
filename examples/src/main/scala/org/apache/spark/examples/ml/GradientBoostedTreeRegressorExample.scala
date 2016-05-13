@@ -28,10 +28,7 @@ import org.apache.spark.sql.SparkSession
 
 object GradientBoostedTreeRegressorExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("GradientBoostedTreeRegressorExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("GradientBoostedTreeRegressorExample").getOrCreate()
 
     // $example on$
     // Load and parse the data file, converting it to a DataFrame.
@@ -49,14 +46,11 @@ object GradientBoostedTreeRegressorExample {
     val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
 
     // Train a GBT model.
-    val gbt = new GBTRegressor()
-      .setLabelCol("label")
-      .setFeaturesCol("indexedFeatures")
-      .setMaxIter(10)
+    val gbt =
+      new GBTRegressor().setLabelCol("label").setFeaturesCol("indexedFeatures").setMaxIter(10)
 
     // Chain indexer and GBT in a Pipeline.
-    val pipeline = new Pipeline()
-      .setStages(Array(featureIndexer, gbt))
+    val pipeline = new Pipeline().setStages(Array(featureIndexer, gbt))
 
     // Train model. This also runs the indexer.
     val model = pipeline.fit(trainingData)

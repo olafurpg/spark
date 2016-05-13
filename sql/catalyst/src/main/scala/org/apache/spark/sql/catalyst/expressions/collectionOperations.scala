@@ -26,9 +26,8 @@ import org.apache.spark.sql.types._
 /**
  * Given an array or map, returns its size.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(expr) - Returns the size of an array or a map.",
-  extended = " > SELECT _FUNC_(array('b', 'd', 'c', 'a'));\n 4")
+@ExpressionDescription(usage = "_FUNC_(expr) - Returns the size of an array or a map.",
+                       extended = " > SELECT _FUNC_(array('b', 'd', 'c', 'a'));\n 4")
 case class Size(child: Expression) extends UnaryExpression with ExpectsInputTypes {
   override def dataType: DataType = IntegerType
   override def inputTypes: Seq[AbstractDataType] = Seq(TypeCollection(ArrayType, MapType))
@@ -49,11 +48,13 @@ case class Size(child: Expression) extends UnaryExpression with ExpectsInputType
  */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
-  usage = "_FUNC_(array(obj1, obj2, ...), ascendingOrder) - Sorts the input array in ascending order according to the natural ordering of the array elements.",
-  extended = " > SELECT _FUNC_(array('b', 'd', 'c', 'a'), true);\n 'a', 'b', 'c', 'd'")
+    usage = "_FUNC_(array(obj1, obj2, ...), ascendingOrder) - Sorts the input array in ascending order according to the natural ordering of the array elements.",
+    extended = " > SELECT _FUNC_(array('b', 'd', 'c', 'a'), true);\n 'a', 'b', 'c', 'd'")
 // scalastyle:on line.size.limit
 case class SortArray(base: Expression, ascendingOrder: Expression)
-  extends BinaryExpression with ExpectsInputTypes with CodegenFallback {
+    extends BinaryExpression
+    with ExpectsInputTypes
+    with CodegenFallback {
 
   def this(e: Expression) = this(e, Literal(true))
 
@@ -67,7 +68,7 @@ case class SortArray(base: Expression, ascendingOrder: Expression)
       TypeCheckResult.TypeCheckSuccess
     case ArrayType(dt, _) =>
       TypeCheckResult.TypeCheckFailure(
-        s"$prettyName does not support sorting array of type ${dt.simpleString}")
+          s"$prettyName does not support sorting array of type ${dt.simpleString}")
     case _ =>
       TypeCheckResult.TypeCheckFailure(s"$prettyName only supports array input.")
   }
@@ -75,9 +76,9 @@ case class SortArray(base: Expression, ascendingOrder: Expression)
   @transient
   private lazy val lt: Comparator[Any] = {
     val ordering = base.dataType match {
-      case _ @ ArrayType(n: AtomicType, _) => n.ordering.asInstanceOf[Ordering[Any]]
-      case _ @ ArrayType(a: ArrayType, _) => a.interpretedOrdering.asInstanceOf[Ordering[Any]]
-      case _ @ ArrayType(s: StructType, _) => s.interpretedOrdering.asInstanceOf[Ordering[Any]]
+      case _ @ArrayType(n: AtomicType, _) => n.ordering.asInstanceOf[Ordering[Any]]
+      case _ @ArrayType(a: ArrayType, _) => a.interpretedOrdering.asInstanceOf[Ordering[Any]]
+      case _ @ArrayType(s: StructType, _) => s.interpretedOrdering.asInstanceOf[Ordering[Any]]
     }
 
     new Comparator[Any]() {
@@ -98,9 +99,9 @@ case class SortArray(base: Expression, ascendingOrder: Expression)
   @transient
   private lazy val gt: Comparator[Any] = {
     val ordering = base.dataType match {
-      case _ @ ArrayType(n: AtomicType, _) => n.ordering.asInstanceOf[Ordering[Any]]
-      case _ @ ArrayType(a: ArrayType, _) => a.interpretedOrdering.asInstanceOf[Ordering[Any]]
-      case _ @ ArrayType(s: StructType, _) => s.interpretedOrdering.asInstanceOf[Ordering[Any]]
+      case _ @ArrayType(n: AtomicType, _) => n.ordering.asInstanceOf[Ordering[Any]]
+      case _ @ArrayType(a: ArrayType, _) => a.interpretedOrdering.asInstanceOf[Ordering[Any]]
+      case _ @ArrayType(s: StructType, _) => s.interpretedOrdering.asInstanceOf[Ordering[Any]]
     }
 
     new Comparator[Any]() {
@@ -134,28 +135,30 @@ case class SortArray(base: Expression, ascendingOrder: Expression)
  * Checks if the array (left) has the element (right)
  */
 @ExpressionDescription(
-  usage = "_FUNC_(array, value) - Returns TRUE if the array contains the value.",
-  extended = " > SELECT _FUNC_(array(1, 2, 3), 2);\n true")
+    usage = "_FUNC_(array, value) - Returns TRUE if the array contains the value.",
+    extended = " > SELECT _FUNC_(array(1, 2, 3), 2);\n true")
 case class ArrayContains(left: Expression, right: Expression)
-  extends BinaryExpression with ImplicitCastInputTypes {
+    extends BinaryExpression
+    with ImplicitCastInputTypes {
 
   override def dataType: DataType = BooleanType
 
   override def inputTypes: Seq[AbstractDataType] = right.dataType match {
     case NullType => Seq()
-    case _ => left.dataType match {
-      case n @ ArrayType(element, _) => Seq(n, element)
-      case _ => Seq()
-    }
+    case _ =>
+      left.dataType match {
+        case n @ ArrayType(element, _) => Seq(n, element)
+        case _ => Seq()
+      }
   }
 
   override def checkInputDataTypes(): TypeCheckResult = {
     if (right.dataType == NullType) {
       TypeCheckResult.TypeCheckFailure("Null typed values cannot be used as arguments")
-    } else if (!left.dataType.isInstanceOf[ArrayType]
-      || left.dataType.asInstanceOf[ArrayType].elementType != right.dataType) {
+    } else if (!left.dataType.isInstanceOf[ArrayType] ||
+               left.dataType.asInstanceOf[ArrayType].elementType != right.dataType) {
       TypeCheckResult.TypeCheckFailure(
-        "Arguments must be an array followed by a value of same type as the array members")
+          "Arguments must be an array followed by a value of same type as the array members")
     } else {
       TypeCheckResult.TypeCheckSuccess
     }
@@ -167,13 +170,15 @@ case class ArrayContains(left: Expression, right: Expression)
 
   override def nullSafeEval(arr: Any, value: Any): Any = {
     var hasNull = false
-    arr.asInstanceOf[ArrayData].foreach(right.dataType, (i, v) =>
-      if (v == null) {
-        hasNull = true
-      } else if (v == value) {
-        return true
-      }
-    )
+    arr
+      .asInstanceOf[ArrayData]
+      .foreach(right.dataType,
+               (i, v) =>
+                 if (v == null) {
+                   hasNull = true
+                 } else if (v == value) {
+                   return true
+               })
     if (hasNull) {
       null
     } else {

@@ -26,7 +26,7 @@ import org.apache.commons.math3.distribution.NormalDistribution
  * be best to make this a special case of GroupedCountEvaluator with one group.
  */
 private[spark] class CountEvaluator(totalOutputs: Int, confidence: Double)
-  extends ApproximateEvaluator[Long, BoundedDouble] {
+    extends ApproximateEvaluator[Long, BoundedDouble] {
 
   var outputsMerged = 0
   var sum: Long = 0
@@ -46,8 +46,8 @@ private[spark] class CountEvaluator(totalOutputs: Int, confidence: Double)
       val mean = (sum + 1 - p) / p
       val variance = (sum + 1) * (1 - p) / (p * p)
       val stdev = math.sqrt(variance)
-      val confFactor = new NormalDistribution().
-        inverseCumulativeProbability(1 - (1 - confidence) / 2)
+      val confFactor =
+        new NormalDistribution().inverseCumulativeProbability(1 - (1 - confidence) / 2)
       val low = mean - confFactor * stdev
       val high = mean + confFactor * stdev
       new BoundedDouble(mean, confidence, low, high)

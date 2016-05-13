@@ -43,22 +43,23 @@ private[mllib] object PMMLModelExportFactory {
       case lasso: LassoModel =>
         new GeneralizedLinearPMMLModelExport(lasso, "lasso regression")
       case svm: SVMModel =>
-        new BinaryClassificationPMMLModelExport(
-          svm, "linear SVM", RegressionNormalizationMethodType.NONE,
-          svm.getThreshold.getOrElse(0.0))
+        new BinaryClassificationPMMLModelExport(svm,
+                                                "linear SVM",
+                                                RegressionNormalizationMethodType.NONE,
+                                                svm.getThreshold.getOrElse(0.0))
       case logistic: LogisticRegressionModel =>
         if (logistic.numClasses == 2) {
-          new BinaryClassificationPMMLModelExport(
-            logistic, "logistic regression", RegressionNormalizationMethodType.LOGIT,
-            logistic.getThreshold.getOrElse(0.5))
+          new BinaryClassificationPMMLModelExport(logistic,
+                                                  "logistic regression",
+                                                  RegressionNormalizationMethodType.LOGIT,
+                                                  logistic.getThreshold.getOrElse(0.5))
         } else {
           throw new IllegalArgumentException(
-            "PMML Export not supported for Multinomial Logistic Regression")
+              "PMML Export not supported for Multinomial Logistic Regression")
         }
       case _ =>
         throw new IllegalArgumentException(
-          "PMML Export not supported for model: " + model.getClass.getName)
+            "PMML Export not supported for model: " + model.getClass.getName)
     }
   }
-
 }

@@ -63,10 +63,11 @@ import org.apache.spark.util.random.XORShiftRandom
  * as batches or points.
  */
 @Since("1.2.0")
-class StreamingKMeansModel @Since("1.2.0") (
+class StreamingKMeansModel @Since("1.2.0")(
     @Since("1.2.0") override val clusterCenters: Array[Vector],
     @Since("1.2.0") val clusterWeights: Array[Double])
-  extends KMeansModel(clusterCenters) with Logging {
+    extends KMeansModel(clusterCenters)
+    with Logging {
 
   /**
    * Perform a k-means update on a batch of data.
@@ -84,15 +85,15 @@ class StreamingKMeansModel @Since("1.2.0") (
     }
     val dim = clusterCenters(0).size
 
-    val pointStats: Array[(Int, (Vector, Long))] = closest
-      .aggregateByKey((Vectors.zeros(dim), 0L))(mergeContribs, mergeContribs)
-      .collect()
+    val pointStats: Array[(Int, (Vector, Long))] =
+      closest.aggregateByKey((Vectors.zeros(dim), 0L))(mergeContribs, mergeContribs).collect()
 
     val discount = timeUnit match {
       case StreamingKMeans.BATCHES => decayFactor
       case StreamingKMeans.POINTS =>
-        val numNewPoints = pointStats.view.map { case (_, (_, n)) =>
-          n
+        val numNewPoints = pointStats.view.map {
+          case (_, (_, n)) =>
+            n
         }.sum
         math.pow(decayFactor, numNewPoints)
     }
@@ -101,23 +102,24 @@ class StreamingKMeansModel @Since("1.2.0") (
     BLAS.scal(discount, Vectors.dense(clusterWeights))
 
     // implement update rule
-    pointStats.foreach { case (label, (sum, count)) =>
-      val centroid = clusterCenters(label)
+    pointStats.foreach {
+      case (label, (sum, count)) =>
+        val centroid = clusterCenters(label)
 
-      val updatedWeight = clusterWeights(label) + count
-      val lambda = count / math.max(updatedWeight, 1e-16)
+        val updatedWeight = clusterWeights(label) + count
+        val lambda = count / math.max(updatedWeight, 1e-16)
 
-      clusterWeights(label) = updatedWeight
-      BLAS.scal(1.0 - lambda, centroid)
-      BLAS.axpy(lambda / count, sum, centroid)
+        clusterWeights(label) = updatedWeight
+        BLAS.scal(1.0 - lambda, centroid)
+        BLAS.axpy(lambda / count, sum, centroid)
 
-      // display the updated cluster centers
-      val display = clusterCenters(label).size match {
-        case x if x > 100 => centroid.toArray.take(100).mkString("[", ",", "...")
-        case _ => centroid.toArray.mkString("[", ",", "]")
-      }
+        // display the updated cluster centers
+        val display = clusterCenters(label).size match {
+          case x if x > 100 => centroid.toArray.take(100).mkString("[", ",", "...")
+          case _ => centroid.toArray.mkString("[", ",", "]")
+        }
 
-      logInfo(s"Cluster $label updated with weight $updatedWeight and centroid: $display")
+        logInfo(s"Cluster $label updated with weight $updatedWeight and centroid: $display")
     }
 
     // Check whether the smallest cluster is dying. If so, split the largest cluster.
@@ -163,10 +165,11 @@ class StreamingKMeansModel @Since("1.2.0") (
  * }}}
  */
 @Since("1.2.0")
-class StreamingKMeans @Since("1.2.0") (
-    @Since("1.2.0") var k: Int,
-    @Since("1.2.0") var decayFactor: Double,
-    @Since("1.2.0") var timeUnit: String) extends Logging with Serializable {
+class StreamingKMeans @Since("1.2.0")(@Since("1.2.0") var k: Int,
+                                      @Since("1.2.0") var decayFactor: Double,
+                                      @Since("1.2.0") var timeUnit: String)
+    extends Logging
+    with Serializable {
 
   @Since("1.2.0")
   def this() = this(2, 1.0, StreamingKMeans.BATCHES)
@@ -178,8 +181,7 @@ class StreamingKMeans @Since("1.2.0") (
    */
   @Since("1.2.0")
   def setK(k: Int): this.type = {
-    require(k > 0,
-      s"Number of clusters must be positive but got ${k}")
+    require(k > 0, s"Number of clusters must be positive but got ${k}")
     this.k = k
     this
   }
@@ -189,8 +191,7 @@ class StreamingKMeans @Since("1.2.0") (
    */
   @Since("1.2.0")
   def setDecayFactor(a: Double): this.type = {
-    require(a >= 0,
-      s"Decay factor must be nonnegative but got ${a}")
+    require(a >= 0, s"Decay factor must be nonnegative but got ${a}")
     this.decayFactor = a
     this
   }
@@ -202,13 +203,12 @@ class StreamingKMeans @Since("1.2.0") (
    */
   @Since("1.2.0")
   def setHalfLife(halfLife: Double, timeUnit: String): this.type = {
-    require(halfLife > 0,
-      s"Half life must be positive but got ${halfLife}")
+    require(halfLife > 0, s"Half life must be positive but got ${halfLife}")
     if (timeUnit != StreamingKMeans.BATCHES && timeUnit != StreamingKMeans.POINTS) {
       throw new IllegalArgumentException("Invalid time unit for decay: " + timeUnit)
     }
     this.decayFactor = math.exp(math.log(0.5) / halfLife)
-    logInfo("Setting decay factor to: %g ".format (this.decayFactor))
+    logInfo("Setting decay factor to: %g ".format(this.decayFactor))
     this.timeUnit = timeUnit
     this
   }
@@ -219,11 +219,11 @@ class StreamingKMeans @Since("1.2.0") (
   @Since("1.2.0")
   def setInitialCenters(centers: Array[Vector], weights: Array[Double]): this.type = {
     require(centers.size == weights.size,
-      "Number of initial centers must be equal to number of weights")
-    require(centers.size == k,
-      s"Number of initial centers must be ${k} but got ${centers.size}")
-    require(weights.forall(_ >= 0),
-      s"Weight for each inital center must be nonnegative but got [${weights.mkString(" ")}]")
+            "Number of initial centers must be equal to number of weights")
+    require(centers.size == k, s"Number of initial centers must be ${k} but got ${centers.size}")
+    require(
+        weights.forall(_ >= 0),
+        s"Weight for each inital center must be nonnegative but got [${weights.mkString(" ")}]")
     model = new StreamingKMeansModel(centers, weights)
     this
   }
@@ -237,10 +237,8 @@ class StreamingKMeans @Since("1.2.0") (
    */
   @Since("1.2.0")
   def setRandomCenters(dim: Int, weight: Double, seed: Long = Utils.random.nextLong): this.type = {
-    require(dim > 0,
-      s"Number of dimensions must be positive but got ${dim}")
-    require(weight >= 0,
-      s"Weight for each center must be nonnegative but got ${weight}")
+    require(dim > 0, s"Number of dimensions must be positive but got ${dim}")
+    require(weight >= 0, s"Weight for each center must be nonnegative but got ${weight}")
     val random = new XORShiftRandom(seed)
     val centers = Array.fill(k)(Vectors.dense(Array.fill(dim)(random.nextGaussian())))
     val weights = Array.fill(k)(weight)
@@ -315,18 +313,17 @@ class StreamingKMeans @Since("1.2.0") (
    * Java-friendly version of `predictOnValues`.
    */
   @Since("1.4.0")
-  def predictOnValues[K](
-      data: JavaPairDStream[K, Vector]): JavaPairDStream[K, java.lang.Integer] = {
+  def predictOnValues[K](data: JavaPairDStream[K, Vector]): JavaPairDStream[K, java.lang.Integer] = {
     implicit val tag = fakeClassTag[K]
     JavaPairDStream.fromPairDStream(
-      predictOnValues(data.dstream).asInstanceOf[DStream[(K, java.lang.Integer)]])
+        predictOnValues(data.dstream).asInstanceOf[DStream[(K, java.lang.Integer)]])
   }
 
   /** Check whether cluster centers have been initialized. */
   private[this] def assertInitialized(): Unit = {
     if (model.clusterCenters == null) {
       throw new IllegalStateException(
-        "Initial cluster centers must be set before starting predictions")
+          "Initial cluster centers must be set before starting predictions")
     }
   }
 }

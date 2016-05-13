@@ -21,7 +21,6 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset}
 import org.apache.spark.sql.types.StructType
 
-
 /**
  * Catalog interface for Spark. To access this, use `SparkSession.catalog`.
  */
@@ -127,9 +126,7 @@ abstract class Catalog {
    */
   @Experimental
   def createExternalTable(
-      tableName: String,
-      source: String,
-      options: java.util.Map[String, String]): DataFrame
+      tableName: String, source: String, options: java.util.Map[String, String]): DataFrame
 
   /**
    * :: Experimental ::
@@ -141,9 +138,7 @@ abstract class Catalog {
    */
   @Experimental
   def createExternalTable(
-      tableName: String,
-      source: String,
-      options: Map[String, String]): DataFrame
+      tableName: String, source: String, options: Map[String, String]): DataFrame
 
   /**
    * :: Experimental ::
@@ -153,11 +148,10 @@ abstract class Catalog {
    * @since 2.0.0
    */
   @Experimental
-  def createExternalTable(
-      tableName: String,
-      source: String,
-      schema: StructType,
-      options: java.util.Map[String, String]): DataFrame
+  def createExternalTable(tableName: String,
+                          source: String,
+                          schema: StructType,
+                          options: java.util.Map[String, String]): DataFrame
 
   /**
    * :: Experimental ::
@@ -168,11 +162,10 @@ abstract class Catalog {
    * @since 2.0.0
    */
   @Experimental
-  def createExternalTable(
-      tableName: String,
-      source: String,
-      schema: StructType,
-      options: Map[String, String]): DataFrame
+  def createExternalTable(tableName: String,
+                          source: String,
+                          schema: StructType,
+                          options: Map[String, String]): DataFrame
 
   /**
    * Drops the temporary view with the given view name in the catalog.
@@ -210,5 +203,4 @@ abstract class Catalog {
    * @since 2.0.0
    */
   def clearCache(): Unit
-
 }

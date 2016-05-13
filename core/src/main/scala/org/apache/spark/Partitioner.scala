@@ -39,6 +39,7 @@ abstract class Partitioner extends Serializable {
 }
 
 object Partitioner {
+
   /**
    * Choose a partitioner to use for a cogroup-like operation between a number of RDDs.
    *
@@ -103,11 +104,9 @@ class HashPartitioner(partitions: Int) extends Partitioner {
  * as the `partitions` parameter, in the case where the number of sampled records is less than
  * the value of `partitions`.
  */
-class RangePartitioner[K : Ordering : ClassTag, V](
-    partitions: Int,
-    rdd: RDD[_ <: Product2[K, V]],
-    private var ascending: Boolean = true)
-  extends Partitioner {
+class RangePartitioner[K: Ordering: ClassTag, V](
+    partitions: Int, rdd: RDD[_ <: Product2[K, V]], private var ascending: Boolean = true)
+    extends Partitioner {
 
   // We allow partitions = 0, which happens when sorting an empty RDD under the default settings.
   require(partitions >= 0, s"Number of partitions cannot be negative but found $partitions.")
@@ -132,16 +131,17 @@ class RangePartitioner[K : Ordering : ClassTag, V](
         val fraction = math.min(sampleSize / math.max(numItems, 1L), 1.0)
         val candidates = ArrayBuffer.empty[(K, Float)]
         val imbalancedPartitions = mutable.Set.empty[Int]
-        sketched.foreach { case (idx, n, sample) =>
-          if (fraction * n > sampleSizePerPartition) {
-            imbalancedPartitions += idx
-          } else {
-            // The weight is 1 over the sampling probability.
-            val weight = (n.toDouble / sample.length).toFloat
-            for (key <- sample) {
-              candidates += ((key, weight))
+        sketched.foreach {
+          case (idx, n, sample) =>
+            if (fraction * n > sampleSizePerPartition) {
+              imbalancedPartitions += idx
+            } else {
+              // The weight is 1 over the sampling probability.
+              val weight = (n.toDouble / sample.length).toFloat
+              for (key <- sample) {
+                candidates += ((key, weight))
+              }
             }
-          }
         }
         if (imbalancedPartitions.nonEmpty) {
           // Re-sample imbalanced partitions with the desired sampling probability.
@@ -173,7 +173,7 @@ class RangePartitioner[K : Ordering : ClassTag, V](
       partition = binarySearch(rangeBounds, k)
       // binarySearch either returns the match location or -[insertion point]-1
       if (partition < 0) {
-        partition = -partition-1
+        partition = -partition - 1
       }
       if (partition > rangeBounds.length) {
         partition = rangeBounds.length
@@ -251,15 +251,13 @@ private[spark] object RangePartitioner {
    * @param sampleSizePerPartition max sample size per partition
    * @return (total number of items, an array of (partitionId, number of items, sample))
    */
-  def sketch[K : ClassTag](
-      rdd: RDD[K],
-      sampleSizePerPartition: Int): (Long, Array[(Int, Long, Array[K])]) = {
+  def sketch[K: ClassTag](
+      rdd: RDD[K], sampleSizePerPartition: Int): (Long, Array[(Int, Long, Array[K])]) = {
     val shift = rdd.id
     // val classTagK = classTag[K] // to avoid serializing the entire partitioner object
     val sketched = rdd.mapPartitionsWithIndex { (idx, iter) =>
       val seed = byteswap32(idx ^ (shift << 16))
-      val (sample, n) = SamplingUtils.reservoirSampleAndCount(
-        iter, sampleSizePerPartition, seed)
+      val (sample, n) = SamplingUtils.reservoirSampleAndCount(iter, sampleSizePerPartition, seed)
       Iterator((idx, n, sample))
     }.collect()
     val numItems = sketched.map(_._2).sum
@@ -274,9 +272,8 @@ private[spark] object RangePartitioner {
    * @param partitions number of partitions
    * @return selected bounds
    */
-  def determineBounds[K : Ordering : ClassTag](
-      candidates: ArrayBuffer[(K, Float)],
-      partitions: Int): Array[K] = {
+  def determineBounds[K: Ordering: ClassTag](
+      candidates: ArrayBuffer[(K, Float)], partitions: Int): Array[K] = {
     val ordering = implicitly[Ordering[K]]
     val ordered = candidates.sortBy(_._1)
     val numCandidates = ordered.size

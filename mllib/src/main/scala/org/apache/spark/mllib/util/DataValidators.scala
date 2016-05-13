@@ -52,11 +52,12 @@ object DataValidators extends Logging {
    */
   @Since("1.3.0")
   def multiLabelValidator(k: Int): RDD[LabeledPoint] => Boolean = { data =>
-    val numInvalid = data.filter(x =>
-      x.label - x.label.toInt != 0.0 || x.label < 0 || x.label > k - 1).count()
+    val numInvalid =
+      data.filter(x => x.label - x.label.toInt != 0.0 || x.label < 0 || x.label > k - 1).count()
     if (numInvalid != 0) {
-      logError("Classification labels should be in {0 to " + (k - 1) + "}. " +
-        "Found " + numInvalid + " invalid labels")
+      logError(
+          "Classification labels should be in {0 to " + (k - 1) + "}. " + "Found " + numInvalid +
+          " invalid labels")
     }
     numInvalid == 0
   }

@@ -52,8 +52,7 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       sql("INSERT INTO TABLE t SELECT * FROM tmp")
       checkAnswer(spark.table("t"), (data ++ data).map(Row.fromTuple))
     }
-    spark.sessionState.catalog.dropTable(
-      TableIdentifier("tmp"), ignoreIfNotExists = true)
+    spark.sessionState.catalog.dropTable(TableIdentifier("tmp"), ignoreIfNotExists = true)
   }
 
   test("overwriting") {
@@ -63,8 +62,7 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       sql("INSERT OVERWRITE TABLE t SELECT * FROM tmp")
       checkAnswer(spark.table("t"), data.map(Row.fromTuple))
     }
-    spark.sessionState.catalog.dropTable(
-      TableIdentifier("tmp"), ignoreIfNotExists = true)
+    spark.sessionState.catalog.dropTable(TableIdentifier("tmp"), ignoreIfNotExists = true)
   }
 
   test("self-join") {
@@ -113,20 +111,20 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
   }
 
   test("SPARK-5309 strings stored using dictionary compression in parquet") {
-    withParquetTable((0 until 1000).map(i => ("same", "run_" + i /100, 1)), "t") {
+    withParquetTable((0 until 1000).map(i => ("same", "run_" + i / 100, 1)), "t") {
 
       checkAnswer(sql("SELECT _1, _2, SUM(_3) FROM t GROUP BY _1, _2"),
-        (0 until 10).map(i => Row("same", "run_" + i, 100)))
+                  (0 until 10).map(i => Row("same", "run_" + i, 100)))
 
       checkAnswer(sql("SELECT _1, _2, SUM(_3) FROM t WHERE _2 = 'run_5' GROUP BY _1, _2"),
-        List(Row("same", "run_5", 100)))
+                  List(Row("same", "run_5", 100)))
     }
   }
 
   test("SPARK-6917 DecimalType should work with non-native types") {
     val data = (1 to 10).map(i => Row(Decimal(i, 18, 0), new java.sql.Timestamp(i)))
     val schema = StructType(List(StructField("d", DecimalType(18, 0), false),
-      StructField("time", TimestampType, false)).toArray)
+                                 StructField("time", TimestampType, false)).toArray)
     withTempPath { file =>
       val df = spark.createDataFrame(sparkContext.parallelize(data), schema)
       df.write.parquet(file.getCanonicalPath)
@@ -149,12 +147,12 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
     }
 
     withSQLConf(SQLConf.PARQUET_SCHEMA_MERGING_ENABLED.key -> "true",
-      SQLConf.PARQUET_SCHEMA_RESPECT_SUMMARIES.key -> "true") {
+                SQLConf.PARQUET_SCHEMA_RESPECT_SUMMARIES.key -> "true") {
       testSchemaMerging(2)
     }
 
     withSQLConf(SQLConf.PARQUET_SCHEMA_MERGING_ENABLED.key -> "true",
-      SQLConf.PARQUET_SCHEMA_RESPECT_SUMMARIES.key -> "false") {
+                SQLConf.PARQUET_SCHEMA_RESPECT_SUMMARIES.key -> "false") {
       testSchemaMerging(3)
     }
   }
@@ -226,13 +224,11 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       append((1 to 2).map(i => Tuple1((i, i, i))).toDF())
 
       withSQLConf(SQLConf.PARQUET_BINARY_AS_STRING.key -> "true") {
-        checkAnswer(
-          spark.read.option("mergeSchema", "true").parquet(path),
-          Seq(
-            Row(Row(1, 1, null)),
-            Row(Row(2, 2, null)),
-            Row(Row(1, 1, 1)),
-            Row(Row(2, 2, 2))))
+        checkAnswer(spark.read.option("mergeSchema", "true").parquet(path),
+                    Seq(Row(Row(1, 1, null)),
+                        Row(Row(2, 2, null)),
+                        Row(Row(1, 1, 1)),
+                        Row(Row(2, 2, 2))))
       }
     }
   }
@@ -243,31 +239,26 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       val df = spark.range(1).selectExpr("NAMED_STRUCT('a', id, 'b', id + 1) AS s").coalesce(1)
       df.write.parquet(path)
 
-      val userDefinedSchema =
-        new StructType()
-          .add(
-            "s",
-            new StructType()
-              .add("a", LongType, nullable = true)
-              .add("b", LongType, nullable = true),
-            nullable = true)
+      val userDefinedSchema = new StructType().add(
+          "s",
+          new StructType().add("a", LongType, nullable = true).add("b", LongType, nullable = true),
+          nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(0L, 1L)))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path), Row(Row(0L, 1L)))
     }
   }
 
   test("SPARK-11997 parquet with null partition values") {
     withTempPath { dir =>
       val path = dir.getCanonicalPath
-      spark.range(1, 3)
+      spark
+        .range(1, 3)
         .selectExpr("if(id % 2 = 0, null, id) AS n", "id")
-        .write.partitionBy("n").parquet(path)
+        .write
+        .partitionBy("n")
+        .parquet(path)
 
-      checkAnswer(
-        spark.read.parquet(path).filter("n is null"),
-        Row(2, null))
+      checkAnswer(spark.read.parquet(path).filter("n is null"), Row(2, null))
     }
   }
 
@@ -278,18 +269,12 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       val df = spark.range(1).selectExpr("NAMED_STRUCT('a', id, 'b', id + 1) AS s").coalesce(1)
       df.write.parquet(path)
 
-      val userDefinedSchema =
-        new StructType()
-          .add(
-            "s",
-            new StructType()
-              .add("c", LongType, nullable = true)
-              .add("d", LongType, nullable = true),
-            nullable = true)
+      val userDefinedSchema = new StructType().add(
+          "s",
+          new StructType().add("c", LongType, nullable = true).add("d", LongType, nullable = true),
+          nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(null, null)))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path), Row(Row(null, null)))
     }
   }
 
@@ -299,20 +284,15 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       val df = spark.range(1).selectExpr("NAMED_STRUCT('a', id, 'b', id + 1) AS s").coalesce(1)
       df.write.parquet(path)
 
-      val userDefinedSchema =
-        new StructType()
-          .add(
-            "s",
-            new StructType()
-              .add("a", LongType, nullable = true)
-              .add("b", LongType, nullable = true)
-              .add("c", LongType, nullable = true)
-              .add("d", LongType, nullable = true),
-            nullable = true)
+      val userDefinedSchema = new StructType().add("s",
+                                                   new StructType()
+                                                     .add("a", LongType, nullable = true)
+                                                     .add("b", LongType, nullable = true)
+                                                     .add("c", LongType, nullable = true)
+                                                     .add("d", LongType, nullable = true),
+                                                   nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(0L, 1L, null, null)))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path), Row(Row(0L, 1L, null, null)))
     }
 
     withTempPath { dir =>
@@ -320,20 +300,15 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       val df = spark.range(1).selectExpr("NAMED_STRUCT('a', id, 'd', id + 3) AS s").coalesce(1)
       df.write.parquet(path)
 
-      val userDefinedSchema =
-        new StructType()
-          .add(
-            "s",
-            new StructType()
-              .add("a", LongType, nullable = true)
-              .add("b", LongType, nullable = true)
-              .add("c", LongType, nullable = true)
-              .add("d", LongType, nullable = true),
-            nullable = true)
+      val userDefinedSchema = new StructType().add("s",
+                                                   new StructType()
+                                                     .add("a", LongType, nullable = true)
+                                                     .add("b", LongType, nullable = true)
+                                                     .add("c", LongType, nullable = true)
+                                                     .add("d", LongType, nullable = true),
+                                                   nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(0L, null, null, 3L)))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path), Row(Row(0L, null, null, 3L)))
     }
   }
 
@@ -347,18 +322,12 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
 
       df.write.parquet(path)
 
-      val userDefinedSchema =
-        new StructType()
-          .add(
-            "s",
-            new StructType()
-              .add("a", LongType, nullable = true)
-              .add("b", LongType, nullable = true),
-            nullable = true)
+      val userDefinedSchema = new StructType().add(
+          "s",
+          new StructType().add("a", LongType, nullable = true).add("b", LongType, nullable = true),
+          nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(0L, 1L)))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path), Row(Row(0L, 1L)))
     }
 
     withTempPath { dir =>
@@ -370,18 +339,12 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
 
       df.write.parquet(path)
 
-      val userDefinedSchema =
-        new StructType()
-          .add(
-            "s",
-            new StructType()
-              .add("a", LongType, nullable = true)
-              .add("d", LongType, nullable = true),
-            nullable = true)
+      val userDefinedSchema = new StructType().add(
+          "s",
+          new StructType().add("a", LongType, nullable = true).add("d", LongType, nullable = true),
+          nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(0L, 3L)))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path), Row(Row(0L, 3L)))
     }
   }
 
@@ -395,19 +358,14 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
 
       df.write.parquet(path)
 
-      val userDefinedSchema =
-        new StructType()
-          .add(
-            "s",
-            new StructType()
-              .add("b", LongType, nullable = true)
-              .add("c", LongType, nullable = true)
-              .add("d", LongType, nullable = true),
-            nullable = true)
+      val userDefinedSchema = new StructType().add("s",
+                                                   new StructType()
+                                                     .add("b", LongType, nullable = true)
+                                                     .add("c", LongType, nullable = true)
+                                                     .add("d", LongType, nullable = true),
+                                                   nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(1L, 2L, null)))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path), Row(Row(1L, 2L, null)))
     }
   }
 
@@ -422,22 +380,17 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
 
       df.write.parquet(path)
 
-      val userDefinedSchema = new StructType()
-        .add("s",
-          new StructType()
-            .add(
-              "a",
-              ArrayType(
-                new StructType()
-                  .add("b", LongType, nullable = true)
-                  .add("d", StringType, nullable = true),
-                containsNull = true),
-              nullable = true),
+      val userDefinedSchema = new StructType().add(
+          "s",
+          new StructType().add("a",
+                               ArrayType(new StructType()
+                                           .add("b", LongType, nullable = true)
+                                           .add("d", StringType, nullable = true),
+                                         containsNull = true),
+                               nullable = true),
           nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(Seq(Row(0, null)))))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path), Row(Row(Seq(Row(0, null)))))
     }
   }
 
@@ -458,19 +411,15 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       df1.write.parquet(path)
       df2.write.mode(SaveMode.Append).parquet(path)
 
-      val userDefinedSchema = new StructType()
-        .add("s",
-          new StructType()
-            .add("a", LongType, nullable = true)
-            .add("b", LongType, nullable = true)
-            .add("d", LongType, nullable = true),
-          nullable = true)
+      val userDefinedSchema = new StructType().add("s",
+                                                   new StructType()
+                                                     .add("a", LongType, nullable = true)
+                                                     .add("b", LongType, nullable = true)
+                                                     .add("d", LongType, nullable = true),
+                                                   nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Seq(
-          Row(Row(0, 1, null)),
-          Row(Row(null, 2, 4))))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path),
+                  Seq(Row(Row(0, 1, null)), Row(Row(null, 2, 4))))
     }
   }
 
@@ -478,10 +427,7 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
     withTempPath { dir =>
       val path = dir.getCanonicalPath
 
-      val df1 = spark
-        .range(1)
-        .selectExpr("NAMED_STRUCT('a', id, 'c', id + 2) AS s")
-        .coalesce(1)
+      val df1 = spark.range(1).selectExpr("NAMED_STRUCT('a', id, 'c', id + 2) AS s").coalesce(1)
 
       val df2 = spark
         .range(1, 2)
@@ -492,14 +438,8 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
       df2.write.mode(SaveMode.Append).parquet(path)
 
       checkAnswer(
-        spark
-          .read
-          .option("mergeSchema", "true")
-          .parquet(path)
-          .selectExpr("s.a", "s.b", "s.c"),
-        Seq(
-          Row(0, null, 2),
-          Row(1, 2, 3)))
+          spark.read.option("mergeSchema", "true").parquet(path).selectExpr("s.a", "s.b", "s.c"),
+          Seq(Row(0, null, 2), Row(1, 2, 3)))
     }
   }
 
@@ -507,10 +447,7 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
     withTempPath { dir =>
       val path = dir.getCanonicalPath
 
-      val df = spark
-        .range(1)
-        .selectExpr(
-          """NAMED_STRUCT(
+      val df = spark.range(1).selectExpr("""NAMED_STRUCT(
             |  'f0', CAST(id AS STRING),
             |  'f1', NAMED_STRUCT(
             |    'a', CAST(id + 1 AS INT),
@@ -518,22 +455,17 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
             |    'c', CAST(id + 3.5 AS DOUBLE)
             |  )
             |) AS s
-          """.stripMargin)
-        .coalesce(1)
+          """.stripMargin).coalesce(1)
 
       df.write.mode(SaveMode.Append).parquet(path)
 
       val userDefinedSchema =
-        new StructType()
-          .add(
-            "s",
-            new StructType()
-              .add("f1", new NestedStructUDT, nullable = true),
-            nullable = true)
+        new StructType().add("s",
+                             new StructType().add("f1", new NestedStructUDT, nullable = true),
+                             nullable = true)
 
-      checkAnswer(
-        spark.read.schema(userDefinedSchema).parquet(path),
-        Row(Row(NestedStruct(1, 2L, 3.5D))))
+      checkAnswer(spark.read.schema(userDefinedSchema).parquet(path),
+                  Row(Row(NestedStruct(1, 2L, 3.5D))))
     }
   }
 
@@ -544,39 +476,31 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
   }
 
   test("expand UDT in ArrayType") {
-    val schema = new StructType().add(
-      "n",
-      ArrayType(
-        elementType = new NestedStructUDT,
-        containsNull = false),
-      nullable = true)
+    val schema =
+      new StructType().add("n",
+                           ArrayType(elementType = new NestedStructUDT, containsNull = false),
+                           nullable = true)
 
     val expected = new StructType().add(
-      "n",
-      ArrayType(
-        elementType = new NestedStructUDT().sqlType,
-        containsNull = false),
-      nullable = true)
+        "n",
+        ArrayType(elementType = new NestedStructUDT().sqlType, containsNull = false),
+        nullable = true)
 
     assert(CatalystReadSupport.expandUDT(schema) === expected)
   }
 
   test("expand UDT in MapType") {
-    val schema = new StructType().add(
-      "n",
-      MapType(
-        keyType = IntegerType,
-        valueType = new NestedStructUDT,
-        valueContainsNull = false),
-      nullable = true)
+    val schema = new StructType().add("n",
+                                      MapType(keyType = IntegerType,
+                                              valueType = new NestedStructUDT,
+                                              valueContainsNull = false),
+                                      nullable = true)
 
-    val expected = new StructType().add(
-      "n",
-      MapType(
-        keyType = IntegerType,
-        valueType = new NestedStructUDT().sqlType,
-        valueContainsNull = false),
-      nullable = true)
+    val expected = new StructType().add("n",
+                                        MapType(keyType = IntegerType,
+                                                valueType = new NestedStructUDT().sqlType,
+                                                valueContainsNull = false),
+                                        nullable = true)
 
     assert(CatalystReadSupport.expandUDT(schema) === expected)
   }
@@ -585,7 +509,11 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
     withTempPath { dir =>
       val path = dir.getCanonicalPath
 
-      val df = spark.range(1000).select(Seq.tabulate(1000) {i => ('id + i).as(s"c$i")} : _*)
+      val df = spark
+        .range(1000)
+        .select(Seq.tabulate(1000) { i =>
+          ('id + i).as(s"c$i")
+        }: _*)
       df.write.mode(SaveMode.Overwrite).parquet(path)
       checkAnswer(spark.read.parquet(path), df)
     }
@@ -595,22 +523,29 @@ class ParquetQuerySuite extends QueryTest with ParquetTest with SharedSQLContext
     withSQLConf("spark.sql.codegen.maxFields" -> "100") {
       withTempPath { dir =>
         val path = dir.getCanonicalPath
-        val df = spark.range(100).select(Seq.tabulate(110) {i => ('id + i).as(s"c$i")} : _*)
+        val df = spark
+          .range(100)
+          .select(Seq.tabulate(110) { i =>
+            ('id + i).as(s"c$i")
+          }: _*)
         df.write.mode(SaveMode.Overwrite).parquet(path)
 
         // donot return batch, because whole stage codegen is disabled for wide table (>200 columns)
         val df2 = spark.read.parquet(path)
-        assert(df2.queryExecution.sparkPlan.find(_.isInstanceOf[BatchedDataSourceScanExec]).isEmpty,
-          "Should not return batch")
+        assert(
+            df2.queryExecution.sparkPlan.find(_.isInstanceOf[BatchedDataSourceScanExec]).isEmpty,
+            "Should not return batch")
         checkAnswer(df2, df)
 
         // return batch
-        val columns = Seq.tabulate(90) {i => s"c$i"}
-        val df3 = df2.selectExpr(columns : _*)
+        val columns = Seq.tabulate(90) { i =>
+          s"c$i"
+        }
+        val df3 = df2.selectExpr(columns: _*)
         assert(
-          df3.queryExecution.sparkPlan.find(_.isInstanceOf[BatchedDataSourceScanExec]).isDefined,
-          "Should return batch")
-        checkAnswer(df3, df.selectExpr(columns : _*))
+            df3.queryExecution.sparkPlan.find(_.isInstanceOf[BatchedDataSourceScanExec]).isDefined,
+            "Should return batch")
+        checkAnswer(df3, df.selectExpr(columns: _*))
       }
     }
   }

@@ -24,9 +24,8 @@ import org.apache.spark.graphx.util.collection.GraphXPrimitiveKeyOpenHashMap
 import org.apache.spark.util.collection.{PrimitiveVector, SortDataFormat, Sorter}
 
 /** Constructs an EdgePartition from scratch. */
-private[graphx]
-class EdgePartitionBuilder[@specialized(Long, Int, Double) ED: ClassTag, VD: ClassTag](
-    size: Int = 64) {
+private[graphx] class EdgePartitionBuilder[
+    @specialized(Long, Int, Double) ED: ClassTag, VD: ClassTag](size: Int = 64) {
   private[this] val edges = new PrimitiveVector[Edge[ED]](size)
 
   /** Add a new edge to the partition. */
@@ -55,10 +54,12 @@ class EdgePartitionBuilder[@specialized(Long, Int, Double) ED: ClassTag, VD: Cla
       while (i < edgeArray.length) {
         val srcId = edgeArray(i).srcId
         val dstId = edgeArray(i).dstId
-        localSrcIds(i) = global2local.changeValue(srcId,
-          { currLocalId += 1; local2global += srcId; currLocalId }, identity)
-        localDstIds(i) = global2local.changeValue(dstId,
-          { currLocalId += 1; local2global += dstId; currLocalId }, identity)
+        localSrcIds(i) = global2local.changeValue(srcId, {
+          currLocalId += 1; local2global += srcId; currLocalId
+        }, identity)
+        localDstIds(i) = global2local.changeValue(dstId, {
+          currLocalId += 1; local2global += dstId; currLocalId
+        }, identity)
         data(i) = edgeArray(i).attr
         if (srcId != currSrcId) {
           currSrcId = srcId
@@ -69,9 +70,14 @@ class EdgePartitionBuilder[@specialized(Long, Int, Double) ED: ClassTag, VD: Cla
       }
       vertexAttrs = new Array[VD](currLocalId + 1)
     }
-    new EdgePartition(
-      localSrcIds, localDstIds, data, index, global2local, local2global.trim().array, vertexAttrs,
-      None)
+    new EdgePartition(localSrcIds,
+                      localDstIds,
+                      data,
+                      index,
+                      global2local,
+                      local2global.trim().array,
+                      vertexAttrs,
+                      None)
   }
 }
 
@@ -79,8 +85,7 @@ class EdgePartitionBuilder[@specialized(Long, Int, Double) ED: ClassTag, VD: Cla
  * Constructs an EdgePartition from an existing EdgePartition with the same vertex set. This enables
  * reuse of the local vertex ids. Intended for internal use in EdgePartition only.
  */
-private[impl]
-class ExistingEdgePartitionBuilder[
+private[impl] class ExistingEdgePartitionBuilder[
     @specialized(Long, Int, Double) ED: ClassTag, VD: ClassTag](
     global2local: GraphXPrimitiveKeyOpenHashMap[VertexId, Int],
     local2global: Array[VertexId],
@@ -121,7 +126,7 @@ class ExistingEdgePartitionBuilder[
     }
 
     new EdgePartition(
-      localSrcIds, localDstIds, data, index, global2local, local2global, vertexAttrs, activeSet)
+        localSrcIds, localDstIds, data, index, global2local, local2global, vertexAttrs, activeSet)
   }
 }
 
@@ -153,15 +158,18 @@ private[impl] object EdgeWithLocalIds {
         data(pos1) = tmp
       }
 
-      override def copyElement(
-          src: Array[EdgeWithLocalIds[ED]], srcPos: Int,
-          dst: Array[EdgeWithLocalIds[ED]], dstPos: Int) {
+      override def copyElement(src: Array[EdgeWithLocalIds[ED]],
+                               srcPos: Int,
+                               dst: Array[EdgeWithLocalIds[ED]],
+                               dstPos: Int) {
         dst(dstPos) = src(srcPos)
       }
 
-      override def copyRange(
-          src: Array[EdgeWithLocalIds[ED]], srcPos: Int,
-          dst: Array[EdgeWithLocalIds[ED]], dstPos: Int, length: Int) {
+      override def copyRange(src: Array[EdgeWithLocalIds[ED]],
+                             srcPos: Int,
+                             dst: Array[EdgeWithLocalIds[ED]],
+                             dstPos: Int,
+                             length: Int) {
         System.arraycopy(src, srcPos, dst, dstPos, length)
       }
 

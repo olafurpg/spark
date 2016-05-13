@@ -32,17 +32,16 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext
  * reading whole text files. Each file is read as key-value pair, where the key is the file path and
  * the value is the entire content of file.
  */
-
 private[spark] class WholeTextFileInputFormat
-  extends CombineFileInputFormat[Text, Text] with Configurable {
+    extends CombineFileInputFormat[Text, Text]
+    with Configurable {
 
   override protected def isSplitable(context: JobContext, file: Path): Boolean = false
 
   override def createRecordReader(
-      split: InputSplit,
-      context: TaskAttemptContext): RecordReader[Text, Text] = {
-    val reader =
-      new ConfigurableCombineFileRecordReader(split, context, classOf[WholeTextFileRecordReader])
+      split: InputSplit, context: TaskAttemptContext): RecordReader[Text, Text] = {
+    val reader = new ConfigurableCombineFileRecordReader(
+        split, context, classOf[WholeTextFileRecordReader])
     reader.setConf(getConf)
     reader
   }
@@ -54,8 +53,10 @@ private[spark] class WholeTextFileInputFormat
   def setMinPartitions(context: JobContext, minPartitions: Int) {
     val files = listStatus(context).asScala
     val totalLen = files.map(file => if (file.isDirectory) 0L else file.getLen).sum
-    val maxSplitSize = Math.ceil(totalLen * 1.0 /
-      (if (minPartitions == 0) 1 else minPartitions)).toLong
+    val maxSplitSize = Math
+      .ceil(totalLen * 1.0 /
+          (if (minPartitions == 0) 1 else minPartitions))
+      .toLong
     super.setMaxSplitSize(maxSplitSize)
   }
 }

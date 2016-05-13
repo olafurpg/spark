@@ -49,8 +49,10 @@ object GenerateOrdering extends CodeGenerator[Seq[SortOrder], Ordering[InternalR
    * Creates a code gen ordering for sorting this schema, in ascending order.
    */
   def create(schema: StructType): BaseOrdering = {
-    create(schema.zipWithIndex.map { case (field, ordinal) =>
-      SortOrder(BoundReference(ordinal, field.dataType, nullable = true), Ascending)
+    create(
+        schema.zipWithIndex.map {
+      case (field, ordinal) =>
+        SortOrder(BoundReference(ordinal, field.dataType, nullable = true), Ascending)
     })
   }
 
@@ -60,7 +62,7 @@ object GenerateOrdering extends CodeGenerator[Seq[SortOrder], Ordering[InternalR
    */
   def genComparisons(ctx: CodegenContext, schema: StructType): String = {
     val ordering = schema.fields.map(_.dataType).zipWithIndex.map {
-      case(dt, index) => new SortOrder(BoundReference(index, dt, nullable = true), Ascending)
+      case (dt, index) => new SortOrder(BoundReference(index, dt, nullable = true), Ascending)
     }
     genComparisons(ctx, ordering)
   }
@@ -169,7 +171,8 @@ object LazilyGeneratedOrdering {
    * Creates a [[LazilyGeneratedOrdering]] for the given schema, in natural ascending order.
    */
   def forSchema(schema: StructType): LazilyGeneratedOrdering = {
-    new LazilyGeneratedOrdering(schema.zipWithIndex.map {
+    new LazilyGeneratedOrdering(
+        schema.zipWithIndex.map {
       case (field, ordinal) =>
         SortOrder(BoundReference(ordinal, field.dataType, nullable = true), Ascending)
     })

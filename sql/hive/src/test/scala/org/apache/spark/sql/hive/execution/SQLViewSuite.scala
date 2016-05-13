@@ -83,7 +83,7 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
   }
 
   test("error handling: fail if the temp view sql itself is invalid") {
-     // A table that does not exist for temporary view
+    // A table that does not exist for temporary view
     intercept[AnalysisException] {
       sql("CREATE OR REPLACE TEMPORARY VIEW myabcdview AS SELECT * FROM table_not_exist1345")
     }
@@ -96,8 +96,7 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
 
   test("correctly parse CREATE VIEW statement") {
     withSQLConf(SQLConf.NATIVE_VIEW.key -> "true") {
-      sql(
-        """CREATE VIEW IF NOT EXISTS
+      sql("""CREATE VIEW IF NOT EXISTS
           |default.testView (c1 COMMENT 'blabla', c2 COMMENT 'blabla')
           |TBLPROPERTIES ('a' = 'b')
           |AS SELECT * FROM jt""".stripMargin)
@@ -108,8 +107,7 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
 
   test("correctly parse CREATE TEMPORARY VIEW statement") {
     withView("testView") {
-      sql(
-        """CREATE TEMPORARY VIEW
+      sql("""CREATE TEMPORARY VIEW
           |testView (c1 COMMENT 'blabla', c2 COMMENT 'blabla')
           |TBLPROPERTIES ('a' = 'b')
           |AS SELECT * FROM jt
@@ -177,8 +175,8 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
   Seq(true, false).foreach { enabled =>
     val prefix = (if (enabled) "With" else "Without") + " canonical native view: "
     test(s"$prefix correctly handle CREATE OR REPLACE VIEW") {
-      withSQLConf(
-        SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> enabled.toString) {
+      withSQLConf(SQLConf.NATIVE_VIEW.key -> "true",
+                  SQLConf.CANONICAL_NATIVE_VIEW.key -> enabled.toString) {
         withTable("jt2") {
           sql("CREATE OR REPLACE VIEW testView AS SELECT id FROM jt")
           checkAnswer(sql("SELECT * FROM testView ORDER BY id"), (1 to 9).map(i => Row(i)))
@@ -194,15 +192,15 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
           val e = intercept[AnalysisException] {
             sql("CREATE OR REPLACE VIEW IF NOT EXISTS testView AS SELECT id FROM jt")
           }
-          assert(e.message.contains(
-            "CREATE VIEW with both IF NOT EXISTS and REPLACE is not allowed"))
+          assert(
+              e.message.contains("CREATE VIEW with both IF NOT EXISTS and REPLACE is not allowed"))
         }
       }
     }
 
     test(s"$prefix correctly handle ALTER VIEW") {
-      withSQLConf(
-        SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> enabled.toString) {
+      withSQLConf(SQLConf.NATIVE_VIEW.key -> "true",
+                  SQLConf.CANONICAL_NATIVE_VIEW.key -> enabled.toString) {
         withTable("jt2") {
           withView("testView") {
             sql("CREATE VIEW testView AS SELECT id FROM jt")
@@ -219,8 +217,8 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
 
     test(s"$prefix create hive view for json table") {
       // json table is not hive-compatible, make sure the new flag fix it.
-      withSQLConf(
-        SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> enabled.toString) {
+      withSQLConf(SQLConf.NATIVE_VIEW.key -> "true",
+                  SQLConf.CANONICAL_NATIVE_VIEW.key -> enabled.toString) {
         withView("testView") {
           sql("CREATE VIEW testView AS SELECT id FROM jt")
           checkAnswer(sql("SELECT * FROM testView ORDER BY id"), (1 to 9).map(i => Row(i)))
@@ -230,8 +228,8 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
 
     test(s"$prefix create hive view for partitioned parquet table") {
       // partitioned parquet table is not hive-compatible, make sure the new flag fix it.
-      withSQLConf(
-        SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> enabled.toString) {
+      withSQLConf(SQLConf.NATIVE_VIEW.key -> "true",
+                  SQLConf.CANONICAL_NATIVE_VIEW.key -> enabled.toString) {
         withTable("parTable") {
           withView("testView") {
             val df = Seq(1 -> "a").toDF("i", "j")
@@ -245,8 +243,7 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
   }
 
   test("CTE within view") {
-    withSQLConf(
-      SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> "true") {
+    withSQLConf(SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> "true") {
       withView("cte_view") {
         sql("CREATE VIEW cte_view AS WITH w AS (SELECT 1 AS n) SELECT n FROM w")
         checkAnswer(sql("SELECT * FROM cte_view"), Row(1))
@@ -255,8 +252,7 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
   }
 
   test("Using view after switching current database") {
-    withSQLConf(
-      SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> "true") {
+    withSQLConf(SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> "true") {
       withView("v") {
         sql("CREATE VIEW v AS SELECT * FROM src")
         withTempDatabase { db =>
@@ -274,8 +270,7 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
   }
 
   test("Using view after adding more columns") {
-    withSQLConf(
-      SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> "true") {
+    withSQLConf(SQLConf.NATIVE_VIEW.key -> "true", SQLConf.CANONICAL_NATIVE_VIEW.key -> "true") {
       withTable("add_col") {
         spark.range(10).write.saveAsTable("add_col")
         withView("v") {
@@ -308,14 +303,11 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
   test("SPARK-14933 - create view from hive parquet tabale") {
     withTable("t_part") {
       withView("v_part") {
-        spark.sql(
-          """create table t_part (c1 int, c2 int)
+        spark.sql("""create table t_part (c1 int, c2 int)
             |stored as parquet as select 1 as a, 2 as b
           """.stripMargin)
         spark.sql("create view v_part as select * from t_part")
-        checkAnswer(
-          sql("select * from t_part"),
-          sql("select * from v_part"))
+        checkAnswer(sql("select * from t_part"), sql("select * from v_part"))
       }
     }
   }
@@ -323,14 +315,11 @@ class SQLViewSuite extends QueryTest with SQLTestUtils with TestHiveSingleton {
   test("SPARK-14933 - create view from hive orc tabale") {
     withTable("t_orc") {
       withView("v_orc") {
-        spark.sql(
-          """create table t_orc (c1 int, c2 int)
+        spark.sql("""create table t_orc (c1 int, c2 int)
             |stored as orc as select 1 as a, 2 as b
           """.stripMargin)
         spark.sql("create view v_orc as select * from t_orc")
-        checkAnswer(
-          sql("select * from t_orc"),
-          sql("select * from v_orc"))
+        checkAnswer(sql("select * from t_orc"), sql("select * from v_orc"))
       }
     }
   }

@@ -28,18 +28,17 @@ import org.apache.spark.metrics.MetricsSystem
 import org.apache.spark.metrics.source.Source
 import org.apache.spark.util._
 
-private[spark] class TaskContextImpl(
-    val stageId: Int,
-    val partitionId: Int,
-    override val taskAttemptId: Long,
-    override val attemptNumber: Int,
-    override val taskMemoryManager: TaskMemoryManager,
-    localProperties: Properties,
-    @transient private val metricsSystem: MetricsSystem,
-    // The default value is only used in tests.
-    override val taskMetrics: TaskMetrics = TaskMetrics.empty)
-  extends TaskContext
-  with Logging {
+private[spark] class TaskContextImpl(val stageId: Int,
+                                     val partitionId: Int,
+                                     override val taskAttemptId: Long,
+                                     override val attemptNumber: Int,
+                                     override val taskMemoryManager: TaskMemoryManager,
+                                     localProperties: Properties,
+                                     @transient private val metricsSystem: MetricsSystem,
+                                     // The default value is only used in tests.
+                                     override val taskMetrics: TaskMetrics = TaskMetrics.empty)
+    extends TaskContext
+    with Logging {
 
   /** List of callback functions to execute when the task completes. */
   @transient private val onCompleteCallbacks = new ArrayBuffer[TaskCompletionListener]
@@ -125,5 +124,4 @@ private[spark] class TaskContextImpl(
   private[spark] override def registerAccumulator(a: AccumulatorV2[_, _]): Unit = {
     taskMetrics.registerAccumulator(a)
   }
-
 }

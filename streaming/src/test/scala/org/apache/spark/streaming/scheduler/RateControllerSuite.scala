@@ -47,8 +47,7 @@ class RateControllerSuite extends TestSuiteBase {
     withStreamingContext(ssc) { ssc =>
       val estimator = new ConstantEstimator(100)
       val dstream = new RateTestInputDStream(ssc) {
-        override val rateController =
-          Some(new ReceiverRateController(id, estimator))
+        override val rateController = Some(new ReceiverRateController(id, estimator))
       }
       dstream.register()
       ssc.start()
@@ -75,15 +74,13 @@ class RateControllerSuite extends TestSuiteBase {
 }
 
 private[streaming] class ConstantEstimator(@volatile private var rate: Long)
-  extends RateEstimator {
+    extends RateEstimator {
 
   def updateRate(newRate: Long): Unit = {
     rate = newRate
   }
 
   def compute(
-      time: Long,
-      elements: Long,
-      processingDelay: Long,
-      schedulingDelay: Long): Option[Double] = Some(rate)
+      time: Long, elements: Long, processingDelay: Long, schedulingDelay: Long): Option[Double] =
+    Some(rate)
 }

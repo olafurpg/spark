@@ -46,24 +46,20 @@ class StreamingAggregationSuite extends StreamTest with SharedSQLContext with Be
   test("simple count") {
     val inputData = MemoryStream[Int]
 
-    val aggregated =
-      inputData.toDF()
-        .groupBy($"value")
-        .agg(count("*"))
-        .as[(Int, Long)]
+    val aggregated = inputData.toDF().groupBy($"value").agg(count("*")).as[(Int, Long)]
 
     testStream(aggregated)(
-      AddData(inputData, 3),
-      CheckLastBatch((3, 1)),
-      AddData(inputData, 3, 2),
-      CheckLastBatch((3, 2), (2, 1)),
-      StopStream,
-      StartStream(),
-      AddData(inputData, 3, 2, 1),
-      CheckLastBatch((3, 3), (2, 2), (1, 1)),
-      // By default we run in new tuple mode.
-      AddData(inputData, 4, 4, 4, 4),
-      CheckLastBatch((4, 4))
+        AddData(inputData, 3),
+        CheckLastBatch((3, 1)),
+        AddData(inputData, 3, 2),
+        CheckLastBatch((3, 2), (2, 1)),
+        StopStream,
+        StartStream(),
+        AddData(inputData, 3, 2, 1),
+        CheckLastBatch((3, 3), (2, 2), (1, 1)),
+        // By default we run in new tuple mode.
+        AddData(inputData, 4, 4, 4, 4),
+        CheckLastBatch((4, 4))
     )
   }
 
@@ -71,61 +67,58 @@ class StreamingAggregationSuite extends StreamTest with SharedSQLContext with Be
     val inputData = MemoryStream[Int]
 
     val aggregated =
-      inputData.toDF()
-        .groupBy($"value", $"value" + 1)
-        .agg(count("*"))
-        .as[(Int, Int, Long)]
+      inputData.toDF().groupBy($"value", $"value" + 1).agg(count("*")).as[(Int, Int, Long)]
 
     testStream(aggregated)(
-      AddData(inputData, 1, 2),
-      CheckLastBatch((1, 2, 1), (2, 3, 1)),
-      AddData(inputData, 1, 2),
-      CheckLastBatch((1, 2, 2), (2, 3, 2))
+        AddData(inputData, 1, 2),
+        CheckLastBatch((1, 2, 1), (2, 3, 1)),
+        AddData(inputData, 1, 2),
+        CheckLastBatch((1, 2, 2), (2, 3, 2))
     )
   }
 
   test("multiple aggregations") {
     val inputData = MemoryStream[Int]
 
-    val aggregated =
-      inputData.toDF()
-        .groupBy($"value")
-        .agg(count("*") as 'count)
-        .groupBy($"value" % 2)
-        .agg(sum($"count"))
-        .as[(Int, Long)]
+    val aggregated = inputData
+      .toDF()
+      .groupBy($"value")
+      .agg(count("*") as 'count)
+      .groupBy($"value" % 2)
+      .agg(sum($"count"))
+      .as[(Int, Long)]
 
     testStream(aggregated)(
-      AddData(inputData, 1, 2, 3, 4),
-      CheckLastBatch((0, 2), (1, 2)),
-      AddData(inputData, 1, 3, 5),
-      CheckLastBatch((1, 5))
+        AddData(inputData, 1, 2, 3, 4),
+        CheckLastBatch((0, 2), (1, 2)),
+        AddData(inputData, 1, 3, 5),
+        CheckLastBatch((1, 5))
     )
   }
 
   testQuietly("midbatch failure") {
     val inputData = MemoryStream[Int]
     FailureSinglton.firstTime = true
-    val aggregated =
-      inputData.toDS()
-          .map { i =>
-            if (i == 4 && FailureSinglton.firstTime) {
-              FailureSinglton.firstTime = false
-              sys.error("injected failure")
-            }
+    val aggregated = inputData
+      .toDS()
+      .map { i =>
+        if (i == 4 && FailureSinglton.firstTime) {
+          FailureSinglton.firstTime = false
+          sys.error("injected failure")
+        }
 
-            i
-          }
-          .groupBy($"value")
-          .agg(count("*"))
-          .as[(Int, Long)]
+        i
+      }
+      .groupBy($"value")
+      .agg(count("*"))
+      .as[(Int, Long)]
 
     testStream(aggregated)(
-      StartStream(),
-      AddData(inputData, 1, 2, 3, 4),
-      ExpectFailure[SparkException](),
-      StartStream(),
-      CheckLastBatch((1, 1), (2, 1), (3, 1), (4, 1))
+        StartStream(),
+        AddData(inputData, 1, 2, 3, 4),
+        ExpectFailure[SparkException](),
+        StartStream(),
+        CheckLastBatch((1, 1), (2, 1), (3, 1), (4, 1))
     )
   }
 
@@ -134,8 +127,8 @@ class StreamingAggregationSuite extends StreamTest with SharedSQLContext with Be
     val aggregated = inputData.toDS().groupByKey(_._1).agg(typed.sumLong(_._2))
 
     testStream(aggregated)(
-      AddData(inputData, ("a", 10), ("a", 20), ("b", 1), ("b", 2), ("c", 1)),
-      CheckLastBatch(("a", 30), ("b", 3), ("c", 1))
+        AddData(inputData, ("a", 10), ("a", 20), ("b", 1), ("b", 2), ("c", 1)),
+        CheckLastBatch(("a", 30), ("b", 3), ("c", 1))
     )
   }
 }

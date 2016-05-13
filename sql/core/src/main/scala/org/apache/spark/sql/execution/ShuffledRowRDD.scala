@@ -28,10 +28,10 @@ import org.apache.spark.sql.catalyst.InternalRow
  * (identified by `postShufflePartitionIndex`) contains a range of pre-shuffle partitions
  * (`startPreShufflePartitionIndex` to `endPreShufflePartitionIndex - 1`, inclusive).
  */
-private final class ShuffledRowRDDPartition(
-    val postShufflePartitionIndex: Int,
-    val startPreShufflePartitionIndex: Int,
-    val endPreShufflePartitionIndex: Int) extends Partition {
+private final class ShuffledRowRDDPartition(val postShufflePartitionIndex: Int,
+                                            val startPreShufflePartitionIndex: Int,
+                                            val endPreShufflePartitionIndex: Int)
+    extends Partition {
   override val index: Int = postShufflePartitionIndex
 
   override def hashCode(): Int = postShufflePartitionIndex
@@ -57,7 +57,7 @@ private class PartitionIdPassthrough(override val numPartitions: Int) extends Pa
  *   partitions, corresponding to partition ranges [0, 1], [2, 3] and [4] of the parent partitioner.
  */
 class CoalescedPartitioner(val parent: Partitioner, val partitionStartIndices: Array[Int])
-  extends Partitioner {
+    extends Partitioner {
 
   @transient private lazy val parentPartitionMapping: Array[Int] = {
     val n = parent.numPartitions
@@ -114,10 +114,9 @@ class CoalescedPartitioner(val parent: Partitioner, val partitionStartIndices: A
  * `dependency.partitioner.numPartitions` post-shuffle partitions. For this case,
  * a post-shuffle partition is created for every pre-shuffle partition.
  */
-class ShuffledRowRDD(
-    var dependency: ShuffleDependency[Int, InternalRow, InternalRow],
-    specifiedPartitionStartIndices: Option[Array[Int]] = None)
-  extends RDD[InternalRow](dependency.rdd.context, Nil) {
+class ShuffledRowRDD(var dependency: ShuffleDependency[Int, InternalRow, InternalRow],
+                     specifiedPartitionStartIndices: Option[Array[Int]] = None)
+    extends RDD[InternalRow](dependency.rdd.context, Nil) {
 
   private[this] val numPreShufflePartitions = dependency.partitioner.numPartitions
 
@@ -129,8 +128,8 @@ class ShuffledRowRDD(
       (0 until numPreShufflePartitions).toArray
   }
 
-  private[this] val part: Partitioner =
-    new CoalescedPartitioner(dependency.partitioner, partitionStartIndices)
+  private[this] val part: Partitioner = new CoalescedPartitioner(
+      dependency.partitioner, partitionStartIndices)
 
   override def getDependencies: Seq[Dependency[_]] = List(dependency)
 
@@ -160,8 +159,7 @@ class ShuffledRowRDD(
     val shuffledRowPartition = split.asInstanceOf[ShuffledRowRDDPartition]
     // The range of pre-shuffle partitions that we are fetching at here is
     // [startPreShufflePartitionIndex, endPreShufflePartitionIndex - 1].
-    val reader =
-      SparkEnv.get.shuffleManager.getReader(
+    val reader = SparkEnv.get.shuffleManager.getReader(
         dependency.shuffleHandle,
         shuffledRowPartition.startPreShufflePartitionIndex,
         shuffledRowPartition.endPreShufflePartitionIndex,

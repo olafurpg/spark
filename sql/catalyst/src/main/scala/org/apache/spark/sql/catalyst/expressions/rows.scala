@@ -105,20 +105,21 @@ trait BaseGenericInternalRow extends InternalRow {
         o1 match {
           case b1: Array[Byte] =>
             if (!o2.isInstanceOf[Array[Byte]] ||
-              !java.util.Arrays.equals(b1, o2.asInstanceOf[Array[Byte]])) {
+                !java.util.Arrays.equals(b1, o2.asInstanceOf[Array[Byte]])) {
               return false
             }
           case f1: Float if java.lang.Float.isNaN(f1) =>
-            if (!o2.isInstanceOf[Float] || ! java.lang.Float.isNaN(o2.asInstanceOf[Float])) {
+            if (!o2.isInstanceOf[Float] || !java.lang.Float.isNaN(o2.asInstanceOf[Float])) {
               return false
             }
           case d1: Double if java.lang.Double.isNaN(d1) =>
-            if (!o2.isInstanceOf[Double] || ! java.lang.Double.isNaN(o2.asInstanceOf[Double])) {
+            if (!o2.isInstanceOf[Double] || !java.lang.Double.isNaN(o2.asInstanceOf[Double])) {
               return false
             }
-          case _ => if (o1 != o2) {
-            return false
-          }
+          case _ =>
+            if (o1 != o2) {
+              return false
+            }
         }
       }
       i += 1
@@ -190,6 +191,7 @@ abstract class MutableRow extends InternalRow {
  * allowed.
  */
 class GenericRow(protected[sql] val values: Array[Any]) extends Row {
+
   /** No-arg constructor for serialization. */
   protected def this() = this(null)
 
@@ -205,7 +207,7 @@ class GenericRow(protected[sql] val values: Array[Any]) extends Row {
 }
 
 class GenericRowWithSchema(values: Array[Any], override val schema: StructType)
-  extends GenericRow(values) {
+    extends GenericRow(values) {
 
   /** No-arg constructor for serialization. */
   protected def this() = this(null, null)
@@ -219,6 +221,7 @@ class GenericRowWithSchema(values: Array[Any], override val schema: StructType)
  * this is not allowed.
  */
 class GenericInternalRow(private[sql] val values: Array[Any]) extends BaseGenericInternalRow {
+
   /** No-arg constructor for serialization. */
   protected def this() = this(null)
 
@@ -234,6 +237,7 @@ class GenericInternalRow(private[sql] val values: Array[Any]) extends BaseGeneri
 }
 
 class GenericMutableRow(values: Array[Any]) extends MutableRow with BaseGenericInternalRow {
+
   /** No-arg constructor for serialization. */
   protected def this() = this(null)
 
@@ -245,7 +249,7 @@ class GenericMutableRow(values: Array[Any]) extends MutableRow with BaseGenericI
 
   override def numFields: Int = values.length
 
-  override def setNullAt(i: Int): Unit = { values(i) = null}
+  override def setNullAt(i: Int): Unit = { values(i) = null }
 
   override def update(i: Int, value: Any): Unit = { values(i) = value }
 

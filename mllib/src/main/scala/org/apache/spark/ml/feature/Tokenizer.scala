@@ -31,7 +31,8 @@ import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
  */
 @Experimental
 class Tokenizer(override val uid: String)
-  extends UnaryTransformer[String, Seq[String], Tokenizer] with DefaultParamsWritable {
+    extends UnaryTransformer[String, Seq[String], Tokenizer]
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("tok"))
 
@@ -64,7 +65,8 @@ object Tokenizer extends DefaultParamsReadable[Tokenizer] {
  */
 @Experimental
 class RegexTokenizer(override val uid: String)
-  extends UnaryTransformer[String, Seq[String], RegexTokenizer] with DefaultParamsWritable {
+    extends UnaryTransformer[String, Seq[String], RegexTokenizer]
+    with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("regexTok"))
 
@@ -73,8 +75,8 @@ class RegexTokenizer(override val uid: String)
    * Default: 1, to avoid returning empty strings
    * @group param
    */
-  val minTokenLength: IntParam = new IntParam(this, "minTokenLength", "minimum token length (>= 0)",
-    ParamValidators.gtEq(0))
+  val minTokenLength: IntParam = new IntParam(
+      this, "minTokenLength", "minimum token length (>= 0)", ParamValidators.gtEq(0))
 
   /** @group setParam */
   def setMinTokenLength(value: Int): this.type = set(minTokenLength, value)
@@ -113,8 +115,8 @@ class RegexTokenizer(override val uid: String)
    * Default: true
    * @group param
    */
-  final val toLowercase: BooleanParam = new BooleanParam(this, "toLowercase",
-    "whether to convert all characters to lowercase before tokenizing.")
+  final val toLowercase: BooleanParam = new BooleanParam(
+      this, "toLowercase", "whether to convert all characters to lowercase before tokenizing.")
 
   /** @group setParam */
   def setToLowercase(value: Boolean): this.type = set(toLowercase, value)

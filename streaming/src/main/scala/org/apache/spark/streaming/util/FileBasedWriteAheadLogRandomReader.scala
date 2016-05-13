@@ -27,7 +27,7 @@ import org.apache.hadoop.conf.Configuration
  * this reads the record (ByteBuffer) from the log file.
  */
 private[streaming] class FileBasedWriteAheadLogRandomReader(path: String, conf: Configuration)
-  extends Closeable {
+    extends Closeable {
 
   private val instream = HdfsUtils.getInputStream(path, conf)
   private var closed = (instream == null) // the file may be deleted as we're opening the stream
@@ -37,7 +37,7 @@ private[streaming] class FileBasedWriteAheadLogRandomReader(path: String, conf: 
     instream.seek(segment.offset)
     val nextLength = instream.readInt()
     HdfsUtils.checkState(nextLength == segment.length,
-      s"Expected message length to be ${segment.length}, but was $nextLength")
+                         s"Expected message length to be ${segment.length}, but was $nextLength")
     val buffer = new Array[Byte](nextLength)
     instream.readFully(buffer)
     ByteBuffer.wrap(buffer)

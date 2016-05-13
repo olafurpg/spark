@@ -137,23 +137,23 @@ private[flume] class PollingFlumeTestUtils {
   /**
    * A Python-friendly method to assert the output
    */
-  def assertOutput(
-      outputHeaders: JList[JMap[String, String]], outputBodies: JList[String]): Unit = {
+  def assertOutput(outputHeaders: JList[JMap[String, String]], outputBodies: JList[String]): Unit = {
     require(outputHeaders.size == outputBodies.size)
     val eventSize = outputHeaders.size
     if (eventSize != totalEventsPerChannel * channels.size) {
       throw new AssertionError(
-        s"Expected ${totalEventsPerChannel * channels.size} events, but was $eventSize")
+          s"Expected ${totalEventsPerChannel * channels.size} events, but was $eventSize")
     }
     var counter = 0
     for (k <- 0 until channels.size; i <- 0 until totalEventsPerChannel) {
       val eventBodyToVerify = s"${channels(k).getName}-$i"
-      val eventHeaderToVerify: JMap[String, String] = Collections.singletonMap(s"test-$i", "header")
+      val eventHeaderToVerify: JMap[String, String] =
+        Collections.singletonMap(s"test-$i", "header")
       var found = false
       var j = 0
       while (j < eventSize && !found) {
         if (eventBodyToVerify == outputBodies.get(j) &&
-          eventHeaderToVerify == outputHeaders.get(j)) {
+            eventHeaderToVerify == outputHeaders.get(j)) {
           found = true
           counter += 1
         }
@@ -162,7 +162,7 @@ private[flume] class PollingFlumeTestUtils {
     }
     if (counter != totalEventsPerChannel * channels.size) {
       throw new AssertionError(
-        s"111 Expected ${totalEventsPerChannel * channels.size} events, but was $counter")
+          s"111 Expected ${totalEventsPerChannel * channels.size} events, but was $counter")
     }
   }
 
@@ -193,9 +193,9 @@ private[flume] class PollingFlumeTestUtils {
         val tx = channel.getTransaction
         tx.begin()
         for (j <- 0 until eventsPerBatch) {
-          channel.put(EventBuilder.withBody(
-            s"${channel.getName}-$t".getBytes(StandardCharsets.UTF_8),
-            Collections.singletonMap(s"test-$t", "header")))
+          channel.put(
+              EventBuilder.withBody(s"${channel.getName}-$t".getBytes(StandardCharsets.UTF_8),
+                                    Collections.singletonMap(s"test-$t", "header")))
           t += 1
         }
         tx.commit()
@@ -205,5 +205,4 @@ private[flume] class PollingFlumeTestUtils {
       null
     }
   }
-
 }

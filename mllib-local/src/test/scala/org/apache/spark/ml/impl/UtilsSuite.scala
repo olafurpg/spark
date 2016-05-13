@@ -20,7 +20,6 @@ package org.apache.spark.ml.impl
 import org.apache.spark.ml.impl.Utils.EPSILON
 import org.apache.spark.ml.SparkMLFunSuite
 
-
 class UtilsSuite extends SparkMLFunSuite {
 
   test("EPSILON") {

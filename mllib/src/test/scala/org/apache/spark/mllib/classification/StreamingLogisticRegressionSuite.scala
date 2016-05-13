@@ -67,7 +67,6 @@ class StreamingLogisticRegressionSuite extends SparkFunSuite with TestSuiteBase 
 
     // check accuracy of final parameter estimates
     assert(model.latestModel().weights(0) ~== B relTol 0.1)
-
   }
 
   // Test that parameter estimates improve when learning Y = logistic(BX) on streaming data
@@ -176,12 +175,10 @@ class StreamingLogisticRegressionSuite extends SparkFunSuite with TestSuiteBase 
       .setNumIterations(10)
     val numBatches = 10
     val emptyInput = Seq.empty[Seq[LabeledPoint]]
-    ssc = setupStreams(emptyInput,
-      (inputDStream: DStream[LabeledPoint]) => {
-        model.trainOn(inputDStream)
-        model.predictOnValues(inputDStream.map(x => (x.label, x.features)))
-      }
-    )
+    ssc = setupStreams(emptyInput, (inputDStream: DStream[LabeledPoint]) => {
+      model.trainOn(inputDStream)
+      model.predictOnValues(inputDStream.map(x => (x.label, x.features)))
+    })
     val output: Seq[Seq[(Double, Double)]] = runStreams(ssc, numBatches, numBatches)
   }
 }

@@ -80,8 +80,7 @@ abstract class AbstractSqlParser extends ParserInterface with Logging {
         // first, try parsing with potentially faster SLL mode
         parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
         toResult(parser)
-      }
-      catch {
+      } catch {
         case e: ParseCancellationException =>
           // if we fail, parse with LL mode
           tokenStream.reset() // rewind input stream
@@ -91,8 +90,7 @@ abstract class AbstractSqlParser extends ParserInterface with Logging {
           parser.getInterpreter.setPredictionMode(PredictionMode.LL)
           toResult(parser)
       }
-    }
-    catch {
+    } catch {
       case e: ParseException if e.command.isDefined =>
         throw e
       case e: ParseException =>
@@ -130,7 +128,6 @@ object CatalystSqlParser extends AbstractSqlParser {
  * only accept capitalized tokens in case it is run from other tools like antlrworks which do not
  * have the ANTLRNoCaseStringStream implementation.
  */
-
 private[parser] class ANTLRNoCaseStringStream(input: String) extends ANTLRInputStream(input) {
   override def LA(i: Int): Int = {
     val la = super.LA(i)
@@ -143,13 +140,12 @@ private[parser] class ANTLRNoCaseStringStream(input: String) extends ANTLRInputS
  * The ParseErrorListener converts parse errors into AnalysisExceptions.
  */
 case object ParseErrorListener extends BaseErrorListener {
-  override def syntaxError(
-      recognizer: Recognizer[_, _],
-      offendingSymbol: scala.Any,
-      line: Int,
-      charPositionInLine: Int,
-      msg: String,
-      e: RecognitionException): Unit = {
+  override def syntaxError(recognizer: Recognizer[_, _],
+                           offendingSymbol: scala.Any,
+                           line: Int,
+                           charPositionInLine: Int,
+                           msg: String,
+                           e: RecognitionException): Unit = {
     val position = Origin(Some(line), Some(charPositionInLine))
     throw new ParseException(None, msg, position, position)
   }
@@ -160,16 +156,14 @@ case object ParseErrorListener extends BaseErrorListener {
  * contains fields and an extended error message that make reporting and diagnosing errors easier.
  */
 class ParseException(
-    val command: Option[String],
-    message: String,
-    val start: Origin,
-    val stop: Origin) extends AnalysisException(message, start.line, start.startPosition) {
+    val command: Option[String], message: String, val start: Origin, val stop: Origin)
+    extends AnalysisException(message, start.line, start.startPosition) {
 
   def this(message: String, ctx: ParserRuleContext) = {
     this(Option(ParserUtils.command(ctx)),
-      message,
-      ParserUtils.position(ctx.getStart),
-      ParserUtils.position(ctx.getStop))
+         message,
+         ParserUtils.position(ctx.getStart),
+         ParserUtils.position(ctx.getStop))
   }
 
   override def getMessage: String = {
@@ -217,18 +211,17 @@ case object PostProcessor extends SqlBaseBaseListener {
     replaceTokenByIdentifier(ctx, 0)(identity)
   }
 
-  private def replaceTokenByIdentifier(
-      ctx: ParserRuleContext,
-      stripMargins: Int)(
+  private def replaceTokenByIdentifier(ctx: ParserRuleContext, stripMargins: Int)(
       f: CommonToken => CommonToken = identity): Unit = {
     val parent = ctx.getParent
     parent.removeLastChild()
     val token = ctx.getChild(0).getPayload.asInstanceOf[Token]
-    parent.addChild(f(new CommonToken(
-      new org.antlr.v4.runtime.misc.Pair(token.getTokenSource, token.getInputStream),
-      SqlBaseParser.IDENTIFIER,
-      token.getChannel,
-      token.getStartIndex + stripMargins,
-      token.getStopIndex - stripMargins)))
+    parent.addChild(
+        f(new CommonToken(
+                new org.antlr.v4.runtime.misc.Pair(token.getTokenSource, token.getInputStream),
+                SqlBaseParser.IDENTIFIER,
+                token.getChannel,
+                token.getStartIndex + stripMargins,
+                token.getStopIndex - stripMargins)))
   }
 }

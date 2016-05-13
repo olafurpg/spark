@@ -24,14 +24,14 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, Time}
 
-private[streaming]
-class StateDStream[K: ClassTag, V: ClassTag, S: ClassTag](
+private[streaming] class StateDStream[K: ClassTag, V: ClassTag, S: ClassTag](
     parent: DStream[(K, V)],
     updateFunc: (Iterator[(K, Seq[V], Option[S])]) => Iterator[(K, S)],
     partitioner: Partitioner,
     preservePartitioning: Boolean,
     initialRDD: Option[RDD[(K, S)]]
-  ) extends DStream[(K, S)](parent.ssc) {
+)
+    extends DStream[(K, S)](parent.ssc) {
 
   super.persist(StorageLevel.MEMORY_ONLY_SER)
 
@@ -41,8 +41,7 @@ class StateDStream[K: ClassTag, V: ClassTag, S: ClassTag](
 
   override val mustCheckpoint = true
 
-  private [this] def computeUsingPreviousRDD (
-    parentRDD: RDD[(K, V)], prevStateRDD: RDD[(K, S)]) = {
+  private[this] def computeUsingPreviousRDD(parentRDD: RDD[(K, V)], prevStateRDD: RDD[(K, S)]) = {
     // Define the function for the mapPartition operation on cogrouped RDD;
     // first map the cogrouped tuple to tuples of required type,
     // and then apply the update function
@@ -65,12 +64,12 @@ class StateDStream[K: ClassTag, V: ClassTag, S: ClassTag](
     // Try to get the previous state RDD
     getOrCompute(validTime - slideDuration) match {
 
-      case Some(prevStateRDD) =>    // If previous state RDD exists
+      case Some(prevStateRDD) => // If previous state RDD exists
         // Try to get the parent RDD
         parent.getOrCompute(validTime) match {
-          case Some(parentRDD) =>   // If parent RDD exists, then compute as usual
+          case Some(parentRDD) => // If parent RDD exists, then compute as usual
             computeUsingPreviousRDD(parentRDD, prevStateRDD)
-          case None =>    // If parent RDD does not exist
+          case None => // If parent RDD does not exist
 
             // Re-apply the update function to the old state RDD
             val updateFuncLocal = updateFunc
@@ -82,10 +81,10 @@ class StateDStream[K: ClassTag, V: ClassTag, S: ClassTag](
             Some(stateRDD)
         }
 
-      case None =>    // If previous session RDD does not exist (first input data)
+      case None => // If previous session RDD does not exist (first input data)
         // Try to get the parent RDD
         parent.getOrCompute(validTime) match {
-          case Some(parentRDD) =>   // If parent RDD exists, then compute as usual
+          case Some(parentRDD) => // If parent RDD exists, then compute as usual
             initialRDD match {
               case None =>
                 // Define the function for the mapPartition operation on grouped RDD;

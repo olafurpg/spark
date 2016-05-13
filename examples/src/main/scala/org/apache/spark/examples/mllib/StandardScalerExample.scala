@@ -37,7 +37,8 @@ object StandardScalerExample {
     val data = MLUtils.loadLibSVMFile(sc, "data/mllib/sample_libsvm_data.txt")
 
     val scaler1 = new StandardScaler().fit(data.map(x => x.features))
-    val scaler2 = new StandardScaler(withMean = true, withStd = true).fit(data.map(x => x.features))
+    val scaler2 =
+      new StandardScaler(withMean = true, withStd = true).fit(data.map(x => x.features))
     // scaler3 is an identical model to scaler2, and will produce identical transformations
     val scaler3 = new StandardScalerModel(scaler2.std, scaler2.mean)
 

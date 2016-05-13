@@ -28,7 +28,6 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types._
 
-
 /**
  * A collection of [[Rule]] that can be used to coerce differing types that participate in
  * operations into compatible ones.
@@ -46,31 +45,25 @@ object TypeCoercion {
 
   val typeCoercionRules =
     PropagateTypes ::
-      InConversion ::
-      WidenSetOperationTypes ::
-      PromoteStrings ::
-      DecimalPrecision ::
-      BooleanEquality ::
-      StringToIntegralCasts ::
-      FunctionArgumentConversion ::
-      CaseWhenCoercion ::
-      IfCoercion ::
-      Division ::
-      PropagateTypes ::
-      ImplicitTypeCasts ::
-      DateTimeOperations ::
-      Nil
+    InConversion ::
+    WidenSetOperationTypes ::
+    PromoteStrings ::
+    DecimalPrecision ::
+    BooleanEquality ::
+    StringToIntegralCasts ::
+    FunctionArgumentConversion ::
+    CaseWhenCoercion ::
+    IfCoercion ::
+    Division ::
+    PropagateTypes ::
+    ImplicitTypeCasts ::
+    DateTimeOperations ::
+    Nil
 
   // See https://cwiki.apache.org/confluence/display/Hive/LanguageManual+Types.
   // The conversion for integral and floating point types have a linear widening hierarchy:
-  private[sql] val numericPrecedence =
-    IndexedSeq(
-      ByteType,
-      ShortType,
-      IntegerType,
-      LongType,
-      FloatType,
-      DoubleType)
+  private[sql] val numericPrecedence = IndexedSeq(
+      ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType)
 
   /**
    * Case 1 type widening (see the classdoc comment above for HiveTypeCoercion).
@@ -101,9 +94,12 @@ object TypeCoercion {
 
   /** Similar to [[findTightestCommonType]], but can promote all the way to StringType. */
   private def findTightestCommonTypeToString(left: DataType, right: DataType): Option[DataType] = {
-    findTightestCommonTypeOfTwo(left, right).orElse((left, right) match {
-      case (StringType, t2: AtomicType) if t2 != BinaryType && t2 != BooleanType => Some(StringType)
-      case (t1: AtomicType, StringType) if t1 != BinaryType && t1 != BooleanType => Some(StringType)
+    findTightestCommonTypeOfTwo(left, right).orElse(
+        (left, right) match {
+      case (StringType, t2: AtomicType) if t2 != BinaryType && t2 != BooleanType =>
+        Some(StringType)
+      case (t1: AtomicType, StringType) if t1 != BinaryType && t1 != BooleanType =>
+        Some(StringType)
       case _ => None
     })
   }
@@ -113,10 +109,12 @@ object TypeCoercion {
    * [[findTightestCommonTypeToString]] to find the TightestCommonType.
    */
   private def findTightestCommonTypeAndPromoteToString(types: Seq[DataType]): Option[DataType] = {
-    types.foldLeft[Option[DataType]](Some(NullType))((r, c) => r match {
-      case None => None
-      case Some(d) =>
-        findTightestCommonTypeToString(d, c)
+    types.foldLeft[Option[DataType]](Some(NullType))(
+        (r, c) =>
+          r match {
+        case None => None
+        case Some(d) =>
+          findTightestCommonTypeToString(d, c)
     })
   }
 
@@ -125,9 +123,10 @@ object TypeCoercion {
    * `findTightestCommonTypeOfTwo` on these types.
    */
   private def findTightestCommonType(types: Seq[DataType]): Option[DataType] = {
-    types.foldLeft[Option[DataType]](Some(NullType))((r, c) => r match {
-      case None => None
-      case Some(d) => findTightestCommonTypeOfTwo(d, c)
+    types.foldLeft[Option[DataType]](Some(NullType))((r, c) =>
+          r match {
+        case None => None
+        case Some(d) => findTightestCommonTypeOfTwo(d, c)
     })
   }
 
@@ -151,9 +150,10 @@ object TypeCoercion {
   }
 
   private def findWiderCommonType(types: Seq[DataType]) = {
-    types.foldLeft[Option[DataType]](Some(NullType))((r, c) => r match {
-      case Some(d) => findWiderTypeForTwo(d, c)
-      case None => None
+    types.foldLeft[Option[DataType]](Some(NullType))((r, c) =>
+          r match {
+        case Some(d) => findWiderTypeForTwo(d, c)
+        case None => None
     })
   }
 
@@ -223,13 +223,14 @@ object TypeCoercion {
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case p if p.analyzed => p
 
-      case s @ SetOperation(left, right) if s.childrenResolved &&
-          left.output.length == right.output.length && !s.resolved =>
+      case s @ SetOperation(left, right)
+          if s.childrenResolved && left.output.length == right.output.length && !s.resolved =>
         val newChildren: Seq[LogicalPlan] = buildNewChildrenWithWiderTypes(left :: right :: Nil)
         assert(newChildren.length == 2)
         s.makeCopy(Array(newChildren.head, newChildren.last))
 
-      case s: Union if s.childrenResolved &&
+      case s: Union
+          if s.childrenResolved &&
           s.children.forall(_.output.length == s.children.head.output.length) && !s.resolved =>
         val newChildren: Seq[LogicalPlan] = buildNewChildrenWithWiderTypes(s.children)
         s.makeCopy(Array(newChildren))
@@ -241,8 +242,8 @@ object TypeCoercion {
 
       // Get a sequence of data types, each of which is the widest type of this specific attribute
       // in all the children
-      val targetTypes: Seq[DataType] =
-        getWidestTypes(children, attrIndex = 0, mutable.Queue[DataType]())
+      val targetTypes: Seq[DataType] = getWidestTypes(
+          children, attrIndex = 0, mutable.Queue[DataType]())
 
       if (targetTypes.nonEmpty) {
         // Add an extra Project if the targetTypes are different from the original types.
@@ -254,10 +255,9 @@ object TypeCoercion {
     }
 
     /** Get the widest type for each attribute in all the children */
-    @tailrec private def getWidestTypes(
-        children: Seq[LogicalPlan],
-        attrIndex: Int,
-        castedTypes: mutable.Queue[DataType]): Seq[DataType] = {
+    @tailrec private def getWidestTypes(children: Seq[LogicalPlan],
+                                        attrIndex: Int,
+                                        castedTypes: mutable.Queue[DataType]): Seq[DataType] = {
       // Return the result after the widen data types have been found for all the children
       if (attrIndex >= children.head.output.length) return castedTypes.toSeq
 
@@ -393,21 +393,29 @@ object TypeCoercion {
       // We may simplify the expression if one side is literal numeric values
       // TODO: Maybe these rules should go into the optimizer.
       case EqualTo(bool @ BooleanType(), Literal(value, _: NumericType))
-        if trueValues.contains(value) => bool
+          if trueValues.contains(value) =>
+        bool
       case EqualTo(bool @ BooleanType(), Literal(value, _: NumericType))
-        if falseValues.contains(value) => Not(bool)
+          if falseValues.contains(value) =>
+        Not(bool)
       case EqualTo(Literal(value, _: NumericType), bool @ BooleanType())
-        if trueValues.contains(value) => bool
+          if trueValues.contains(value) =>
+        bool
       case EqualTo(Literal(value, _: NumericType), bool @ BooleanType())
-        if falseValues.contains(value) => Not(bool)
+          if falseValues.contains(value) =>
+        Not(bool)
       case EqualNullSafe(bool @ BooleanType(), Literal(value, _: NumericType))
-        if trueValues.contains(value) => And(IsNotNull(bool), bool)
+          if trueValues.contains(value) =>
+        And(IsNotNull(bool), bool)
       case EqualNullSafe(bool @ BooleanType(), Literal(value, _: NumericType))
-        if falseValues.contains(value) => And(IsNotNull(bool), Not(bool))
+          if falseValues.contains(value) =>
+        And(IsNotNull(bool), Not(bool))
       case EqualNullSafe(Literal(value, _: NumericType), bool @ BooleanType())
-        if trueValues.contains(value) => And(IsNotNull(bool), bool)
+          if trueValues.contains(value) =>
+        And(IsNotNull(bool), bool)
       case EqualNullSafe(Literal(value, _: NumericType), bool @ BooleanType())
-        if falseValues.contains(value) => And(IsNotNull(bool), Not(bool))
+          if falseValues.contains(value) =>
+        And(IsNotNull(bool), Not(bool))
 
       case EqualTo(left @ BooleanType(), right @ NumericType()) =>
         EqualTo(Cast(left, right.dataType), right)
@@ -450,27 +458,30 @@ object TypeCoercion {
           case None => a
         }
 
-      case m @ CreateMap(children) if m.keys.length == m.values.length &&
-        (!haveSameType(m.keys) || !haveSameType(m.values)) =>
-        val newKeys = if (haveSameType(m.keys)) {
-          m.keys
-        } else {
-          val types = m.keys.map(_.dataType)
-          findTightestCommonTypeAndPromoteToString(types) match {
-            case Some(finalDataType) => m.keys.map(Cast(_, finalDataType))
-            case None => m.keys
+      case m @ CreateMap(children)
+          if m.keys.length == m.values.length &&
+          (!haveSameType(m.keys) || !haveSameType(m.values)) =>
+        val newKeys =
+          if (haveSameType(m.keys)) {
+            m.keys
+          } else {
+            val types = m.keys.map(_.dataType)
+            findTightestCommonTypeAndPromoteToString(types) match {
+              case Some(finalDataType) => m.keys.map(Cast(_, finalDataType))
+              case None => m.keys
+            }
           }
-        }
 
-        val newValues = if (haveSameType(m.values)) {
-          m.values
-        } else {
-          val types = m.values.map(_.dataType)
-          findTightestCommonTypeAndPromoteToString(types) match {
-            case Some(finalDataType) => m.values.map(Cast(_, finalDataType))
-            case None => m.values
+        val newValues =
+          if (haveSameType(m.values)) {
+            m.values
+          } else {
+            val types = m.values.map(_.dataType)
+            findTightestCommonTypeAndPromoteToString(types) match {
+              case Some(finalDataType) => m.values.map(Cast(_, finalDataType))
+              case None => m.values
+            }
           }
-        }
 
         CreateMap(newKeys.zip(newValues).flatMap { case (k, v) => Seq(k, v) })
 
@@ -549,13 +560,14 @@ object TypeCoercion {
         val maybeCommonType = findWiderCommonType(c.valueTypes)
         maybeCommonType.map { commonType =>
           var changed = false
-          val newBranches = c.branches.map { case (condition, value) =>
-            if (value.dataType.sameType(commonType)) {
-              (condition, value)
-            } else {
-              changed = true
-              (condition, Cast(value, commonType))
-            }
+          val newBranches = c.branches.map {
+            case (condition, value) =>
+              if (value.dataType.sameType(commonType)) {
+                (condition, value)
+              } else {
+                changed = true
+                (condition, Cast(value, commonType))
+              }
           }
           val newElseValue = c.elseValue.map { value =>
             if (value.dataType.sameType(commonType)) {
@@ -582,7 +594,7 @@ object TypeCoercion {
           val newLeft = if (left.dataType == widestType) left else Cast(left, widestType)
           val newRight = if (right.dataType == widestType) right else Cast(right, widestType)
           If(pred, newLeft, newRight)
-        }.getOrElse(i)  // If there is no applicable conversion, leave expression unchanged.
+        }.getOrElse(i) // If there is no applicable conversion, leave expression unchanged.
       case If(Literal(null, NullType), left, right) =>
         If(Literal.create(null, BooleanType), left, right)
       case If(pred, left, right) if pred.dataType == NullType =>
@@ -630,24 +642,26 @@ object TypeCoercion {
             // Otherwise, don't do anything with the expression.
             b
           }
-        }.getOrElse(b)  // If there is no applicable conversion, leave expression unchanged.
+        }.getOrElse(b) // If there is no applicable conversion, leave expression unchanged.
 
       case e: ImplicitCastInputTypes if e.inputTypes.nonEmpty =>
-        val children: Seq[Expression] = e.children.zip(e.inputTypes).map { case (in, expected) =>
-          // If we cannot do the implicit cast, just use the original input.
-          implicitCast(in, expected).getOrElse(in)
+        val children: Seq[Expression] = e.children.zip(e.inputTypes).map {
+          case (in, expected) =>
+            // If we cannot do the implicit cast, just use the original input.
+            implicitCast(in, expected).getOrElse(in)
         }
         e.withNewChildren(children)
 
       case e: ExpectsInputTypes if e.inputTypes.nonEmpty =>
         // Convert NullType into some specific target type for ExpectsInputTypes that don't do
         // general implicit casting.
-        val children: Seq[Expression] = e.children.zip(e.inputTypes).map { case (in, expected) =>
-          if (in.dataType == NullType && !expected.acceptsType(NullType)) {
-            Literal.create(null, expected.defaultConcreteType)
-          } else {
-            in
-          }
+        val children: Seq[Expression] = e.children.zip(e.inputTypes).map {
+          case (in, expected) =>
+            if (in.dataType == NullType && !expected.acceptsType(NullType)) {
+              Literal.create(null, expected.defaultConcreteType)
+            } else {
+              in
+            }
         }
         e.withNewChildren(children)
     }

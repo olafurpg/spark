@@ -28,8 +28,7 @@ package object codegen {
 
   /** Canonicalizes an expression so those that differ only by names can reuse the same code. */
   object ExpressionCanonicalizer extends rules.RuleExecutor[Expression] {
-    val batches =
-      Batch("CleanExpressions", FixedPoint(20), CleanExpressions) :: Nil
+    val batches = Batch("CleanExpressions", FixedPoint(20), CleanExpressions) :: Nil
 
     object CleanExpressions extends rules.Rule[Expression] {
       def apply(e: Expression): Expression = e transform {
@@ -48,10 +47,8 @@ package object codegen {
 
     def apply(obj: Any): Unit = {
       val generatedClass = obj.getClass
-      val classLoader =
-        generatedClass
-          .getClassLoader
-          .asInstanceOf[scala.tools.nsc.interpreter.AbstractFileClassLoader]
+      val classLoader = generatedClass.getClassLoader
+        .asInstanceOf[scala.tools.nsc.interpreter.AbstractFileClassLoader]
       val generatedBytes = classLoader.classBytes(generatedClass.getName)
 
       val packageDir = new java.io.File(dumpDirectory, generatedClass.getPackage.getName)
@@ -66,7 +63,7 @@ package object codegen {
 
       // scalastyle:off println
       println(
-        s"javap -p -v -classpath ${dumpDirectory.getCanonicalPath} ${generatedClass.getName}".!!)
+          s"javap -p -v -classpath ${dumpDirectory.getCanonicalPath} ${generatedClass.getName}".!!)
       // scalastyle:on println
     }
   }

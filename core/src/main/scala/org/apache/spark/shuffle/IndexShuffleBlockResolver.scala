@@ -40,11 +40,9 @@ import org.apache.spark.util.Utils
  */
 // Note: Changes to the format in this file should be kept in sync with
 // org.apache.spark.network.shuffle.ExternalShuffleBlockResolver#getSortBasedShuffleBlockData().
-private[spark] class IndexShuffleBlockResolver(
-    conf: SparkConf,
-    _blockManager: BlockManager = null)
-  extends ShuffleBlockResolver
-  with Logging {
+private[spark] class IndexShuffleBlockResolver(conf: SparkConf, _blockManager: BlockManager = null)
+    extends ShuffleBlockResolver
+    with Logging {
 
   private lazy val blockManager = Option(_blockManager).getOrElse(SparkEnv.get.blockManager)
 
@@ -133,10 +131,7 @@ private[spark] class IndexShuffleBlockResolver(
    * Note: the `lengths` will be updated to match the existing index file if use the existing ones.
    * */
   def writeIndexFileAndCommit(
-      shuffleId: Int,
-      mapId: Int,
-      lengths: Array[Long],
-      dataTmp: File): Unit = {
+      shuffleId: Int, mapId: Int, lengths: Array[Long], dataTmp: File): Unit = {
     val indexFile = getIndexFile(shuffleId, mapId)
     val indexTmp = Utils.tempFileWith(indexFile)
     val out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(indexTmp)))
@@ -194,11 +189,10 @@ private[spark] class IndexShuffleBlockResolver(
       ByteStreams.skipFully(in, blockId.reduceId * 8)
       val offset = in.readLong()
       val nextOffset = in.readLong()
-      new FileSegmentManagedBuffer(
-        transportConf,
-        getDataFile(blockId.shuffleId, blockId.mapId),
-        offset,
-        nextOffset - offset)
+      new FileSegmentManagedBuffer(transportConf,
+                                   getDataFile(blockId.shuffleId, blockId.mapId),
+                                   offset,
+                                   nextOffset - offset)
     } finally {
       in.close()
     }

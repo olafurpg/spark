@@ -31,8 +31,7 @@ class DictionaryEncodingSuite extends SparkFunSuite {
   testDictionaryEncoding(new StringColumnStats, STRING)
 
   def testDictionaryEncoding[T <: AtomicType](
-      columnStats: ColumnStats,
-      columnType: NativeColumnType[T]) {
+      columnStats: ColumnStats, columnType: NativeColumnType[T]) {
 
     val typeName = columnType.getClass.getSimpleName.stripSuffix("$")
 
@@ -40,11 +39,12 @@ class DictionaryEncodingSuite extends SparkFunSuite {
       (0 until buffer.getInt()).map(columnType.extract(buffer) -> _.toShort).toMap
     }
 
-    def stableDistinct(seq: Seq[Int]): Seq[Int] = if (seq.isEmpty) {
-      Seq.empty
-    } else {
-      seq.head +: seq.tail.filterNot(_ == seq.head)
-    }
+    def stableDistinct(seq: Seq[Int]): Seq[Int] =
+      if (seq.isEmpty) {
+        Seq.empty
+      } else {
+        seq.head +: seq.tail.filterNot(_ == seq.head)
+      }
 
     def skeleton(uniqueValueCount: Int, inputSeq: Seq[Int]) {
       // -------------

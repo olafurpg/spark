@@ -33,27 +33,25 @@ import org.apache.spark.annotation.DeveloperApi
  * @param valueContainsNull Indicates if map values have `null` values.
  */
 @DeveloperApi
-case class MapType(
-  keyType: DataType,
-  valueType: DataType,
-  valueContainsNull: Boolean) extends DataType {
+case class MapType(keyType: DataType, valueType: DataType, valueContainsNull: Boolean)
+    extends DataType {
 
   /** No-arg constructor for kryo. */
   def this() = this(null, null, false)
 
   private[sql] def buildFormattedString(prefix: String, builder: StringBuilder): Unit = {
     builder.append(s"$prefix-- key: ${keyType.typeName}\n")
-    builder.append(s"$prefix-- value: ${valueType.typeName} " +
-      s"(valueContainsNull = $valueContainsNull)\n")
+    builder.append(
+        s"$prefix-- value: ${valueType.typeName} " + s"(valueContainsNull = $valueContainsNull)\n")
     DataType.buildFormattedString(keyType, s"$prefix    |", builder)
     DataType.buildFormattedString(valueType, s"$prefix    |", builder)
   }
 
   override private[sql] def jsonValue: JValue =
     ("type" -> typeName) ~
-      ("keyType" -> keyType.jsonValue) ~
-      ("valueType" -> valueType.jsonValue) ~
-      ("valueContainsNull" -> valueContainsNull)
+    ("keyType" -> keyType.jsonValue) ~
+    ("valueType" -> valueType.jsonValue) ~
+    ("valueContainsNull" -> valueContainsNull)
 
   /**
    * The default size of a value of the MapType is
@@ -73,7 +71,6 @@ case class MapType(
     f(this) || keyType.existsRecursively(f) || valueType.existsRecursively(f)
   }
 }
-
 
 object MapType extends AbstractDataType {
 

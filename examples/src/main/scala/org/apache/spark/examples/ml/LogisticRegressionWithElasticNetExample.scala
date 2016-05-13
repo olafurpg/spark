@@ -26,19 +26,14 @@ import org.apache.spark.sql.SparkSession
 object LogisticRegressionWithElasticNetExample {
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("LogisticRegressionWithElasticNetExample")
-      .getOrCreate()
+    val spark =
+      SparkSession.builder.appName("LogisticRegressionWithElasticNetExample").getOrCreate()
 
     // $example on$
     // Load training data
     val training = spark.read.format("libsvm").load("data/mllib/sample_libsvm_data.txt")
 
-    val lr = new LogisticRegression()
-      .setMaxIter(10)
-      .setRegParam(0.3)
-      .setElasticNetParam(0.8)
+    val lr = new LogisticRegression().setMaxIter(10).setRegParam(0.3).setElasticNetParam(0.8)
 
     // Fit the model
     val lrModel = lr.fit(training)

@@ -23,7 +23,6 @@ import org.apache.spark.ml.attribute._
 import org.apache.spark.mllib.linalg.VectorUDT
 import org.apache.spark.sql.types.StructField
 
-
 /**
  * Helper utilities for algorithms using ML metadata
  */
@@ -56,21 +55,23 @@ private[spark] object MetadataUtils {
     if (metadata.attributes.isEmpty) {
       HashMap.empty[Int, Int]
     } else {
-      metadata.attributes.get.zipWithIndex.flatMap { case (attr, idx) =>
-        if (attr == null) {
-          Iterator()
-        } else {
-          attr match {
-            case _: NumericAttribute | UnresolvedAttribute => Iterator()
-            case binAttr: BinaryAttribute => Iterator(idx -> 2)
-            case nomAttr: NominalAttribute =>
-              nomAttr.getNumValues match {
-                case Some(numValues: Int) => Iterator(idx -> numValues)
-                case None => throw new IllegalArgumentException(s"Feature $idx is marked as" +
-                  " Nominal (categorical), but it does not have the number of values specified.")
-              }
+      metadata.attributes.get.zipWithIndex.flatMap {
+        case (attr, idx) =>
+          if (attr == null) {
+            Iterator()
+          } else {
+            attr match {
+              case _: NumericAttribute | UnresolvedAttribute => Iterator()
+              case binAttr: BinaryAttribute => Iterator(idx -> 2)
+              case nomAttr: NominalAttribute =>
+                nomAttr.getNumValues match {
+                  case Some(numValues: Int) => Iterator(idx -> numValues)
+                  case None =>
+                    throw new IllegalArgumentException(s"Feature $idx is marked as" +
+                        " Nominal (categorical), but it does not have the number of values specified.")
+                }
+            }
           }
-        }
       }.toMap
     }
   }
@@ -82,12 +83,13 @@ private[spark] object MetadataUtils {
    * @param names  List of feature names
    */
   def getFeatureIndicesFromNames(col: StructField, names: Array[String]): Array[Int] = {
-    require(col.dataType.isInstanceOf[VectorUDT], s"getFeatureIndicesFromNames expected column $col"
-      + s" to be Vector type, but it was type ${col.dataType} instead.")
+    require(col.dataType.isInstanceOf[VectorUDT],
+            s"getFeatureIndicesFromNames expected column $col" +
+            s" to be Vector type, but it was type ${col.dataType} instead.")
     val inputAttr = AttributeGroup.fromStructField(col)
     names.map { name =>
       require(inputAttr.hasAttr(name),
-        s"getFeatureIndicesFromNames found no feature with name $name in column $col.")
+              s"getFeatureIndicesFromNames found no feature with name $name in column $col.")
       inputAttr.getAttr(name).index.get
     }
   }

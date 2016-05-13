@@ -106,8 +106,8 @@ case class StructType(fields: Array[StructField]) extends DataType with Seq[Stru
   override def equals(that: Any): Boolean = {
     that match {
       case StructType(otherFields) =>
-        java.util.Arrays.equals(
-          fields.asInstanceOf[Array[AnyRef]], otherFields.asInstanceOf[Array[AnyRef]])
+        java.util.Arrays
+          .equals(fields.asInstanceOf[Array[AnyRef]], otherFields.asInstanceOf[Array[AnyRef]])
       case _ => false
     }
   }
@@ -160,11 +160,7 @@ case class StructType(fields: Array[StructField]) extends DataType with Seq[Stru
    *   .add("c", StringType, true, Metadata.empty)
    * }}}
    */
-  def add(
-      name: String,
-      dataType: DataType,
-      nullable: Boolean,
-      metadata: Metadata): StructType = {
+  def add(name: String, dataType: DataType, nullable: Boolean, metadata: Metadata): StructType = {
     StructType(fields :+ new StructField(name, dataType, nullable, metadata))
   }
 
@@ -208,11 +204,7 @@ case class StructType(fields: Array[StructField]) extends DataType with Seq[Stru
    *   .add("c", "string", true, Metadata.empty)
    * }}}
    */
-  def add(
-      name: String,
-      dataType: String,
-      nullable: Boolean,
-      metadata: Metadata): StructType = {
+  def add(name: String, dataType: String, nullable: Boolean, metadata: Metadata): StructType = {
     add(name, CatalystSqlParser.parseDataType(dataType), nullable, metadata)
   }
 
@@ -222,8 +214,8 @@ case class StructType(fields: Array[StructField]) extends DataType with Seq[Stru
    * @throws IllegalArgumentException if a field with the given name does not exist
    */
   def apply(name: String): StructField = {
-    nameToField.getOrElse(name,
-      throw new IllegalArgumentException(s"""Field "$name" does not exist."""))
+    nameToField.getOrElse(
+        name, throw new IllegalArgumentException(s"""Field "$name" does not exist."""))
   }
 
   /**
@@ -235,8 +227,7 @@ case class StructType(fields: Array[StructField]) extends DataType with Seq[Stru
   def apply(names: Set[String]): StructType = {
     val nonExistFields = names -- fieldNamesSet
     if (nonExistFields.nonEmpty) {
-      throw new IllegalArgumentException(
-        s"Field ${nonExistFields.mkString(",")} does not exist.")
+      throw new IllegalArgumentException(s"Field ${nonExistFields.mkString(",")} does not exist.")
     }
     // Preserve the original order of fields.
     StructType(fields.filter(f => names.contains(f.name)))
@@ -248,8 +239,8 @@ case class StructType(fields: Array[StructField]) extends DataType with Seq[Stru
    * @throws IllegalArgumentException if a field with the given name does not exist
    */
   def fieldIndex(name: String): Int = {
-    nameToIndex.getOrElse(name,
-      throw new IllegalArgumentException(s"""Field "$name" does not exist."""))
+    nameToIndex.getOrElse(
+        name, throw new IllegalArgumentException(s"""Field "$name" does not exist."""))
   }
 
   private[sql] def getFieldIndex(name: String): Option[Int] = {
@@ -278,7 +269,7 @@ case class StructType(fields: Array[StructField]) extends DataType with Seq[Stru
 
   override private[sql] def jsonValue =
     ("type" -> typeName) ~
-      ("fields" -> map(_.jsonValue))
+    ("fields" -> map(_.jsonValue))
 
   override def apply(fieldIndex: Int): StructField = fields(fieldIndex)
 
@@ -385,7 +376,7 @@ object StructType extends AbstractDataType {
         val newFields = fields.map { f =>
           val mb = new MetadataBuilder()
           f.copy(dataType = removeMetadata(key, f.dataType),
-            metadata = mb.withMetadata(f.metadata).remove(key).build())
+                 metadata = mb.withMetadata(f.metadata).remove(key).build())
         }
         StructType(newFields)
       case _ => dt
@@ -394,17 +385,14 @@ object StructType extends AbstractDataType {
   private[sql] def merge(left: DataType, right: DataType): DataType =
     (left, right) match {
       case (ArrayType(leftElementType, leftContainsNull),
-      ArrayType(rightElementType, rightContainsNull)) =>
-        ArrayType(
-          merge(leftElementType, rightElementType),
-          leftContainsNull || rightContainsNull)
+            ArrayType(rightElementType, rightContainsNull)) =>
+        ArrayType(merge(leftElementType, rightElementType), leftContainsNull || rightContainsNull)
 
       case (MapType(leftKeyType, leftValueType, leftContainsNull),
-      MapType(rightKeyType, rightValueType, rightContainsNull)) =>
-        MapType(
-          merge(leftKeyType, rightKeyType),
-          merge(leftValueType, rightValueType),
-          leftContainsNull || rightContainsNull)
+            MapType(rightKeyType, rightValueType, rightContainsNull)) =>
+        MapType(merge(leftKeyType, rightKeyType),
+                merge(leftValueType, rightValueType),
+                leftContainsNull || rightContainsNull)
 
       case (StructType(leftFields), StructType(rightFields)) =>
         val newFields = ArrayBuffer.empty[StructField]
@@ -414,11 +402,12 @@ object StructType extends AbstractDataType {
         val rightMapped = fieldsMap(rightFields)
         leftFields.foreach {
           case leftField @ StructField(leftName, leftType, leftNullable, _) =>
-            rightMapped.get(leftName)
-              .map { case rightField @ StructField(_, rightType, rightNullable, _) =>
-                leftField.copy(
-                  dataType = merge(leftType, rightType),
-                  nullable = leftNullable || rightNullable)
+            rightMapped
+              .get(leftName)
+              .map {
+                case rightField @ StructField(_, rightType, rightNullable, _) =>
+                  leftField.copy(dataType = merge(leftType, rightType),
+                                 nullable = leftNullable || rightNullable)
               }
               .orElse {
                 optionalMeta.putBoolean(metadataKeyForOptionalField, true)
@@ -428,32 +417,34 @@ object StructType extends AbstractDataType {
         }
 
         val leftMapped = fieldsMap(leftFields)
-        rightFields
-          .filterNot(f => leftMapped.get(f.name).nonEmpty)
-          .foreach { f =>
-            optionalMeta.putBoolean(metadataKeyForOptionalField, true)
-            newFields += f.copy(metadata = optionalMeta.build())
-          }
+        rightFields.filterNot(f => leftMapped.get(f.name).nonEmpty).foreach { f =>
+          optionalMeta.putBoolean(metadataKeyForOptionalField, true)
+          newFields += f.copy(metadata = optionalMeta.build())
+        }
 
         StructType(newFields)
 
       case (DecimalType.Fixed(leftPrecision, leftScale),
-        DecimalType.Fixed(rightPrecision, rightScale)) =>
+            DecimalType.Fixed(rightPrecision, rightScale)) =>
         if ((leftPrecision == rightPrecision) && (leftScale == rightScale)) {
           DecimalType(leftPrecision, leftScale)
         } else if ((leftPrecision != rightPrecision) && (leftScale != rightScale)) {
-          throw new SparkException("Failed to merge decimal types with incompatible " +
-            s"precision $leftPrecision and $rightPrecision & scale $leftScale and $rightScale")
+          throw new SparkException(
+              "Failed to merge decimal types with incompatible " +
+              s"precision $leftPrecision and $rightPrecision & scale $leftScale and $rightScale")
         } else if (leftPrecision != rightPrecision) {
-          throw new SparkException("Failed to merge decimal types with incompatible " +
-            s"precision $leftPrecision and $rightPrecision")
+          throw new SparkException(
+              "Failed to merge decimal types with incompatible " +
+              s"precision $leftPrecision and $rightPrecision")
         } else {
-          throw new SparkException("Failed to merge decimal types with incompatible " +
-            s"scala $leftScale and $rightScale")
+          throw new SparkException(
+              "Failed to merge decimal types with incompatible " +
+              s"scala $leftScale and $rightScale")
         }
 
       case (leftUdt: UserDefinedType[_], rightUdt: UserDefinedType[_])
-        if leftUdt.userClass == rightUdt.userClass => leftUdt
+          if leftUdt.userClass == rightUdt.userClass =>
+        leftUdt
 
       case (leftType, rightType) if leftType == rightType =>
         leftType

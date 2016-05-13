@@ -24,7 +24,8 @@ import scala.util.Random
 
 import org.scalatest.FunSuite // scalastyle:ignore funsuite
 
-class BloomFilterSuite extends FunSuite { // scalastyle:ignore funsuite
+class BloomFilterSuite extends FunSuite {
+  // scalastyle:ignore funsuite
   private final val EPSILON = 0.01
 
   // Serializes and deserializes a given `BloomFilter`, then checks whether the deserialized
@@ -112,7 +113,9 @@ class BloomFilterSuite extends FunSuite { // scalastyle:ignore funsuite
 
   testItemType[Long]("Long", 100000) { _.nextLong() }
 
-  testItemType[String]("String", 100000) { r => r.nextString(r.nextInt(512)) }
+  testItemType[String]("String", 100000) { r =>
+    r.nextString(r.nextInt(512))
+  }
 
   test("incompatible merge") {
     intercept[IncompatibleMergeException] {

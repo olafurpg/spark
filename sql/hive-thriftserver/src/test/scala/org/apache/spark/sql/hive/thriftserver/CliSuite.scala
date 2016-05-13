@@ -71,10 +71,9 @@ class CliSuite extends SparkFunSuite with BeforeAndAfterAll with Logging {
    *
    * @param queriesAndExpectedAnswers one or more tuples of query + answer
    */
-  def runCliWithin(
-      timeout: FiniteDuration,
-      extraArgs: Seq[String] = Seq.empty,
-      errorResponses: Seq[String] = Seq("Error:"))(
+  def runCliWithin(timeout: FiniteDuration,
+                   extraArgs: Seq[String] = Seq.empty,
+                   errorResponses: Seq[String] = Seq("Error:"))(
       queriesAndExpectedAnswers: (String, String)*): Unit = {
 
     val (queries, expectedAnswers) = queriesAndExpectedAnswers.unzip
@@ -115,7 +114,7 @@ class CliSuite extends SparkFunSuite with BeforeAndAfterAll with Logging {
         errorResponses.foreach { r =>
           if (line.contains(r)) {
             foundAllExpectedAnswers.tryFailure(
-              new RuntimeException(s"Failed with error line '$line'"))
+                new RuntimeException(s"Failed with error line '$line'"))
           }
         }
       }
@@ -133,9 +132,9 @@ class CliSuite extends SparkFunSuite with BeforeAndAfterAll with Logging {
 
     try {
       ThreadUtils.awaitResult(foundAllExpectedAnswers.future, timeout)
-    } catch { case cause: Throwable =>
-      val message =
-        s"""
+    } catch {
+      case cause: Throwable =>
+        val message = s"""
            |=======================
            |CliSuite failure output
            |=======================
@@ -149,8 +148,8 @@ class CliSuite extends SparkFunSuite with BeforeAndAfterAll with Logging {
            |End CliSuite failure output
            |===========================
          """.stripMargin
-      logError(message, cause)
-      fail(message, cause)
+        logError(message, cause)
+        fail(message, cause)
     } finally {
       process.destroy()
     }
@@ -161,18 +160,12 @@ class CliSuite extends SparkFunSuite with BeforeAndAfterAll with Logging {
       Thread.currentThread().getContextClassLoader.getResource("data/files/small_kv.txt")
 
     runCliWithin(3.minute)(
-      "CREATE TABLE hive_test(key INT, val STRING);"
-        -> "",
-      "SHOW TABLES;"
-        -> "hive_test",
-      s"LOAD DATA LOCAL INPATH '$dataFilePath' OVERWRITE INTO TABLE hive_test;"
-        -> "",
-      "CACHE TABLE hive_test;"
-        -> "",
-      "SELECT COUNT(*) FROM hive_test;"
-        -> "5",
-      "DROP TABLE hive_test;"
-        -> ""
+        "CREATE TABLE hive_test(key INT, val STRING);" -> "",
+        "SHOW TABLES;" -> "hive_test",
+        s"LOAD DATA LOCAL INPATH '$dataFilePath' OVERWRITE INTO TABLE hive_test;" -> "",
+        "CACHE TABLE hive_test;" -> "",
+        "SELECT COUNT(*) FROM hive_test;" -> "5",
+        "DROP TABLE hive_test;" -> ""
     )
   }
 
@@ -182,60 +175,46 @@ class CliSuite extends SparkFunSuite with BeforeAndAfterAll with Logging {
 
   test("Single command with --database") {
     runCliWithin(2.minute)(
-      "CREATE DATABASE hive_test_db;"
-        -> "",
-      "USE hive_test_db;"
-        -> "",
-      "CREATE TABLE hive_test(key INT, val STRING);"
-        -> "",
-      "SHOW TABLES;"
-        -> "hive_test"
+        "CREATE DATABASE hive_test_db;" -> "",
+        "USE hive_test_db;" -> "",
+        "CREATE TABLE hive_test(key INT, val STRING);" -> "",
+        "SHOW TABLES;" -> "hive_test"
     )
 
     runCliWithin(2.minute, Seq("--database", "hive_test_db", "-e", "SHOW TABLES;"))(
-      "" -> "hive_test"
+        "" -> "hive_test"
     )
   }
 
   test("Commands using SerDe provided in --jars") {
-    val jarFile =
-      "../hive/src/test/resources/hive-hcatalog-core-0.13.1.jar"
-        .split("/")
-        .mkString(File.separator)
+    val jarFile = "../hive/src/test/resources/hive-hcatalog-core-0.13.1.jar"
+      .split("/")
+      .mkString(File.separator)
 
     val dataFilePath =
       Thread.currentThread().getContextClassLoader.getResource("data/files/small_kv.txt")
 
     runCliWithin(3.minute, Seq("--jars", s"$jarFile"))(
-      """CREATE TABLE t1(key string, val string)
+        """CREATE TABLE t1(key string, val string)
         |ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe';
-      """.stripMargin
-        -> "",
-      "CREATE TABLE sourceTable (key INT, val STRING);"
-        -> "",
-      s"LOAD DATA LOCAL INPATH '$dataFilePath' OVERWRITE INTO TABLE sourceTable;"
-        -> "",
-      "INSERT INTO TABLE t1 SELECT key, val FROM sourceTable;"
-        -> "",
-      "SELECT count(key) FROM t1;"
-        -> "5",
-      "DROP TABLE t1;"
-        -> "",
-      "DROP TABLE sourceTable;"
-        -> ""
+      """.stripMargin -> "",
+        "CREATE TABLE sourceTable (key INT, val STRING);" -> "",
+        s"LOAD DATA LOCAL INPATH '$dataFilePath' OVERWRITE INTO TABLE sourceTable;" -> "",
+        "INSERT INTO TABLE t1 SELECT key, val FROM sourceTable;" -> "",
+        "SELECT count(key) FROM t1;" -> "5",
+        "DROP TABLE t1;" -> "",
+        "DROP TABLE sourceTable;" -> ""
     )
   }
 
   test("SPARK-11188 Analysis error reporting") {
-    runCliWithin(timeout = 2.minute,
-      errorResponses = Seq("AnalysisException"))(
-      "select * from nonexistent_table;"
-        -> "Error in query: Table or view not found: nonexistent_table;"
+    runCliWithin(timeout = 2.minute, errorResponses = Seq("AnalysisException"))(
+        "select * from nonexistent_table;" -> "Error in query: Table or view not found: nonexistent_table;"
     )
   }
 
   test("SPARK-11624 Spark SQL CLI should set sessionState only once") {
     runCliWithin(2.minute, Seq("-e", "!echo \"This is a test for Spark-11624\";"))(
-      "" -> "This is a test for Spark-11624")
+        "" -> "This is a test for Spark-11624")
   }
 }

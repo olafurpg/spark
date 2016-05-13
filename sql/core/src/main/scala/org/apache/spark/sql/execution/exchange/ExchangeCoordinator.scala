@@ -79,11 +79,10 @@ import org.apache.spark.sql.execution.{ShuffledRowRDD, SparkPlan}
  *  - post-shuffle partition 1: pre-shuffle partition 2
  *  - post-shuffle partition 2: pre-shuffle partition 3 and 4
  */
-private[sql] class ExchangeCoordinator(
-    numExchanges: Int,
-    advisoryTargetPostShuffleInputSize: Long,
-    minNumPostShufflePartitions: Option[Int] = None)
-  extends Logging {
+private[sql] class ExchangeCoordinator(numExchanges: Int,
+                                       advisoryTargetPostShuffleInputSize: Long,
+                                       minNumPostShufflePartitions: Option[Int] = None)
+    extends Logging {
 
   // The registered Exchange operators.
   private[this] val exchanges = ArrayBuffer[ShuffleExchange]()
@@ -136,8 +135,8 @@ private[sql] class ExchangeCoordinator(
     }
 
     logInfo(
-      s"advisoryTargetPostShuffleInputSize: $advisoryTargetPostShuffleInputSize, " +
-      s"targetPostShuffleInputSize $targetPostShuffleInputSize.")
+        s"advisoryTargetPostShuffleInputSize: $advisoryTargetPostShuffleInputSize, " +
+        s"targetPostShuffleInputSize $targetPostShuffleInputSize.")
 
     // Make sure we do get the same number of pre-shuffle partitions for those stages.
     val distinctNumPreShufflePartitions =
@@ -148,10 +147,9 @@ private[sql] class ExchangeCoordinator(
     // spark.sql.shuffle.partitions. Even if two input RDDs are having different
     // number of partitions, they will have the same number of pre-shuffle partitions
     // (i.e. map output partitions).
-    assert(
-      distinctNumPreShufflePartitions.length == 1,
-      "There should be only one distinct value of the number pre-shuffle partitions " +
-        "among registered Exchange operator.")
+    assert(distinctNumPreShufflePartitions.length == 1,
+           "There should be only one distinct value of the number pre-shuffle partitions " +
+           "among registered Exchange operator.")
     val numPreShufflePartitions = distinctNumPreShufflePartitions.head
 
     val partitionStartIndices = ArrayBuffer[Int]()
@@ -242,8 +240,7 @@ private[sql] class ExchangeCoordinator(
       var k = 0
       while (k < numExchanges) {
         val exchange = exchanges(k)
-        val rdd =
-          exchange.preparePostShuffleRDD(shuffleDependencies(k), partitionStartIndices)
+        val rdd = exchange.preparePostShuffleRDD(shuffleDependencies(k), partitionStartIndices)
         newPostShuffleRDDs.put(exchange, rdd)
 
         k += 1
@@ -262,7 +259,7 @@ private[sql] class ExchangeCoordinator(
 
     if (!postShuffleRDDs.containsKey(exchange)) {
       throw new IllegalStateException(
-        s"The given $exchange is not registered in this coordinator.")
+          s"The given $exchange is not registered in this coordinator.")
     }
 
     postShuffleRDDs.get(exchange)

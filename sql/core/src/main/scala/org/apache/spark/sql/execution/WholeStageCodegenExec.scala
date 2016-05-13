@@ -112,8 +112,9 @@ trait CodegenSupport extends SparkPlan {
       if (row != null) {
         ctx.currentVars = null
         ctx.INPUT_ROW = row
-        output.zipWithIndex.map { case (attr, i) =>
-          BoundReference(i, attr.dataType, attr.nullable).genCode(ctx)
+        output.zipWithIndex.map {
+          case (attr, i) =>
+            BoundReference(i, attr.dataType, attr.nullable).genCode(ctx)
         }
       } else {
         assert(outputVars != null)
@@ -122,27 +123,29 @@ trait CodegenSupport extends SparkPlan {
         outputVars.map(_.copy())
       }
 
-    val rowVar = if (row != null) {
-      ExprCode("", "false", row)
-    } else {
-      if (outputVars.nonEmpty) {
-        val colExprs = output.zipWithIndex.map { case (attr, i) =>
-          BoundReference(i, attr.dataType, attr.nullable)
-        }
-        val evaluateInputs = evaluateVariables(outputVars)
-        // generate the code to create a UnsafeRow
-        ctx.currentVars = outputVars
-        val ev = GenerateUnsafeProjection.createCode(ctx, colExprs, false)
-        val code = s"""
+    val rowVar =
+      if (row != null) {
+        ExprCode("", "false", row)
+      } else {
+        if (outputVars.nonEmpty) {
+          val colExprs = output.zipWithIndex.map {
+            case (attr, i) =>
+              BoundReference(i, attr.dataType, attr.nullable)
+          }
+          val evaluateInputs = evaluateVariables(outputVars)
+          // generate the code to create a UnsafeRow
+          ctx.currentVars = outputVars
+          val ev = GenerateUnsafeProjection.createCode(ctx, colExprs, false)
+          val code = s"""
           |$evaluateInputs
           |${ev.code.trim}
          """.stripMargin.trim
-        ExprCode(code, "false", ev.value)
-      } else {
-        // There is no columns
-        ExprCode("", "false", "unsafeRow")
+          ExprCode(code, "false", ev.value)
+        } else {
+          // There is no columns
+          ExprCode("", "false", "unsafeRow")
+        }
       }
-    }
 
     ctx.freshNamePrefix = parent.variablePrefix
     val evaluated = evaluateRequiredVariables(output, inputVars, parent.usedInputs)
@@ -169,15 +172,14 @@ trait CodegenSupport extends SparkPlan {
    * of evaluated variables, to prevent them to be evaluated twice.
    */
   protected def evaluateRequiredVariables(
-      attributes: Seq[Attribute],
-      variables: Seq[ExprCode],
-      required: AttributeSet): String = {
+      attributes: Seq[Attribute], variables: Seq[ExprCode], required: AttributeSet): String = {
     val evaluateVars = new StringBuilder
-    variables.zipWithIndex.foreach { case (ev, i) =>
-      if (ev.code != "" && required.contains(attributes(i))) {
-        evaluateVars.append(ev.code.trim + "\n")
-        ev.code = ""
-      }
+    variables.zipWithIndex.foreach {
+      case (ev, i) =>
+        if (ev.code != "" && required.contains(attributes(i))) {
+          evaluateVars.append(ev.code.trim + "\n")
+          ev.code = ""
+        }
     }
     evaluateVars.toString()
   }
@@ -207,7 +209,6 @@ trait CodegenSupport extends SparkPlan {
     throw new UnsupportedOperationException
   }
 }
-
 
 /**
  * InputAdapter is used to hide a SparkPlan from a subtree that support codegen.
@@ -291,8 +292,8 @@ case class WholeStageCodegenExec(child: SparkPlan) extends UnaryExecNode with Co
   override def outputOrdering: Seq[SortOrder] = child.outputOrdering
 
   override private[sql] lazy val metrics = Map(
-    "pipelineTime" -> SQLMetrics.createTimingMetric(sparkContext,
-      WholeStageCodegenExec.PIPELINE_DURATION_METRIC))
+      "pipelineTime" -> SQLMetrics.createTimingMetric(
+          sparkContext, WholeStageCodegenExec.PIPELINE_DURATION_METRIC))
 
   /**
    * Generates code for this subtree.
@@ -389,11 +390,12 @@ case class WholeStageCodegenExec(child: SparkPlan) extends UnaryExecNode with Co
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode], row: ExprCode): String = {
-    val doCopy = if (ctx.copyResult) {
-      ".copy()"
-    } else {
-      ""
-    }
+    val doCopy =
+      if (ctx.copyResult) {
+        ".copy()"
+      } else {
+        ""
+      }
     s"""
       |${row.code}
       |append(${row.value}$doCopy);
@@ -415,7 +417,6 @@ case class WholeStageCodegenExec(child: SparkPlan) extends UnaryExecNode with Co
 
   override def simpleString: String = "WholeStageCodegen"
 }
-
 
 /**
  * Find the chained plans that support codegen, collapse them together as WholeStageCodegen.
@@ -441,8 +442,7 @@ case class CollapseCodegenStages(conf: SQLConf) extends Rule[SparkPlan] {
     case plan: CodegenSupport if plan.supportCodegen =>
       val willFallback = plan.expressions.exists(_.find(e => !supportCodegen(e)).isDefined)
       // the generated code will be huge if there are too many columns
-      val hasTooManyOutputFields =
-        numOfNestedFields(plan.schema) > conf.wholeStageMaxNumFields
+      val hasTooManyOutputFields = numOfNestedFields(plan.schema) > conf.wholeStageMaxNumFields
       val hasTooManyInputFields =
         plan.children.map(p => numOfNestedFields(p.schema)).exists(_ > conf.wholeStageMaxNumFields)
       !willFallback && !hasTooManyOutputFields && !hasTooManyInputFields
@@ -456,7 +456,7 @@ case class CollapseCodegenStages(conf: SQLConf) extends Rule[SparkPlan] {
     case j @ SortMergeJoinExec(_, _, _, _, left, right) if j.supportCodegen =>
       // The children of SortMergeJoin should do codegen separately.
       j.copy(left = InputAdapter(insertWholeStageCodegen(left)),
-        right = InputAdapter(insertWholeStageCodegen(right)))
+             right = InputAdapter(insertWholeStageCodegen(right)))
     case p if !supportCodegen(p) =>
       // collapse them recursively
       InputAdapter(insertWholeStageCodegen(p))

@@ -86,14 +86,14 @@ final class Decimal extends Ordered[Decimal] with Serializable {
     if (unscaled <= -POW_10(MAX_LONG_DIGITS) || unscaled >= POW_10(MAX_LONG_DIGITS)) {
       // We can't represent this compactly as a long without risking overflow
       if (precision < 19) {
-        return null  // Requested precision is too low to represent this value
+        return null // Requested precision is too low to represent this value
       }
       this.decimalVal = BigDecimal(unscaled, scale)
       this.longVal = 0L
     } else {
       val p = POW_10(math.min(precision, MAX_LONG_DIGITS))
       if (unscaled <= -p || unscaled >= p) {
-        return null  // Requested precision is too low to represent this value
+        return null // Requested precision is too low to represent this value
       }
       this.decimalVal = null
       this.longVal = unscaled
@@ -108,9 +108,8 @@ final class Decimal extends Ordered[Decimal] with Serializable {
    */
   def set(decimal: BigDecimal, precision: Int, scale: Int): Decimal = {
     this.decimalVal = decimal.setScale(scale, ROUND_HALF_UP)
-    require(
-      decimalVal.precision <= precision,
-      s"Decimal precision ${decimalVal.precision} exceeds max precision $precision")
+    require(decimalVal.precision <= precision,
+            s"Decimal precision ${decimalVal.precision} exceeds max precision $precision")
     this.longVal = 0L
     this._precision = precision
     this._scale = scale
@@ -211,8 +210,8 @@ final class Decimal extends Ordered[Decimal] with Serializable {
    *
    * @return true if successful, false if overflow would occur
    */
-  private[sql] def changePrecision(precision: Int, scale: Int,
-                      roundMode: BigDecimal.RoundingMode.Value): Boolean = {
+  private[sql] def changePrecision(
+      precision: Int, scale: Int, roundMode: BigDecimal.RoundingMode.Value): Boolean = {
     // fast path for UnsafeProjection
     if (precision == this.precision && scale == this.scale) {
       return true
@@ -286,7 +285,7 @@ final class Decimal extends Ordered[Decimal] with Serializable {
 
   def isZero: Boolean = if (decimalVal.ne(null)) decimalVal == BIG_DEC_ZERO else longVal == 0
 
-  def + (that: Decimal): Decimal = {
+  def +(that: Decimal): Decimal = {
     if (decimalVal.eq(null) && that.decimalVal.eq(null) && scale == that.scale) {
       Decimal(longVal + that.longVal, Math.max(precision, that.precision), scale)
     } else {
@@ -294,7 +293,7 @@ final class Decimal extends Ordered[Decimal] with Serializable {
     }
   }
 
-  def - (that: Decimal): Decimal = {
+  def -(that: Decimal): Decimal = {
     if (decimalVal.eq(null) && that.decimalVal.eq(null) && scale == that.scale) {
       Decimal(longVal - that.longVal, Math.max(precision, that.precision), scale)
     } else {
@@ -303,13 +302,14 @@ final class Decimal extends Ordered[Decimal] with Serializable {
   }
 
   // HiveTypeCoercion will take care of the precision, scale of result
-  def * (that: Decimal): Decimal =
+  def *(that: Decimal): Decimal =
     Decimal(toJavaBigDecimal.multiply(that.toJavaBigDecimal, MATH_CONTEXT))
 
-  def / (that: Decimal): Decimal =
-    if (that.isZero) null else Decimal(toJavaBigDecimal.divide(that.toJavaBigDecimal, MATH_CONTEXT))
+  def /(that: Decimal): Decimal =
+    if (that.isZero) null
+    else Decimal(toJavaBigDecimal.divide(that.toJavaBigDecimal, MATH_CONTEXT))
 
-  def % (that: Decimal): Decimal =
+  def %(that: Decimal): Decimal =
     if (that.isZero) null
     else Decimal(toJavaBigDecimal.remainder(that.toJavaBigDecimal, MATH_CONTEXT))
 
@@ -325,19 +325,23 @@ final class Decimal extends Ordered[Decimal] with Serializable {
 
   def abs: Decimal = if (this.compare(Decimal.ZERO) < 0) this.unary_- else this
 
-  def floor: Decimal = if (scale == 0) this else {
-    val value = this.clone()
-    value.changePrecision(
-      DecimalType.bounded(precision - scale + 1, 0).precision, 0, ROUND_FLOOR)
-    value
-  }
+  def floor: Decimal =
+    if (scale == 0) this
+    else {
+      val value = this.clone()
+      value.changePrecision(
+          DecimalType.bounded(precision - scale + 1, 0).precision, 0, ROUND_FLOOR)
+      value
+    }
 
-  def ceil: Decimal = if (scale == 0) this else {
-    val value = this.clone()
-    value.changePrecision(
-      DecimalType.bounded(precision - scale + 1, 0).precision, 0, ROUND_CEILING)
-    value
-  }
+  def ceil: Decimal =
+    if (scale == 0) this
+    else {
+      val value = this.clone()
+      value.changePrecision(
+          DecimalType.bounded(precision - scale + 1, 0).precision, 0, ROUND_CEILING)
+      value
+    }
 }
 
 object Decimal {

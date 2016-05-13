@@ -23,13 +23,12 @@ import scala.reflect.runtime.universe.typeTag
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.ScalaReflectionLock
 
-
 /**
  * :: DeveloperApi ::
  * The data type representing `Boolean` values. Please use the singleton [[DataTypes.BooleanType]].
  */
 @DeveloperApi
-class BooleanType private() extends AtomicType {
+class BooleanType private () extends AtomicType {
   // The companion object and this class is separated so the companion object also subclasses
   // this type. Otherwise, the companion object would be of type "BooleanType$" in byte code.
   // Defined with a private constructor so the companion object is the only possible instantiation.
@@ -44,6 +43,5 @@ class BooleanType private() extends AtomicType {
 
   private[spark] override def asNullable: BooleanType = this
 }
-
 
 case object BooleanType extends BooleanType

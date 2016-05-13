@@ -39,14 +39,15 @@ import org.apache.spark.util.random.XORShiftRandom
  * to it should be cached by the user.
  */
 @Since("0.8.0")
-class KMeans private (
-    private var k: Int,
-    private var maxIterations: Int,
-    private var runs: Int,
-    private var initializationMode: String,
-    private var initializationSteps: Int,
-    private var epsilon: Double,
-    private var seed: Long) extends Serializable with Logging {
+class KMeans private (private var k: Int,
+                      private var maxIterations: Int,
+                      private var runs: Int,
+                      private var initializationMode: String,
+                      private var initializationSteps: Int,
+                      private var epsilon: Double,
+                      private var seed: Long)
+    extends Serializable
+    with Logging {
 
   /**
    * Constructs a KMeans instance with default parameters: {k: 2, maxIterations: 20, runs: 1,
@@ -66,8 +67,7 @@ class KMeans private (
    */
   @Since("0.8.0")
   def setK(k: Int): this.type = {
-    require(k > 0,
-      s"Number of clusters must be positive but got ${k}")
+    require(k > 0, s"Number of clusters must be positive but got ${k}")
     this.k = k
     this
   }
@@ -83,8 +83,8 @@ class KMeans private (
    */
   @Since("0.8.0")
   def setMaxIterations(maxIterations: Int): this.type = {
-    require(maxIterations >= 0,
-      s"Maximum of iterations must be nonnegative but got ${maxIterations}")
+    require(
+        maxIterations >= 0, s"Maximum of iterations must be nonnegative but got ${maxIterations}")
     this.maxIterations = maxIterations
     this
   }
@@ -138,7 +138,7 @@ class KMeans private (
   @Since("0.8.0")
   def setInitializationSteps(initializationSteps: Int): this.type = {
     require(initializationSteps > 0,
-      s"Number of initialization steps must be positive but got ${initializationSteps}")
+            s"Number of initialization steps must be positive but got ${initializationSteps}")
     this.initializationSteps = initializationSteps
     this
   }
@@ -155,8 +155,7 @@ class KMeans private (
    */
   @Since("0.8.0")
   def setEpsilon(epsilon: Double): this.type = {
-    require(epsilon >= 0,
-      s"Distance threshold must be nonnegative but got ${epsilon}")
+    require(epsilon >= 0, s"Distance threshold must be nonnegative but got ${epsilon}")
     this.epsilon = epsilon
     this
   }
@@ -202,27 +201,27 @@ class KMeans private (
   }
 
   private[spark] def run(
-      data: RDD[Vector],
-      instr: Option[Instrumentation[NewKMeans]]): KMeansModel = {
+      data: RDD[Vector], instr: Option[Instrumentation[NewKMeans]]): KMeansModel = {
 
     if (data.getStorageLevel == StorageLevel.NONE) {
-      logWarning("The input data is not directly cached, which may hurt performance if its"
-        + " parent RDDs are also uncached.")
+      logWarning("The input data is not directly cached, which may hurt performance if its" +
+          " parent RDDs are also uncached.")
     }
 
     // Compute squared norms and cache them.
     val norms = data.map(Vectors.norm(_, 2.0))
     norms.persist()
-    val zippedData = data.zip(norms).map { case (v, norm) =>
-      new VectorWithNorm(v, norm)
+    val zippedData = data.zip(norms).map {
+      case (v, norm) =>
+        new VectorWithNorm(v, norm)
     }
     val model = runAlgorithm(zippedData, instr)
     norms.unpersist()
 
     // Warn at the end of the run as well, for increased visibility.
     if (data.getStorageLevel == StorageLevel.NONE) {
-      logWarning("The input data was not directly cached, which may hurt performance if its"
-        + " parent RDDs are also uncached.")
+      logWarning("The input data was not directly cached, which may hurt performance if its" +
+          " parent RDDs are also uncached.")
     }
     model
   }
@@ -231,20 +230,20 @@ class KMeans private (
    * Implementation of K-Means algorithm.
    */
   private def runAlgorithm(
-      data: RDD[VectorWithNorm],
-      instr: Option[Instrumentation[NewKMeans]]): KMeansModel = {
+      data: RDD[VectorWithNorm], instr: Option[Instrumentation[NewKMeans]]): KMeansModel = {
 
     val sc = data.sparkContext
 
     val initStartTime = System.nanoTime()
 
     // Only one run is allowed when initialModel is given
-    val numRuns = if (initialModel.nonEmpty) {
-      if (runs > 1) logWarning("Ignoring runs; one run is allowed when initialModel is given.")
-      1
-    } else {
-      runs
-    }
+    val numRuns =
+      if (initialModel.nonEmpty) {
+        if (runs > 1) logWarning("Ignoring runs; one run is allowed when initialModel is given.")
+        1
+      } else {
+        runs
+      }
 
     val centers = initialModel match {
       case Some(kMeansCenters) =>
@@ -258,7 +257,7 @@ class KMeans private (
     }
     val initTimeInSeconds = (System.nanoTime() - initStartTime) / 1e9
     logInfo(s"Initialization with $initializationMode took " + "%.3f".format(initTimeInSeconds) +
-      " seconds.")
+        " seconds.")
 
     val active = Array.fill(numRuns)(true)
     val costs = Array.fill(numRuns)(0.0)
@@ -357,13 +356,17 @@ class KMeans private (
   /**
    * Initialize `runs` sets of cluster centers at random.
    */
-  private def initRandom(data: RDD[VectorWithNorm])
-  : Array[Array[VectorWithNorm]] = {
+  private def initRandom(data: RDD[VectorWithNorm]): Array[Array[VectorWithNorm]] = {
     // Sample all the cluster centers in one pass to avoid repeated scans
     val sample = data.takeSample(true, runs * k, new XORShiftRandom(this.seed).nextInt()).toSeq
-    Array.tabulate(runs)(r => sample.slice(r * k, (r + 1) * k).map { v =>
-      new VectorWithNorm(Vectors.dense(v.vector.toArray), v.norm)
-    }.toArray)
+    Array.tabulate(runs)(
+        r =>
+          sample
+            .slice(r * k, (r + 1) * k)
+            .map { v =>
+          new VectorWithNorm(Vectors.dense(v.vector.toArray), v.norm)
+        }
+            .toArray)
   }
 
   /**
@@ -375,8 +378,7 @@ class KMeans private (
    *
    * The original paper can be found at http://theory.stanford.edu/~sergei/papers/vldb12-kmpar.pdf.
    */
-  private def initKMeansParallel(data: RDD[VectorWithNorm])
-  : Array[Array[VectorWithNorm]] = {
+  private def initKMeansParallel(data: RDD[VectorWithNorm]): Array[Array[VectorWithNorm]] = {
     // Initialize empty centers and point costs.
     val centers = Array.tabulate(runs)(r => ArrayBuffer.empty[VectorWithNorm])
     var costs = data.map(_ => Array.fill(runs)(Double.PositiveInfinity))
@@ -405,13 +407,16 @@ class KMeans private (
     while (step < initializationSteps) {
       val bcNewCenters = data.context.broadcast(newCenters)
       val preCosts = costs
-      costs = data.zip(preCosts).map { case (point, cost) =>
-          Array.tabulate(runs) { r =>
-            math.min(KMeans.pointCost(bcNewCenters.value(r), point), cost(r))
-          }
-        }.persist(StorageLevel.MEMORY_AND_DISK)
-      val sumCosts = costs
-        .aggregate(new Array[Double](runs))(
+      costs = data
+        .zip(preCosts)
+        .map {
+          case (point, cost) =>
+            Array.tabulate(runs) { r =>
+              math.min(KMeans.pointCost(bcNewCenters.value(r), point), cost(r))
+            }
+        }
+        .persist(StorageLevel.MEMORY_AND_DISK)
+      val sumCosts = costs.aggregate(new Array[Double](runs))(
           seqOp = (s, v) => {
             // s += v
             var r = 0
@@ -430,23 +435,28 @@ class KMeans private (
             }
             s0
           }
-        )
+      )
 
       bcNewCenters.unpersist(blocking = false)
       preCosts.unpersist(blocking = false)
 
-      val chosen = data.zip(costs).mapPartitionsWithIndex { (index, pointsWithCosts) =>
-        val rand = new XORShiftRandom(seed ^ (step << 16) ^ index)
-        pointsWithCosts.flatMap { case (p, c) =>
-          val rs = (0 until runs).filter { r =>
-            rand.nextDouble() < 2.0 * c(r) * k / sumCosts(r)
+      val chosen = data
+        .zip(costs)
+        .mapPartitionsWithIndex { (index, pointsWithCosts) =>
+          val rand = new XORShiftRandom(seed ^ (step << 16) ^ index)
+          pointsWithCosts.flatMap {
+            case (p, c) =>
+              val rs = (0 until runs).filter { r =>
+                rand.nextDouble() < 2.0 * c(r) * k / sumCosts(r)
+              }
+              if (rs.length > 0) Some((p, rs)) else None
           }
-          if (rs.length > 0) Some((p, rs)) else None
         }
-      }.collect()
+        .collect()
       mergeNewCenters()
-      chosen.foreach { case (p, rs) =>
-        rs.foreach(newCenters(_) += p.toDense)
+      chosen.foreach {
+        case (p, rs) =>
+          rs.foreach(newCenters(_) += p.toDense)
       }
       step += 1
     }
@@ -476,7 +486,6 @@ class KMeans private (
   }
 }
 
-
 /**
  * Top-level methods for calling K-means clustering.
  */
@@ -502,14 +511,14 @@ object KMeans {
    *             on system time.
    */
   @Since("1.3.0")
-  def train(
-      data: RDD[Vector],
-      k: Int,
-      maxIterations: Int,
-      runs: Int,
-      initializationMode: String,
-      seed: Long): KMeansModel = {
-    new KMeans().setK(k)
+  def train(data: RDD[Vector],
+            k: Int,
+            maxIterations: Int,
+            runs: Int,
+            initializationMode: String,
+            seed: Long): KMeansModel = {
+    new KMeans()
+      .setK(k)
       .setMaxIterations(maxIterations)
       .setInitializationMode(initializationMode)
       .setSeed(seed)
@@ -527,13 +536,13 @@ object KMeans {
    *                           "k-means||". (default: "k-means||")
    */
   @Since("0.8.0")
-  def train(
-      data: RDD[Vector],
-      k: Int,
-      maxIterations: Int,
-      runs: Int,
-      initializationMode: String): KMeansModel = {
-    new KMeans().setK(k)
+  def train(data: RDD[Vector],
+            k: Int,
+            maxIterations: Int,
+            runs: Int,
+            initializationMode: String): KMeansModel = {
+    new KMeans()
+      .setK(k)
       .setMaxIterations(maxIterations)
       .setInitializationMode(initializationMode)
       .run(data)
@@ -543,10 +552,7 @@ object KMeans {
    * Trains a k-means model using specified parameters and the default values for unspecified.
    */
   @Since("0.8.0")
-  def train(
-      data: RDD[Vector],
-      k: Int,
-      maxIterations: Int): KMeansModel = {
+  def train(data: RDD[Vector], k: Int, maxIterations: Int): KMeansModel = {
     train(data, k, maxIterations, 1, K_MEANS_PARALLEL)
   }
 
@@ -554,11 +560,7 @@ object KMeans {
    * Trains a k-means model using specified parameters and the default values for unspecified.
    */
   @Since("0.8.0")
-  def train(
-      data: RDD[Vector],
-      k: Int,
-      maxIterations: Int,
-      runs: Int): KMeansModel = {
+  def train(data: RDD[Vector], k: Int, maxIterations: Int, runs: Int): KMeansModel = {
     train(data, k, maxIterations, runs, K_MEANS_PARALLEL)
   }
 
@@ -566,8 +568,7 @@ object KMeans {
    * Returns the index of the closest center to the given point, as well as the squared distance.
    */
   private[mllib] def findClosest(
-      centers: TraversableOnce[VectorWithNorm],
-      point: VectorWithNorm): (Int, Double) = {
+      centers: TraversableOnce[VectorWithNorm], point: VectorWithNorm): (Int, Double) = {
     var bestDistance = Double.PositiveInfinity
     var bestIndex = 0
     var i = 0
@@ -592,17 +593,14 @@ object KMeans {
    * Returns the K-means cost of a given point against the given cluster centers.
    */
   private[mllib] def pointCost(
-      centers: TraversableOnce[VectorWithNorm],
-      point: VectorWithNorm): Double =
+      centers: TraversableOnce[VectorWithNorm], point: VectorWithNorm): Double =
     findClosest(centers, point)._2
 
   /**
    * Returns the squared Euclidean distance between two vectors computed by
    * [[org.apache.spark.mllib.util.MLUtils#fastSquaredDistance]].
    */
-  private[clustering] def fastSquaredDistance(
-      v1: VectorWithNorm,
-      v2: VectorWithNorm): Double = {
+  private[clustering] def fastSquaredDistance(v1: VectorWithNorm, v2: VectorWithNorm): Double = {
     MLUtils.fastSquaredDistance(v1.vector, v1.norm, v2.vector, v2.norm)
   }
 
@@ -620,8 +618,8 @@ object KMeans {
  *
  * @see [[org.apache.spark.mllib.clustering.KMeans#fastSquaredDistance]]
  */
-private[clustering]
-class VectorWithNorm(val vector: Vector, val norm: Double) extends Serializable {
+private[clustering] class VectorWithNorm(val vector: Vector, val norm: Double)
+    extends Serializable {
 
   def this(vector: Vector) = this(vector, Vectors.norm(vector, 2.0))
 

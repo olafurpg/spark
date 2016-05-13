@@ -79,20 +79,22 @@ class OutputCommitCoordinatorSuite extends SparkFunSuite with BeforeAndAfter {
       .set("spark.hadoop.outputCommitCoordination.enabled", "true")
     sc = new SparkContext(conf) {
       override private[spark] def createSparkEnv(
-          conf: SparkConf,
-          isLocal: Boolean,
-          listenerBus: LiveListenerBus): SparkEnv = {
+          conf: SparkConf, isLocal: Boolean, listenerBus: LiveListenerBus): SparkEnv = {
         outputCommitCoordinator = spy(new OutputCommitCoordinator(conf, isDriver = true))
         // Use Mockito.spy() to maintain the default infrastructure everywhere else.
         // This mocking allows us to control the coordinator responses in test cases.
-        SparkEnv.createDriverEnv(conf, isLocal, listenerBus,
-          SparkContext.numDriverCores(master), Some(outputCommitCoordinator))
+        SparkEnv.createDriverEnv(conf,
+                                 isLocal,
+                                 listenerBus,
+                                 SparkContext.numDriverCores(master),
+                                 Some(outputCommitCoordinator))
       }
     }
     // Use Mockito.spy() to maintain the default infrastructure everywhere else
     val mockTaskScheduler = spy(sc.taskScheduler.asInstanceOf[TaskSchedulerImpl])
 
-    doAnswer(new Answer[Unit]() {
+    doAnswer(
+        new Answer[Unit]() {
       override def answer(invoke: InvocationOnMock): Unit = {
         // Submit the tasks, then force the task scheduler to dequeue the
         // speculated task
@@ -107,9 +109,8 @@ class OutputCommitCoordinatorSuite extends SparkFunSuite with BeforeAndAfter {
         new TaskSetManager(mockTaskScheduler, taskSet, 4) {
           var hasDequeuedSpeculatedTask = false
           override def dequeueSpeculativeTask(
-              execId: String,
-              host: String,
-              locality: TaskLocality.Value): Option[(Int, TaskLocality.Value)] = {
+              execId: String, host: String, locality: TaskLocality.Value)
+            : Option[(Int, TaskLocality.Value)] = {
             if (!hasDequeuedSpeculatedTask) {
               hasDequeuedSpeculatedTask = true
               Some(0, TaskLocality.PROCESS_LOCAL)
@@ -135,27 +136,33 @@ class OutputCommitCoordinatorSuite extends SparkFunSuite with BeforeAndAfter {
 
   test("Only one of two duplicate commit tasks should commit") {
     val rdd = sc.parallelize(Seq(1), 1)
-    sc.runJob(rdd, OutputCommitFunctions(tempDir.getAbsolutePath).commitSuccessfully _,
-      0 until rdd.partitions.size)
+    sc.runJob(rdd,
+              OutputCommitFunctions(tempDir.getAbsolutePath).commitSuccessfully _,
+              0 until rdd.partitions.size)
     assert(tempDir.list().size === 1)
   }
 
   test("If commit fails, if task is retried it should not be locked, and will succeed.") {
     val rdd = sc.parallelize(Seq(1), 1)
-    sc.runJob(rdd, OutputCommitFunctions(tempDir.getAbsolutePath).failFirstCommitAttempt _,
-      0 until rdd.partitions.size)
+    sc.runJob(rdd,
+              OutputCommitFunctions(tempDir.getAbsolutePath).failFirstCommitAttempt _,
+              0 until rdd.partitions.size)
     assert(tempDir.list().size === 1)
   }
 
   test("Job should not complete if all commits are denied") {
     // Create a mock OutputCommitCoordinator that denies all attempts to commit
-    doReturn(false).when(outputCommitCoordinator).handleAskPermissionToCommit(
-      Matchers.any(), Matchers.any(), Matchers.any())
+    doReturn(false)
+      .when(outputCommitCoordinator)
+      .handleAskPermissionToCommit(Matchers.any(), Matchers.any(), Matchers.any())
     val rdd: RDD[Int] = sc.parallelize(Seq(1), 1)
     def resultHandler(x: Int, y: Unit): Unit = {}
-    val futureAction: SimpleFutureAction[Unit] = sc.submitJob[Int, Unit, Unit](rdd,
-      OutputCommitFunctions(tempDir.getAbsolutePath).commitSuccessfully,
-      0 until rdd.partitions.size, resultHandler, () => Unit)
+    val futureAction: SimpleFutureAction[Unit] = sc.submitJob[Int, Unit, Unit](
+        rdd,
+        OutputCommitFunctions(tempDir.getAbsolutePath).commitSuccessfully,
+        0 until rdd.partitions.size,
+        resultHandler,
+        () => Unit)
     // It's an error if the job completes successfully even though no committer was authorized,
     // so throw an exception if the job was allowed to complete.
     val e = intercept[SparkException] {
@@ -176,19 +183,16 @@ class OutputCommitCoordinatorSuite extends SparkFunSuite with BeforeAndAfter {
     assert(!outputCommitCoordinator.canCommit(stage, partition, nonAuthorizedCommitter))
     // The non-authorized committer fails
     outputCommitCoordinator.taskCompleted(
-      stage, partition, attemptNumber = nonAuthorizedCommitter, reason = TaskKilled)
+        stage, partition, attemptNumber = nonAuthorizedCommitter, reason = TaskKilled)
     // New tasks should still not be able to commit because the authorized committer has not failed
-    assert(
-      !outputCommitCoordinator.canCommit(stage, partition, nonAuthorizedCommitter + 1))
+    assert(!outputCommitCoordinator.canCommit(stage, partition, nonAuthorizedCommitter + 1))
     // The authorized committer now fails, clearing the lock
     outputCommitCoordinator.taskCompleted(
-      stage, partition, attemptNumber = authorizedCommitter, reason = TaskKilled)
+        stage, partition, attemptNumber = authorizedCommitter, reason = TaskKilled)
     // A new task should now be allowed to become the authorized committer
-    assert(
-      outputCommitCoordinator.canCommit(stage, partition, nonAuthorizedCommitter + 2))
+    assert(outputCommitCoordinator.canCommit(stage, partition, nonAuthorizedCommitter + 2))
     // There can only be one authorized committer
-    assert(
-      !outputCommitCoordinator.canCommit(stage, partition, nonAuthorizedCommitter + 3))
+    assert(!outputCommitCoordinator.canCommit(stage, partition, nonAuthorizedCommitter + 3))
   }
 }
 
@@ -218,21 +222,20 @@ private case class OutputCommitFunctions(tempDirPath: String) {
 
   def failFirstCommitAttempt(iter: Iterator[Int]): Unit = {
     val ctx = TaskContext.get()
-    runCommitWithProvidedCommitter(ctx, iter,
-      if (ctx.attemptNumber == 0) failingOutputCommitter else successfulOutputCommitter)
+    runCommitWithProvidedCommitter(ctx,
+                                   iter,
+                                   if (ctx.attemptNumber == 0) failingOutputCommitter
+                                   else successfulOutputCommitter)
   }
 
   private def runCommitWithProvidedCommitter(
-      ctx: TaskContext,
-      iter: Iterator[Int],
-      outputCommitter: OutputCommitter): Unit = {
+      ctx: TaskContext, iter: Iterator[Int], outputCommitter: OutputCommitter): Unit = {
     def jobConf = new JobConf {
       override def getOutputCommitter(): OutputCommitter = outputCommitter
     }
     val sparkHadoopWriter = new SparkHadoopWriter(jobConf) {
       override def newTaskAttemptContext(
-        conf: JobConf,
-        attemptId: TaskAttemptID): TaskAttemptContext = {
+          conf: JobConf, attemptId: TaskAttemptID): TaskAttemptContext = {
         mock(classOf[TaskAttemptContext])
       }
     }

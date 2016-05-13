@@ -29,6 +29,7 @@ import org.apache.spark.sql.catalyst.trees.{CurrentOrigin, Origin}
  * A collection of utility methods for use during the parsing process.
  */
 object ParserUtils {
+
   /** Get the command which created the token. */
   def command(ctx: ParserRuleContext): String = {
     command(ctx.getStart.getInputStream)
@@ -169,6 +170,7 @@ object ParserUtils {
 
   /** Some syntactic sugar which makes it easier to work with optional clauses for LogicalPlans. */
   implicit class EnhancedLogicalPlan(val plan: LogicalPlan) extends AnyVal {
+
     /**
      * Create a plan using the block of code when the given context exists. Otherwise return the
      * original plan.
@@ -185,8 +187,7 @@ object ParserUtils {
      * Map a [[LogicalPlan]] to another [[LogicalPlan]] if the passed context exists using the
      * passed function. The original plan is returned when the context does not exist.
      */
-    def optionalMap[C <: ParserRuleContext](
-        ctx: C)(
+    def optionalMap[C <: ParserRuleContext](ctx: C)(
         f: (C, LogicalPlan) => LogicalPlan): LogicalPlan = {
       if (ctx != null) {
         f(ctx, plan)

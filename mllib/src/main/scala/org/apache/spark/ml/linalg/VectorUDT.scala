@@ -32,11 +32,11 @@ private[ml] class VectorUDT extends UserDefinedType[Vector] {
     // We only use "values" for dense vectors, and "size", "indices", and "values" for sparse
     // vectors. The "values" field is nullable because we might want to add binary vectors later,
     // which uses "size" and "indices", but not "values".
-    StructType(Seq(
-      StructField("type", ByteType, nullable = false),
-      StructField("size", IntegerType, nullable = true),
-      StructField("indices", ArrayType(IntegerType, containsNull = false), nullable = true),
-      StructField("values", ArrayType(DoubleType, containsNull = false), nullable = true)))
+    StructType(
+        Seq(StructField("type", ByteType, nullable = false),
+            StructField("size", IntegerType, nullable = true),
+            StructField("indices", ArrayType(IntegerType, containsNull = false), nullable = true),
+            StructField("values", ArrayType(DoubleType, containsNull = false), nullable = true)))
   }
 
   override def serialize(obj: Vector): InternalRow = {
@@ -61,8 +61,9 @@ private[ml] class VectorUDT extends UserDefinedType[Vector] {
   override def deserialize(datum: Any): Vector = {
     datum match {
       case row: InternalRow =>
-        require(row.numFields == 4,
-          s"VectorUDT.deserialize given row with length ${row.numFields} but requires length == 4")
+        require(
+            row.numFields == 4,
+            s"VectorUDT.deserialize given row with length ${row.numFields} but requires length == 4")
         val tpe = row.getByte(0)
         tpe match {
           case 0 =>

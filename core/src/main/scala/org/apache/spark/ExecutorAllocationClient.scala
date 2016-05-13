@@ -23,7 +23,6 @@ package org.apache.spark
  */
 private[spark] trait ExecutorAllocationClient {
 
-
   /** Get the list of currently active executors */
   private[spark] def getExecutorIds(): Seq[String]
 
@@ -42,9 +41,7 @@ private[spark] trait ExecutorAllocationClient {
    * @return whether the request is acknowledged by the cluster manager.
    */
   private[spark] def requestTotalExecutors(
-      numExecutors: Int,
-      localityAwareTasks: Int,
-      hostToLocalTaskCount: Map[String, Int]): Boolean
+      numExecutors: Int, localityAwareTasks: Int, hostToLocalTaskCount: Map[String, Int]): Boolean
 
   /**
    * Request an additional number of executors from the cluster manager.

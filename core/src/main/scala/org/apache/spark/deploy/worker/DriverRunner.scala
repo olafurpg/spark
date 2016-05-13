@@ -38,16 +38,15 @@ import org.apache.spark.util.{Clock, SystemClock, Utils}
  * Manages the execution of one driver, including automatically restarting the driver on failure.
  * This is currently only used in standalone cluster deploy mode.
  */
-private[deploy] class DriverRunner(
-    conf: SparkConf,
-    val driverId: String,
-    val workDir: File,
-    val sparkHome: File,
-    val driverDesc: DriverDescription,
-    val worker: RpcEndpointRef,
-    val workerUrl: String,
-    val securityManager: SecurityManager)
-  extends Logging {
+private[deploy] class DriverRunner(conf: SparkConf,
+                                   val driverId: String,
+                                   val workDir: File,
+                                   val sparkHome: File,
+                                   val driverDesc: DriverDescription,
+                                   val worker: RpcEndpointRef,
+                                   val workerUrl: String,
+                                   val securityManager: SecurityManager)
+    extends Logging {
 
   @volatile private var process: Option[Process] = None
   @volatile private var killed = false
@@ -89,11 +88,13 @@ private[deploy] class DriverRunner(
           }
 
           // TODO: If we add ability to submit multiple jars they should also be added here
-          val builder = CommandUtils.buildProcessBuilder(driverDesc.command, securityManager,
-            driverDesc.mem, sparkHome.getAbsolutePath, substituteVariables)
+          val builder = CommandUtils.buildProcessBuilder(driverDesc.command,
+                                                         securityManager,
+                                                         driverDesc.mem,
+                                                         sparkHome.getAbsolutePath,
+                                                         substituteVariables)
           launchDriver(builder, driverDir, driverDesc.supervise)
-        }
-        catch {
+        } catch {
           case e: Exception => finalException = Some(e)
         }
 
@@ -149,19 +150,20 @@ private[deploy] class DriverRunner(
     val localJarFile = new File(driverDir, jarFileName)
     val localJarFilename = localJarFile.getAbsolutePath
 
-    if (!localJarFile.exists()) { // May already exist if running multiple workers on one node
+    if (!localJarFile.exists()) {
+      // May already exist if running multiple workers on one node
       logInfo(s"Copying user jar $jarPath to $destPath")
-      Utils.fetchFile(
-        driverDesc.jarUrl,
-        driverDir,
-        conf,
-        securityManager,
-        hadoopConf,
-        System.currentTimeMillis(),
-        useCache = false)
+      Utils.fetchFile(driverDesc.jarUrl,
+                      driverDir,
+                      conf,
+                      securityManager,
+                      hadoopConf,
+                      System.currentTimeMillis(),
+                      useCache = false)
     }
 
-    if (!localJarFile.exists()) { // Verify copy succeeded
+    if (!localJarFile.exists()) {
+      // Verify copy succeeded
       throw new Exception(s"Did not see expected jar $jarFileName in $driverDir")
     }
 

@@ -156,11 +156,12 @@ object Attribute extends AttributeFactory {
 
   private[attribute] override def fromMetadata(metadata: Metadata): Attribute = {
     import org.apache.spark.ml.attribute.AttributeKeys._
-    val attrType = if (metadata.contains(TYPE)) {
-      metadata.getString(TYPE)
-    } else {
-      AttributeType.Numeric.name
-    }
+    val attrType =
+      if (metadata.contains(TYPE)) {
+        metadata.getString(TYPE)
+      } else {
+        AttributeType.Numeric.name
+      }
     getFactory(attrType).fromMetadata(metadata)
   }
 
@@ -178,7 +179,6 @@ object Attribute extends AttributeFactory {
   }
 }
 
-
 /**
  * :: DeveloperApi ::
  * A numeric attribute with optional summary statistics.
@@ -190,13 +190,13 @@ object Attribute extends AttributeFactory {
  * @param sparsity optional sparsity (ratio of zeros)
  */
 @DeveloperApi
-class NumericAttribute private[ml] (
-    override val name: Option[String] = None,
-    override val index: Option[Int] = None,
-    val min: Option[Double] = None,
-    val max: Option[Double] = None,
-    val std: Option[Double] = None,
-    val sparsity: Option[Double] = None) extends Attribute {
+class NumericAttribute private[ml](override val name: Option[String] = None,
+                                   override val index: Option[Int] = None,
+                                   val min: Option[Double] = None,
+                                   val max: Option[Double] = None,
+                                   val std: Option[Double] = None,
+                                   val sparsity: Option[Double] = None)
+    extends Attribute {
 
   std.foreach { s =>
     require(s >= 0.0, s"Standard deviation cannot be negative but got $s.")
@@ -218,7 +218,6 @@ class NumericAttribute private[ml] (
 
   /** Copy without the min value. */
   def withoutMin: NumericAttribute = copy(min = None)
-
 
   /** Copy with a new max value. */
   def withMax(max: Double): NumericAttribute = copy(max = Some(max))
@@ -260,25 +259,20 @@ class NumericAttribute private[ml] (
   }
 
   /** Creates a copy of this attribute with optional changes. */
-  private def copy(
-      name: Option[String] = name,
-      index: Option[Int] = index,
-      min: Option[Double] = min,
-      max: Option[Double] = max,
-      std: Option[Double] = std,
-      sparsity: Option[Double] = sparsity): NumericAttribute = {
+  private def copy(name: Option[String] = name,
+                   index: Option[Int] = index,
+                   min: Option[Double] = min,
+                   max: Option[Double] = max,
+                   std: Option[Double] = std,
+                   sparsity: Option[Double] = sparsity): NumericAttribute = {
     new NumericAttribute(name, index, min, max, std, sparsity)
   }
 
   override def equals(other: Any): Boolean = {
     other match {
       case o: NumericAttribute =>
-        (name == o.name) &&
-          (index == o.index) &&
-          (min == o.min) &&
-          (max == o.max) &&
-          (std == o.std) &&
-          (sparsity == o.sparsity)
+        (name == o.name) && (index == o.index) && (min == o.min) && (max == o.max) &&
+        (std == o.std) && (sparsity == o.sparsity)
       case _ =>
         false
     }
@@ -329,18 +323,18 @@ object NumericAttribute extends AttributeFactory {
  * @param values optional values. At most one of `numValues` and `values` can be defined.
  */
 @DeveloperApi
-class NominalAttribute private[ml] (
-    override val name: Option[String] = None,
-    override val index: Option[Int] = None,
-    val isOrdinal: Option[Boolean] = None,
-    val numValues: Option[Int] = None,
-    val values: Option[Array[String]] = None) extends Attribute {
+class NominalAttribute private[ml](override val name: Option[String] = None,
+                                   override val index: Option[Int] = None,
+                                   val isOrdinal: Option[Boolean] = None,
+                                   val numValues: Option[Int] = None,
+                                   val values: Option[Array[String]] = None)
+    extends Attribute {
 
   numValues.foreach { n =>
     require(n >= 0, s"numValues cannot be negative but got $n.")
   }
-  require(!(numValues.isDefined && values.isDefined),
-    "Cannot have both numValues and values defined.")
+  require(
+      !(numValues.isDefined && values.isDefined), "Cannot have both numValues and values defined.")
 
   override def attrType: AttributeType = AttributeType.Nominal
 
@@ -408,12 +402,11 @@ class NominalAttribute private[ml] (
   }
 
   /** Creates a copy of this attribute with optional changes. */
-  private def copy(
-      name: Option[String] = name,
-      index: Option[Int] = index,
-      isOrdinal: Option[Boolean] = isOrdinal,
-      numValues: Option[Int] = numValues,
-      values: Option[Array[String]] = values): NominalAttribute = {
+  private def copy(name: Option[String] = name,
+                   index: Option[Int] = index,
+                   isOrdinal: Option[Boolean] = isOrdinal,
+                   numValues: Option[Int] = numValues,
+                   values: Option[Array[String]] = values): NominalAttribute = {
     new NominalAttribute(name, index, isOrdinal, numValues, values)
   }
 
@@ -432,11 +425,8 @@ class NominalAttribute private[ml] (
   override def equals(other: Any): Boolean = {
     other match {
       case o: NominalAttribute =>
-        (name == o.name) &&
-          (index == o.index) &&
-          (isOrdinal == o.isOrdinal) &&
-          (numValues == o.numValues) &&
-          (values.map(_.toSeq) == o.values.map(_.toSeq))
+        (name == o.name) && (index == o.index) && (isOrdinal == o.isOrdinal) &&
+        (numValues == o.numValues) && (values.map(_.toSeq) == o.values.map(_.toSeq))
       case _ =>
         false
     }
@@ -470,8 +460,7 @@ object NominalAttribute extends AttributeFactory {
     val isOrdinal = if (metadata.contains(ORDINAL)) Some(metadata.getBoolean(ORDINAL)) else None
     val numValues =
       if (metadata.contains(NUM_VALUES)) Some(metadata.getLong(NUM_VALUES).toInt) else None
-    val values =
-      if (metadata.contains(VALUES)) Some(metadata.getStringArray(VALUES)) else None
+    val values = if (metadata.contains(VALUES)) Some(metadata.getStringArray(VALUES)) else None
     new NominalAttribute(name, index, isOrdinal, numValues, values)
   }
 }
@@ -484,14 +473,14 @@ object NominalAttribute extends AttributeFactory {
  * @param values optional values. If set, its size must be 2.
  */
 @DeveloperApi
-class BinaryAttribute private[ml] (
-    override val name: Option[String] = None,
-    override val index: Option[Int] = None,
-    val values: Option[Array[String]] = None)
-  extends Attribute {
+class BinaryAttribute private[ml](override val name: Option[String] = None,
+                                  override val index: Option[Int] = None,
+                                  val values: Option[Array[String]] = None)
+    extends Attribute {
 
   values.foreach { v =>
-    require(v.length == 2, s"Number of values must be 2 for a binary attribute but got ${v.toSeq}.")
+    require(
+        v.length == 2, s"Number of values must be 2 for a binary attribute but got ${v.toSeq}.")
   }
 
   override def attrType: AttributeType = AttributeType.Binary
@@ -518,10 +507,9 @@ class BinaryAttribute private[ml] (
   def withoutValues: BinaryAttribute = copy(values = None)
 
   /** Creates a copy of this attribute with optional changes. */
-  private def copy(
-      name: Option[String] = name,
-      index: Option[Int] = index,
-      values: Option[Array[String]] = values): BinaryAttribute = {
+  private def copy(name: Option[String] = name,
+                   index: Option[Int] = index,
+                   values: Option[Array[String]] = values): BinaryAttribute = {
     new BinaryAttribute(name, index, values)
   }
 
@@ -538,9 +526,7 @@ class BinaryAttribute private[ml] (
   override def equals(other: Any): Boolean = {
     other match {
       case o: BinaryAttribute =>
-        (name == o.name) &&
-          (index == o.index) &&
-          (values.map(_.toSeq) == o.values.map(_.toSeq))
+        (name == o.name) && (index == o.index) && (values.map(_.toSeq) == o.values.map(_.toSeq))
       case _ =>
         false
     }
@@ -569,8 +555,7 @@ object BinaryAttribute extends AttributeFactory {
     import org.apache.spark.ml.attribute.AttributeKeys._
     val name = if (metadata.contains(NAME)) Some(metadata.getString(NAME)) else None
     val index = if (metadata.contains(INDEX)) Some(metadata.getLong(INDEX).toInt) else None
-    val values =
-      if (metadata.contains(VALUES)) Some(metadata.getStringArray(VALUES)) else None
+    val values = if (metadata.contains(VALUES)) Some(metadata.getStringArray(VALUES)) else None
     new BinaryAttribute(name, index, values)
   }
 }
@@ -603,5 +588,4 @@ object UnresolvedAttribute extends Attribute {
   override def index: Option[Int] = None
 
   override def withName(name: String): Attribute = this
-
 }

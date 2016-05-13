@@ -27,8 +27,8 @@ import org.apache.spark.unsafe.types.UTF8String
  * Expression that returns the name of the current file being read.
  */
 @ExpressionDescription(
-  usage = "_FUNC_() - Returns the name of the current file being read if available",
-  extended = "> SELECT _FUNC_();\n ''")
+    usage = "_FUNC_() - Returns the name of the current file being read if available",
+    extended = "> SELECT _FUNC_();\n ''")
 case class InputFileName() extends LeafExpression with Nondeterministic {
 
   override def nullable: Boolean = true
@@ -45,6 +45,7 @@ case class InputFileName() extends LeafExpression with Nondeterministic {
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     ev.copy(code = s"final ${ctx.javaType(dataType)} ${ev.value} = " +
-      "org.apache.spark.rdd.InputFileNameHolder.getInputFileName();", isNull = "false")
+              "org.apache.spark.rdd.InputFileNameHolder.getInputFileName();",
+            isNull = "false")
   }
 }

@@ -68,7 +68,7 @@ private[python] trait PythonTransformFunctionSerializer {
  * deserialized by Java.
  */
 private[python] class TransformFunction(@transient var pfunc: PythonTransformFunction)
-  extends function.Function2[JList[JavaRDD[_]], Time, JavaRDD[Array[Byte]]] {
+    extends function.Function2[JList[JavaRDD[_]], Time, JavaRDD[Array[Byte]]] {
 
   def apply(rdd: Option[RDD[_]], time: Time): Option[RDD[Array[Byte]]] = {
     val rdds = List(rdd.map(JavaRDD.fromRDD(_)).orNull).asJava
@@ -118,7 +118,7 @@ private[python] object PythonTransformFunctionSerializer {
 
   /**
    * A serializer in Python, used to serialize PythonTransformFunction
-    */
+   */
   private var serializer: PythonTransformFunctionSerializer = _
 
   /*
@@ -189,10 +189,8 @@ private[python] object PythonDStream {
 /**
  * Base class for PythonDStream with some common methods
  */
-private[python] abstract class PythonDStream(
-    parent: DStream[_],
-    pfunc: PythonTransformFunction)
-  extends DStream[Array[Byte]] (parent.ssc) {
+private[python] abstract class PythonDStream(parent: DStream[_], pfunc: PythonTransformFunction)
+    extends DStream[Array[Byte]](parent.ssc) {
 
   val func = new TransformFunction(pfunc)
 
@@ -206,10 +204,8 @@ private[python] abstract class PythonDStream(
 /**
  * Transformed DStream in Python.
  */
-private[python] class PythonTransformedDStream (
-    parent: DStream[_],
-    pfunc: PythonTransformFunction)
-  extends PythonDStream(parent, pfunc) {
+private[python] class PythonTransformedDStream(parent: DStream[_], pfunc: PythonTransformFunction)
+    extends PythonDStream(parent, pfunc) {
 
   override def compute(validTime: Time): Option[RDD[Array[Byte]]] = {
     val rdd = parent.getOrCompute(validTime)
@@ -225,10 +221,8 @@ private[python] class PythonTransformedDStream (
  * Transformed from two DStreams in Python.
  */
 private[python] class PythonTransformed2DStream(
-    parent: DStream[_],
-    parent2: DStream[_],
-    pfunc: PythonTransformFunction)
-  extends DStream[Array[Byte]] (parent.ssc) {
+    parent: DStream[_], parent2: DStream[_], pfunc: PythonTransformFunction)
+    extends DStream[Array[Byte]](parent.ssc) {
 
   val func = new TransformFunction(pfunc)
 
@@ -249,20 +243,17 @@ private[python] class PythonTransformed2DStream(
 /**
  * similar to StateDStream
  */
-private[python] class PythonStateDStream(
-    parent: DStream[Array[Byte]],
-    reduceFunc: PythonTransformFunction,
-    initialRDD: Option[RDD[Array[Byte]]])
-  extends PythonDStream(parent, reduceFunc) {
+private[python] class PythonStateDStream(parent: DStream[Array[Byte]],
+                                         reduceFunc: PythonTransformFunction,
+                                         initialRDD: Option[RDD[Array[Byte]]])
+    extends PythonDStream(parent, reduceFunc) {
 
-  def this(
-    parent: DStream[Array[Byte]],
-    reduceFunc: PythonTransformFunction) = this(parent, reduceFunc, None)
+  def this(parent: DStream[Array[Byte]], reduceFunc: PythonTransformFunction) =
+    this(parent, reduceFunc, None)
 
-  def this(
-    parent: DStream[Array[Byte]],
-    reduceFunc: PythonTransformFunction,
-    initialRDD: JavaRDD[Array[Byte]]) = this(parent, reduceFunc, Some(initialRDD.rdd))
+  def this(parent: DStream[Array[Byte]],
+           reduceFunc: PythonTransformFunction,
+           initialRDD: JavaRDD[Array[Byte]]) = this(parent, reduceFunc, Some(initialRDD.rdd))
 
   super.persist(StorageLevel.MEMORY_ONLY)
   override val mustCheckpoint = true
@@ -287,7 +278,7 @@ private[python] class PythonReducedWindowedDStream(
     @transient private val pinvReduceFunc: PythonTransformFunction,
     _windowDuration: Duration,
     _slideDuration: Duration)
-  extends PythonDStream(parent, preduceFunc) {
+    extends PythonDStream(parent, preduceFunc) {
 
   super.persist(StorageLevel.MEMORY_ONLY)
 
@@ -319,16 +310,16 @@ private[python] class PythonReducedWindowedDStream(
     val previousRDD = getOrCompute(previous.endTime)
 
     // for small window, reduce once will be better than twice
-    if (pinvReduceFunc != null && previousRDD.isDefined
-        && windowDuration >= slideDuration * 5) {
+    if (pinvReduceFunc != null && previousRDD.isDefined && windowDuration >= slideDuration * 5) {
 
       // subtract the values from old RDDs
       val oldRDDs = parent.slice(previous.beginTime + parent.slideDuration, current.beginTime)
-      val subtracted = if (oldRDDs.size > 0) {
-        invReduceFunc(previousRDD, Some(ssc.sc.union(oldRDDs)), validTime)
-      } else {
-        previousRDD
-      }
+      val subtracted =
+        if (oldRDDs.size > 0) {
+          invReduceFunc(previousRDD, Some(ssc.sc.union(oldRDDs)), validTime)
+        } else {
+          previousRDD
+        }
 
       // add the RDDs of the reduced values in "new time steps"
       val newRDDs = parent.slice(previous.endTime + parent.slideDuration, current.endTime)

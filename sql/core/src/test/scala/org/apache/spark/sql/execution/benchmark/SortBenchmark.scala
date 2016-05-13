@@ -36,21 +36,21 @@ import org.apache.spark.util.random.XORShiftRandom
 class SortBenchmark extends BenchmarkBase {
 
   private def referenceKeyPrefixSort(buf: LongArray, lo: Int, hi: Int, refCmp: PrefixComparator) {
-    new Sorter(UnsafeSortDataFormat.INSTANCE).sort(
-      buf, lo, hi, new Comparator[RecordPointerAndKeyPrefix] {
-        override def compare(
-          r1: RecordPointerAndKeyPrefix,
-          r2: RecordPointerAndKeyPrefix): Int = {
-          refCmp.compare(r1.keyPrefix, r2.keyPrefix)
-        }
-      })
+    new Sorter(UnsafeSortDataFormat.INSTANCE)
+      .sort(buf, lo, hi, new Comparator[RecordPointerAndKeyPrefix] {
+      override def compare(r1: RecordPointerAndKeyPrefix, r2: RecordPointerAndKeyPrefix): Int = {
+        refCmp.compare(r1.keyPrefix, r2.keyPrefix)
+      }
+    })
   }
 
   private def generateKeyPrefixTestData(size: Int, rand: => Long): (LongArray, LongArray) = {
-    val ref = Array.tabulate[Long](size * 2) { i => rand }
+    val ref = Array.tabulate[Long](size * 2) { i =>
+      rand
+    }
     val extended = ref ++ Array.fill[Long](size * 2)(0)
     (new LongArray(MemoryBlock.fromLongArray(ref)),
-      new LongArray(MemoryBlock.fromLongArray(extended)))
+     new LongArray(MemoryBlock.fromLongArray(extended)))
   }
 
   ignore("sort") {
@@ -58,14 +58,18 @@ class SortBenchmark extends BenchmarkBase {
     val rand = new XORShiftRandom(123)
     val benchmark = new Benchmark("radix sort " + size, size)
     benchmark.addTimerCase("reference TimSort key prefix array") { timer =>
-      val array = Array.tabulate[Long](size * 2) { i => rand.nextLong }
+      val array = Array.tabulate[Long](size * 2) { i =>
+        rand.nextLong
+      }
       val buf = new LongArray(MemoryBlock.fromLongArray(array))
       timer.startTiming()
       referenceKeyPrefixSort(buf, 0, size, PrefixComparators.BINARY)
       timer.stopTiming()
     }
     benchmark.addTimerCase("reference Arrays.sort") { timer =>
-      val ref = Array.tabulate[Long](size) { i => rand.nextLong }
+      val ref = Array.tabulate[Long](size) { i =>
+        rand.nextLong
+      }
       timer.startTiming()
       Arrays.sort(ref)
       timer.stopTiming()
@@ -127,6 +131,6 @@ class SortBenchmark extends BenchmarkBase {
       radix sort two bytes                      255 /  258         98.2          10.2      61.1X
       radix sort eight bytes                    991 /  997         25.2          39.6      15.7X
       radix sort key prefix array              1540 / 1563         16.2          61.6      10.1X
-    */
+   */
   }
 }

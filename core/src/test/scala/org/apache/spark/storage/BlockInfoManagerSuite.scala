@@ -29,7 +29,6 @@ import org.scalatest.time.SpanSugar._
 import org.apache.spark.{SparkException, SparkFunSuite, TaskContext, TaskContextImpl}
 import org.apache.spark.util.ThreadUtils
 
-
 class BlockInfoManagerSuite extends SparkFunSuite with BeforeAndAfterEach {
 
   private implicit val ec = ExecutionContext.global
@@ -62,7 +61,7 @@ class BlockInfoManagerSuite extends SparkFunSuite with BeforeAndAfterEach {
   private def withTaskId[T](taskAttemptId: Long)(block: => T): T = {
     try {
       TaskContext.setTaskContext(
-        new TaskContextImpl(0, 0, taskAttemptId, 0, null, new Properties, null))
+          new TaskContextImpl(0, 0, taskAttemptId, 0, null, new Properties, null))
       block
     } finally {
       TaskContext.unset()
@@ -119,7 +118,7 @@ class BlockInfoManagerSuite extends SparkFunSuite with BeforeAndAfterEach {
         blockInfoManager.lockNewBlockForWriting("block", newBlockInfo())
       }
     }
-    Thread.sleep(300)  // Hack to try to ensure that both future tasks are waiting
+    Thread.sleep(300) // Hack to try to ensure that both future tasks are waiting
     withTaskId(0) {
       blockInfoManager.downgradeLock("block")
     }
@@ -144,7 +143,7 @@ class BlockInfoManagerSuite extends SparkFunSuite with BeforeAndAfterEach {
         blockInfoManager.lockNewBlockForWriting("block", newBlockInfo())
       }
     }
-    Thread.sleep(300)  // Hack to try to ensure that both future tasks are waiting
+    Thread.sleep(300) // Hack to try to ensure that both future tasks are waiting
     withTaskId(0) {
       blockInfoManager.removeBlock("block")
     }
@@ -259,7 +258,7 @@ class BlockInfoManagerSuite extends SparkFunSuite with BeforeAndAfterEach {
         blockInfoManager.lockForReading("block")
       }
     }
-    Thread.sleep(300)  // Hack to try to ensure that both future tasks are waiting
+    Thread.sleep(300) // Hack to try to ensure that both future tasks are waiting
     withTaskId(0) {
       blockInfoManager.unlock("block")
     }
@@ -284,13 +283,13 @@ class BlockInfoManagerSuite extends SparkFunSuite with BeforeAndAfterEach {
         blockInfoManager.lockForWriting("block")
       }
     }
-    Thread.sleep(300)  // Hack to try to ensure that both future tasks are waiting
+    Thread.sleep(300) // Hack to try to ensure that both future tasks are waiting
     withTaskId(0) {
       blockInfoManager.unlock("block")
     }
-    assert(
-      ThreadUtils.awaitResult(
-        Future.firstCompletedOf(Seq(write1Future, write2Future)), 1.seconds).isDefined)
+    assert(ThreadUtils
+          .awaitResult(Future.firstCompletedOf(Seq(write1Future, write2Future)), 1.seconds)
+          .isDefined)
     val firstWriteWinner = if (write1Future.isCompleted) 1 else 2
     withTaskId(firstWriteWinner) {
       blockInfoManager.unlock("block")
@@ -342,7 +341,7 @@ class BlockInfoManagerSuite extends SparkFunSuite with BeforeAndAfterEach {
         blockInfoManager.lockForWriting("block")
       }
     }
-    Thread.sleep(300)  // Hack to try to ensure that both future tasks are waiting
+    Thread.sleep(300) // Hack to try to ensure that both future tasks are waiting
     withTaskId(0) {
       blockInfoManager.removeBlock("block")
     }

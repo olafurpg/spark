@@ -30,9 +30,8 @@ import org.apache.spark.ml.util._
 import org.apache.spark.sql.{DataFrame, Dataset}
 
 private[r] class NaiveBayesWrapper private (
-    val pipeline: PipelineModel,
-    val labels: Array[String],
-    val features: Array[String]) extends MLWritable {
+    val pipeline: PipelineModel, val labels: Array[String], val features: Array[String])
+    extends MLWritable {
 
   import NaiveBayesWrapper._
 
@@ -43,7 +42,8 @@ private[r] class NaiveBayesWrapper private (
   lazy val tables: Array[Double] = naiveBayesModel.theta.toArray.map(math.exp)
 
   def transform(dataset: Dataset[_]): DataFrame = {
-    pipeline.transform(dataset)
+    pipeline
+      .transform(dataset)
       .drop(PREDICTED_LABEL_INDEX_COL)
       .drop(naiveBayesModel.getFeaturesCol)
   }
@@ -57,16 +57,14 @@ private[r] object NaiveBayesWrapper extends MLReadable[NaiveBayesWrapper] {
   val PREDICTED_LABEL_COL = "prediction"
 
   def fit(formula: String, data: DataFrame, laplace: Double): NaiveBayesWrapper = {
-    val rFormula = new RFormula()
-      .setFormula(formula)
-      .fit(data)
+    val rFormula = new RFormula().setFormula(formula).fit(data)
     // get labels and feature names from output schema
     val schema = rFormula.transform(data).schema
-    val labelAttr = Attribute.fromStructField(schema(rFormula.getLabelCol))
-      .asInstanceOf[NominalAttribute]
+    val labelAttr =
+      Attribute.fromStructField(schema(rFormula.getLabelCol)).asInstanceOf[NominalAttribute]
     val labels = labelAttr.values.get
-    val featureAttrs = AttributeGroup.fromStructField(schema(rFormula.getFeaturesCol))
-      .attributes.get
+    val featureAttrs =
+      AttributeGroup.fromStructField(schema(rFormula.getFeaturesCol)).attributes.get
     val features = featureAttrs.map(_.name.get)
     // assemble and fit the pipeline
     val naiveBayes = new NaiveBayes()
@@ -77,9 +75,7 @@ private[r] object NaiveBayesWrapper extends MLReadable[NaiveBayesWrapper] {
       .setInputCol(PREDICTED_LABEL_INDEX_COL)
       .setOutputCol(PREDICTED_LABEL_COL)
       .setLabels(labels)
-    val pipeline = new Pipeline()
-      .setStages(Array(rFormula, naiveBayes, idxToStr))
-      .fit(data)
+    val pipeline = new Pipeline().setStages(Array(rFormula, naiveBayes, idxToStr)).fit(data)
     new NaiveBayesWrapper(pipeline, labels, features)
   }
 
@@ -93,7 +89,8 @@ private[r] object NaiveBayesWrapper extends MLReadable[NaiveBayesWrapper] {
       val rMetadataPath = new Path(path, "rMetadata").toString
       val pipelinePath = new Path(path, "pipeline").toString
 
-      val rMetadata = ("class" -> instance.getClass.getName) ~
+      val rMetadata =
+        ("class" -> instance.getClass.getName) ~
         ("labels" -> instance.labels.toSeq) ~
         ("features" -> instance.features.toSeq)
       val rMetadataJson: String = compact(render(rMetadata))

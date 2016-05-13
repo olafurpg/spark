@@ -37,13 +37,12 @@ import org.apache.spark.annotation.DeveloperApi
  * TODO: Cache the hash values of each key? java.util.HashMap does that.
  */
 @DeveloperApi
-class AppendOnlyMap[K, V](initialCapacity: Int = 64)
-  extends Iterable[(K, V)] with Serializable {
+class AppendOnlyMap[K, V](initialCapacity: Int = 64) extends Iterable[(K, V)] with Serializable {
 
   import AppendOnlyMap._
 
   require(initialCapacity <= MAXIMUM_CAPACITY,
-    s"Can't make capacity bigger than ${MAXIMUM_CAPACITY} elements")
+          s"Can't make capacity bigger than ${MAXIMUM_CAPACITY} elements")
   require(initialCapacity >= 1, "Invalid initial capacity")
 
   private val LOAD_FACTOR = 0.7
@@ -108,7 +107,7 @@ class AppendOnlyMap[K, V](initialCapacity: Int = 64)
       if (curKey.eq(null)) {
         data(2 * pos) = k
         data(2 * pos + 1) = value.asInstanceOf[AnyRef]
-        incrementSize()  // Since we added a new key
+        incrementSize() // Since we added a new key
         return
       } else if (k.eq(curKey) || k.equals(curKey)) {
         data(2 * pos + 1) = value.asInstanceOf[AnyRef]
@@ -167,7 +166,8 @@ class AppendOnlyMap[K, V](initialCapacity: Int = 64)
 
       /** Get the next value we should return from next(), or null if we're finished iterating */
       def nextValue(): (K, V) = {
-        if (pos == -1) {    // Treat position -1 as looking at the null value
+        if (pos == -1) {
+          // Treat position -1 as looking at the null value
           if (haveNullValue) {
             return (null.asInstanceOf[K], nullValue)
           }

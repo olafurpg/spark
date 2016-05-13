@@ -24,23 +24,20 @@ import org.apache.spark.sql.execution.datasources.{DataSourceStrategy, FileSourc
 import org.apache.spark.sql.internal.SQLConf
 
 class SparkPlanner(
-    val sparkContext: SparkContext,
-    val conf: SQLConf,
-    val extraStrategies: Seq[Strategy])
-  extends SparkStrategies {
+    val sparkContext: SparkContext, val conf: SQLConf, val extraStrategies: Seq[Strategy])
+    extends SparkStrategies {
 
   def numPartitions: Int = conf.numShufflePartitions
 
   def strategies: Seq[Strategy] =
-      extraStrategies ++ (
-      FileSourceStrategy ::
-      DataSourceStrategy ::
-      DDLStrategy ::
-      SpecialLimits ::
-      Aggregation ::
-      JoinSelection ::
-      InMemoryScans ::
-      BasicOperators :: Nil)
+    extraStrategies ++ (FileSourceStrategy ::
+        DataSourceStrategy ::
+        DDLStrategy ::
+        SpecialLimits ::
+        Aggregation ::
+        JoinSelection ::
+        InMemoryScans ::
+        BasicOperators :: Nil)
 
   /**
    * Used to build table scan operators where complex projection and filtering are done using
@@ -55,11 +52,10 @@ class SparkPlanner(
    * The required attributes for both filtering and expression evaluation are passed to the
    * provided `scanBuilder` function so that it can avoid unnecessary column materialization.
    */
-  def pruneFilterProject(
-      projectList: Seq[NamedExpression],
-      filterPredicates: Seq[Expression],
-      prunePushedDownFilters: Seq[Expression] => Seq[Expression],
-      scanBuilder: Seq[Attribute] => SparkPlan): SparkPlan = {
+  def pruneFilterProject(projectList: Seq[NamedExpression],
+                         filterPredicates: Seq[Expression],
+                         prunePushedDownFilters: Seq[Expression] => Seq[Expression],
+                         scanBuilder: Seq[Attribute] => SparkPlan): SparkPlan = {
 
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))

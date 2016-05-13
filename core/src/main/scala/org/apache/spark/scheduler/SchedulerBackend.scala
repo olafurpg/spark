@@ -55,5 +55,4 @@ private[spark] trait SchedulerBackend {
    * @return Map containing the log names and their respective URLs
    */
   def getDriverLogUrls: Option[Map[String, String]] = None
-
 }

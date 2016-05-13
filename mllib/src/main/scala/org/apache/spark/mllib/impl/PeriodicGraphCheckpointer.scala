@@ -21,7 +21,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.graphx.Graph
 import org.apache.spark.storage.StorageLevel
 
-
 /**
  * This class helps with persisting and checkpointing Graphs.
  * Specifically, it automatically handles persisting and (optionally) checkpointing, as well as
@@ -76,10 +75,8 @@ import org.apache.spark.storage.StorageLevel
  *
  * TODO: Move this out of MLlib?
  */
-private[mllib] class PeriodicGraphCheckpointer[VD, ED](
-    checkpointInterval: Int,
-    sc: SparkContext)
-  extends PeriodicCheckpointer[Graph[VD, ED]](checkpointInterval, sc) {
+private[mllib] class PeriodicGraphCheckpointer[VD, ED](checkpointInterval: Int, sc: SparkContext)
+    extends PeriodicCheckpointer[Graph[VD, ED]](checkpointInterval, sc) {
 
   override protected def checkpoint(data: Graph[VD, ED]): Unit = data.checkpoint()
 

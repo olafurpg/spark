@@ -22,18 +22,15 @@ import java.util.zip.ZipOutputStream
 import org.apache.spark.SparkException
 import org.apache.spark.ui.SparkUI
 
-private[spark] case class ApplicationAttemptInfo(
-    attemptId: Option[String],
-    startTime: Long,
-    endTime: Long,
-    lastUpdated: Long,
-    sparkUser: String,
-    completed: Boolean = false)
+private[spark] case class ApplicationAttemptInfo(attemptId: Option[String],
+                                                 startTime: Long,
+                                                 endTime: Long,
+                                                 lastUpdated: Long,
+                                                 sparkUser: String,
+                                                 completed: Boolean = false)
 
 private[spark] case class ApplicationHistoryInfo(
-    id: String,
-    name: String,
-    attempts: List[ApplicationAttemptInfo]) {
+    id: String, name: String, attempts: List[ApplicationAttemptInfo]) {
 
   /**
    * Has this application completed?
@@ -52,6 +49,7 @@ private[spark] case class ApplicationHistoryInfo(
  *  being out of date; previous probes must be discarded.
  */
 private[history] abstract class HistoryUpdateProbe {
+
   /**
    * Return true if the history provider has a later version of the application
    * attempt than the one against this probe was constructed.
@@ -66,9 +64,7 @@ private[history] abstract class HistoryUpdateProbe {
  * @param ui Spark UI
  * @param updateProbe probe to call to check on the update state of this application attempt
  */
-private[history] case class LoadedAppUI(
-    ui: SparkUI,
-    updateProbe: () => Boolean)
+private[history] case class LoadedAppUI(ui: SparkUI, updateProbe: () => Boolean)
 
 private[history] abstract class ApplicationHistoryProvider {
 
@@ -92,7 +88,7 @@ private[history] abstract class ApplicationHistoryProvider {
   /**
    * Called when the server is shutting down.
    */
-  def stop(): Unit = { }
+  def stop(): Unit = {}
 
   /**
    * Returns configuration data to be shown in the History Server home page.
@@ -108,5 +104,4 @@ private[history] abstract class ApplicationHistoryProvider {
    */
   @throws(classOf[SparkException])
   def writeEventLogs(appId: String, attemptId: Option[String], zipStream: ZipOutputStream): Unit
-
 }

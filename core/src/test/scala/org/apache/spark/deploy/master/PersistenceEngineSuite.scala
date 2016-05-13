@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.spark.deploy.master
 
 import java.net.ServerSocket
@@ -34,9 +33,8 @@ class PersistenceEngineSuite extends SparkFunSuite {
     val dir = Utils.createTempDir()
     try {
       val conf = new SparkConf()
-      testPersistenceEngine(conf, serializer =>
-        new FileSystemPersistenceEngine(dir.getAbsolutePath, serializer)
-      )
+      testPersistenceEngine(
+          conf, serializer => new FileSystemPersistenceEngine(dir.getAbsolutePath, serializer))
     } finally {
       Utils.deleteRecursively(dir)
     }
@@ -81,14 +79,13 @@ class PersistenceEngineSuite extends SparkFunSuite {
           override val rpcEnv: RpcEnv = testRpcEnv
         })
 
-        val workerToPersist = new WorkerInfo(
-          id = "test_worker",
-          host = "127.0.0.1",
-          port = 10000,
-          cores = 0,
-          memory = 0,
-          endpoint = workerEndpoint,
-          webUiAddress = "http://localhost:80")
+        val workerToPersist = new WorkerInfo(id = "test_worker",
+                                             host = "127.0.0.1",
+                                             port = 10000,
+                                             cores = 0,
+                                             memory = 0,
+                                             endpoint = workerEndpoint,
+                                             webUiAddress = "http://localhost:80")
 
         persistenceEngine.addWorker(workerToPersist)
 
@@ -119,10 +116,12 @@ class PersistenceEngineSuite extends SparkFunSuite {
 
   private def findFreePort(conf: SparkConf): Int = {
     val candidatePort = RandomUtils.nextInt(1024, 65536)
-    Utils.startServiceOnPort(candidatePort, (trialPort: Int) => {
-      val socket = new ServerSocket(trialPort)
-      socket.close()
-      (null, trialPort)
-    }, conf)._2
+    Utils
+      .startServiceOnPort(candidatePort, (trialPort: Int) => {
+        val socket = new ServerSocket(trialPort)
+        socket.close()
+        (null, trialPort)
+      }, conf)
+      ._2
   }
 }

@@ -31,8 +31,8 @@ class GradientSuite extends SparkFunSuite with MLlibTestSparkContext {
     val target = new BDM[Double](2, 1, Array(0.0, 1.0))
     val topology = FeedForwardTopology.multiLayerPerceptron(Array(3, 4, 2), softmaxOnTop = false)
     val layersWithErrors = Seq(
-      new SigmoidLayerWithSquaredError(),
-      new SoftmaxLayerWithCrossEntropyLoss()
+        new SigmoidLayerWithSquaredError(),
+        new SoftmaxLayerWithCrossEntropyLoss()
     )
     // check all layers that provide loss computation
     // 1) compute loss and gradient given the model and initial weights
@@ -55,8 +55,8 @@ class GradientSuite extends SparkFunSuite with MLlibTestSparkContext {
         val newModel = topology.model(Vectors.dense(weights))
         val newLoss = computeLoss(input, target, newModel)
         val derivativeEstimate = (newLoss - loss) / eps
-        assert(math.abs(gradient(i) - derivativeEstimate) < tol, "Layer failed gradient check: " +
-          layerWithError.getClass)
+        assert(math.abs(gradient(i) - derivativeEstimate) < tol,
+               "Layer failed gradient check: " + layerWithError.getClass)
         weights(i) = originalValue
         i += 1
       }
@@ -69,8 +69,9 @@ class GradientSuite extends SparkFunSuite with MLlibTestSparkContext {
       case layerWithLoss: LossFunction =>
         layerWithLoss.loss(outputs.last, target, new BDM[Double](target.rows, target.cols))
       case _ =>
-        throw new UnsupportedOperationException("Top layer is required to have loss." +
-          " Failed layer:" + model.layerModels.last.getClass)
+        throw new UnsupportedOperationException(
+            "Top layer is required to have loss." + " Failed layer:" +
+            model.layerModels.last.getClass)
     }
   }
 }

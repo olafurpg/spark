@@ -22,13 +22,13 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.hive.client.HiveClient
 import org.apache.spark.sql.internal.{SharedState, SQLConf}
 
-
 /**
  * A class that holds all state shared across sessions in a given
  * [[org.apache.spark.sql.SparkSession]] backed by Hive.
  */
 private[hive] class HiveSharedState(override val sparkContext: SparkContext)
-  extends SharedState(sparkContext) with Logging {
+    extends SharedState(sparkContext)
+    with Logging {
 
   // TODO: just share the IsolatedClientLoader instead of the client instance itself
 
@@ -52,5 +52,4 @@ private[hive] class HiveSharedState(override val sparkContext: SparkContext)
    * A catalog that interacts with the Hive metastore.
    */
   override lazy val externalCatalog = new HiveExternalCatalog(metadataHive)
-
 }

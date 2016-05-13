@@ -23,7 +23,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.types._
 
-
 /**
  * An expression that is evaluated to the first non-null input.
  *
@@ -35,8 +34,8 @@ import org.apache.spark.sql.types._
  * }}}
  */
 @ExpressionDescription(
-  usage = "_FUNC_(a1, a2, ...) - Returns the first non-null argument if exists. Otherwise, NULL.",
-  extended = "> SELECT _FUNC_(NULL, 1, NULL);\n 1")
+    usage = "_FUNC_(a1, a2, ...) - Returns the first non-null argument if exists. Otherwise, NULL.",
+    extended = "> SELECT _FUNC_(NULL, 1, NULL);\n 1")
 case class Coalesce(children: Seq[Expression]) extends Expression {
 
   /** Coalesce is nullable if all of its children are nullable, or if it has no children. */
@@ -68,11 +67,11 @@ case class Coalesce(children: Seq[Expression]) extends Expression {
     val first = children(0)
     val rest = children.drop(1)
     val firstEval = first.genCode(ctx)
-    ev.copy(code = s"""
+    ev.copy(
+        code = s"""
       ${firstEval.code}
       boolean ${ev.isNull} = ${firstEval.isNull};
-      ${ctx.javaType(dataType)} ${ev.value} = ${firstEval.value};""" +
-      rest.map { e =>
+      ${ctx.javaType(dataType)} ${ev.value} = ${firstEval.value};""" + rest.map { e =>
       val eval = e.genCode(ctx)
       s"""
         if (${ev.isNull}) {
@@ -87,7 +86,6 @@ case class Coalesce(children: Seq[Expression]) extends Expression {
   }
 }
 
-
 @ExpressionDescription(usage = "_FUNC_(a,b) - Returns b if a is null, or a otherwise.")
 case class IfNull(left: Expression, right: Expression) extends RuntimeReplaceable {
   override def children: Seq[Expression] = Seq(left, right)
@@ -96,15 +94,17 @@ case class IfNull(left: Expression, right: Expression) extends RuntimeReplaceabl
 
   override def replaceForTypeCoercion(): Expression = {
     if (left.dataType != right.dataType) {
-      TypeCoercion.findTightestCommonTypeOfTwo(left.dataType, right.dataType).map { dtype =>
-        copy(left = Cast(left, dtype), right = Cast(right, dtype))
-      }.getOrElse(this)
+      TypeCoercion
+        .findTightestCommonTypeOfTwo(left.dataType, right.dataType)
+        .map { dtype =>
+          copy(left = Cast(left, dtype), right = Cast(right, dtype))
+        }
+        .getOrElse(this)
     } else {
       this
     }
   }
 }
-
 
 @ExpressionDescription(usage = "_FUNC_(a,b) - Returns null if a equals to b, or a otherwise.")
 case class NullIf(left: Expression, right: Expression) extends RuntimeReplaceable {
@@ -116,15 +116,17 @@ case class NullIf(left: Expression, right: Expression) extends RuntimeReplaceabl
 
   override def replaceForTypeCoercion(): Expression = {
     if (left.dataType != right.dataType) {
-      TypeCoercion.findTightestCommonTypeOfTwo(left.dataType, right.dataType).map { dtype =>
-        copy(left = Cast(left, dtype), right = Cast(right, dtype))
-      }.getOrElse(this)
+      TypeCoercion
+        .findTightestCommonTypeOfTwo(left.dataType, right.dataType)
+        .map { dtype =>
+          copy(left = Cast(left, dtype), right = Cast(right, dtype))
+        }
+        .getOrElse(this)
     } else {
       this
     }
   }
 }
-
 
 @ExpressionDescription(usage = "_FUNC_(a,b) - Returns b if a is null, or a otherwise.")
 case class Nvl(left: Expression, right: Expression) extends RuntimeReplaceable {
@@ -134,19 +136,21 @@ case class Nvl(left: Expression, right: Expression) extends RuntimeReplaceable {
 
   override def replaceForTypeCoercion(): Expression = {
     if (left.dataType != right.dataType) {
-      TypeCoercion.findTightestCommonTypeOfTwo(left.dataType, right.dataType).map { dtype =>
-        copy(left = Cast(left, dtype), right = Cast(right, dtype))
-      }.getOrElse(this)
+      TypeCoercion
+        .findTightestCommonTypeOfTwo(left.dataType, right.dataType)
+        .map { dtype =>
+          copy(left = Cast(left, dtype), right = Cast(right, dtype))
+        }
+        .getOrElse(this)
     } else {
       this
     }
   }
 }
 
-
 @ExpressionDescription(usage = "_FUNC_(a,b,c) - Returns b if a is not null, or c otherwise.")
 case class Nvl2(expr1: Expression, expr2: Expression, expr3: Expression)
-  extends RuntimeReplaceable {
+    extends RuntimeReplaceable {
 
   override def replaceForEvaluation(): Expression = If(IsNotNull(expr1), expr2, expr3)
 
@@ -154,23 +158,26 @@ case class Nvl2(expr1: Expression, expr2: Expression, expr3: Expression)
 
   override def replaceForTypeCoercion(): Expression = {
     if (expr2.dataType != expr3.dataType) {
-      TypeCoercion.findTightestCommonTypeOfTwo(expr2.dataType, expr3.dataType).map { dtype =>
-        copy(expr2 = Cast(expr2, dtype), expr3 = Cast(expr3, dtype))
-      }.getOrElse(this)
+      TypeCoercion
+        .findTightestCommonTypeOfTwo(expr2.dataType, expr3.dataType)
+        .map { dtype =>
+          copy(expr2 = Cast(expr2, dtype), expr3 = Cast(expr3, dtype))
+        }
+        .getOrElse(this)
     } else {
       this
     }
   }
 }
 
-
 /**
  * Evaluates to `true` iff it's NaN.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(a) - Returns true if a is NaN and false otherwise.")
-case class IsNaN(child: Expression) extends UnaryExpression
-  with Predicate with ImplicitCastInputTypes {
+@ExpressionDescription(usage = "_FUNC_(a) - Returns true if a is NaN and false otherwise.")
+case class IsNaN(child: Expression)
+    extends UnaryExpression
+    with Predicate
+    with ImplicitCastInputTypes {
 
   override def inputTypes: Seq[AbstractDataType] = Seq(TypeCollection(DoubleType, FloatType))
 
@@ -205,10 +212,10 @@ case class IsNaN(child: Expression) extends UnaryExpression
  * An Expression evaluates to `left` iff it's not NaN, or evaluates to `right` otherwise.
  * This Expression is useful for mapping NaN values to null.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(a,b) - Returns a iff it's not NaN, or b otherwise.")
+@ExpressionDescription(usage = "_FUNC_(a,b) - Returns a iff it's not NaN, or b otherwise.")
 case class NaNvl(left: Expression, right: Expression)
-    extends BinaryExpression with ImplicitCastInputTypes {
+    extends BinaryExpression
+    with ImplicitCastInputTypes {
 
   override def dataType: DataType = left.dataType
 
@@ -256,12 +263,10 @@ case class NaNvl(left: Expression, right: Expression)
   }
 }
 
-
 /**
  * An expression that is evaluated to true if the input is null.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(a) - Returns true if a is NULL and false otherwise.")
+@ExpressionDescription(usage = "_FUNC_(a) - Returns true if a is NULL and false otherwise.")
 case class IsNull(child: Expression) extends UnaryExpression with Predicate {
   override def nullable: Boolean = false
 
@@ -277,12 +282,10 @@ case class IsNull(child: Expression) extends UnaryExpression with Predicate {
   override def sql: String = s"(${child.sql} IS NULL)"
 }
 
-
 /**
  * An expression that is evaluated to true if the input is not null.
  */
-@ExpressionDescription(
-  usage = "_FUNC_(a) - Returns true if a is not NULL and false otherwise.")
+@ExpressionDescription(usage = "_FUNC_(a) - Returns true if a is not NULL and false otherwise.")
 case class IsNotNull(child: Expression) extends UnaryExpression with Predicate {
   override def nullable: Boolean = false
 
@@ -297,7 +300,6 @@ case class IsNotNull(child: Expression) extends UnaryExpression with Predicate {
 
   override def sql: String = s"(${child.sql} IS NOT NULL)"
 }
-
 
 /**
  * A predicate that is evaluated to be true if there are at least `n` non-null and non-NaN values.

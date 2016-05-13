@@ -28,12 +28,11 @@ import org.apache.spark.util.collection.OpenHashSet
  *
  * Under the hood, it uses our OpenHashSet implementation.
  */
-private[graphx]
-class GraphXPrimitiveKeyOpenHashMap[@specialized(Long, Int) K: ClassTag,
-                              @specialized(Long, Int, Double) V: ClassTag](
+private[graphx] class GraphXPrimitiveKeyOpenHashMap[@specialized(Long, Int) K: ClassTag,
+                                                    @specialized(Long, Int, Double) V: ClassTag](
     val keySet: OpenHashSet[K], var _values: Array[V])
-  extends Iterable[(K, V)]
-  with Serializable {
+    extends Iterable[(K, V)]
+    with Serializable {
 
   /**
    * Allocate an OpenHashMap with a fixed initial capacity
@@ -78,12 +77,12 @@ class GraphXPrimitiveKeyOpenHashMap[@specialized(Long, Int) K: ClassTag,
     _oldValues = null
   }
 
-
   /** Set the value for a key */
   def setMerge(k: K, v: V, mergeF: (V, V) => V) {
     val pos = keySet.addWithoutResize(k)
     val ind = pos & OpenHashSet.POSITION_MASK
-    if ((pos & OpenHashSet.NONEXISTENCE_MASK) != 0) { // if first add
+    if ((pos & OpenHashSet.NONEXISTENCE_MASK) != 0) {
+      // if first add
       _values(ind) = v
     } else {
       _values(ind) = mergeF(_values(ind), v)
@@ -91,7 +90,6 @@ class GraphXPrimitiveKeyOpenHashMap[@specialized(Long, Int) K: ClassTag,
     keySet.rehashIfNeeded(k, grow, move)
     _oldValues = null
   }
-
 
   /**
    * If the key doesn't exist yet in the hash map, set its value to defaultValue; otherwise,

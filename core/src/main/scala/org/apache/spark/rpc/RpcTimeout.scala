@@ -30,8 +30,7 @@ import org.apache.spark.util.Utils
  * An exception thrown if RpcTimeout modifies a [[TimeoutException]].
  */
 private[rpc] class RpcTimeoutException(message: String, cause: TimeoutException)
-  extends TimeoutException(message) { initCause(cause) }
-
+    extends TimeoutException(message) { initCause(cause) }
 
 /**
  * Associates a timeout with a description so that a when a TimeoutException occurs, additional
@@ -41,7 +40,7 @@ private[rpc] class RpcTimeoutException(message: String, cause: TimeoutException)
  * @param timeoutProp the configuration property that controls this timeout
  */
 private[spark] class RpcTimeout(val duration: FiniteDuration, val timeoutProp: String)
-  extends Serializable {
+    extends Serializable {
 
   /** Amends the standard message of TimeoutException to include the description */
   private def createRpcTimeoutException(te: TimeoutException): RpcTimeoutException = {
@@ -83,7 +82,6 @@ private[spark] class RpcTimeout(val duration: FiniteDuration, val timeoutProp: S
     } catch addMessageIfTimeout.orElse(wrapAndRethrow)
   }
 }
-
 
 private[spark] object RpcTimeout {
 
@@ -132,7 +130,9 @@ private[spark] object RpcTimeout {
     var foundProp: Option[(String, String)] = None
     while (itr.hasNext && foundProp.isEmpty) {
       val propKey = itr.next()
-      conf.getOption(propKey).foreach { prop => foundProp = Some(propKey, prop) }
+      conf.getOption(propKey).foreach { prop =>
+        foundProp = Some(propKey, prop)
+      }
     }
     val finalProp = foundProp.getOrElse(timeoutPropList.head, defaultValue)
     val timeout = { Utils.timeStringAsSeconds(finalProp._2).seconds }

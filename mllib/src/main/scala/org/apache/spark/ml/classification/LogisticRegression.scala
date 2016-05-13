@@ -44,9 +44,16 @@ import org.apache.spark.storage.StorageLevel
 /**
  * Params for logistic regression.
  */
-private[classification] trait LogisticRegressionParams extends ProbabilisticClassifierParams
-  with HasRegParam with HasElasticNetParam with HasMaxIter with HasFitIntercept with HasTol
-  with HasStandardization with HasWeightCol with HasThreshold {
+private[classification] trait LogisticRegressionParams
+    extends ProbabilisticClassifierParams
+    with HasRegParam
+    with HasElasticNetParam
+    with HasMaxIter
+    with HasFitIntercept
+    with HasTol
+    with HasStandardization
+    with HasWeightCol
+    with HasThreshold {
 
   /**
    * Set threshold in binary classification, in range [0, 1].
@@ -83,8 +90,10 @@ private[classification] trait LogisticRegressionParams extends ProbabilisticClas
     checkThresholdConsistency()
     if (isSet(thresholds)) {
       val ts = $(thresholds)
-      require(ts.length == 2, "Logistic Regression getThreshold only applies to" +
-        " binary classification, but thresholds has length != 2.  thresholds: " + ts.mkString(","))
+      require(ts.length == 2,
+              "Logistic Regression getThreshold only applies to" +
+              " binary classification, but thresholds has length != 2.  thresholds: " +
+              ts.mkString(","))
       1.0 / (1.0 + ts(0) / ts(1))
     } else {
       $(threshold)
@@ -122,7 +131,7 @@ private[classification] trait LogisticRegressionParams extends ProbabilisticClas
     checkThresholdConsistency()
     if (!isSet(thresholds) && isSet(threshold)) {
       val t = $(threshold)
-      Array(1-t, t)
+      Array(1 - t, t)
     } else {
       $(thresholds)
     }
@@ -135,13 +144,16 @@ private[classification] trait LogisticRegressionParams extends ProbabilisticClas
   protected def checkThresholdConsistency(): Unit = {
     if (isSet(threshold) && isSet(thresholds)) {
       val ts = $(thresholds)
-      require(ts.length == 2, "Logistic Regression found inconsistent values for threshold and" +
-        s" thresholds.  Param threshold is set (${$(threshold)}), indicating binary" +
-        s" classification, but Param thresholds is set with length ${ts.length}." +
-        " Clear one Param value to fix this problem.")
+      require(ts.length == 2,
+              "Logistic Regression found inconsistent values for threshold and" +
+              s" thresholds.  Param threshold is set (${$(threshold)}), indicating binary" +
+              s" classification, but Param thresholds is set with length ${ts.length}." +
+              " Clear one Param value to fix this problem.")
       val t = 1.0 / (1.0 + ts(0) / ts(1))
-      require(math.abs($(threshold) - t) < 1E-5, "Logistic Regression getThreshold found" +
-        s" inconsistent values for threshold (${$(threshold)}) and thresholds (equivalent to $t)")
+      require(
+          math.abs($(threshold) - t) < 1E-5,
+          "Logistic Regression getThreshold found" +
+          s" inconsistent values for threshold (${$(threshold)}) and thresholds (equivalent to $t)")
     }
   }
 
@@ -158,10 +170,11 @@ private[classification] trait LogisticRegressionParams extends ProbabilisticClas
  */
 @Since("1.2.0")
 @Experimental
-class LogisticRegression @Since("1.2.0") (
-    @Since("1.4.0") override val uid: String)
-  extends ProbabilisticClassifier[Vector, LogisticRegression, LogisticRegressionModel]
-  with LogisticRegressionParams with DefaultParamsWritable with Logging {
+class LogisticRegression @Since("1.2.0")(@Since("1.4.0") override val uid: String)
+    extends ProbabilisticClassifier[Vector, LogisticRegression, LogisticRegressionModel]
+    with LogisticRegressionParams
+    with DefaultParamsWritable
+    with Logging {
 
   @Since("1.4.0")
   def this() = this(Identifiable.randomUID("logreg"))
@@ -261,8 +274,8 @@ class LogisticRegression @Since("1.2.0") (
     train(dataset, handlePersistence)
   }
 
-  protected[spark] def train(dataset: Dataset[_], handlePersistence: Boolean):
-      LogisticRegressionModel = {
+  protected[spark] def train(
+      dataset: Dataset[_], handlePersistence: Boolean): LogisticRegressionModel = {
     val w = if (!isDefined(weightCol) || $(weightCol).isEmpty) lit(1.0) else col($(weightCol))
     val instances: RDD[Instance] =
       dataset.select(col($(labelCol)).cast(DoubleType), w, col($(featuresCol))).rdd.map {
@@ -273,20 +286,19 @@ class LogisticRegression @Since("1.2.0") (
     if (handlePersistence) instances.persist(StorageLevel.MEMORY_AND_DISK)
 
     val instr = Instrumentation.create(this, instances)
-    instr.logParams(regParam, elasticNetParam, standardization, threshold,
-      maxIter, tol, fitIntercept)
+    instr.logParams(
+        regParam, elasticNetParam, standardization, threshold, maxIter, tol, fitIntercept)
 
     val (summarizer, labelSummarizer) = {
-      val seqOp = (c: (MultivariateOnlineSummarizer, MultiClassSummarizer),
-        instance: Instance) =>
-          (c._1.add(instance.features, instance.weight), c._2.add(instance.label, instance.weight))
+      val seqOp = (c: (MultivariateOnlineSummarizer, MultiClassSummarizer), instance: Instance) =>
+        (c._1.add(instance.features, instance.weight), c._2.add(instance.label, instance.weight))
 
       val combOp = (c1: (MultivariateOnlineSummarizer, MultiClassSummarizer),
-        c2: (MultivariateOnlineSummarizer, MultiClassSummarizer)) =>
-          (c1._1.merge(c2._1), c1._2.merge(c2._2))
+      c2: (MultivariateOnlineSummarizer, MultiClassSummarizer)) =>
+        (c1._1.merge(c2._1), c1._2.merge(c2._2))
 
-      instances.treeAggregate(
-        new MultivariateOnlineSummarizer, new MultiClassSummarizer)(seqOp, combOp)
+      instances
+        .treeAggregate(new MultivariateOnlineSummarizer, new MultiClassSummarizer)(seqOp, combOp)
     }
 
     val histogram = labelSummarizer.histogram
@@ -299,34 +311,40 @@ class LogisticRegression @Since("1.2.0") (
 
     val (coefficients, intercept, objectiveHistory) = {
       if (numInvalid != 0) {
-        val msg = s"Classification labels should be in {0 to ${numClasses - 1} " +
+        val msg =
+          s"Classification labels should be in {0 to ${numClasses - 1} " +
           s"Found $numInvalid invalid labels."
         logError(msg)
         throw new SparkException(msg)
       }
 
       if (numClasses > 2) {
-        val msg = s"Currently, LogisticRegression with ElasticNet in ML package only supports " +
+        val msg =
+          s"Currently, LogisticRegression with ElasticNet in ML package only supports " +
           s"binary classification. Found $numClasses in the input dataset."
         logError(msg)
         throw new SparkException(msg)
       } else if ($(fitIntercept) && numClasses == 2 && histogram(0) == 0.0) {
-        logWarning(s"All labels are one and fitIntercept=true, so the coefficients will be " +
-          s"zeros and the intercept will be positive infinity; as a result, " +
-          s"training is not needed.")
+        logWarning(
+            s"All labels are one and fitIntercept=true, so the coefficients will be " +
+            s"zeros and the intercept will be positive infinity; as a result, " +
+            s"training is not needed.")
         (Vectors.sparse(numFeatures, Seq()), Double.PositiveInfinity, Array.empty[Double])
       } else if ($(fitIntercept) && numClasses == 1) {
-        logWarning(s"All labels are zero and fitIntercept=true, so the coefficients will be " +
-          s"zeros and the intercept will be negative infinity; as a result, " +
-          s"training is not needed.")
+        logWarning(
+            s"All labels are zero and fitIntercept=true, so the coefficients will be " +
+            s"zeros and the intercept will be negative infinity; as a result, " +
+            s"training is not needed.")
         (Vectors.sparse(numFeatures, Seq()), Double.NegativeInfinity, Array.empty[Double])
       } else {
         if (!$(fitIntercept) && numClasses == 2 && histogram(0) == 0.0) {
-          logWarning(s"All labels are one and fitIntercept=false. It's a dangerous ground, " +
-            s"so the algorithm may not converge.")
+          logWarning(
+              s"All labels are one and fitIntercept=false. It's a dangerous ground, " +
+              s"so the algorithm may not converge.")
         } else if (!$(fitIntercept) && numClasses == 1) {
-          logWarning(s"All labels are zero and fitIntercept=false. It's a dangerous ground, " +
-            s"so the algorithm may not converge.")
+          logWarning(
+              s"All labels are zero and fitIntercept=false. It's a dangerous ground, " +
+              s"so the algorithm may not converge.")
         }
 
         val featuresMean = summarizer.mean.toArray
@@ -335,32 +353,38 @@ class LogisticRegression @Since("1.2.0") (
         val regParamL1 = $(elasticNetParam) * $(regParam)
         val regParamL2 = (1.0 - $(elasticNetParam)) * $(regParam)
 
-        val costFun = new LogisticCostFun(instances, numClasses, $(fitIntercept),
-          $(standardization), featuresStd, featuresMean, regParamL2)
+        val costFun = new LogisticCostFun(instances,
+                                          numClasses,
+                                          $(fitIntercept),
+                                          $(standardization),
+                                          featuresStd,
+                                          featuresMean,
+                                          regParamL2)
 
-        val optimizer = if ($(elasticNetParam) == 0.0 || $(regParam) == 0.0) {
-          new BreezeLBFGS[BDV[Double]]($(maxIter), 10, $(tol))
-        } else {
-          val standardizationParam = $(standardization)
-          def regParamL1Fun = (index: Int) => {
-            // Remove the L1 penalization on the intercept
-            if (index == numFeatures) {
-              0.0
-            } else {
-              if (standardizationParam) {
-                regParamL1
+        val optimizer =
+          if ($(elasticNetParam) == 0.0 || $(regParam) == 0.0) {
+            new BreezeLBFGS[BDV[Double]]($(maxIter), 10, $(tol))
+          } else {
+            val standardizationParam = $(standardization)
+            def regParamL1Fun = (index: Int) => {
+              // Remove the L1 penalization on the intercept
+              if (index == numFeatures) {
+                0.0
               } else {
-                // If `standardization` is false, we still standardize the data
-                // to improve the rate of convergence; as a result, we have to
-                // perform this reverse standardization by penalizing each component
-                // differently to get effectively the same objective function when
-                // the training dataset is not standardized.
-                if (featuresStd(index) != 0.0) regParamL1 / featuresStd(index) else 0.0
+                if (standardizationParam) {
+                  regParamL1
+                } else {
+                  // If `standardization` is false, we still standardize the data
+                  // to improve the rate of convergence; as a result, we have to
+                  // perform this reverse standardization by penalizing each component
+                  // differently to get effectively the same objective function when
+                  // the training dataset is not standardized.
+                  if (featuresStd(index) != 0.0) regParamL1 / featuresStd(index) else 0.0
+                }
               }
             }
+            new BreezeOWLQN[Int, BDV[Double]]($(maxIter), 10, regParamL1Fun, $(tol))
           }
-          new BreezeOWLQN[Int, BDV[Double]]($(maxIter), 10, regParamL1Fun, $(tol))
-        }
 
         val initialCoefficientsWithIntercept =
           Vectors.zeros(if ($(fitIntercept)) numFeatures + 1 else numFeatures)
@@ -368,14 +392,15 @@ class LogisticRegression @Since("1.2.0") (
         if (optInitialModel.isDefined && optInitialModel.get.coefficients.size != numFeatures) {
           val vecSize = optInitialModel.get.coefficients.size
           logWarning(
-            s"Initial coefficients will be ignored!! As its size $vecSize did not match the " +
-            s"expected size $numFeatures")
+              s"Initial coefficients will be ignored!! As its size $vecSize did not match the " +
+              s"expected size $numFeatures")
         }
 
         if (optInitialModel.isDefined && optInitialModel.get.coefficients.size == numFeatures) {
           val initialCoefficientsWithInterceptArray = initialCoefficientsWithIntercept.toArray
-          optInitialModel.get.coefficients.foreachActive { case (index, value) =>
-            initialCoefficientsWithInterceptArray(index) = value
+          optInitialModel.get.coefficients.foreachActive {
+            case (index, value) =>
+              initialCoefficientsWithInterceptArray(index) = value
           }
           if ($(fitIntercept)) {
             initialCoefficientsWithInterceptArray(numFeatures) == optInitialModel.get.intercept
@@ -394,12 +419,12 @@ class LogisticRegression @Since("1.2.0") (
                b = \log{P(1) / P(0)} = \log{count_1 / count_0}
              }}}
            */
-          initialCoefficientsWithIntercept.toArray(numFeatures) = math.log(
-            histogram(1) / histogram(0))
+          initialCoefficientsWithIntercept.toArray(numFeatures) =
+            math.log(histogram(1) / histogram(0))
         }
 
         val states = optimizer.iterations(new CachedDiffFunction(costFun),
-          initialCoefficientsWithIntercept.toBreeze.toDenseVector)
+                                          initialCoefficientsWithIntercept.toBreeze.toDenseVector)
 
         /*
            Note that in Logistic Regression, the objective history (loss + regularization)
@@ -433,8 +458,9 @@ class LogisticRegression @Since("1.2.0") (
         }
 
         if ($(fitIntercept)) {
-          (Vectors.dense(rawCoefficients.dropRight(1)).compressed, rawCoefficients.last,
-            arrayBuilder.result())
+          (Vectors.dense(rawCoefficients.dropRight(1)).compressed,
+           rawCoefficients.last,
+           arrayBuilder.result())
         } else {
           (Vectors.dense(rawCoefficients).compressed, 0.0, arrayBuilder.result())
         }
@@ -446,11 +472,11 @@ class LogisticRegression @Since("1.2.0") (
     val model = copyValues(new LogisticRegressionModel(uid, coefficients, intercept))
     val (summaryModel, probabilityColName) = model.findSummaryModelAndProbabilityCol()
     val logRegSummary = new BinaryLogisticRegressionTrainingSummary(
-      summaryModel.transform(dataset),
-      probabilityColName,
-      $(labelCol),
-      $(featuresCol),
-      objectiveHistory)
+        summaryModel.transform(dataset),
+        probabilityColName,
+        $(labelCol),
+        $(featuresCol),
+        objectiveHistory)
     val m = model.setSummary(logRegSummary)
     instr.logSuccess(m)
     m
@@ -473,12 +499,12 @@ object LogisticRegression extends DefaultParamsReadable[LogisticRegression] {
  */
 @Since("1.4.0")
 @Experimental
-class LogisticRegressionModel private[spark] (
-    @Since("1.4.0") override val uid: String,
-    @Since("1.6.0") val coefficients: Vector,
-    @Since("1.3.0") val intercept: Double)
-  extends ProbabilisticClassificationModel[Vector, LogisticRegressionModel]
-  with LogisticRegressionParams with MLWritable {
+class LogisticRegressionModel private[spark](@Since("1.4.0") override val uid: String,
+                                             @Since("1.6.0") val coefficients: Vector,
+                                             @Since("1.3.0") val intercept: Double)
+    extends ProbabilisticClassificationModel[Vector, LogisticRegressionModel]
+    with LogisticRegressionParams
+    with MLWritable {
 
   @Since("1.5.0")
   override def setThreshold(value: Double): this.type = super.setThreshold(value)
@@ -525,8 +551,8 @@ class LogisticRegressionModel private[spark] (
    * otherwise generates a new column and sets it as the probability column on a new copy
    * of the current model.
    */
-  private[classification] def findSummaryModelAndProbabilityCol():
-      (LogisticRegressionModel, String) = {
+  private[classification] def findSummaryModelAndProbabilityCol(
+      ): (LogisticRegressionModel, String) = {
     $(probabilityCol) match {
       case "" =>
         val probabilityColName = "probability_" + java.util.UUID.randomUUID.toString
@@ -535,8 +561,7 @@ class LogisticRegressionModel private[spark] (
     }
   }
 
-  private[classification] def setSummary(
-      summary: LogisticRegressionTrainingSummary): this.type = {
+  private[classification] def setSummary(summary: LogisticRegressionTrainingSummary): this.type = {
     this.trainingSummary = Some(summary)
     this
   }
@@ -553,8 +578,8 @@ class LogisticRegressionModel private[spark] (
   def evaluate(dataset: Dataset[_]): LogisticRegressionSummary = {
     // Handle possible missing or invalid prediction columns
     val (summaryModel, probabilityColName) = findSummaryModelAndProbabilityCol()
-    new BinaryLogisticRegressionSummary(summaryModel.transform(dataset),
-      probabilityColName, $(labelCol), $(featuresCol))
+    new BinaryLogisticRegressionSummary(
+        summaryModel.transform(dataset), probabilityColName, $(labelCol), $(featuresCol))
   }
 
   /**
@@ -578,7 +603,7 @@ class LogisticRegressionModel private[spark] (
         dv
       case sv: SparseVector =>
         throw new RuntimeException("Unexpected error in LogisticRegressionModel:" +
-          " raw2probabilitiesInPlace encountered SparseVector")
+            " raw2probabilitiesInPlace encountered SparseVector")
     }
   }
 
@@ -597,13 +622,14 @@ class LogisticRegressionModel private[spark] (
   override protected def raw2prediction(rawPrediction: Vector): Double = {
     // Note: We should use getThreshold instead of $(threshold) since getThreshold is overridden.
     val t = getThreshold
-    val rawThreshold = if (t == 0.0) {
-      Double.NegativeInfinity
-    } else if (t == 1.0) {
-      Double.PositiveInfinity
-    } else {
-      math.log(t / (1.0 - t))
-    }
+    val rawThreshold =
+      if (t == 0.0) {
+        Double.NegativeInfinity
+      } else if (t == 1.0) {
+        Double.PositiveInfinity
+      } else {
+        math.log(t / (1.0 - t))
+      }
     if (rawPrediction(1) > rawThreshold) 1 else 0
   }
 
@@ -624,7 +650,6 @@ class LogisticRegressionModel private[spark] (
   override def write: MLWriter = new LogisticRegressionModel.LogisticRegressionModelWriter(this)
 }
 
-
 @Since("1.6.0")
 object LogisticRegressionModel extends MLReadable[LogisticRegressionModel] {
 
@@ -635,29 +660,28 @@ object LogisticRegressionModel extends MLReadable[LogisticRegressionModel] {
   override def load(path: String): LogisticRegressionModel = super.load(path)
 
   /** [[MLWriter]] instance for [[LogisticRegressionModel]] */
-  private[LogisticRegressionModel]
-  class LogisticRegressionModelWriter(instance: LogisticRegressionModel)
-    extends MLWriter with Logging {
+  private[LogisticRegressionModel] class LogisticRegressionModelWriter(
+      instance: LogisticRegressionModel)
+      extends MLWriter
+      with Logging {
 
-    private case class Data(
-        numClasses: Int,
-        numFeatures: Int,
-        intercept: Double,
-        coefficients: Vector)
+    private case class Data(numClasses: Int,
+                            numFeatures: Int,
+                            intercept: Double,
+                            coefficients: Vector)
 
     override protected def saveImpl(path: String): Unit = {
       // Save metadata and Params
       DefaultParamsWriter.saveMetadata(instance, path, sc)
       // Save model data: numClasses, numFeatures, intercept, coefficients
-      val data = Data(instance.numClasses, instance.numFeatures, instance.intercept,
-        instance.coefficients)
+      val data = Data(
+          instance.numClasses, instance.numFeatures, instance.intercept, instance.coefficients)
       val dataPath = new Path(path, "data").toString
       sqlContext.createDataFrame(Seq(data)).repartition(1).write.parquet(dataPath)
     }
   }
 
-  private class LogisticRegressionModelReader
-    extends MLReader[LogisticRegressionModel] {
+  private class LogisticRegressionModelReader extends MLReader[LogisticRegressionModel] {
 
     /** Checked against metadata when loading model */
     private val className = classOf[LogisticRegressionModel].getName
@@ -666,8 +690,11 @@ object LogisticRegressionModel extends MLReadable[LogisticRegressionModel] {
       val metadata = DefaultParamsReader.loadMetadata(path, sc, className)
 
       val dataPath = new Path(path, "data").toString
-      val data = sqlContext.read.format("parquet").load(dataPath)
-        .select("numClasses", "numFeatures", "intercept", "coefficients").head()
+      val data = sqlContext.read
+        .format("parquet")
+        .load(dataPath)
+        .select("numClasses", "numFeatures", "intercept", "coefficients")
+        .head()
       // We will need numClasses, numFeatures in the future for multinomial logreg support.
       // val numClasses = data.getInt(0)
       // val numFeatures = data.getInt(1)
@@ -680,7 +707,6 @@ object LogisticRegressionModel extends MLReadable[LogisticRegressionModel] {
     }
   }
 }
-
 
 /**
  * MultiClassSummarizer computes the number of distinct labels and corresponding counts,
@@ -710,8 +736,7 @@ private[classification] class MultiClassSummarizer extends Serializable {
     if (label - label.toInt != 0.0 || label < 0) {
       totalInvalidCnt += 1
       this
-    }
-    else {
+    } else {
       val (counts: Long, weightSum: Double) = distinctMap.getOrElse(label.toInt, (0L, 0.0))
       distinctMap.put(label.toInt, (counts + 1L, weightSum + weight))
       this
@@ -727,11 +752,12 @@ private[classification] class MultiClassSummarizer extends Serializable {
    * @return Merged MultilabelSummarizer object.
    */
   def merge(other: MultiClassSummarizer): MultiClassSummarizer = {
-    val (largeMap, smallMap) = if (this.distinctMap.size > other.distinctMap.size) {
-      (this, other)
-    } else {
-      (other, this)
-    }
+    val (largeMap, smallMap) =
+      if (this.distinctMap.size > other.distinctMap.size) {
+        (this, other)
+      } else {
+        (other, this)
+      }
     smallMap.distinctMap.foreach {
       case (key, value) =>
         val (counts: Long, weightSum: Double) = largeMap.distinctMap.getOrElse(key, (0L, 0.0))
@@ -772,7 +798,6 @@ sealed trait LogisticRegressionTrainingSummary extends LogisticRegressionSummary
 
   /** Number of training iterations until termination */
   def totalIterations: Int = objectiveHistory.length
-
 }
 
 /**
@@ -791,7 +816,6 @@ sealed trait LogisticRegressionSummary extends Serializable {
 
   /** Field in "predictions" which gives the features of each instance as a vector. */
   def featuresCol: String
-
 }
 
 /**
@@ -807,16 +831,14 @@ sealed trait LogisticRegressionSummary extends Serializable {
  */
 @Experimental
 @Since("1.5.0")
-class BinaryLogisticRegressionTrainingSummary private[classification] (
+class BinaryLogisticRegressionTrainingSummary private[classification](
     predictions: DataFrame,
     probabilityCol: String,
     labelCol: String,
     featuresCol: String,
     @Since("1.5.0") val objectiveHistory: Array[Double])
-  extends BinaryLogisticRegressionSummary(predictions, probabilityCol, labelCol, featuresCol)
-  with LogisticRegressionTrainingSummary {
-
-}
+    extends BinaryLogisticRegressionSummary(predictions, probabilityCol, labelCol, featuresCol)
+    with LogisticRegressionTrainingSummary {}
 
 /**
  * :: Experimental ::
@@ -830,12 +852,12 @@ class BinaryLogisticRegressionTrainingSummary private[classification] (
  */
 @Experimental
 @Since("1.5.0")
-class BinaryLogisticRegressionSummary private[classification] (
+class BinaryLogisticRegressionSummary private[classification](
     @Since("1.5.0") @transient override val predictions: DataFrame,
     @Since("1.5.0") override val probabilityCol: String,
     @Since("1.5.0") override val labelCol: String,
-    @Since("1.6.0") override val featuresCol: String) extends LogisticRegressionSummary {
-
+    @Since("1.6.0") override val featuresCol: String)
+    extends LogisticRegressionSummary {
 
   private val sparkSession = predictions.sparkSession
   import sparkSession.implicits._
@@ -846,9 +868,13 @@ class BinaryLogisticRegressionSummary private[classification] (
   // TODO: Allow the user to vary the number of bins using a setBins method in
   // BinaryClassificationMetrics. For now the default is set to 100.
   @transient private val binaryMetrics = new BinaryClassificationMetrics(
-    predictions.select(probabilityCol, labelCol).rdd.map {
-      case Row(score: Vector, label: Double) => (score(1), label)
-    }, 100
+      predictions
+        .select(probabilityCol, labelCol)
+        .rdd
+        .map {
+          case Row(score: Vector, label: Double) => (score(1), label)
+        },
+      100
   )
 
   /**
@@ -936,12 +962,12 @@ class BinaryLogisticRegressionSummary private[classification] (
  * @param featuresStd The standard deviation values of the features.
  * @param featuresMean The mean values of the features.
  */
-private class LogisticAggregator(
-    coefficients: Vector,
-    numClasses: Int,
-    fitIntercept: Boolean,
-    featuresStd: Array[Double],
-    featuresMean: Array[Double]) extends Serializable {
+private class LogisticAggregator(coefficients: Vector,
+                                 numClasses: Int,
+                                 fitIntercept: Boolean,
+                                 featuresStd: Array[Double],
+                                 featuresMean: Array[Double])
+    extends Serializable {
 
   private var weightSum = 0.0
   private var lossSum = 0.0
@@ -950,7 +976,7 @@ private class LogisticAggregator(
     case dv: DenseVector => dv.values
     case _ =>
       throw new IllegalArgumentException(
-        s"coefficients only supports dense vector but got type ${coefficients.getClass}.")
+          s"coefficients only supports dense vector but got type ${coefficients.getClass}.")
   }
 
   private val dim = if (fitIntercept) coefficientsArray.length - 1 else coefficientsArray.length
@@ -965,55 +991,57 @@ private class LogisticAggregator(
    * @return This LogisticAggregator object.
    */
   def add(instance: Instance): this.type = {
-    instance match { case Instance(label, weight, features) =>
-      require(dim == features.size, s"Dimensions mismatch when adding new instance." +
-        s" Expecting $dim but got ${features.size}.")
-      require(weight >= 0.0, s"instance weight, $weight has to be >= 0.0")
+    instance match {
+      case Instance(label, weight, features) =>
+        require(dim == features.size,
+                s"Dimensions mismatch when adding new instance." +
+                s" Expecting $dim but got ${features.size}.")
+        require(weight >= 0.0, s"instance weight, $weight has to be >= 0.0")
 
-      if (weight == 0.0) return this
+        if (weight == 0.0) return this
 
-      val localCoefficientsArray = coefficientsArray
-      val localGradientSumArray = gradientSumArray
+        val localCoefficientsArray = coefficientsArray
+        val localGradientSumArray = gradientSumArray
 
-      numClasses match {
-        case 2 =>
-          // For Binary Logistic Regression.
-          val margin = - {
-            var sum = 0.0
-            features.foreachActive { (index, value) =>
-              if (featuresStd(index) != 0.0 && value != 0.0) {
-                sum += localCoefficientsArray(index) * (value / featuresStd(index))
+        numClasses match {
+          case 2 =>
+            // For Binary Logistic Regression.
+            val margin = - {
+              var sum = 0.0
+              features.foreachActive { (index, value) =>
+                if (featuresStd(index) != 0.0 && value != 0.0) {
+                  sum += localCoefficientsArray(index) * (value / featuresStd(index))
+                }
+              }
+              sum + {
+                if (fitIntercept) localCoefficientsArray(dim) else 0.0
               }
             }
-            sum + {
-              if (fitIntercept) localCoefficientsArray(dim) else 0.0
+
+            val multiplier = weight * (1.0 / (1.0 + math.exp(margin)) - label)
+
+            features.foreachActive { (index, value) =>
+              if (featuresStd(index) != 0.0 && value != 0.0) {
+                localGradientSumArray(index) += multiplier * (value / featuresStd(index))
+              }
             }
-          }
 
-          val multiplier = weight * (1.0 / (1.0 + math.exp(margin)) - label)
-
-          features.foreachActive { (index, value) =>
-            if (featuresStd(index) != 0.0 && value != 0.0) {
-              localGradientSumArray(index) += multiplier * (value / featuresStd(index))
+            if (fitIntercept) {
+              localGradientSumArray(dim) += multiplier
             }
-          }
 
-          if (fitIntercept) {
-            localGradientSumArray(dim) += multiplier
-          }
-
-          if (label > 0) {
-            // The following is equivalent to log(1 + exp(margin)) but more numerically stable.
-            lossSum += weight * MLUtils.log1pExp(margin)
-          } else {
-            lossSum += weight * (MLUtils.log1pExp(margin) - margin)
-          }
-        case _ =>
-          new NotImplementedError("LogisticRegression with ElasticNet in ML package " +
-            "only supports binary classification for now.")
-      }
-      weightSum += weight
-      this
+            if (label > 0) {
+              // The following is equivalent to log(1 + exp(margin)) but more numerically stable.
+              lossSum += weight * MLUtils.log1pExp(margin)
+            } else {
+              lossSum += weight * (MLUtils.log1pExp(margin) - margin)
+            }
+          case _ =>
+            new NotImplementedError("LogisticRegression with ElasticNet in ML package " +
+                "only supports binary classification for now.")
+        }
+        weightSum += weight
+        this
     }
   }
 
@@ -1026,8 +1054,9 @@ private class LogisticAggregator(
    * @return This LogisticAggregator object.
    */
   def merge(other: LogisticAggregator): this.type = {
-    require(dim == other.dim, s"Dimensions mismatch when merging with another " +
-      s"LeastSquaresAggregator. Expecting $dim but got ${other.dim}.")
+    require(dim == other.dim,
+            s"Dimensions mismatch when merging with another " +
+            s"LeastSquaresAggregator. Expecting $dim but got ${other.dim}.")
 
     if (other.weightSum != 0.0) {
       weightSum += other.weightSum
@@ -1046,14 +1075,14 @@ private class LogisticAggregator(
   }
 
   def loss: Double = {
-    require(weightSum > 0.0, s"The effective number of instances should be " +
-      s"greater than 0.0, but $weightSum.")
+    require(weightSum > 0.0,
+            s"The effective number of instances should be " + s"greater than 0.0, but $weightSum.")
     lossSum / weightSum
   }
 
   def gradient: Vector = {
-    require(weightSum > 0.0, s"The effective number of instances should be " +
-      s"greater than 0.0, but $weightSum.")
+    require(weightSum > 0.0,
+            s"The effective number of instances should be " + s"greater than 0.0, but $weightSum.")
     val result = Vectors.dense(gradientSumArray.clone())
     scal(1.0 / weightSum, result)
     result
@@ -1066,14 +1095,14 @@ private class LogisticAggregator(
  * It returns the loss and gradient with L2 regularization at a particular point (coefficients).
  * It's used in Breeze's convex optimization routines.
  */
-private class LogisticCostFun(
-    instances: RDD[Instance],
-    numClasses: Int,
-    fitIntercept: Boolean,
-    standardization: Boolean,
-    featuresStd: Array[Double],
-    featuresMean: Array[Double],
-    regParamL2: Double) extends DiffFunction[BDV[Double]] {
+private class LogisticCostFun(instances: RDD[Instance],
+                              numClasses: Int,
+                              fitIntercept: Boolean,
+                              standardization: Boolean,
+                              featuresStd: Array[Double],
+                              featuresMean: Array[Double],
+                              regParamL2: Double)
+    extends DiffFunction[BDV[Double]] {
 
   override def calculate(coefficients: BDV[Double]): (Double, BDV[Double]) = {
     val numFeatures = featuresStd.length
@@ -1084,46 +1113,47 @@ private class LogisticCostFun(
       val combOp = (c1: LogisticAggregator, c2: LogisticAggregator) => c1.merge(c2)
 
       instances.treeAggregate(
-        new LogisticAggregator(coeffs, numClasses, fitIntercept, featuresStd, featuresMean)
+          new LogisticAggregator(coeffs, numClasses, fitIntercept, featuresStd, featuresMean)
       )(seqOp, combOp)
     }
 
     val totalGradientArray = logisticAggregator.gradient.toArray
 
     // regVal is the sum of coefficients squares excluding intercept for L2 regularization.
-    val regVal = if (regParamL2 == 0.0) {
-      0.0
-    } else {
-      var sum = 0.0
-      coeffs.foreachActive { (index, value) =>
-        // If `fitIntercept` is true, the last term which is intercept doesn't
-        // contribute to the regularization.
-        if (index != numFeatures) {
-          // The following code will compute the loss of the regularization; also
-          // the gradient of the regularization, and add back to totalGradientArray.
-          sum += {
-            if (standardization) {
-              totalGradientArray(index) += regParamL2 * value
-              value * value
-            } else {
-              if (featuresStd(index) != 0.0) {
-                // If `standardization` is false, we still standardize the data
-                // to improve the rate of convergence; as a result, we have to
-                // perform this reverse standardization by penalizing each component
-                // differently to get effectively the same objective function when
-                // the training dataset is not standardized.
-                val temp = value / (featuresStd(index) * featuresStd(index))
-                totalGradientArray(index) += regParamL2 * temp
-                value * temp
+    val regVal =
+      if (regParamL2 == 0.0) {
+        0.0
+      } else {
+        var sum = 0.0
+        coeffs.foreachActive { (index, value) =>
+          // If `fitIntercept` is true, the last term which is intercept doesn't
+          // contribute to the regularization.
+          if (index != numFeatures) {
+            // The following code will compute the loss of the regularization; also
+            // the gradient of the regularization, and add back to totalGradientArray.
+            sum += {
+              if (standardization) {
+                totalGradientArray(index) += regParamL2 * value
+                value * value
               } else {
-                0.0
+                if (featuresStd(index) != 0.0) {
+                  // If `standardization` is false, we still standardize the data
+                  // to improve the rate of convergence; as a result, we have to
+                  // perform this reverse standardization by penalizing each component
+                  // differently to get effectively the same objective function when
+                  // the training dataset is not standardized.
+                  val temp = value / (featuresStd(index) * featuresStd(index))
+                  totalGradientArray(index) += regParamL2 * temp
+                  value * temp
+                } else {
+                  0.0
+                }
               }
             }
           }
         }
+        0.5 * regParamL2 * sum
       }
-      0.5 * regParamL2 * sum
-    }
 
     (logisticAggregator.loss + regVal, new BDV(totalGradientArray))
   }

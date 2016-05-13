@@ -113,9 +113,8 @@ class FlumePollingStreamSuite extends SparkFunSuite with BeforeAndAfterAll with 
     // Set up the streaming context and input streams
     val ssc = new StreamingContext(_sc, batchDuration)
     val addresses = sinkPorts.map(port => new InetSocketAddress("localhost", port))
-    val flumeStream: ReceiverInputDStream[SparkFlumeEvent] =
-      FlumeUtils.createPollingStream(ssc, addresses, StorageLevel.MEMORY_AND_DISK,
-        utils.eventsPerBatch, 5)
+    val flumeStream: ReceiverInputDStream[SparkFlumeEvent] = FlumeUtils.createPollingStream(
+        ssc, addresses, StorageLevel.MEMORY_AND_DISK, utils.eventsPerBatch, 5)
     val outputQueue = new ConcurrentLinkedQueue[Seq[SparkFlumeEvent]]
     val outputStream = new TestOutputStream(flumeStream, outputQueue)
     outputStream.register()
@@ -129,9 +128,11 @@ class FlumePollingStreamSuite extends SparkFunSuite with BeforeAndAfterAll with 
       // The eventually is required to ensure that all data in the batch has been processed.
       eventually(timeout(10 seconds), interval(100 milliseconds)) {
         val flattenOutput = outputQueue.asScala.toSeq.flatten
-        val headers = flattenOutput.map(_.event.getHeaders.asScala.map {
-          case (key, value) => (key.toString, value.toString)
-        }).map(_.asJava)
+        val headers = flattenOutput
+          .map(_.event.getHeaders.asScala.map {
+            case (key, value) => (key.toString, value.toString)
+          })
+          .map(_.asJava)
         val bodies = flattenOutput.map(e => JavaUtils.bytesToString(e.event.getBody))
         utils.assertOutput(headers.asJava, bodies.asJava)
       }
@@ -140,5 +141,4 @@ class FlumePollingStreamSuite extends SparkFunSuite with BeforeAndAfterAll with 
       ssc.stop(false)
     }
   }
-
 }

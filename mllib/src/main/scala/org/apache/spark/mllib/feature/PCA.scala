@@ -29,9 +29,8 @@ import org.apache.spark.rdd.RDD
  * @param k number of principal components
  */
 @Since("1.4.0")
-class PCA @Since("1.4.0") (@Since("1.4.0") val k: Int) {
-  require(k > 0,
-    s"Number of principal components must be positive but got ${k}")
+class PCA @Since("1.4.0")(@Since("1.4.0") val k: Int) {
+  require(k > 0, s"Number of principal components must be positive but got ${k}")
 
   /**
    * Computes a [[PCAModel]] that contains the principal components of the input vectors.
@@ -41,7 +40,7 @@ class PCA @Since("1.4.0") (@Since("1.4.0") val k: Int) {
   @Since("1.4.0")
   def fit(sources: RDD[Vector]): PCAModel = {
     require(k <= sources.first().size,
-      s"source vector size is ${sources.first().size} must be greater than k=$k")
+            s"source vector size is ${sources.first().size} must be greater than k=$k")
 
     val mat = new RowMatrix(sources)
     val (pc, explainedVariance) = mat.computePrincipalComponentsAndExplainedVariance(k)
@@ -56,9 +55,9 @@ class PCA @Since("1.4.0") (@Since("1.4.0") val k: Int) {
          */
         sm.toDense
       case m =>
-        throw new IllegalArgumentException("Unsupported matrix format. Expected " +
-          s"SparseMatrix or DenseMatrix. Instead got: ${m.getClass}")
-
+        throw new IllegalArgumentException(
+            "Unsupported matrix format. Expected " +
+            s"SparseMatrix or DenseMatrix. Instead got: ${m.getClass}")
     }
     val denseExplainedVariance = explainedVariance match {
       case dv: DenseVector =>
@@ -83,10 +82,11 @@ class PCA @Since("1.4.0") (@Since("1.4.0") val k: Int) {
  * @param pc a principal components Matrix. Each column is one principal component.
  */
 @Since("1.4.0")
-class PCAModel private[spark] (
-    @Since("1.4.0") val k: Int,
-    @Since("1.4.0") val pc: DenseMatrix,
-    @Since("1.6.0") val explainedVariance: DenseVector) extends VectorTransformer {
+class PCAModel private[spark](@Since("1.4.0") val k: Int,
+                              @Since("1.4.0") val pc: DenseMatrix,
+                              @Since("1.6.0") val explainedVariance: DenseVector)
+    extends VectorTransformer {
+
   /**
    * Transform a vector by computed Principal Components.
    *
@@ -105,8 +105,9 @@ class PCAModel private[spark] (
         val projection = sm.multiply(pc)
         Vectors.dense(projection.values)
       case _ =>
-        throw new IllegalArgumentException("Unsupported vector format. Expected " +
-          s"SparseVector or DenseVector. Instead got: ${vector.getClass}")
+        throw new IllegalArgumentException(
+            "Unsupported vector format. Expected " +
+            s"SparseVector or DenseVector. Instead got: ${vector.getClass}")
     }
   }
 }

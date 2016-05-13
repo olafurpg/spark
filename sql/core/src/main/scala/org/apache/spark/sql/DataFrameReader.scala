@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql
 
@@ -121,12 +121,10 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    * @since 1.4.0
    */
   def load(): DataFrame = {
-    val dataSource =
-      DataSource(
-        sparkSession,
-        userSpecifiedSchema = userSpecifiedSchema,
-        className = source,
-        options = extraOptions.toMap)
+    val dataSource = DataSource(sparkSession,
+                                userSpecifiedSchema = userSpecifiedSchema,
+                                className = source,
+                                options = extraOptions.toMap)
     Dataset.ofRows(sparkSession, LogicalRelation(dataSource.resolveRelation()))
   }
 
@@ -152,12 +150,13 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
       sparkSession.emptyDataFrame
     } else {
       sparkSession.baseRelationToDataFrame(
-        DataSource.apply(
-          sparkSession,
-          paths = paths,
-          userSpecifiedSchema = userSpecifiedSchema,
-          className = source,
-          options = extraOptions.toMap).resolveRelation())
+          DataSource
+            .apply(sparkSession,
+                   paths = paths,
+                   userSpecifiedSchema = userSpecifiedSchema,
+                   className = source,
+                   options = extraOptions.toMap)
+            .resolveRelation())
     }
   }
 
@@ -170,12 +169,10 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    */
   @Experimental
   def stream(): DataFrame = {
-    val dataSource =
-      DataSource(
-        sparkSession,
-        userSpecifiedSchema = userSpecifiedSchema,
-        className = source,
-        options = extraOptions.toMap)
+    val dataSource = DataSource(sparkSession,
+                                userSpecifiedSchema = userSpecifiedSchema,
+                                className = source,
+                                options = extraOptions.toMap)
     Dataset.ofRows(sparkSession, StreamingRelation(dataSource))
   }
 
@@ -221,14 +218,13 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    *                             should be included.
    * @since 1.4.0
    */
-  def jdbc(
-      url: String,
-      table: String,
-      columnName: String,
-      lowerBound: Long,
-      upperBound: Long,
-      numPartitions: Int,
-      connectionProperties: Properties): DataFrame = {
+  def jdbc(url: String,
+           table: String,
+           columnName: String,
+           lowerBound: Long,
+           upperBound: Long,
+           numPartitions: Int,
+           connectionProperties: Properties): DataFrame = {
     val partitioning = JDBCPartitioningInfo(columnName, lowerBound, upperBound, numPartitions)
     val parts = JDBCRelation.columnPartition(partitioning)
     jdbc(url, table, parts, connectionProperties)
@@ -251,25 +247,25 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    *                             should be included.
    * @since 1.4.0
    */
-  def jdbc(
-      url: String,
-      table: String,
-      predicates: Array[String],
-      connectionProperties: Properties): DataFrame = {
-    val parts: Array[Partition] = predicates.zipWithIndex.map { case (part, i) =>
-      JDBCPartition(part, i) : Partition
+  def jdbc(url: String,
+           table: String,
+           predicates: Array[String],
+           connectionProperties: Properties): DataFrame = {
+    val parts: Array[Partition] = predicates.zipWithIndex.map {
+      case (part, i) =>
+        JDBCPartition(part, i): Partition
     }
     jdbc(url, table, parts, connectionProperties)
   }
 
-  private def jdbc(
-      url: String,
-      table: String,
-      parts: Array[Partition],
-      connectionProperties: Properties): DataFrame = {
+  private def jdbc(url: String,
+                   table: String,
+                   parts: Array[Partition],
+                   connectionProperties: Properties): DataFrame = {
     val props = new Properties()
-    extraOptions.foreach { case (key, value) =>
-      props.put(key, value)
+    extraOptions.foreach {
+      case (key, value) =>
+        props.put(key, value)
     }
     // connectionProperties should override settings in extraOptions
     props.putAll(connectionProperties)
@@ -311,7 +307,7 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    * @since 1.6.0
    */
   @scala.annotation.varargs
-  def json(paths: String*): DataFrame = format("json").load(paths : _*)
+  def json(paths: String*): DataFrame = format("json").load(paths: _*)
 
   /**
    * Loads an `JavaRDD[String]` storing JSON objects (one object per record) and
@@ -337,25 +333,17 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    */
   def json(jsonRDD: RDD[String]): DataFrame = {
     val parsedOptions: JSONOptions = new JSONOptions(extraOptions.toMap)
-    val columnNameOfCorruptRecord =
-      parsedOptions.columnNameOfCorruptRecord
-        .getOrElse(sparkSession.sessionState.conf.columnNameOfCorruptRecord)
+    val columnNameOfCorruptRecord = parsedOptions.columnNameOfCorruptRecord.getOrElse(
+        sparkSession.sessionState.conf.columnNameOfCorruptRecord)
     val schema = userSpecifiedSchema.getOrElse {
-      InferSchema.infer(
-        jsonRDD,
-        columnNameOfCorruptRecord,
-        parsedOptions)
+      InferSchema.infer(jsonRDD, columnNameOfCorruptRecord, parsedOptions)
     }
 
     Dataset.ofRows(
-      sparkSession,
-      LogicalRDD(
-        schema.toAttributes,
-        JacksonParser.parse(
-          jsonRDD,
-          schema,
-          columnNameOfCorruptRecord,
-          parsedOptions))(sparkSession))
+        sparkSession,
+        LogicalRDD(schema.toAttributes,
+                   JacksonParser.parse(jsonRDD, schema, columnNameOfCorruptRecord, parsedOptions))(
+            sparkSession))
   }
 
   /**
@@ -406,7 +394,7 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    * @since 2.0.0
    */
   @scala.annotation.varargs
-  def csv(paths: String*): DataFrame = format("csv").load(paths : _*)
+  def csv(paths: String*): DataFrame = format("csv").load(paths: _*)
 
   /**
    * Loads a Parquet file, returning the result as a [[DataFrame]]. This function returns an empty
@@ -435,8 +423,8 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    */
   def table(tableName: String): DataFrame = {
     Dataset.ofRows(sparkSession,
-      sparkSession.sessionState.catalog.lookupRelation(
-        sparkSession.sessionState.sqlParser.parseTableIdentifier(tableName)))
+                   sparkSession.sessionState.catalog.lookupRelation(
+                       sparkSession.sessionState.sqlParser.parseTableIdentifier(tableName)))
   }
 
   /**
@@ -457,7 +445,7 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    */
   @scala.annotation.varargs
   def text(paths: String*): Dataset[String] = {
-    format("text").load(paths : _*).as[String](sparkSession.implicits.newStringEncoder)
+    format("text").load(paths: _*).as[String](sparkSession.implicits.newStringEncoder)
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -469,5 +457,4 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
   private var userSpecifiedSchema: Option[StructType] = None
 
   private var extraOptions = new scala.collection.mutable.HashMap[String, String]
-
 }

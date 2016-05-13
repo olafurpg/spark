@@ -31,11 +31,11 @@ private[repl] class SparkJLineReader(_completion: => Completion) extends Interac
 
   private def term = consoleReader.getTerminal()
   def reset() = term.reset()
-  def init()  = term.init()
+  def init() = term.init()
 
   def scalaToJline(tc: ScalaCompleter): Completer = new Completer {
     def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
-      val buf   = if (_buf == null) "" else _buf
+      val buf = if (_buf == null) "" else _buf
       val Candidates(newCursor, newCandidates) = tc.complete(buf, cursor)
       newCandidates foreach (candidates add _)
       newCursor
@@ -54,7 +54,7 @@ private[repl] class SparkJLineReader(_completion: => Completion) extends Interac
       this.readVirtualKey()
     }
     def eraseLine() = consoleReader.resetPromptLine("", "", 0)
-    def redrawLineAndFlush(): Unit = { flush() ; drawLine() ; flush() }
+    def redrawLineAndFlush(): Unit = { flush(); drawLine(); flush() }
     // override def readLine(prompt: String): String
 
     // A hook for running code after the repl is done initializing.
@@ -62,8 +62,8 @@ private[repl] class SparkJLineReader(_completion: => Completion) extends Interac
       this setBellEnabled false
 
       if (completion ne NoCompletion) {
-        val argCompletor: ArgumentCompleter =
-          new ArgumentCompleter(new JLineDelimiter, scalaToJline(completion.completer()))
+        val argCompletor: ArgumentCompleter = new ArgumentCompleter(
+            new JLineDelimiter, scalaToJline(completion.completer()))
         argCompletor setStrict false
 
         this addCompleter argCompletor
@@ -78,7 +78,7 @@ private[repl] class SparkJLineReader(_completion: => Completion) extends Interac
   // Alternate implementation, not sure if/when I need this.
   // def eraseLine() = while (consoleReader.delete()) { }
   def readOneLine(prompt: String) = consoleReader readLine prompt
-  def readOneKey(prompt: String)  = consoleReader readOneKey prompt
+  def readOneKey(prompt: String) = consoleReader readOneKey prompt
 }
 
 /** Changes the default history file to not collide with the scala repl's. */

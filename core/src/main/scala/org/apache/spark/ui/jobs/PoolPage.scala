@@ -43,13 +43,17 @@ private[ui] class PoolPage(parent: StagesTab) extends WebUIPage("pool") {
         case None => Seq[StageInfo]()
       }
       val activeStagesTable = new StageTableBase(activeStages.sortBy(_.submissionTime).reverse,
-        parent.basePath, parent.progressListener, isFairScheduler = parent.isFairScheduler,
-        killEnabled = parent.killEnabled)
+                                                 parent.basePath,
+                                                 parent.progressListener,
+                                                 isFairScheduler = parent.isFairScheduler,
+                                                 killEnabled = parent.killEnabled)
 
       // For now, pool information is only accessible in live UIs
-      val pools = sc.map(_.getPoolForName(poolName).getOrElse {
-        throw new IllegalArgumentException(s"Unknown poolname: $poolName")
-      }).toSeq
+      val pools = sc
+        .map(_.getPoolForName(poolName).getOrElse {
+          throw new IllegalArgumentException(s"Unknown poolname: $poolName")
+        })
+        .toSeq
       val poolTable = new PoolTable(pools, parent)
 
       val content =

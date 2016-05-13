@@ -68,6 +68,7 @@ trait DataSourceRegister {
  */
 @DeveloperApi
 trait RelationProvider {
+
   /**
    * Returns a new base relation with the given parameters.
    * Note: the parameters' keywords are case insensitive and this insensitivity is enforced
@@ -99,15 +100,14 @@ trait RelationProvider {
  */
 @DeveloperApi
 trait SchemaRelationProvider {
+
   /**
    * Returns a new base relation with the given parameters and user defined schema.
    * Note: the parameters' keywords are case insensitive and this insensitivity is enforced
    * by the Map that is passed to the function.
    */
   def createRelation(
-      sqlContext: SQLContext,
-      parameters: Map[String, String],
-      schema: StructType): BaseRelation
+      sqlContext: SQLContext, parameters: Map[String, String], schema: StructType): BaseRelation
 }
 
 /**
@@ -116,28 +116,25 @@ trait SchemaRelationProvider {
 trait StreamSourceProvider {
 
   /** Returns the name and schema of the source that can be used to continually read data. */
-  def sourceSchema(
-      sqlContext: SQLContext,
-      schema: Option[StructType],
-      providerName: String,
-      parameters: Map[String, String]): (String, StructType)
+  def sourceSchema(sqlContext: SQLContext,
+                   schema: Option[StructType],
+                   providerName: String,
+                   parameters: Map[String, String]): (String, StructType)
 
-  def createSource(
-      sqlContext: SQLContext,
-      metadataPath: String,
-      schema: Option[StructType],
-      providerName: String,
-      parameters: Map[String, String]): Source
+  def createSource(sqlContext: SQLContext,
+                   metadataPath: String,
+                   schema: Option[StructType],
+                   providerName: String,
+                   parameters: Map[String, String]): Source
 }
 
 /**
  * Implemented by objects that can produce a streaming [[Sink]] for a specific format or system.
  */
 trait StreamSinkProvider {
-  def createSink(
-      sqlContext: SQLContext,
-      parameters: Map[String, String],
-      partitionColumns: Seq[String]): Sink
+  def createSink(sqlContext: SQLContext,
+                 parameters: Map[String, String],
+                 partitionColumns: Seq[String]): Sink
 }
 
 /**
@@ -145,6 +142,7 @@ trait StreamSinkProvider {
  */
 @DeveloperApi
 trait CreatableRelationProvider {
+
   /**
    * Creates a relation with the given parameters based on the contents of the given
    * DataFrame. The mode specifies the expected behavior of createRelation when
@@ -159,11 +157,10 @@ trait CreatableRelationProvider {
    *
    * @since 1.3.0
    */
-  def createRelation(
-      sqlContext: SQLContext,
-      mode: SaveMode,
-      parameters: Map[String, String],
-      data: DataFrame): BaseRelation
+  def createRelation(sqlContext: SQLContext,
+                     mode: SaveMode,
+                     parameters: Map[String, String],
+                     data: DataFrame): BaseRelation
 }
 
 /**

@@ -42,10 +42,11 @@ class BooleanBitSetSuite extends SparkFunSuite {
     val headerSize = CompressionScheme.columnHeaderSize(buffer)
 
     // Compression scheme ID + element count + bitset words
-    val compressedSize = 4 + 4 + {
-      val extra = if (count % BITS_PER_LONG == 0) 0 else 1
-      (count / BITS_PER_LONG + extra) * 8
-    }
+    val compressedSize =
+      4 + 4 + {
+        val extra = if (count % BITS_PER_LONG == 0) 0 else 1
+        (count / BITS_PER_LONG + extra) * 8
+      }
 
     // 4 extra bytes for compression scheme type ID
     assertResult(headerSize + compressedSize, "Wrong buffer capacity")(buffer.capacity)

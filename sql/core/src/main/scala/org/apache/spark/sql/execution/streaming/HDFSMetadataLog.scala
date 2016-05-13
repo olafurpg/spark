@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.sql.execution.streaming
 
@@ -33,7 +33,6 @@ import org.apache.spark.network.util.JavaUtils
 import org.apache.spark.serializer.JavaSerializer
 import org.apache.spark.sql.SparkSession
 
-
 /**
  * A [[MetadataLog]] implementation based on HDFS. [[HDFSMetadataLog]] uses the specified `path`
  * as the metadata storage.
@@ -46,7 +45,8 @@ import org.apache.spark.sql.SparkSession
  * files in a directory always shows the latest files.
  */
 class HDFSMetadataLog[T: ClassTag](sparkSession: SparkSession, path: String)
-  extends MetadataLog[T] with Logging {
+    extends MetadataLog[T]
+    with Logging {
 
   import HDFSMetadataLog._
 
@@ -135,13 +135,13 @@ class HDFSMetadataLog[T: ClassTag](sparkSession: SparkSession, path: String)
             // If "rename" fails, it means some other "HDFSMetadataLog" has committed the batch.
             // So throw an exception to tell the user this is not a valid behavior.
             throw new ConcurrentModificationException(
-              s"Multiple HDFSMetadataLog are using $path", e)
+                s"Multiple HDFSMetadataLog are using $path", e)
           case e: FileNotFoundException =>
             // Sometimes, "create" will succeed when multiple writers are calling it at the same
             // time. However, only one writer can call "rename" successfully, others will get
             // FileNotFoundException because the first writer has removed it.
             throw new ConcurrentModificationException(
-              s"Multiple HDFSMetadataLog are using $path", e)
+                s"Multiple HDFSMetadataLog are using $path", e)
         }
       } catch {
         case e: IOException if isFileAlreadyExistsException(e) =>
@@ -166,9 +166,9 @@ class HDFSMetadataLog[T: ClassTag](sparkSession: SparkSession, path: String)
 
   private def isFileAlreadyExistsException(e: IOException): Boolean = {
     e.isInstanceOf[FileAlreadyExistsException] ||
-      // Old Hadoop versions don't throw FileAlreadyExistsException. Although it's fixed in
-      // HADOOP-9361, we still need to support old Hadoop versions.
-      (e.getMessage != null && e.getMessage.startsWith("File already exists: "))
+    // Old Hadoop versions don't throw FileAlreadyExistsException. Although it's fixed in
+    // HADOOP-9361, we still need to support old Hadoop versions.
+    (e.getMessage != null && e.getMessage.startsWith("File already exists: "))
   }
 
   override def get(batchId: Long): Option[T] = {
@@ -185,10 +185,8 @@ class HDFSMetadataLog[T: ClassTag](sparkSession: SparkSession, path: String)
 
   override def get(startId: Option[Long], endId: Option[Long]): Array[(Long, T)] = {
     val files = fileManager.list(metadataPath, batchFilesFilter)
-    val batchIds = files
-      .map(f => pathToBatchId(f.getPath))
-      .filter { batchId =>
-        (endId.isEmpty || batchId <= endId.get) && (startId.isEmpty || batchId >= startId.get)
+    val batchIds = files.map(f => pathToBatchId(f.getPath)).filter { batchId =>
+      (endId.isEmpty || batchId <= endId.get) && (startId.isEmpty || batchId >= startId.get)
     }
     batchIds.sorted.map(batchId => (batchId, get(batchId))).filter(_._2.isDefined).map {
       case (batchId, metadataOption) =>
@@ -197,7 +195,8 @@ class HDFSMetadataLog[T: ClassTag](sparkSession: SparkSession, path: String)
   }
 
   override def getLatest(): Option[(Long, T)] = {
-    val batchIds = fileManager.list(metadataPath, batchFilesFilter)
+    val batchIds = fileManager
+      .list(metadataPath, batchFilesFilter)
       .map(f => pathToBatchId(f.getPath))
       .sorted
       .reverse
@@ -216,9 +215,10 @@ class HDFSMetadataLog[T: ClassTag](sparkSession: SparkSession, path: String)
       new FileContextManager(metadataPath, hadoopConf)
     } catch {
       case e: UnsupportedFileSystemException =>
-        logWarning("Could not use FileContext API for managing metadata log files at path " +
-          s"$metadataPath. Using FileSystem API instead for managing log files. The log may be " +
-          s"inconsistent under failures.")
+        logWarning(
+            "Could not use FileContext API for managing metadata log files at path " +
+            s"$metadataPath. Using FileSystem API instead for managing log files. The log may be " +
+            s"inconsistent under failures.")
         new FileSystemManager(metadataPath, hadoopConf)
     }
   }
@@ -259,11 +259,12 @@ object HDFSMetadataLog {
    * Default implementation of FileManager using newer FileContext API.
    */
   class FileContextManager(path: Path, hadoopConf: Configuration) extends FileManager {
-    private val fc = if (path.toUri.getScheme == null) {
-      FileContext.getFileContext(hadoopConf)
-    } else {
-      FileContext.getFileContext(path.toUri, hadoopConf)
-    }
+    private val fc =
+      if (path.toUri.getScheme == null) {
+        FileContext.getFileContext(hadoopConf)
+      } else {
+        FileContext.getFileContext(path.toUri, hadoopConf)
+      }
 
     override def list(path: Path, filter: PathFilter): Array[FileStatus] = {
       fc.util.listStatus(path, filter)
@@ -350,7 +351,7 @@ object HDFSMetadataLog {
         fs.delete(path, true)
       } catch {
         case e: FileNotFoundException =>
-          // ignore if file has already been deleted
+        // ignore if file has already been deleted
       }
     }
   }

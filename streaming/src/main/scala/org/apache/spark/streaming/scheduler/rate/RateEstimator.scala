@@ -39,10 +39,7 @@ private[streaming] trait RateEstimator extends Serializable {
    * @param schedulingDelay The time in ms that the job spent in the scheduling queue
    */
   def compute(
-      time: Long,
-      elements: Long,
-      processingDelay: Long,
-      schedulingDelay: Long): Option[Double]
+      time: Long, elements: Long, processingDelay: Long, schedulingDelay: Long): Option[Double]
 }
 
 object RateEstimator {

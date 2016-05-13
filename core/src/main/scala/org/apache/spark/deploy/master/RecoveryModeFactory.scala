@@ -50,7 +50,8 @@ abstract class StandaloneRecoveryModeFactory(conf: SparkConf, serializer: Serial
  * recovery is made by restoring from filesystem.
  */
 private[master] class FileSystemRecoveryModeFactory(conf: SparkConf, serializer: Serializer)
-  extends StandaloneRecoveryModeFactory(conf, serializer) with Logging {
+    extends StandaloneRecoveryModeFactory(conf, serializer)
+    with Logging {
 
   val RECOVERY_DIR = conf.get("spark.deploy.recoveryDirectory", "")
 
@@ -65,7 +66,7 @@ private[master] class FileSystemRecoveryModeFactory(conf: SparkConf, serializer:
 }
 
 private[master] class ZooKeeperRecoveryModeFactory(conf: SparkConf, serializer: Serializer)
-  extends StandaloneRecoveryModeFactory(conf, serializer) {
+    extends StandaloneRecoveryModeFactory(conf, serializer) {
 
   def createPersistenceEngine(): PersistenceEngine = {
     new ZooKeeperPersistenceEngine(conf, serializer)

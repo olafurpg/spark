@@ -41,5 +41,4 @@ class HiveExternalCatalogSuite extends ExternalCatalogSuite {
   }
 
   protected override def resetState(): Unit = client.reset()
-
 }

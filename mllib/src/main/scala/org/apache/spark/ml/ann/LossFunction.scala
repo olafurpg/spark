@@ -26,6 +26,7 @@ import breeze.numerics.{log => brzlog}
  * Trait for loss function
  */
 private[ann] trait LossFunction {
+
   /**
    * Returns the value of loss function.
    * Computes loss based on target and output.
@@ -53,7 +54,8 @@ private[ann] class SigmoidLayerWithSquaredError extends Layer {
 }
 
 private[ann] class SigmoidLayerModelWithSquaredError
-  extends FunctionalLayerModel(new FunctionalLayer(new SigmoidFunction)) with LossFunction {
+    extends FunctionalLayerModel(new FunctionalLayer(new SigmoidFunction))
+    with LossFunction {
   override def loss(output: BDM[Double], target: BDM[Double], delta: BDM[Double]): Double = {
     ApplyInPlace(output, target, delta, (o: Double, t: Double) => o - t)
     val error = Bsum(delta :* delta) / 2 / output.cols
@@ -107,9 +109,7 @@ private[ann] class SoftmaxLayerModelWithCrossEntropyLoss extends LayerModel with
     }
   }
   override def computePrevDelta(
-    nextDelta: BDM[Double],
-    input: BDM[Double],
-    delta: BDM[Double]): Unit = {
+      nextDelta: BDM[Double], input: BDM[Double], delta: BDM[Double]): Unit = {
     /* loss layer model computes delta in loss function */
   }
 
@@ -119,6 +119,6 @@ private[ann] class SoftmaxLayerModelWithCrossEntropyLoss extends LayerModel with
 
   override def loss(output: BDM[Double], target: BDM[Double], delta: BDM[Double]): Double = {
     ApplyInPlace(output, target, delta, (o: Double, t: Double) => o - t)
-    -Bsum( target :* brzlog(output)) / output.cols
+    -Bsum(target :* brzlog(output)) / output.cols
   }
 }

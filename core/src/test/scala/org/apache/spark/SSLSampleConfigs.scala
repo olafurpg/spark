@@ -21,22 +21,18 @@ import java.io.File
 
 object SSLSampleConfigs {
   val keyStorePath = new File(this.getClass.getResource("/keystore").toURI).getAbsolutePath
-  val untrustedKeyStorePath = new File(
-    this.getClass.getResource("/untrusted-keystore").toURI).getAbsolutePath
+  val untrustedKeyStorePath =
+    new File(this.getClass.getResource("/untrusted-keystore").toURI).getAbsolutePath
   val trustStorePath = new File(this.getClass.getResource("/truststore").toURI).getAbsolutePath
 
   val enabledAlgorithms =
     // A reasonable set of TLSv1.2 Oracle security provider suites
-    "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, " +
-    "TLS_RSA_WITH_AES_256_CBC_SHA256, " +
-    "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, " +
-    "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, " +
+    "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, " + "TLS_RSA_WITH_AES_256_CBC_SHA256, " +
+    "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, " + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, " +
     "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, " +
     // and their equivalent names in the IBM Security provider
-    "SSL_ECDHE_RSA_WITH_AES_256_CBC_SHA384, " +
-    "SSL_RSA_WITH_AES_256_CBC_SHA256, " +
-    "SSL_DHE_RSA_WITH_AES_256_CBC_SHA256, " +
-    "SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA256, " +
+    "SSL_ECDHE_RSA_WITH_AES_256_CBC_SHA384, " + "SSL_RSA_WITH_AES_256_CBC_SHA256, " +
+    "SSL_DHE_RSA_WITH_AES_256_CBC_SHA256, " + "SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA256, " +
     "SSL_DHE_RSA_WITH_AES_128_CBC_SHA256"
 
   def sparkSSLConfig(): SparkConf = {
@@ -64,5 +60,4 @@ object SSLSampleConfigs {
     conf.set("spark.ssl.protocol", "TLSv1.2")
     conf
   }
-
 }

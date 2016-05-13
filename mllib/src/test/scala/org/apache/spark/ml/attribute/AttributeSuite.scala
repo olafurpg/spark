@@ -50,9 +50,7 @@ class AttributeSuite extends SparkFunSuite {
     val index = 0
     val metadata = Metadata.fromJson("""{"name":"age","idx":0}""")
     val metadataWithType = Metadata.fromJson("""{"type":"numeric","name":"age","idx":0}""")
-    val attr: NumericAttribute = NumericAttribute.defaultAttr
-      .withName(name)
-      .withIndex(index)
+    val attr: NumericAttribute = NumericAttribute.defaultAttr.withName(name).withIndex(index)
     assert(attr.attrType == AttributeType.Numeric)
     assert(attr.isNumeric)
     assert(!attr.isNominal)
@@ -67,9 +65,7 @@ class AttributeSuite extends SparkFunSuite {
     assert(field.dataType === DoubleType)
     assert(!field.nullable)
     assert(attr.withoutIndex === Attribute.fromStructField(field))
-    val existingMetadata = new MetadataBuilder()
-      .putString("name", "test")
-      .build()
+    val existingMetadata = new MetadataBuilder().putString("name", "test").build()
     assert(attr.toStructField(existingMetadata).metadata.getString("name") === "test")
 
     val attr2 =
@@ -119,13 +115,11 @@ class AttributeSuite extends SparkFunSuite {
     val index = 1
     val values = Array("small", "medium", "large")
     val metadata = Metadata.fromJson(
-      """{"type":"nominal","name":"size","idx":1,"vals":["small","medium","large"]}""")
-    val metadataWithoutType = Metadata.fromJson(
-      """{"name":"size","idx":1,"vals":["small","medium","large"]}""")
-    val attr: NominalAttribute = NominalAttribute.defaultAttr
-      .withName(name)
-      .withIndex(index)
-      .withValues(values)
+        """{"type":"nominal","name":"size","idx":1,"vals":["small","medium","large"]}""")
+    val metadataWithoutType =
+      Metadata.fromJson("""{"name":"size","idx":1,"vals":["small","medium","large"]}""")
+    val attr: NominalAttribute =
+      NominalAttribute.defaultAttr.withName(name).withIndex(index).withValues(values)
     assert(attr.attrType === AttributeType.Nominal)
     assert(!attr.isNumeric)
     assert(attr.isNominal)
@@ -181,14 +175,12 @@ class AttributeSuite extends SparkFunSuite {
     val name = "clicked"
     val index = 2
     val values = Array("no", "yes")
-    val metadata = Metadata.fromJson(
-      """{"type":"binary","name":"clicked","idx":2,"vals":["no","yes"]}""")
-    val metadataWithoutType = Metadata.fromJson(
-      """{"name":"clicked","idx":2,"vals":["no","yes"]}""")
-    val attr = BinaryAttribute.defaultAttr
-      .withName(name)
-      .withIndex(index)
-      .withValues(values(0), values(1))
+    val metadata =
+      Metadata.fromJson("""{"type":"binary","name":"clicked","idx":2,"vals":["no","yes"]}""")
+    val metadataWithoutType =
+      Metadata.fromJson("""{"name":"clicked","idx":2,"vals":["no","yes"]}""")
+    val attr =
+      BinaryAttribute.defaultAttr.withName(name).withIndex(index).withValues(values(0), values(1))
     assert(attr.attrType === AttributeType.Binary)
     assert(attr.isNumeric)
     assert(attr.isNominal)

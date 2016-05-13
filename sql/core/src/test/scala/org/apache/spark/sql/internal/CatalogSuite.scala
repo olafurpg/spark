@@ -28,14 +28,10 @@ import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.Range
 import org.apache.spark.sql.test.SharedSQLContext
 
-
 /**
  * Tests for the user-facing [[org.apache.spark.sql.catalog.Catalog]].
  */
-class CatalogSuite
-  extends SparkFunSuite
-  with BeforeAndAfterEach
-  with SharedSQLContext {
+class CatalogSuite extends SparkFunSuite with BeforeAndAfterEach with SharedSQLContext {
 
   private def sessionCatalog: SessionCatalog = spark.sessionState.catalog
 
@@ -85,9 +81,9 @@ class CatalogSuite
 
   private def testListColumns(tableName: String, dbName: Option[String]): Unit = {
     val tableMetadata = sessionCatalog.getTableMetadata(TableIdentifier(tableName, dbName))
-    val columns = dbName
-      .map { db => spark.catalog.listColumns(db, tableName) }
-      .getOrElse { spark.catalog.listColumns(tableName) }
+    val columns = dbName.map { db =>
+      spark.catalog.listColumns(db, tableName)
+    }.getOrElse { spark.catalog.listColumns(tableName) }
     assume(tableMetadata.schema.nonEmpty, "bad test")
     assume(tableMetadata.partitionColumnNames.nonEmpty, "bad test")
     assume(tableMetadata.bucketColumnNames.nonEmpty, "bad test")
@@ -124,10 +120,10 @@ class CatalogSuite
     createDatabase("my_db1")
     createDatabase("my_db2")
     assert(spark.catalog.listDatabases().collect().map(_.name).toSet ==
-      Set("default", "my_db1", "my_db2"))
+        Set("default", "my_db1", "my_db2"))
     dropDatabase("my_db1")
     assert(spark.catalog.listDatabases().collect().map(_.name).toSet ==
-      Set("default", "my_db2"))
+        Set("default", "my_db2"))
   }
 
   test("list tables") {
@@ -136,10 +132,10 @@ class CatalogSuite
     createTable("my_table2")
     createTempTable("my_temp_table")
     assert(spark.catalog.listTables().collect().map(_.name).toSet ==
-      Set("my_table1", "my_table2", "my_temp_table"))
+        Set("my_table1", "my_table2", "my_temp_table"))
     dropTable("my_table1")
     assert(spark.catalog.listTables().collect().map(_.name).toSet ==
-      Set("my_table2", "my_temp_table"))
+        Set("my_table2", "my_temp_table"))
     dropTable("my_temp_table")
     assert(spark.catalog.listTables().collect().map(_.name).toSet == Set("my_table2"))
   }
@@ -152,21 +148,21 @@ class CatalogSuite
     createTable("my_table2", Some("my_db2"))
     createTempTable("my_temp_table")
     assert(spark.catalog.listTables("default").collect().map(_.name).toSet ==
-      Set("my_temp_table"))
+        Set("my_temp_table"))
     assert(spark.catalog.listTables("my_db1").collect().map(_.name).toSet ==
-      Set("my_table1", "my_temp_table"))
+        Set("my_table1", "my_temp_table"))
     assert(spark.catalog.listTables("my_db2").collect().map(_.name).toSet ==
-      Set("my_table2", "my_temp_table"))
+        Set("my_table2", "my_temp_table"))
     dropTable("my_table1", Some("my_db1"))
     assert(spark.catalog.listTables("my_db1").collect().map(_.name).toSet ==
-      Set("my_temp_table"))
+        Set("my_temp_table"))
     assert(spark.catalog.listTables("my_db2").collect().map(_.name).toSet ==
-      Set("my_table2", "my_temp_table"))
+        Set("my_table2", "my_temp_table"))
     dropTable("my_temp_table")
     assert(spark.catalog.listTables("default").collect().map(_.name).isEmpty)
     assert(spark.catalog.listTables("my_db1").collect().map(_.name).isEmpty)
     assert(spark.catalog.listTables("my_db2").collect().map(_.name).toSet ==
-      Set("my_table2"))
+        Set("my_table2"))
     val e = intercept[AnalysisException] {
       spark.catalog.listTables("unknown_db")
     }
@@ -175,7 +171,7 @@ class CatalogSuite
 
   test("list functions") {
     assert(Set("+", "current_database", "window").subsetOf(
-      spark.catalog.listFunctions().collect().map(_.name).toSet))
+            spark.catalog.listFunctions().collect().map(_.name).toSet))
     createFunction("my_func1")
     createFunction("my_func2")
     createTempFunction("my_temp_func")
@@ -193,7 +189,7 @@ class CatalogSuite
 
   test("list functions with database") {
     assert(Set("+", "current_database", "window").subsetOf(
-      spark.catalog.listFunctions("default").collect().map(_.name).toSet))
+            spark.catalog.listFunctions("default").collect().map(_.name).toSet))
     createDatabase("my_db1")
     createDatabase("my_db2")
     createFunction("my_func1", Some("my_db1"))
@@ -234,34 +230,44 @@ class CatalogSuite
 
   test("Database.toString") {
     assert(new Database("cool_db", "cool_desc", "cool_path").toString ==
-      "Database[name='cool_db', description='cool_desc', path='cool_path']")
+        "Database[name='cool_db', description='cool_desc', path='cool_path']")
     assert(new Database("cool_db", null, "cool_path").toString ==
-      "Database[name='cool_db', path='cool_path']")
+        "Database[name='cool_db', path='cool_path']")
   }
 
   test("Table.toString") {
     assert(new Table("volley", "databasa", "one", "world", isTemporary = true).toString ==
-      "Table[name='volley', database='databasa', description='one', " +
+        "Table[name='volley', database='databasa', description='one', " +
         "tableType='world', isTemporary='true']")
     assert(new Table("volley", null, null, "world", isTemporary = true).toString ==
-      "Table[name='volley', tableType='world', isTemporary='true']")
+        "Table[name='volley', tableType='world', isTemporary='true']")
   }
 
   test("Function.toString") {
     assert(new Function("nama", "commenta", "classNameAh", isTemporary = true).toString ==
-      "Function[name='nama', description='commenta', className='classNameAh', isTemporary='true']")
+        "Function[name='nama', description='commenta', className='classNameAh', isTemporary='true']")
     assert(new Function("nama", null, "classNameAh", isTemporary = false).toString ==
-      "Function[name='nama', className='classNameAh', isTemporary='false']")
+        "Function[name='nama', className='classNameAh', isTemporary='false']")
   }
 
   test("Column.toString") {
-    assert(new Column("namama", "descaca", "datatapa",
-      nullable = true, isPartition = false, isBucket = true).toString ==
+    assert(
+        new Column("namama",
+                   "descaca",
+                   "datatapa",
+                   nullable = true,
+                   isPartition = false,
+                   isBucket = true).toString ==
         "Column[name='namama', description='descaca', dataType='datatapa', " +
-          "nullable='true', isPartition='false', isBucket='true']")
-    assert(new Column("namama", null, "datatapa",
-      nullable = false, isPartition = true, isBucket = true).toString ==
-      "Column[name='namama', dataType='datatapa', " +
+        "nullable='true', isPartition='false', isBucket='true']")
+    assert(
+        new Column("namama",
+                   null,
+                   "datatapa",
+                   nullable = false,
+                   isPartition = true,
+                   isBucket = true).toString ==
+        "Column[name='namama', dataType='datatapa', " +
         "nullable='false', isPartition='true', isBucket='true']")
   }
 
@@ -270,7 +276,7 @@ class CatalogSuite
     val table = new Table("nama", "databasa", "descripta", "typa", isTemporary = false)
     val function = new Function("nama", "descripta", "classa", isTemporary = false)
     val column = new Column(
-      "nama", "descripta", "typa", nullable = false, isPartition = true, isBucket = true)
+        "nama", "descripta", "typa", nullable = false, isPartition = true, isBucket = true)
     val dbFields = ScalaReflection.getConstructorParameterValues(db)
     val tableFields = ScalaReflection.getConstructorParameterValues(table)
     val functionFields = ScalaReflection.getConstructorParameterValues(function)
@@ -283,12 +289,19 @@ class CatalogSuite
     val tableString = CatalogImpl.makeDataset(Seq(table), spark).showString(10)
     val functionString = CatalogImpl.makeDataset(Seq(function), spark).showString(10)
     val columnString = CatalogImpl.makeDataset(Seq(column), spark).showString(10)
-    dbFields.foreach { f => assert(dbString.contains(f.toString)) }
-    tableFields.foreach { f => assert(tableString.contains(f.toString)) }
-    functionFields.foreach { f => assert(functionString.contains(f.toString)) }
-    columnFields.foreach { f => assert(columnString.contains(f.toString)) }
+    dbFields.foreach { f =>
+      assert(dbString.contains(f.toString))
+    }
+    tableFields.foreach { f =>
+      assert(tableString.contains(f.toString))
+    }
+    functionFields.foreach { f =>
+      assert(functionString.contains(f.toString))
+    }
+    columnFields.foreach { f =>
+      assert(columnString.contains(f.toString))
+    }
   }
 
   // TODO: add tests for the rest of them
-
 }

@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.ScalaReflectionLock
  * The data type representing `Short` values. Please use the singleton [[DataTypes.ShortType]].
  */
 @DeveloperApi
-class ShortType private() extends IntegralType {
+class ShortType private () extends IntegralType {
   // The companion object and this class is separated so the companion object also subclasses
   // this type. Otherwise, the companion object would be of type "ShortType$" in byte code.
   // Defined with a private constructor so the companion object is the only possible instantiation.

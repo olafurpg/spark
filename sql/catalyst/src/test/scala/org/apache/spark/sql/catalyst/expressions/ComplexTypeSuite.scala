@@ -23,7 +23,6 @@ import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
-
 class ComplexTypeSuite extends SparkFunSuite with ExpressionEvalHelper {
 
   /**
@@ -86,8 +85,8 @@ class ComplexTypeSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation(getStructField(struct, "a"), 1)
     checkEvaluation(getStructField(nullStruct, "a"), null)
 
-    val nestedStruct = Literal.create(create_row(create_row(1)),
-      StructType(StructField("a", typeS) :: Nil))
+    val nestedStruct =
+      Literal.create(create_row(create_row(1)), StructType(StructField("a", typeS) :: Nil))
     checkEvaluation(getStructField(nestedStruct, "a"), create_row(1))
 
     val typeS_fieldNotNullable = StructType(StructField("a", IntegerType, false) :: Nil)
@@ -148,29 +147,23 @@ class ComplexTypeSuite extends SparkFunSuite with ExpressionEvalHelper {
     val longSeq = intSeq.map(_.toLong)
     val strSeq = intSeq.map(_.toString)
     checkEvaluation(CreateMap(Nil), Map.empty)
-    checkEvaluation(
-      CreateMap(interlace(intSeq.map(Literal(_)), longSeq.map(Literal(_)))),
-      createMap(intSeq, longSeq))
-    checkEvaluation(
-      CreateMap(interlace(strSeq.map(Literal(_)), longSeq.map(Literal(_)))),
-      createMap(strSeq, longSeq))
-    checkEvaluation(
-      CreateMap(interlace(longSeq.map(Literal(_)), strSeq.map(Literal(_)))),
-      createMap(longSeq, strSeq))
+    checkEvaluation(CreateMap(interlace(intSeq.map(Literal(_)), longSeq.map(Literal(_)))),
+                    createMap(intSeq, longSeq))
+    checkEvaluation(CreateMap(interlace(strSeq.map(Literal(_)), longSeq.map(Literal(_)))),
+                    createMap(strSeq, longSeq))
+    checkEvaluation(CreateMap(interlace(longSeq.map(Literal(_)), strSeq.map(Literal(_)))),
+                    createMap(longSeq, strSeq))
 
     val strWithNull = strSeq.drop(1).map(Literal(_)) :+ Literal.create(null, StringType)
-    checkEvaluation(
-      CreateMap(interlace(intSeq.map(Literal(_)), strWithNull)),
-      createMap(intSeq, strWithNull.map(_.value)))
+    checkEvaluation(CreateMap(interlace(intSeq.map(Literal(_)), strWithNull)),
+                    createMap(intSeq, strWithNull.map(_.value)))
     intercept[RuntimeException] {
       checkEvaluationWithoutCodegen(
-        CreateMap(interlace(strWithNull, intSeq.map(Literal(_)))),
-        null, null)
+          CreateMap(interlace(strWithNull, intSeq.map(Literal(_)))), null, null)
     }
     intercept[RuntimeException] {
       checkEvalutionWithUnsafeProjection(
-        CreateMap(interlace(strWithNull, intSeq.map(Literal(_)))),
-        null, null)
+          CreateMap(interlace(strWithNull, intSeq.map(Literal(_)))), null, null)
     }
   }
 
@@ -187,12 +180,12 @@ class ComplexTypeSuite extends SparkFunSuite with ExpressionEvalHelper {
     val c1 = 'a.int.at(0)
     val c3 = 'c.int.at(2)
     checkEvaluation(CreateNamedStruct(Seq("a", c1, "b", c3)), create_row(1, 3), row)
-    checkEvaluation(CreateNamedStruct(Seq("a", c1, "b", "y")),
-      create_row(1, UTF8String.fromString("y")), row)
-    checkEvaluation(CreateNamedStruct(Seq("a", "x", "b", 2.0)),
-      create_row(UTF8String.fromString("x"), 2.0))
-    checkEvaluation(CreateNamedStruct(Seq("a", Literal.create(null, IntegerType))),
-      create_row(null))
+    checkEvaluation(
+        CreateNamedStruct(Seq("a", c1, "b", "y")), create_row(1, UTF8String.fromString("y")), row)
+    checkEvaluation(
+        CreateNamedStruct(Seq("a", "x", "b", 2.0)), create_row(UTF8String.fromString("x"), 2.0))
+    checkEvaluation(
+        CreateNamedStruct(Seq("a", Literal.create(null, IntegerType))), create_row(null))
   }
 
   test("test dsl for complex type") {
@@ -201,11 +194,12 @@ class ComplexTypeSuite extends SparkFunSuite with ExpressionEvalHelper {
     }
 
     checkEvaluation(quickResolve('c.map(MapType(StringType, StringType)).at(0).getItem("a")),
-      "b", create_row(Map("a" -> "b")))
-    checkEvaluation(quickResolve('c.array(StringType).at(0).getItem(1)),
-      "b", create_row(Seq("a", "b")))
-    checkEvaluation(quickResolve('c.struct('a.int).at(0).getField("a")),
-      1, create_row(create_row(1)))
+                    "b",
+                    create_row(Map("a" -> "b")))
+    checkEvaluation(
+        quickResolve('c.array(StringType).at(0).getItem(1)), "b", create_row(Seq("a", "b")))
+    checkEvaluation(
+        quickResolve('c.struct('a.int).at(0).getField("a")), 1, create_row(create_row(1)))
   }
 
   test("error message of ExtractValue") {
@@ -213,14 +207,11 @@ class ComplexTypeSuite extends SparkFunSuite with ExpressionEvalHelper {
     val otherType = StringType
 
     def checkErrorMessage(
-      childDataType: DataType,
-      fieldDataType: DataType,
-      errorMesage: String): Unit = {
+        childDataType: DataType, fieldDataType: DataType, errorMesage: String): Unit = {
       val e = intercept[org.apache.spark.sql.AnalysisException] {
-        ExtractValue(
-          Literal.create(null, childDataType),
-          Literal.create(null, fieldDataType),
-          _ == _)
+        ExtractValue(Literal.create(null, childDataType),
+                     Literal.create(null, fieldDataType),
+                     _ == _)
       }
       assert(e.getMessage().contains(errorMesage))
     }

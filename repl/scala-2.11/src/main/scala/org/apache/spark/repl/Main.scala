@@ -53,14 +53,15 @@ object Main extends Logging {
   // Visible for testing
   private[repl] def doMain(args: Array[String], _interp: SparkILoop): Unit = {
     interp = _interp
-    val jars = conf.getOption("spark.jars")
-      .map(_.replace(",", File.pathSeparator))
-      .getOrElse("")
-    val interpArguments = List(
-      "-Yrepl-class-based",
-      "-Yrepl-outdir", s"${outputDir.getAbsolutePath}",
-      "-classpath", jars
-    ) ++ args.toList
+    val jars = conf.getOption("spark.jars").map(_.replace(",", File.pathSeparator)).getOrElse("")
+    val interpArguments =
+      List(
+          "-Yrepl-class-based",
+          "-Yrepl-outdir",
+          s"${outputDir.getAbsolutePath}",
+          "-classpath",
+          jars
+      ) ++ args.toList
 
     val settings = new GenericRunnerSettings(scalaOptionError)
     settings.processArguments(interpArguments, true)
@@ -99,5 +100,4 @@ object Main extends Logging {
     Signaling.cancelOnInterrupt(sparkContext)
     sparkSession
   }
-
 }

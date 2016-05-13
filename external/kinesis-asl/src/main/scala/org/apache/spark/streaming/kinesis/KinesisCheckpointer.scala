@@ -36,11 +36,11 @@ import org.apache.spark.util.{Clock, SystemClock, ThreadUtils}
  * @param workerId Worker Id of KCL worker for logging purposes
  * @param clock In order to use ManualClocks for the purpose of testing
  */
-private[kinesis] class KinesisCheckpointer(
-    receiver: KinesisReceiver[_],
-    checkpointInterval: Duration,
-    workerId: String,
-    clock: Clock = new SystemClock) extends Logging {
+private[kinesis] class KinesisCheckpointer(receiver: KinesisReceiver[_],
+                                           checkpointInterval: Duration,
+                                           workerId: String,
+                                           clock: Clock = new SystemClock)
+    extends Logging {
 
   // a map from shardId's to checkpointers
   private val checkpointers = new ConcurrentHashMap[String, IRecordProcessorCheckpointer]()
@@ -80,7 +80,7 @@ private[kinesis] class KinesisCheckpointer(
             /* Perform the checkpoint */
             KinesisRecordProcessor.retryRandom(checkpointer.checkpoint(latestSeqNum), 4, 100)
             logDebug(s"Checkpoint:  WorkerId $workerId completed checkpoint at sequence number" +
-              s" $latestSeqNum for shardId $shardId")
+                s" $latestSeqNum for shardId $shardId")
             lastCheckpointedSeqNums.put(shardId, latestSeqNum)
           }
         }

@@ -86,10 +86,11 @@ private[spark] abstract class LauncherBackend {
   /**
    * Callback for when the launcher handle disconnects from this backend.
    */
-  protected def onDisconnected() : Unit = { }
+  protected def onDisconnected(): Unit = {}
 
   private def fireStopRequest(): Unit = {
-    val thread = LauncherBackend.threadFactory.newThread(new Runnable() {
+    val thread = LauncherBackend.threadFactory.newThread(
+        new Runnable() {
       override def run(): Unit = Utils.tryLogNonFatalError {
         onStopRequest()
       }
@@ -115,13 +116,10 @@ private[spark] abstract class LauncherBackend {
         _isConnected = false
       }
     }
-
   }
-
 }
 
 private object LauncherBackend {
 
   val threadFactory = ThreadUtils.namedThreadFactory("LauncherBackend")
-
 }

@@ -27,10 +27,9 @@ class IntegralDeltaSuite extends SparkFunSuite {
   testIntegralDelta(new IntColumnStats, INT, IntDelta)
   testIntegralDelta(new LongColumnStats, LONG, LongDelta)
 
-  def testIntegralDelta[I <: IntegralType](
-      columnStats: ColumnStats,
-      columnType: NativeColumnType[I],
-      scheme: CompressionScheme) {
+  def testIntegralDelta[I <: IntegralType](columnStats: ColumnStats,
+                                           columnType: NativeColumnType[I],
+                                           scheme: CompressionScheme) {
 
     def skeleton(input: Seq[I#InternalType]) {
       // -------------
@@ -38,14 +37,15 @@ class IntegralDeltaSuite extends SparkFunSuite {
       // -------------
 
       val builder = TestCompressibleColumnBuilder(columnStats, columnType, scheme)
-      val deltas = if (input.isEmpty) {
-        Seq.empty[Long]
-      } else {
-        (input.tail, input.init).zipped.map {
-          case (x: Int, y: Int) => (x - y).toLong
-          case (x: Long, y: Long) => x - y
+      val deltas =
+        if (input.isEmpty) {
+          Seq.empty[Long]
+        } else {
+          (input.tail, input.init).zipped.map {
+            case (x: Int, y: Int) => (x - y).toLong
+            case (x: Long, y: Long) => x - y
+          }
         }
-      }
 
       input.map { value =>
         val row = new GenericMutableRow(1)
@@ -58,14 +58,15 @@ class IntegralDeltaSuite extends SparkFunSuite {
       val headerSize = CompressionScheme.columnHeaderSize(buffer)
 
       // Compression scheme ID + compressed contents
-      val compressedSize = 4 + (if (deltas.isEmpty) {
-        0
-      } else {
-        val oneBoolean = columnType.defaultSize
-        1 + oneBoolean + deltas.map {
-          d => if (math.abs(d) <= Byte.MaxValue) 1 else 1 + oneBoolean
-        }.sum
-      })
+      val compressedSize =
+        4 + (if (deltas.isEmpty) {
+               0
+             } else {
+               val oneBoolean = columnType.defaultSize
+               1 + oneBoolean + deltas.map { d =>
+                 if (math.abs(d) <= Byte.MaxValue) 1 else 1 + oneBoolean
+               }.sum
+             })
 
       // 4 extra bytes for compression scheme type ID
       assertResult(headerSize + compressedSize, "Wrong buffer capacity")(buffer.capacity)
@@ -98,7 +99,7 @@ class IntegralDeltaSuite extends SparkFunSuite {
       val mutableRow = new GenericMutableRow(1)
 
       if (input.nonEmpty) {
-        input.foreach{
+        input.foreach {
           assert(decoder.hasNext)
           assertResult(_, "Wrong decoded value") {
             decoder.next(mutableRow, 0)

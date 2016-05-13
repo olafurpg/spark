@@ -58,8 +58,8 @@ import org.apache.spark.streaming.dstream.DStream
 @Since("1.1.0")
 @DeveloperApi
 abstract class StreamingLinearAlgorithm[
-    M <: GeneralizedLinearModel,
-    A <: GeneralizedLinearAlgorithm[M]] extends Logging {
+    M <: GeneralizedLinearModel, A <: GeneralizedLinearAlgorithm[M]]
+    extends Logging {
 
   /** The model to be updated and used for prediction. */
   protected var model: Option[M]
@@ -120,7 +120,9 @@ abstract class StreamingLinearAlgorithm[
     if (model.isEmpty) {
       throw new IllegalArgumentException("Model must be initialized before starting prediction.")
     }
-    data.map{x => model.get.predict(x)}
+    data.map { x =>
+      model.get.predict(x)
+    }
   }
 
   /**
@@ -144,9 +146,10 @@ abstract class StreamingLinearAlgorithm[
     if (model.isEmpty) {
       throw new IllegalArgumentException("Model must be initialized before starting prediction")
     }
-    data.mapValues{x => model.get.predict(x)}
+    data.mapValues { x =>
+      model.get.predict(x)
+    }
   }
-
 
   /**
    * Java-friendly version of `predictOnValues`.
@@ -156,6 +159,6 @@ abstract class StreamingLinearAlgorithm[
   def predictOnValues[K](data: JavaPairDStream[K, Vector]): JavaPairDStream[K, java.lang.Double] = {
     implicit val tag = fakeClassTag[K]
     JavaPairDStream.fromPairDStream(
-      predictOnValues(data.dstream).asInstanceOf[DStream[(K, java.lang.Double)]])
+        predictOnValues(data.dstream).asInstanceOf[DStream[(K, java.lang.Double)]])
   }
 }

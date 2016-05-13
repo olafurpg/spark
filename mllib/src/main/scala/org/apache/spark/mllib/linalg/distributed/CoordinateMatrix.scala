@@ -42,10 +42,10 @@ case class MatrixEntry(i: Long, j: Long, value: Double)
  *              columns will be determined by the max column index plus one.
  */
 @Since("1.0.0")
-class CoordinateMatrix @Since("1.0.0") (
-    @Since("1.0.0") val entries: RDD[MatrixEntry],
-    private var nRows: Long,
-    private var nCols: Long) extends DistributedMatrix {
+class CoordinateMatrix @Since("1.0.0")(@Since("1.0.0") val entries: RDD[MatrixEntry],
+                                       private var nRows: Long,
+                                       private var nCols: Long)
+    extends DistributedMatrix {
 
   /** Alternative constructor leaving matrix dimensions to be determined automatically. */
   @Since("1.0.0")
@@ -81,13 +81,13 @@ class CoordinateMatrix @Since("1.0.0") (
     val nl = numCols()
     if (nl > Int.MaxValue) {
       sys.error(s"Cannot convert to a row-oriented format because the number of columns $nl is " +
-        "too large.")
+          "too large.")
     }
     val n = nl.toInt
-    val indexedRows = entries.map(entry => (entry.i, (entry.j.toInt, entry.value)))
-      .groupByKey()
-      .map { case (i, vectorEntries) =>
-        IndexedRow(i, Vectors.sparse(n, vectorEntries.toSeq))
+    val indexedRows =
+      entries.map(entry => (entry.i, (entry.j.toInt, entry.value))).groupByKey().map {
+        case (i, vectorEntries) =>
+          IndexedRow(i, Vectors.sparse(n, vectorEntries.toSeq))
       }
     new IndexedRowMatrix(indexedRows, numRows(), n)
   }
@@ -117,10 +117,10 @@ class CoordinateMatrix @Since("1.0.0") (
    */
   @Since("1.3.0")
   def toBlockMatrix(rowsPerBlock: Int, colsPerBlock: Int): BlockMatrix = {
-    require(rowsPerBlock > 0,
-      s"rowsPerBlock needs to be greater than 0. rowsPerBlock: $rowsPerBlock")
-    require(colsPerBlock > 0,
-      s"colsPerBlock needs to be greater than 0. colsPerBlock: $colsPerBlock")
+    require(
+        rowsPerBlock > 0, s"rowsPerBlock needs to be greater than 0. rowsPerBlock: $rowsPerBlock")
+    require(
+        colsPerBlock > 0, s"colsPerBlock needs to be greater than 0. colsPerBlock: $colsPerBlock")
     val m = numRows()
     val n = numCols()
     val numRowBlocks = math.ceil(m.toDouble / rowsPerBlock).toInt
@@ -135,10 +135,11 @@ class CoordinateMatrix @Since("1.0.0") (
       val colId = entry.j % colsPerBlock
 
       ((blockRowIndex, blockColIndex), (rowId.toInt, colId.toInt, entry.value))
-    }.groupByKey(partitioner).map { case ((blockRowIndex, blockColIndex), entry) =>
-      val effRows = math.min(m - blockRowIndex.toLong * rowsPerBlock, rowsPerBlock).toInt
-      val effCols = math.min(n - blockColIndex.toLong * colsPerBlock, colsPerBlock).toInt
-      ((blockRowIndex, blockColIndex), SparseMatrix.fromCOO(effRows, effCols, entry))
+    }.groupByKey(partitioner).map {
+      case ((blockRowIndex, blockColIndex), entry) =>
+        val effRows = math.min(m - blockRowIndex.toLong * rowsPerBlock, rowsPerBlock).toInt
+        val effCols = math.min(n - blockColIndex.toLong * colsPerBlock, colsPerBlock).toInt
+        ((blockRowIndex, blockColIndex), SparseMatrix.fromCOO(effRows, effCols, entry))
     }
     new BlockMatrix(blocks, rowsPerBlock, colsPerBlock, m, n)
   }
@@ -146,8 +147,9 @@ class CoordinateMatrix @Since("1.0.0") (
   /** Determines the size by computing the max row/column index. */
   private def computeSize() {
     // Reduce will throw an exception if `entries` is empty.
-    val (m1, n1) = entries.map(entry => (entry.i, entry.j)).reduce { case ((i1, j1), (i2, j2)) =>
-      (math.max(i1, i2), math.max(j1, j2))
+    val (m1, n1) = entries.map(entry => (entry.i, entry.j)).reduce {
+      case ((i1, j1), (i2, j2)) =>
+        (math.max(i1, i2), math.max(j1, j2))
     }
     // There may be empty columns at the very right and empty rows at the very bottom.
     nRows = math.max(nRows, m1 + 1L)
@@ -159,8 +161,9 @@ class CoordinateMatrix @Since("1.0.0") (
     val m = numRows().toInt
     val n = numCols().toInt
     val mat = BDM.zeros[Double](m, n)
-    entries.collect().foreach { case MatrixEntry(i, j, value) =>
-      mat(i.toInt, j.toInt) = value
+    entries.collect().foreach {
+      case MatrixEntry(i, j, value) =>
+        mat(i.toInt, j.toInt) = value
     }
     mat
   }

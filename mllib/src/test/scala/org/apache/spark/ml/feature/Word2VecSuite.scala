@@ -44,15 +44,16 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext with Defaul
     val doc = sc.parallelize(Seq(sentence, sentence)).map(line => line.split(" "))
 
     val codes = Map(
-      "a" -> Array(-0.2811822295188904, -0.6356269121170044, -0.3020961284637451),
-      "b" -> Array(1.0309048891067505, -1.29472815990448, 0.22276712954044342),
-      "c" -> Array(-0.08456747233867645, 0.5137411952018738, 0.11731560528278351)
+        "a" -> Array(-0.2811822295188904, -0.6356269121170044, -0.3020961284637451),
+        "b" -> Array(1.0309048891067505, -1.29472815990448, 0.22276712954044342),
+        "c" -> Array(-0.08456747233867645, 0.5137411952018738, 0.11731560528278351)
     )
 
     val expected = doc.map { sentence =>
-      Vectors.dense(sentence.map(codes.apply).reduce((word1, word2) =>
-        word1.zip(word2).map { case (v1, v2) => v1 + v2 }
-      ).map(_ / numOfWords))
+      Vectors.dense(sentence
+            .map(codes.apply)
+            .reduce((word1, word2) => word1.zip(word2).map { case (v1, v2) => v1 + v2 })
+            .map(_ / numOfWords))
     }
 
     val docDF = doc.zip(expected).toDF("text", "expected")
@@ -85,9 +86,9 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext with Defaul
     val doc = sc.parallelize(Seq(sentence, sentence)).map(line => line.split(" "))
 
     val codes = Map(
-      "a" -> Array(-0.2811822295188904, -0.6356269121170044, -0.3020961284637451),
-      "b" -> Array(1.0309048891067505, -1.29472815990448, 0.22276712954044342),
-      "c" -> Array(-0.08456747233867645, 0.5137411952018738, 0.11731560528278351)
+        "a" -> Array(-0.2811822295188904, -0.6356269121170044, -0.3020961284637451),
+        "b" -> Array(1.0309048891067505, -1.29472815990448, 0.22276712954044342),
+        "c" -> Array(-0.08456747233867645, 0.5137411952018738, 0.11731560528278351)
     )
     val expectedVectors = codes.toSeq.sortBy(_._1).map { case (w, v) => Vectors.dense(v) }
 
@@ -100,15 +101,20 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext with Defaul
       .setSeed(42L)
       .fit(docDF)
 
-    val realVectors = model.getVectors.sort("word").select("vector").rdd.map {
-      case Row(v: Vector) => v
-    }.collect()
+    val realVectors = model.getVectors
+      .sort("word")
+      .select("vector")
+      .rdd
+      .map {
+        case Row(v: Vector) => v
+      }
+      .collect()
     // These expectations are just magic values, characterizing the current
     // behavior.  The test needs to be updated to be more general, see SPARK-11502
     val magicExpected = Seq(
-      Vectors.dense(0.3326166272163391, -0.5603077411651611, -0.2309209555387497),
-      Vectors.dense(0.32463887333869934, -0.9306551218032837, 1.393115520477295),
-      Vectors.dense(-0.27150997519493103, 0.4372006058692932, -0.13465698063373566)
+        Vectors.dense(0.3326166272163391, -0.5603077411651611, -0.2309209555387497),
+        Vectors.dense(0.32463887333869934, -0.9306551218032837, 1.393115520477295),
+        Vectors.dense(-0.27150997519493103, 0.4372006058692932, -0.13465698063373566)
     )
 
     realVectors.zip(magicExpected).foreach {
@@ -134,9 +140,14 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext with Defaul
       .fit(docDF)
 
     val expectedSimilarity = Array(0.2608488929093532, -0.8271274846926078)
-    val (synonyms, similarity) = model.findSynonyms("a", 2).rdd.map {
-      case Row(w: String, sim: Double) => (w, sim)
-    }.collect().unzip
+    val (synonyms, similarity) = model
+      .findSynonyms("a", 2)
+      .rdd
+      .map {
+        case Row(w: String, sim: Double) => (w, sim)
+      }
+      .collect()
+      .unzip
 
     assert(synonyms.toArray === Array("b", "c"))
     expectedSimilarity.zip(similarity).map {
@@ -161,9 +172,14 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext with Defaul
       .setSeed(42L)
       .fit(docDF)
 
-    val (synonyms, similarity) = model.findSynonyms("a", 6).rdd.map {
-      case Row(w: String, sim: Double) => (w, sim)
-    }.collect().unzip
+    val (synonyms, similarity) = model
+      .findSynonyms("a", 6)
+      .rdd
+      .map {
+        case Row(w: String, sim: Double) => (w, sim)
+      }
+      .collect()
+      .unzip
 
     // Increase the window size
     val biggerModel = new Word2Vec()
@@ -174,9 +190,14 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext with Defaul
       .setWindowSize(10)
       .fit(docDF)
 
-    val (synonymsLarger, similarityLarger) = model.findSynonyms("a", 6).rdd.map {
-      case Row(w: String, sim: Double) => (w, sim)
-    }.collect().unzip
+    val (synonymsLarger, similarityLarger) = model
+      .findSynonyms("a", 6)
+      .rdd
+      .map {
+        case Row(w: String, sim: Double) => (w, sim)
+      }
+      .collect()
+      .unzip
     // The similarity score should be very different with the larger window
     assert(math.abs(similarity(5) - similarityLarger(5) / similarity(5)) > 1E-5)
   }
@@ -196,10 +217,10 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext with Defaul
 
   test("Word2VecModel read/write") {
     val word2VecMap = Map(
-      ("china", Array(0.50f, 0.50f, 0.50f, 0.50f)),
-      ("japan", Array(0.40f, 0.50f, 0.50f, 0.50f)),
-      ("taiwan", Array(0.60f, 0.50f, 0.50f, 0.50f)),
-      ("korea", Array(0.45f, 0.60f, 0.60f, 0.60f))
+        ("china", Array(0.50f, 0.50f, 0.50f, 0.50f)),
+        ("japan", Array(0.40f, 0.50f, 0.50f, 0.50f)),
+        ("taiwan", Array(0.60f, 0.50f, 0.50f, 0.50f)),
+        ("korea", Array(0.45f, 0.60f, 0.60f, 0.60f))
     )
     val oldModel = new OldWord2VecModel(word2VecMap)
     val instance = new Word2VecModel("myWord2VecModel", oldModel)
@@ -207,4 +228,3 @@ class Word2VecSuite extends SparkFunSuite with MLlibTestSparkContext with Defaul
     assert(newInstance.getVectors.collect() === instance.getVectors.collect())
   }
 }
-

@@ -52,7 +52,6 @@ import org.apache.flume.sink.AbstractSink
  * after that, it is simply ignored and the events get re-sent.
  *
  */
-
 class SparkSink extends AbstractSink with Logging with Configurable {
 
   // Size of the pool to use for holding transaction processors.
@@ -78,11 +77,12 @@ class SparkSink extends AbstractSink with Logging with Configurable {
   private val blockingLatch = new CountDownLatch(1)
 
   override def start() {
-    logInfo("Starting Spark Sink: " + getName + " on port: " + port + " and interface: " +
-      hostname + " with " + "pool size: " + poolSize + " and transaction timeout: " +
-      transactionTimeout + ".")
-    handler = Option(new SparkAvroCallbackHandler(poolSize, getChannel, transactionTimeout,
-      backOffInterval))
+    logInfo(
+        "Starting Spark Sink: " + getName + " on port: " + port + " and interface: " + hostname +
+        " with " + "pool size: " + poolSize + " and transaction timeout: " + transactionTimeout +
+        ".")
+    handler = Option(
+        new SparkAvroCallbackHandler(poolSize, getChannel, transactionTimeout, backOffInterval))
     val responder = new SpecificResponder(classOf[SparkFlumeProtocol], handler.get)
     // Using the constructor that takes specific thread-pools requires bringing in netty
     // dependencies which are being excluded in the build. In practice,
@@ -112,14 +112,15 @@ class SparkSink extends AbstractSink with Logging with Configurable {
   override def configure(ctx: Context) {
     import SparkSinkConfig._
     hostname = ctx.getString(CONF_HOSTNAME, DEFAULT_HOSTNAME)
-    port = Option(ctx.getInteger(CONF_PORT)).
-      getOrElse(throw new ConfigurationException("The port to bind to must be specified"))
+    port = Option(ctx.getInteger(CONF_PORT))
+      .getOrElse(throw new ConfigurationException("The port to bind to must be specified"))
     poolSize = ctx.getInteger(THREADS, DEFAULT_THREADS)
     transactionTimeout = ctx.getInteger(CONF_TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT)
     backOffInterval = ctx.getInteger(CONF_BACKOFF_INTERVAL, DEFAULT_BACKOFF_INTERVAL)
-    logInfo("Configured Spark Sink with hostname: " + hostname + ", port: " + port + ", " +
-      "poolSize: " + poolSize + ", transactionTimeout: " + transactionTimeout + ", " +
-      "backoffInterval: " + backOffInterval)
+    logInfo(
+        "Configured Spark Sink with hostname: " + hostname + ", port: " + port + ", " +
+        "poolSize: " + poolSize + ", transactionTimeout: " + transactionTimeout + ", " +
+        "backoffInterval: " + backOffInterval)
   }
 
   override def process(): Status = {
@@ -135,7 +136,7 @@ class SparkSink extends AbstractSink with Logging with Configurable {
     serverOpt
       .map(_.getPort)
       .getOrElse(
-        throw new RuntimeException("Server was not started!")
+          throw new RuntimeException("Server was not started!")
       )
   }
 
@@ -153,8 +154,7 @@ class SparkSink extends AbstractSink with Logging with Configurable {
 /**
  * Configuration parameters and their defaults.
  */
-private[flume]
-object SparkSinkConfig {
+private[flume] object SparkSinkConfig {
   val THREADS = "threads"
   val DEFAULT_THREADS = 10
 

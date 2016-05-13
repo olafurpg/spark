@@ -64,7 +64,7 @@ private[spark] class CompactBuffer[T: ClassTag] extends Seq[T] with Serializable
     }
   }
 
-  def += (value: T): CompactBuffer[T] = {
+  def +=(value: T): CompactBuffer[T] = {
     val newIndex = curSize
     if (newIndex == 0) {
       element0 = value
@@ -79,7 +79,7 @@ private[spark] class CompactBuffer[T: ClassTag] extends Seq[T] with Serializable
     this
   }
 
-  def ++= (values: TraversableOnce[T]): CompactBuffer[T] = {
+  def ++=(values: TraversableOnce[T]): CompactBuffer[T] = {
     values match {
       // Optimize merging of CompactBuffers, used in cogroup and groupByKey
       case compactBuf: CompactBuffer[T] =>

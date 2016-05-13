@@ -36,7 +36,8 @@ import org.apache.spark.util.Utils
  */
 @Sharable
 private[r] class RBackendHandler(server: RBackend)
-  extends SimpleChannelInboundHandler[Array[Byte]] with Logging {
+    extends SimpleChannelInboundHandler[Array[Byte]]
+    with Logging {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: Array[Byte]): Unit = {
     val bis = new ByteArrayInputStream(msg)
@@ -100,45 +101,42 @@ private[r] class RBackendHandler(server: RBackend)
     ctx.close()
   }
 
-  def handleMethodCall(
-      isStatic: Boolean,
-      objId: String,
-      methodName: String,
-      numArgs: Int,
-      dis: DataInputStream,
-      dos: DataOutputStream): Unit = {
+  def handleMethodCall(isStatic: Boolean,
+                       objId: String,
+                       methodName: String,
+                       numArgs: Int,
+                       dis: DataInputStream,
+                       dos: DataOutputStream): Unit = {
     var obj: Object = null
     try {
-      val cls = if (isStatic) {
-        Utils.classForName(objId)
-      } else {
-        JVMObjectTracker.get(objId) match {
-          case None => throw new IllegalArgumentException("Object not found " + objId)
-          case Some(o) =>
-            obj = o
-            o.getClass
+      val cls =
+        if (isStatic) {
+          Utils.classForName(objId)
+        } else {
+          JVMObjectTracker.get(objId) match {
+            case None => throw new IllegalArgumentException("Object not found " + objId)
+            case Some(o) =>
+              obj = o
+              o.getClass
+          }
         }
-      }
 
       val args = readArgs(numArgs, dis)
 
       val methods = cls.getMethods
       val selectedMethods = methods.filter(m => m.getName == methodName)
       if (selectedMethods.length > 0) {
-        val index = findMatchedSignature(
-          selectedMethods.map(_.getParameterTypes),
-          args)
+        val index = findMatchedSignature(selectedMethods.map(_.getParameterTypes), args)
 
         if (index.isEmpty) {
-          logWarning(s"cannot find matching method ${cls}.$methodName. "
-            + s"Candidates are:")
+          logWarning(s"cannot find matching method ${cls}.$methodName. " + s"Candidates are:")
           selectedMethods.foreach { method =>
             logWarning(s"$methodName(${method.getParameterTypes.mkString(",")})")
           }
           throw new Exception(s"No matched method found for $cls.$methodName")
         }
 
-        val ret = selectedMethods(index.get).invoke(obj, args : _*)
+        val ret = selectedMethods(index.get).invoke(obj, args: _*)
 
         // Write status bit
         writeInt(dos, 0)
@@ -146,20 +144,17 @@ private[r] class RBackendHandler(server: RBackend)
       } else if (methodName == "<init>") {
         // methodName should be "<init>" for constructor
         val ctors = cls.getConstructors
-        val index = findMatchedSignature(
-          ctors.map(_.getParameterTypes),
-          args)
+        val index = findMatchedSignature(ctors.map(_.getParameterTypes), args)
 
         if (index.isEmpty) {
-          logWarning(s"cannot find matching constructor for ${cls}. "
-            + s"Candidates are:")
+          logWarning(s"cannot find matching constructor for ${cls}. " + s"Candidates are:")
           ctors.foreach { ctor =>
             logWarning(s"$cls(${ctor.getParameterTypes.mkString(",")})")
           }
           throw new Exception(s"No matched constructor found for $cls")
         }
 
-        val obj = ctors(index.get).newInstance(args : _*)
+        val obj = ctors(index.get).newInstance(args: _*)
 
         writeInt(dos, 0)
         writeObject(dos, obj.asInstanceOf[AnyRef])
@@ -194,8 +189,7 @@ private[r] class RBackendHandler(server: RBackend)
   //
   // Returns an Option[Int] which is the index of the matched signature in the array.
   def findMatchedSignature(
-      parameterTypesOfMethods: Array[Array[Class[_]]],
-      args: Array[Object]): Option[Int] = {
+      parameterTypesOfMethods: Array[Array[Class[_]]], args: Array[Object]): Option[Int] = {
     val numArgs = args.length
 
     for (index <- 0 until parameterTypesOfMethods.length) {
@@ -287,5 +281,4 @@ private[r] object JVMObjectTracker {
   def remove(id: String): Option[Object] = {
     objMap.remove(id)
   }
-
 }

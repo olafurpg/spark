@@ -35,10 +35,7 @@ object KMeansExample {
 
   def main(args: Array[String]): Unit = {
     // Creates a SparkSession.
-    val spark = SparkSession
-      .builder
-      .appName(s"${this.getClass.getSimpleName}")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName(s"${this.getClass.getSimpleName}").getOrCreate()
 
     // $example on$
     // Loads data.

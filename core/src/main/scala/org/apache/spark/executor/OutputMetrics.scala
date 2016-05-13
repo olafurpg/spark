@@ -20,7 +20,6 @@ package org.apache.spark.executor
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.util.LongAccumulator
 
-
 /**
  * :: DeveloperApi ::
  * Method by which output data was written.
@@ -32,13 +31,12 @@ object DataWriteMethod extends Enumeration with Serializable {
   val Hadoop = Value
 }
 
-
 /**
  * :: DeveloperApi ::
  * A collection of accumulators that represents metrics about writing data to external systems.
  */
 @DeveloperApi
-class OutputMetrics private[spark] () extends Serializable {
+class OutputMetrics private[spark]() extends Serializable {
   private[executor] val _bytesWritten = new LongAccumulator
   private[executor] val _recordsWritten = new LongAccumulator
 

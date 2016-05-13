@@ -37,15 +37,14 @@ private[spark] class YarnClusterManager extends ExternalClusterManager {
     }
   }
 
-  override def createSchedulerBackend(sc: SparkContext,
-      masterURL: String,
-      scheduler: TaskScheduler): SchedulerBackend = {
+  override def createSchedulerBackend(
+      sc: SparkContext, masterURL: String, scheduler: TaskScheduler): SchedulerBackend = {
     sc.deployMode match {
       case "cluster" =>
         new YarnClusterSchedulerBackend(scheduler.asInstanceOf[TaskSchedulerImpl], sc)
       case "client" =>
         new YarnClientSchedulerBackend(scheduler.asInstanceOf[TaskSchedulerImpl], sc)
-      case  _ =>
+      case _ =>
         throw new SparkException(s"Unknown deploy mode '${sc.deployMode}' for Yarn")
     }
   }

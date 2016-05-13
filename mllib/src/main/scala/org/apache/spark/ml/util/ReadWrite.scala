@@ -93,7 +93,7 @@ abstract class MLWriter extends BaseReadWrite with Logging {
         fs.delete(qualifiedOutputPath, true)
       } else {
         throw new IOException(
-          s"Path $path already exists. Please use write.overwrite().save(path) to overwrite it.")
+            s"Path $path already exists. Please use write.overwrite().save(path) to overwrite it.")
       }
     }
     saveImpl(path)
@@ -222,12 +222,11 @@ private[ml] object DefaultParamsWriter {
    *                  Otherwise, all [[org.apache.spark.ml.param.Param]]s are encoded using
    *                  [[org.apache.spark.ml.param.Param.jsonEncode()]].
    */
-  def saveMetadata(
-      instance: Params,
-      path: String,
-      sc: SparkContext,
-      extraMetadata: Option[JObject] = None,
-      paramMap: Option[JValue] = None): Unit = {
+  def saveMetadata(instance: Params,
+                   path: String,
+                   sc: SparkContext,
+                   extraMetadata: Option[JObject] = None,
+                   paramMap: Option[JValue] = None): Unit = {
     val metadataPath = new Path(path, "metadata").toString
     val metadataJson = getMetadataToSave(instance, sc, extraMetadata, paramMap)
     sc.parallelize(Seq(metadataJson), 1).saveAsTextFile(metadataPath)
@@ -239,18 +238,20 @@ private[ml] object DefaultParamsWriter {
    *
    * @see [[saveMetadata()]] for details on what this includes.
    */
-  def getMetadataToSave(
-      instance: Params,
-      sc: SparkContext,
-      extraMetadata: Option[JObject] = None,
-      paramMap: Option[JValue] = None): String = {
+  def getMetadataToSave(instance: Params,
+                        sc: SparkContext,
+                        extraMetadata: Option[JObject] = None,
+                        paramMap: Option[JValue] = None): String = {
     val uid = instance.uid
     val cls = instance.getClass.getName
     val params = instance.extractParamMap().toSeq.asInstanceOf[Seq[ParamPair[Any]]]
-    val jsonParams = paramMap.getOrElse(render(params.map { case ParamPair(p, v) =>
-      p.name -> parse(p.jsonEncode(v))
+    val jsonParams = paramMap.getOrElse(
+        render(params.map {
+      case ParamPair(p, v) =>
+        p.name -> parse(p.jsonEncode(v))
     }.toList))
-    val basicMetadata = ("class" -> cls) ~
+    val basicMetadata =
+      ("class" -> cls) ~
       ("timestamp" -> System.currentTimeMillis()) ~
       ("sparkVersion" -> sc.version) ~
       ("uid" -> uid) ~
@@ -295,14 +296,13 @@ private[ml] object DefaultParamsReader {
    * @param metadata  All metadata, including the other fields
    * @param metadataJson  Full metadata file String (for debugging)
    */
-  case class Metadata(
-      className: String,
-      uid: String,
-      timestamp: Long,
-      sparkVersion: String,
-      params: JValue,
-      metadata: JValue,
-      metadataJson: String) {
+  case class Metadata(className: String,
+                      uid: String,
+                      timestamp: Long,
+                      sparkVersion: String,
+                      params: JValue,
+                      metadata: JValue,
+                      metadataJson: String) {
 
     /**
      * Get the JSON value of the [[org.apache.spark.ml.param.Param]] of the given name.
@@ -313,15 +313,16 @@ private[ml] object DefaultParamsReader {
       implicit val format = DefaultFormats
       params match {
         case JObject(pairs) =>
-          val values = pairs.filter { case (pName, jsonValue) =>
-            pName == paramName
+          val values = pairs.filter {
+            case (pName, jsonValue) =>
+              pName == paramName
           }.map(_._2)
-          assert(values.length == 1, s"Expected one instance of Param '$paramName' but found" +
-            s" ${values.length} in JSON Params: " + pairs.map(_.toString).mkString(", "))
+          assert(values.length == 1,
+                 s"Expected one instance of Param '$paramName' but found" +
+                 s" ${values.length} in JSON Params: " + pairs.map(_.toString).mkString(", "))
           values.head
         case _ =>
-          throw new IllegalArgumentException(
-            s"Cannot recognize JSON metadata: $metadataJson.")
+          throw new IllegalArgumentException(s"Cannot recognize JSON metadata: $metadataJson.")
       }
     }
   }
@@ -356,8 +357,9 @@ private[ml] object DefaultParamsReader {
     val sparkVersion = (metadata \ "sparkVersion").extract[String]
     val params = metadata \ "paramMap"
     if (expectedClassName.nonEmpty) {
-      require(className == expectedClassName, s"Error loading metadata: Expected class name" +
-        s" $expectedClassName but found class name $className")
+      require(className == expectedClassName,
+              s"Error loading metadata: Expected class name" +
+              s" $expectedClassName but found class name $className")
     }
 
     Metadata(className, uid, timestamp, sparkVersion, params, metadata, metadataStr)
@@ -372,14 +374,15 @@ private[ml] object DefaultParamsReader {
     implicit val format = DefaultFormats
     metadata.params match {
       case JObject(pairs) =>
-        pairs.foreach { case (paramName, jsonValue) =>
-          val param = instance.getParam(paramName)
-          val value = param.jsonDecode(compact(render(jsonValue)))
-          instance.set(param, value)
+        pairs.foreach {
+          case (paramName, jsonValue) =>
+            val param = instance.getParam(paramName)
+            val value = param.jsonDecode(compact(render(jsonValue)))
+            instance.set(param, value)
         }
       case _ =>
         throw new IllegalArgumentException(
-          s"Cannot recognize JSON metadata: ${metadata.metadataJson}.")
+            s"Cannot recognize JSON metadata: ${metadata.metadataJson}.")
     }
   }
 
@@ -398,6 +401,7 @@ private[ml] object DefaultParamsReader {
  * Default Meta-Algorithm read and write implementation.
  */
 private[ml] object MetaAlgorithmReadWrite {
+
   /**
    * Examine the given estimator (which may be a compound estimator) and extract a mapping
    * from UIDs to corresponding [[Params]] instances.
@@ -406,8 +410,9 @@ private[ml] object MetaAlgorithmReadWrite {
     val uidList = getUidMapImpl(instance)
     val uidMap = uidList.toMap
     if (uidList.size != uidMap.size) {
-      throw new RuntimeException(s"${instance.getClass.getName}.load found a compound estimator" +
-        s" with stages with duplicate UIDs. List of UIDs: ${uidList.map(_._1).mkString(", ")}.")
+      throw new RuntimeException(
+          s"${instance.getClass.getName}.load found a compound estimator" +
+          s" with stages with duplicate UIDs. List of UIDs: ${uidList.map(_._1).mkString(", ")}.")
     }
     uidMap
   }

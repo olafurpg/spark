@@ -33,5 +33,4 @@ case class ReceiverInfo(
     lastErrorMessage: String = "",
     lastError: String = "",
     lastErrorTime: Long = -1L
-   ) {
-}
+) {}

@@ -45,16 +45,14 @@ object Canonicalize extends {
 
   /** Collects adjacent commutative operations. */
   private def gatherCommutative(
-      e: Expression,
-      f: PartialFunction[Expression, Seq[Expression]]): Seq[Expression] = e match {
+      e: Expression, f: PartialFunction[Expression, Seq[Expression]]): Seq[Expression] = e match {
     case c if f.isDefinedAt(c) => f(c).flatMap(gatherCommutative(_, f))
     case other => other :: Nil
   }
 
   /** Orders a set of commutative operations by their hash code. */
   private def orderCommutative(
-      e: Expression,
-      f: PartialFunction[Expression, Seq[Expression]]): Seq[Expression] =
+      e: Expression, f: PartialFunction[Expression, Seq[Expression]]): Seq[Expression] =
     gatherCommutative(e, f).sortBy(_.hashCode())
 
   /** Rearrange expressions that are commutative or associative. */

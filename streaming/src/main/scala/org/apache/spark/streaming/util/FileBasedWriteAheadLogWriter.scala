@@ -27,10 +27,9 @@ import org.apache.spark.util.Utils
  * A writer for writing byte-buffers to a write ahead log file.
  */
 private[streaming] class FileBasedWriteAheadLogWriter(path: String, hadoopConf: Configuration)
-  extends Closeable {
+    extends Closeable {
 
   private lazy val stream = HdfsUtils.getOutputStream(path, hadoopConf)
-
 
   private var nextOffset = stream.getPos()
   private var closed = false

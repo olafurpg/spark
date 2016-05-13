@@ -31,12 +31,11 @@ import org.apache.spark.SparkConf
 import org.apache.spark.deploy.yarn.config._
 import org.apache.spark.internal.Logging
 
-private case class CacheEntry(
-  uri: URI,
-  size: Long,
-  modTime: Long,
-  visibility: LocalResourceVisibility,
-  resType: LocalResourceType)
+private case class CacheEntry(uri: URI,
+                              size: Long,
+                              modTime: Long,
+                              visibility: LocalResourceVisibility,
+                              resType: LocalResourceType)
 
 /** Client side methods to setup the Hadoop distributed cache */
 private[spark] class ClientDistributedCacheManager() extends Logging {
@@ -59,15 +58,14 @@ private[spark] class ClientDistributedCacheManager() extends Logging {
    * @param statCache cache to store the file/directory stats
    * @param appMasterOnly Whether to only add the resource to the app master
    */
-  def addResource(
-      fs: FileSystem,
-      conf: Configuration,
-      destPath: Path,
-      localResources: HashMap[String, LocalResource],
-      resourceType: LocalResourceType,
-      link: String,
-      statCache: Map[URI, FileStatus],
-      appMasterOnly: Boolean = false): Unit = {
+  def addResource(fs: FileSystem,
+                  conf: Configuration,
+                  destPath: Path,
+                  localResources: HashMap[String, LocalResource],
+                  resourceType: LocalResourceType,
+                  link: String,
+                  statCache: Map[URI, FileStatus],
+                  appMasterOnly: Boolean = false): Unit = {
     val destStatus = fs.getFileStatus(destPath)
     val amJarRsrc = Records.newRecord(classOf[LocalResource])
     amJarRsrc.setType(resourceType)
@@ -82,8 +80,8 @@ private[spark] class ClientDistributedCacheManager() extends Logging {
     if (!appMasterOnly) {
       val uri = destPath.toUri()
       val pathURI = new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), null, link)
-      distCacheEntries += CacheEntry(pathURI, destStatus.getLen(), destStatus.getModificationTime(),
-        visibility, resourceType)
+      distCacheEntries += CacheEntry(
+          pathURI, destStatus.getLen(), destStatus.getModificationTime(), visibility, resourceType)
     }
   }
 
@@ -103,9 +101,7 @@ private[spark] class ClientDistributedCacheManager() extends Logging {
    * @return LocalResourceVisibility
    */
   private[yarn] def getVisibility(
-      conf: Configuration,
-      uri: URI,
-      statCache: Map[URI, FileStatus]): LocalResourceVisibility = {
+      conf: Configuration, uri: URI, statCache: Map[URI, FileStatus]): LocalResourceVisibility = {
     if (isPublic(conf, uri, statCache)) {
       LocalResourceVisibility.PUBLIC
     } else {
@@ -134,9 +130,7 @@ private[spark] class ClientDistributedCacheManager() extends Logging {
    * @return true if all ancestors have the 'execute' permission set for all users
    */
   private def ancestorsHaveExecutePermissions(
-      fs: FileSystem,
-      path: Path,
-      statCache: Map[URI, FileStatus]): Boolean = {
+      fs: FileSystem, path: Path, statCache: Map[URI, FileStatus]): Boolean = {
     var current = path
     while (current != null) {
       // the subdirs in the path should have execute permissions for others
@@ -154,10 +148,7 @@ private[spark] class ClientDistributedCacheManager() extends Logging {
    * @return true if the path in the uri is visible to all, false otherwise
    */
   private def checkPermissionOfOther(
-      fs: FileSystem,
-      path: Path,
-      action: FsAction,
-      statCache: Map[URI, FileStatus]): Boolean = {
+      fs: FileSystem, path: Path, action: FsAction, statCache: Map[URI, FileStatus]): Boolean = {
     val status = getFileStatus(fs, path.toUri(), statCache)
     val perms = status.getPermission()
     val otherAction = perms.getOtherAction()
@@ -171,9 +162,7 @@ private[spark] class ClientDistributedCacheManager() extends Logging {
    * @return FileStatus
    */
   private[yarn] def getFileStatus(
-      fs: FileSystem,
-      uri: URI,
-      statCache: Map[URI, FileStatus]): FileStatus = {
+      fs: FileSystem, uri: URI, statCache: Map[URI, FileStatus]): FileStatus = {
     val stat = statCache.get(uri) match {
       case Some(existstat) => existstat
       case None =>

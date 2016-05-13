@@ -33,7 +33,7 @@ import org.apache.spark.{SparkContext, SparkJobInfo, SparkStageInfo}
  *
  * NOTE: this class's constructor should be considered private and may be subject to change.
  */
-class JavaSparkStatusTracker private[spark] (sc: SparkContext) {
+class JavaSparkStatusTracker private[spark](sc: SparkContext) {
 
   /**
    * Return a list of all known jobs in a particular job group.  If `jobGroup` is `null`, then
@@ -43,7 +43,8 @@ class JavaSparkStatusTracker private[spark] (sc: SparkContext) {
    * invocations of this method.  This method does not guarantee the order of the elements in
    * its result.
    */
-  def getJobIdsForGroup(jobGroup: String): Array[Int] = sc.statusTracker.getJobIdsForGroup(jobGroup)
+  def getJobIdsForGroup(jobGroup: String): Array[Int] =
+    sc.statusTracker.getJobIdsForGroup(jobGroup)
 
   /**
    * Returns an array containing the ids of all active stages.

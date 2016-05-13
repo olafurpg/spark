@@ -25,8 +25,7 @@ import java.util.Comparator
  * The Java implementation is package private, and hence it cannot be called outside package
  * org.apache.spark.util.collection. This is a simple wrapper of it that is available to spark.
  */
-private[spark]
-class Sorter[K, Buffer](private val s: SortDataFormat[K, Buffer]) {
+private[spark] class Sorter[K, Buffer](private val s: SortDataFormat[K, Buffer]) {
 
   private val timSort = new TimSort(s)
 

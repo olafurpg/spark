@@ -37,10 +37,8 @@ import org.apache.spark.storage.StorageLevel
  * @param colsPerPart Number of columns per partition, which may be less at the right edge.
  */
 private[mllib] class GridPartitioner(
-    val rows: Int,
-    val cols: Int,
-    val rowsPerPart: Int,
-    val colsPerPart: Int) extends Partitioner {
+    val rows: Int, val cols: Int, val rowsPerPart: Int, val colsPerPart: Int)
+    extends Partitioner {
 
   require(rows > 0)
   require(cols > 0)
@@ -82,19 +80,18 @@ private[mllib] class GridPartitioner(
   override def equals(obj: Any): Boolean = {
     obj match {
       case r: GridPartitioner =>
-        (this.rows == r.rows) && (this.cols == r.cols) &&
-          (this.rowsPerPart == r.rowsPerPart) && (this.colsPerPart == r.colsPerPart)
+        (this.rows == r.rows) && (this.cols == r.cols) && (this.rowsPerPart == r.rowsPerPart) &&
+        (this.colsPerPart == r.colsPerPart)
       case _ =>
         false
     }
   }
 
   override def hashCode: Int = {
-    com.google.common.base.Objects.hashCode(
-      rows: java.lang.Integer,
-      cols: java.lang.Integer,
-      rowsPerPart: java.lang.Integer,
-      colsPerPart: java.lang.Integer)
+    com.google.common.base.Objects.hashCode(rows: java.lang.Integer,
+                                            cols: java.lang.Integer,
+                                            rowsPerPart: java.lang.Integer,
+                                            colsPerPart: java.lang.Integer)
   }
 }
 
@@ -131,12 +128,13 @@ private[mllib] object GridPartitioner {
  *              zero, the number of columns will be calculated when `numCols` is invoked.
  */
 @Since("1.3.0")
-class BlockMatrix @Since("1.3.0") (
-    @Since("1.3.0") val blocks: RDD[((Int, Int), Matrix)],
-    @Since("1.3.0") val rowsPerBlock: Int,
-    @Since("1.3.0") val colsPerBlock: Int,
-    private var nRows: Long,
-    private var nCols: Long) extends DistributedMatrix with Logging {
+class BlockMatrix @Since("1.3.0")(@Since("1.3.0") val blocks: RDD[((Int, Int), Matrix)],
+                                  @Since("1.3.0") val rowsPerBlock: Int,
+                                  @Since("1.3.0") val colsPerBlock: Int,
+                                  private var nRows: Long,
+                                  private var nCols: Long)
+    extends DistributedMatrix
+    with Logging {
 
   private type MatrixBlock = ((Int, Int), Matrix) // ((blockRowIndex, blockColIndex), sub-matrix)
 
@@ -152,10 +150,7 @@ class BlockMatrix @Since("1.3.0") (
    *                     columns are not required to have the given number of columns
    */
   @Since("1.3.0")
-  def this(
-      blocks: RDD[((Int, Int), Matrix)],
-      rowsPerBlock: Int,
-      colsPerBlock: Int) = {
+  def this(blocks: RDD[((Int, Int), Matrix)], rowsPerBlock: Int, colsPerBlock: Int) = {
     this(blocks, rowsPerBlock, colsPerBlock, 0L, 0L)
   }
 
@@ -183,9 +178,9 @@ class BlockMatrix @Since("1.3.0") (
 
   /** Estimates the dimensions of the matrix. */
   private def estimateDim(): Unit = {
-    val (rows, cols) = blockInfo.map { case ((blockRowIndex, blockColIndex), (m, n)) =>
-      (blockRowIndex.toLong * rowsPerBlock + m,
-        blockColIndex.toLong * colsPerBlock + n)
+    val (rows, cols) = blockInfo.map {
+      case ((blockRowIndex, blockColIndex), (m, n)) =>
+        (blockRowIndex.toLong * rowsPerBlock + m, blockColIndex.toLong * colsPerBlock + n)
     }.reduce { (x0, x1) =>
       (math.max(x0._1, x1._1), math.max(x0._2, x1._2))
     }
@@ -207,29 +202,32 @@ class BlockMatrix @Since("1.3.0") (
     logDebug("BlockMatrix dimensions are okay...")
 
     // Check if there are multiple MatrixBlocks with the same index.
-    blockInfo.countByKey().foreach { case (key, cnt) =>
-      if (cnt > 1) {
-        throw new SparkException(s"Found multiple MatrixBlocks with the indices $key. Please " +
-          "remove blocks with duplicate indices.")
-      }
+    blockInfo.countByKey().foreach {
+      case (key, cnt) =>
+        if (cnt > 1) {
+          throw new SparkException(s"Found multiple MatrixBlocks with the indices $key. Please " +
+              "remove blocks with duplicate indices.")
+        }
     }
     logDebug("MatrixBlock indices are okay...")
     // Check if each MatrixBlock (except edges) has the dimensions rowsPerBlock x colsPerBlock
     // The first tuple is the index and the second tuple is the dimensions of the MatrixBlock
-    val dimensionMsg = s"dimensions different than rowsPerBlock: $rowsPerBlock, and " +
+    val dimensionMsg =
+      s"dimensions different than rowsPerBlock: $rowsPerBlock, and " +
       s"colsPerBlock: $colsPerBlock. Blocks on the right and bottom edges can have smaller " +
       s"dimensions. You may use the repartition method to fix this issue."
-    blockInfo.foreach { case ((blockRowIndex, blockColIndex), (m, n)) =>
-      if ((blockRowIndex < numRowBlocks - 1 && m != rowsPerBlock) ||
-          (blockRowIndex == numRowBlocks - 1 && (m <= 0 || m > rowsPerBlock))) {
-        throw new SparkException(s"The MatrixBlock at ($blockRowIndex, $blockColIndex) has " +
-          dimensionMsg)
-      }
-      if ((blockColIndex < numColBlocks - 1 && n != colsPerBlock) ||
-        (blockColIndex == numColBlocks - 1 && (n <= 0 || n > colsPerBlock))) {
-        throw new SparkException(s"The MatrixBlock at ($blockRowIndex, $blockColIndex) has " +
-          dimensionMsg)
-      }
+    blockInfo.foreach {
+      case ((blockRowIndex, blockColIndex), (m, n)) =>
+        if ((blockRowIndex < numRowBlocks - 1 && m != rowsPerBlock) ||
+            (blockRowIndex == numRowBlocks - 1 && (m <= 0 || m > rowsPerBlock))) {
+          throw new SparkException(
+              s"The MatrixBlock at ($blockRowIndex, $blockColIndex) has " + dimensionMsg)
+        }
+        if ((blockColIndex < numColBlocks - 1 && n != colsPerBlock) ||
+            (blockColIndex == numColBlocks - 1 && (n <= 0 || n > colsPerBlock))) {
+          throw new SparkException(
+              s"The MatrixBlock at ($blockRowIndex, $blockColIndex) has " + dimensionMsg)
+        }
     }
     logDebug("MatrixBlock dimensions are okay...")
     logDebug("BlockMatrix is valid!")
@@ -252,45 +250,51 @@ class BlockMatrix @Since("1.3.0") (
   /** Converts to CoordinateMatrix. */
   @Since("1.3.0")
   def toCoordinateMatrix(): CoordinateMatrix = {
-    val entryRDD = blocks.flatMap { case ((blockRowIndex, blockColIndex), mat) =>
-      val rowStart = blockRowIndex.toLong * rowsPerBlock
-      val colStart = blockColIndex.toLong * colsPerBlock
-      val entryValues = new ArrayBuffer[MatrixEntry]()
-      mat.foreachActive { (i, j, v) =>
-        if (v != 0.0) entryValues.append(new MatrixEntry(rowStart + i, colStart + j, v))
-      }
-      entryValues
+    val entryRDD = blocks.flatMap {
+      case ((blockRowIndex, blockColIndex), mat) =>
+        val rowStart = blockRowIndex.toLong * rowsPerBlock
+        val colStart = blockColIndex.toLong * colsPerBlock
+        val entryValues = new ArrayBuffer[MatrixEntry]()
+        mat.foreachActive { (i, j, v) =>
+          if (v != 0.0) entryValues.append(new MatrixEntry(rowStart + i, colStart + j, v))
+        }
+        entryValues
     }
     new CoordinateMatrix(entryRDD, numRows(), numCols())
   }
-
 
   /** Converts to IndexedRowMatrix. The number of columns must be within the integer range. */
   @Since("1.3.0")
   def toIndexedRowMatrix(): IndexedRowMatrix = {
     val cols = numCols().toInt
 
-    require(cols < Int.MaxValue, s"The number of columns should be less than Int.MaxValue ($cols).")
+    require(
+        cols < Int.MaxValue, s"The number of columns should be less than Int.MaxValue ($cols).")
 
-    val rows = blocks.flatMap { case ((blockRowIdx, blockColIdx), mat) =>
-      mat.rowIter.zipWithIndex.map {
-        case (vector, rowIdx) =>
-          blockRowIdx * rowsPerBlock + rowIdx -> (blockColIdx, vector.toBreeze)
-      }
-    }.groupByKey().map { case (rowIdx, vectors) =>
-      val numberNonZeroPerRow = vectors.map(_._2.activeSize).sum.toDouble / cols.toDouble
+    val rows = blocks.flatMap {
+      case ((blockRowIdx, blockColIdx), mat) =>
+        mat.rowIter.zipWithIndex.map {
+          case (vector, rowIdx) =>
+            blockRowIdx * rowsPerBlock + rowIdx -> (blockColIdx, vector.toBreeze)
+        }
+    }.groupByKey().map {
+      case (rowIdx, vectors) =>
+        val numberNonZeroPerRow = vectors.map(_._2.activeSize).sum.toDouble / cols.toDouble
 
-      val wholeVector = if (numberNonZeroPerRow <= 0.1) { // Sparse at 1/10th nnz
-        BSV.zeros[Double](cols)
-      } else {
-        BDV.zeros[Double](cols)
-      }
+        val wholeVector =
+          if (numberNonZeroPerRow <= 0.1) {
+            // Sparse at 1/10th nnz
+            BSV.zeros[Double](cols)
+          } else {
+            BDV.zeros[Double](cols)
+          }
 
-      vectors.foreach { case (blockColIdx: Int, vec: BV[Double]) =>
-        val offset = colsPerBlock * blockColIdx
-        wholeVector(offset until offset + colsPerBlock) := vec
-      }
-      new IndexedRow(rowIdx, Vectors.fromBreeze(wholeVector))
+        vectors.foreach {
+          case (blockColIdx: Int, vec: BV[Double]) =>
+            val offset = colsPerBlock * blockColIdx
+            wholeVector(offset until offset + colsPerBlock) := vec
+        }
+        new IndexedRow(rowIdx, Vectors.fromBreeze(wholeVector))
     }
     new IndexedRowMatrix(rows)
   }
@@ -298,25 +302,29 @@ class BlockMatrix @Since("1.3.0") (
   /** Collect the distributed matrix on the driver as a `DenseMatrix`. */
   @Since("1.3.0")
   def toLocalMatrix(): Matrix = {
-    require(numRows() < Int.MaxValue, "The number of rows of this matrix should be less than " +
-      s"Int.MaxValue. Currently numRows: ${numRows()}")
-    require(numCols() < Int.MaxValue, "The number of columns of this matrix should be less than " +
-      s"Int.MaxValue. Currently numCols: ${numCols()}")
-    require(numRows() * numCols() < Int.MaxValue, "The length of the values array must be " +
-      s"less than Int.MaxValue. Currently numRows * numCols: ${numRows() * numCols()}")
+    require(numRows() < Int.MaxValue,
+            "The number of rows of this matrix should be less than " +
+            s"Int.MaxValue. Currently numRows: ${numRows()}")
+    require(numCols() < Int.MaxValue,
+            "The number of columns of this matrix should be less than " +
+            s"Int.MaxValue. Currently numCols: ${numCols()}")
+    require(numRows() * numCols() < Int.MaxValue,
+            "The length of the values array must be " +
+            s"less than Int.MaxValue. Currently numRows * numCols: ${numRows() * numCols()}")
     val m = numRows().toInt
     val n = numCols().toInt
     val mem = m * n / 125000
     if (mem > 500) logWarning(s"Storing this matrix will require $mem MB of memory!")
     val localBlocks = blocks.collect()
     val values = new Array[Double](m * n)
-    localBlocks.foreach { case ((blockRowIndex, blockColIndex), submat) =>
-      val rowOffset = blockRowIndex * rowsPerBlock
-      val colOffset = blockColIndex * colsPerBlock
-      submat.foreachActive { (i, j, v) =>
-        val indexOffset = (j + colOffset) * m + rowOffset + i
-        values(indexOffset) = v
-      }
+    localBlocks.foreach {
+      case ((blockRowIndex, blockColIndex), submat) =>
+        val rowOffset = blockRowIndex * rowsPerBlock
+        val colOffset = blockColIndex * colsPerBlock
+        submat.foreachActive { (i, j, v) =>
+          val indexOffset = (j + colOffset) * m + rowOffset + i
+          values(indexOffset) = v
+        }
     }
     new DenseMatrix(m, n, values)
   }
@@ -327,8 +335,9 @@ class BlockMatrix @Since("1.3.0") (
    */
   @Since("1.3.0")
   def transpose: BlockMatrix = {
-    val transposedBlocks = blocks.map { case ((blockRowIndex, blockColIndex), mat) =>
-      ((blockColIndex, blockRowIndex), mat.transpose)
+    val transposedBlocks = blocks.map {
+      case ((blockRowIndex, blockColIndex), mat) =>
+        ((blockColIndex, blockRowIndex), mat.transpose)
     }
     new BlockMatrix(transposedBlocks, colsPerBlock, rowsPerBlock, nCols, nRows)
   }
@@ -352,18 +361,19 @@ class BlockMatrix @Since("1.3.0") (
    * TODO: Make the use of zero matrices more storage efficient.
    */
   private[mllib] def blockMap(
-      other: BlockMatrix,
-      binMap: (BM[Double], BM[Double]) => BM[Double]): BlockMatrix = {
-    require(numRows() == other.numRows(), "Both matrices must have the same number of rows. " +
-      s"A.numRows: ${numRows()}, B.numRows: ${other.numRows()}")
-    require(numCols() == other.numCols(), "Both matrices must have the same number of columns. " +
-      s"A.numCols: ${numCols()}, B.numCols: ${other.numCols()}")
+      other: BlockMatrix, binMap: (BM[Double], BM[Double]) => BM[Double]): BlockMatrix = {
+    require(numRows() == other.numRows(),
+            "Both matrices must have the same number of rows. " +
+            s"A.numRows: ${numRows()}, B.numRows: ${other.numRows()}")
+    require(numCols() == other.numCols(),
+            "Both matrices must have the same number of columns. " +
+            s"A.numCols: ${numCols()}, B.numCols: ${other.numCols()}")
     if (rowsPerBlock == other.rowsPerBlock && colsPerBlock == other.colsPerBlock) {
-      val newBlocks = blocks.cogroup(other.blocks, createPartitioner())
-        .map { case ((blockRowIndex, blockColIndex), (a, b)) =>
+      val newBlocks = blocks.cogroup(other.blocks, createPartitioner()).map {
+        case ((blockRowIndex, blockColIndex), (a, b)) =>
           if (a.size > 1 || b.size > 1) {
             throw new SparkException("There are multiple MatrixBlocks with indices: " +
-              s"($blockRowIndex, $blockColIndex). Please remove them.")
+                s"($blockRowIndex, $blockColIndex). Please remove them.")
           }
           if (a.isEmpty) {
             val zeroBlock = BM.zeros[Double](b.head.numRows, b.head.numCols)
@@ -422,19 +432,20 @@ class BlockMatrix @Since("1.3.0") (
    *         `other`.
    */
   private[distributed] def simulateMultiply(
-      other: BlockMatrix,
-      partitioner: GridPartitioner): (BlockDestinations, BlockDestinations) = {
+      other: BlockMatrix, partitioner: GridPartitioner): (BlockDestinations, BlockDestinations) = {
     val leftMatrix = blockInfo.keys.collect() // blockInfo should already be cached
     val rightMatrix = other.blocks.keys.collect()
-    val leftDestinations = leftMatrix.map { case (rowIndex, colIndex) =>
-      val rightCounterparts = rightMatrix.filter(_._1 == colIndex)
-      val partitions = rightCounterparts.map(b => partitioner.getPartition((rowIndex, b._2)))
-      ((rowIndex, colIndex), partitions.toSet)
+    val leftDestinations = leftMatrix.map {
+      case (rowIndex, colIndex) =>
+        val rightCounterparts = rightMatrix.filter(_._1 == colIndex)
+        val partitions = rightCounterparts.map(b => partitioner.getPartition((rowIndex, b._2)))
+        ((rowIndex, colIndex), partitions.toSet)
     }.toMap
-    val rightDestinations = rightMatrix.map { case (rowIndex, colIndex) =>
-      val leftCounterparts = leftMatrix.filter(_._2 == rowIndex)
-      val partitions = leftCounterparts.map(b => partitioner.getPartition((b._1, colIndex)))
-      ((rowIndex, colIndex), partitions.toSet)
+    val rightDestinations = rightMatrix.map {
+      case (rowIndex, colIndex) =>
+        val leftCounterparts = leftMatrix.filter(_._2 == rowIndex)
+        val partitions = leftCounterparts.map(b => partitioner.getPartition((b._1, colIndex)))
+        ((rowIndex, colIndex), partitions.toSet)
     }.toMap
     (leftDestinations, rightDestinations)
   }
@@ -452,42 +463,57 @@ class BlockMatrix @Since("1.3.0") (
    */
   @Since("1.3.0")
   def multiply(other: BlockMatrix): BlockMatrix = {
-    require(numCols() == other.numRows(), "The number of columns of A and the number of rows " +
-      s"of B must be equal. A.numCols: ${numCols()}, B.numRows: ${other.numRows()}. If you " +
-      "think they should be equal, try setting the dimensions of A and B explicitly while " +
-      "initializing them.")
+    require(
+        numCols() == other.numRows(),
+        "The number of columns of A and the number of rows " +
+        s"of B must be equal. A.numCols: ${numCols()}, B.numRows: ${other.numRows()}. If you " +
+        "think they should be equal, try setting the dimensions of A and B explicitly while " +
+        "initializing them.")
     if (colsPerBlock == other.rowsPerBlock) {
-      val resultPartitioner = GridPartitioner(numRowBlocks, other.numColBlocks,
-        math.max(blocks.partitions.length, other.blocks.partitions.length))
+      val resultPartitioner = GridPartitioner(
+          numRowBlocks,
+          other.numColBlocks,
+          math.max(blocks.partitions.length, other.blocks.partitions.length))
       val (leftDestinations, rightDestinations) = simulateMultiply(other, resultPartitioner)
       // Each block of A must be multiplied with the corresponding blocks in the columns of B.
-      val flatA = blocks.flatMap { case ((blockRowIndex, blockColIndex), block) =>
-        val destinations = leftDestinations.getOrElse((blockRowIndex, blockColIndex), Set.empty)
-        destinations.map(j => (j, (blockRowIndex, blockColIndex, block)))
+      val flatA = blocks.flatMap {
+        case ((blockRowIndex, blockColIndex), block) =>
+          val destinations = leftDestinations.getOrElse((blockRowIndex, blockColIndex), Set.empty)
+          destinations.map(j => (j, (blockRowIndex, blockColIndex, block)))
       }
       // Each block of B must be multiplied with the corresponding blocks in each row of A.
-      val flatB = other.blocks.flatMap { case ((blockRowIndex, blockColIndex), block) =>
-        val destinations = rightDestinations.getOrElse((blockRowIndex, blockColIndex), Set.empty)
-        destinations.map(j => (j, (blockRowIndex, blockColIndex, block)))
+      val flatB = other.blocks.flatMap {
+        case ((blockRowIndex, blockColIndex), block) =>
+          val destinations = rightDestinations.getOrElse((blockRowIndex, blockColIndex), Set.empty)
+          destinations.map(j => (j, (blockRowIndex, blockColIndex, block)))
       }
-      val newBlocks = flatA.cogroup(flatB, resultPartitioner).flatMap { case (pId, (a, b)) =>
-        a.flatMap { case (leftRowIndex, leftColIndex, leftBlock) =>
-          b.filter(_._1 == leftColIndex).map { case (rightRowIndex, rightColIndex, rightBlock) =>
-            val C = rightBlock match {
-              case dense: DenseMatrix => leftBlock.multiply(dense)
-              case sparse: SparseMatrix => leftBlock.multiply(sparse.toDense)
-              case _ =>
-                throw new SparkException(s"Unrecognized matrix type ${rightBlock.getClass}.")
+      val newBlocks = flatA
+        .cogroup(flatB, resultPartitioner)
+        .flatMap {
+          case (pId, (a, b)) =>
+            a.flatMap {
+              case (leftRowIndex, leftColIndex, leftBlock) =>
+                b.filter(_._1 == leftColIndex).map {
+                  case (rightRowIndex, rightColIndex, rightBlock) =>
+                    val C = rightBlock match {
+                      case dense: DenseMatrix => leftBlock.multiply(dense)
+                      case sparse: SparseMatrix => leftBlock.multiply(sparse.toDense)
+                      case _ =>
+                        throw new SparkException(
+                            s"Unrecognized matrix type ${rightBlock.getClass}.")
+                    }
+                    ((leftRowIndex, rightColIndex), C.toBreeze)
+                }
             }
-            ((leftRowIndex, rightColIndex), C.toBreeze)
-          }
         }
-      }.reduceByKey(resultPartitioner, (a, b) => a + b).mapValues(Matrices.fromBreeze)
+        .reduceByKey(resultPartitioner, (a, b) => a + b)
+        .mapValues(Matrices.fromBreeze)
       // TODO: Try to use aggregateByKey instead of reduceByKey to get rid of intermediate matrices
       new BlockMatrix(newBlocks, rowsPerBlock, other.colsPerBlock, numRows(), other.numCols())
     } else {
-      throw new SparkException("colsPerBlock of A doesn't match rowsPerBlock of B. " +
-        s"A.colsPerBlock: $colsPerBlock, B.rowsPerBlock: ${other.rowsPerBlock}")
+      throw new SparkException(
+          "colsPerBlock of A doesn't match rowsPerBlock of B. " +
+          s"A.colsPerBlock: $colsPerBlock, B.rowsPerBlock: ${other.rowsPerBlock}")
     }
   }
 }

@@ -161,10 +161,9 @@ private[spark] object ShutdownHookManager extends Logging {
   def removeShutdownHook(ref: AnyRef): Boolean = {
     shutdownHooks.remove(ref)
   }
-
 }
 
-private [util] class SparkShutdownHookManager {
+private[util] class SparkShutdownHookManager {
 
   private val hooks = new PriorityQueue[SparkShutdownHook]()
   @volatile private var shuttingDown = false
@@ -176,8 +175,9 @@ private [util] class SparkShutdownHookManager {
     val hookTask = new Runnable() {
       override def run(): Unit = runAll()
     }
-    org.apache.hadoop.util.ShutdownHookManager.get().addShutdownHook(
-      hookTask, FileSystem.SHUTDOWN_HOOK_PRIORITY + 30)
+    org.apache.hadoop.util.ShutdownHookManager
+      .get()
+      .addShutdownHook(hookTask, FileSystem.SHUTDOWN_HOOK_PRIORITY + 30)
   }
 
   def runAll(): Unit = {
@@ -202,16 +202,14 @@ private [util] class SparkShutdownHookManager {
   def remove(ref: AnyRef): Boolean = {
     hooks.synchronized { hooks.remove(ref) }
   }
-
 }
 
 private class SparkShutdownHook(private val priority: Int, hook: () => Unit)
-  extends Comparable[SparkShutdownHook] {
+    extends Comparable[SparkShutdownHook] {
 
   override def compareTo(other: SparkShutdownHook): Int = {
     other.priority - priority
   }
 
   def run(): Unit = hook()
-
 }

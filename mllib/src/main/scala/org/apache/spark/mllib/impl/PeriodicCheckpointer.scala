@@ -25,7 +25,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.storage.StorageLevel
 
-
 /**
  * This abstraction helps with persisting and checkpointing RDDs and types derived from RDDs
  * (such as Graphs and DataFrames).  In documentation, we use the phrase "Dataset" to refer to
@@ -58,8 +57,8 @@ import org.apache.spark.storage.StorageLevel
  * @tparam T  Dataset type, such as RDD[Double]
  */
 private[mllib] abstract class PeriodicCheckpointer[T](
-    val checkpointInterval: Int,
-    val sc: SparkContext) extends Logging {
+    val checkpointInterval: Int, val sc: SparkContext)
+    extends Logging {
 
   /** FIFO queue of past checkpointed Datasets */
   private val checkpointQueue = mutable.Queue[T]()
@@ -90,8 +89,8 @@ private[mllib] abstract class PeriodicCheckpointer[T](
     updateCount += 1
 
     // Handle checkpointing (after persisting)
-    if (checkpointInterval != -1 && (updateCount % checkpointInterval) == 0
-      && sc.getCheckpointDir.nonEmpty) {
+    if (checkpointInterval != -1 && (updateCount % checkpointInterval) == 0 &&
+        sc.getCheckpointDir.nonEmpty) {
       // Add new checkpoint before removing old checkpoints.
       checkpoint(newData)
       checkpointQueue.enqueue(newData)
@@ -173,8 +172,7 @@ private[spark] object PeriodicCheckpointer extends Logging {
       fs.delete(new Path(path), true)
     } catch {
       case e: Exception =>
-        logWarning("PeriodicCheckpointer could not remove old checkpoint file: " +
-          path)
+        logWarning("PeriodicCheckpointer could not remove old checkpoint file: " + path)
     }
   }
 }

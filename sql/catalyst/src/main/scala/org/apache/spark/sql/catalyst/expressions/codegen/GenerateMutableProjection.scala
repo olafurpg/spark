@@ -37,10 +37,9 @@ object GenerateMutableProjection extends CodeGenerator[Seq[Expression], MutableP
   protected def bind(in: Seq[Expression], inputSchema: Seq[Attribute]): Seq[Expression] =
     in.map(BindReferences.bindReference(_, inputSchema))
 
-  def generate(
-      expressions: Seq[Expression],
-      inputSchema: Seq[Attribute],
-      useSubexprElimination: Boolean): MutableProjection = {
+  def generate(expressions: Seq[Expression],
+               inputSchema: Seq[Attribute],
+               useSubexprElimination: Boolean): MutableProjection = {
     create(canonicalize(bind(expressions, inputSchema)), useSubexprElimination)
   }
 
@@ -49,8 +48,7 @@ object GenerateMutableProjection extends CodeGenerator[Seq[Expression], MutableP
   }
 
   private def create(
-      expressions: Seq[Expression],
-      useSubexprElimination: Boolean): MutableProjection = {
+      expressions: Seq[Expression], useSubexprElimination: Boolean): MutableProjection = {
     val ctx = newCodeGenContext()
     val (validExpr, index) = expressions.zipWithIndex.filter {
       case (NoOp, _) => false
@@ -64,8 +62,8 @@ object GenerateMutableProjection extends CodeGenerator[Seq[Expression], MutableP
           val isNull = s"isNull_$i"
           val value = s"value_$i"
           ctx.addMutableState("boolean", isNull, s"this.$isNull = true;")
-          ctx.addMutableState(ctx.javaType(e.dataType), value,
-            s"this.$value = ${ctx.defaultValue(e.dataType)};")
+          ctx.addMutableState(
+              ctx.javaType(e.dataType), value, s"this.$value = ${ctx.defaultValue(e.dataType)};")
           s"""
             ${ev.code}
             this.$isNull = ${ev.isNull};
@@ -73,8 +71,8 @@ object GenerateMutableProjection extends CodeGenerator[Seq[Expression], MutableP
            """
         } else {
           val value = s"value_$i"
-          ctx.addMutableState(ctx.javaType(e.dataType), value,
-            s"this.$value = ${ctx.defaultValue(e.dataType)};")
+          ctx.addMutableState(
+              ctx.javaType(e.dataType), value, s"this.$value = ${ctx.defaultValue(e.dataType)};")
           s"""
             ${ev.code}
             this.$value = ${ev.value};

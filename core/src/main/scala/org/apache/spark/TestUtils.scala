@@ -50,11 +50,10 @@ private[spark] object TestUtils {
    * Note: if this is used during class loader tests, class names should be unique
    * in order to avoid interference between tests.
    */
-  def createJarWithClasses(
-      classNames: Seq[String],
-      toStringValue: String = "",
-      classNamesWithBase: Seq[(String, String)] = Seq(),
-      classpathUrls: Seq[URL] = Seq()): URL = {
+  def createJarWithClasses(classNames: Seq[String],
+                           toStringValue: String = "",
+                           classNamesWithBase: Seq[(String, String)] = Seq(),
+                           classpathUrls: Seq[URL] = Seq()): URL = {
     val tempDir = Utils.createTempDir()
     val files1 = for (name <- classNames) yield {
       createCompiledClass(name, tempDir, toStringValue, classpathUrls = classpathUrls)
@@ -74,10 +73,11 @@ private[spark] object TestUtils {
     val tempDir = Option(dir).getOrElse(Utils.createTempDir())
     val jarFile = File.createTempFile("testJar", ".jar", tempDir)
     val jarStream = new JarOutputStream(new FileOutputStream(jarFile))
-    files.foreach { case (k, v) =>
-      val entry = new JarEntry(k)
-      jarStream.putNextEntry(entry)
-      ByteStreams.copy(new ByteArrayInputStream(v.getBytes(StandardCharsets.UTF_8)), jarStream)
+    files.foreach {
+      case (k, v) =>
+        val entry = new JarEntry(k)
+        jarStream.putNextEntry(entry)
+        ByteStreams.copy(new ByteArrayInputStream(v.getBytes(StandardCharsets.UTF_8)), jarStream)
     }
     jarStream.close()
     jarFile.toURI.toURL
@@ -112,25 +112,25 @@ private[spark] object TestUtils {
   }
 
   private[spark] class JavaSourceFromString(val name: String, val code: String)
-    extends SimpleJavaFileObject(createURI(name), SOURCE) {
+      extends SimpleJavaFileObject(createURI(name), SOURCE) {
     override def getCharContent(ignoreEncodingErrors: Boolean): String = code
   }
 
   /** Creates a compiled class with the source file. Class file will be placed in destDir. */
-  def createCompiledClass(
-      className: String,
-      destDir: File,
-      sourceFile: JavaSourceFromString,
-      classpathUrls: Seq[URL]): File = {
+  def createCompiledClass(className: String,
+                          destDir: File,
+                          sourceFile: JavaSourceFromString,
+                          classpathUrls: Seq[URL]): File = {
     val compiler = ToolProvider.getSystemJavaCompiler
 
     // Calling this outputs a class file in pwd. It's easier to just rename the files than
     // build a custom FileManager that controls the output location.
-    val options = if (classpathUrls.nonEmpty) {
-      Seq("-classpath", classpathUrls.map { _.getFile }.mkString(File.pathSeparator))
-    } else {
-      Seq()
-    }
+    val options =
+      if (classpathUrls.nonEmpty) {
+        Seq("-classpath", classpathUrls.map { _.getFile }.mkString(File.pathSeparator))
+      } else {
+        Seq()
+      }
     compiler.getTask(null, null, null, options.asJava, null, Arrays.asList(sourceFile)).call()
 
     val fileName = className + ".class"
@@ -147,16 +147,18 @@ private[spark] object TestUtils {
   }
 
   /** Creates a compiled class with the given name. Class file will be placed in destDir. */
-  def createCompiledClass(
-      className: String,
-      destDir: File,
-      toStringValue: String = "",
-      baseClass: String = null,
-      classpathUrls: Seq[URL] = Seq()): File = {
-    val extendsText = Option(baseClass).map { c => s" extends ${c}" }.getOrElse("")
-    val sourceFile = new JavaSourceFromString(className,
-      "public class " + className + extendsText + " implements java.io.Serializable {" +
-      "  @Override public String toString() { return \"" + toStringValue + "\"; }}")
+  def createCompiledClass(className: String,
+                          destDir: File,
+                          toStringValue: String = "",
+                          baseClass: String = null,
+                          classpathUrls: Seq[URL] = Seq()): File = {
+    val extendsText = Option(baseClass).map { c =>
+      s" extends ${c}"
+    }.getOrElse("")
+    val sourceFile = new JavaSourceFromString(
+        className,
+        "public class " + className + extendsText + " implements java.io.Serializable {" +
+        "  @Override public String toString() { return \"" + toStringValue + "\"; }}")
     createCompiledClass(className, destDir, sourceFile, classpathUrls)
   }
 
@@ -180,9 +182,7 @@ private[spark] object TestUtils {
     body
     assert(spillListener.numSpilledStages == 0, s"expected $identifier to not spill, but did")
   }
-
 }
-
 
 /**
  * A [[SparkListener]] that detects whether spills have occurred in Spark jobs.
@@ -194,8 +194,8 @@ private class SpillListener extends SparkListener {
   def numSpilledStages: Int = spilledStageIds.size
 
   override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = {
-    stageIdToTaskMetrics.getOrElseUpdate(
-      taskEnd.stageId, new ArrayBuffer[TaskMetrics]) += taskEnd.taskMetrics
+    stageIdToTaskMetrics.getOrElseUpdate(taskEnd.stageId, new ArrayBuffer[TaskMetrics]) +=
+      taskEnd.taskMetrics
   }
 
   override def onStageCompleted(stageComplete: SparkListenerStageCompleted): Unit = {

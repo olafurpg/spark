@@ -21,82 +21,61 @@ import javax.annotation.Nullable
 
 import org.apache.spark.sql.catalyst.DefinedByConstructorParams
 
-
 // Note: all classes here are expected to be wrapped in Datasets and so must extend
 // DefinedByConstructorParams for the catalog to be able to create encoders for them.
 
-class Database(
-    val name: String,
-    @Nullable val description: String,
-    val locationUri: String)
-  extends DefinedByConstructorParams {
+class Database(val name: String, @Nullable val description: String, val locationUri: String)
+    extends DefinedByConstructorParams {
 
   override def toString: String = {
-    "Database[" +
-      s"name='$name', " +
-      Option(description).map { d => s"description='$d', " }.getOrElse("") +
-      s"path='$locationUri']"
+    "Database[" + s"name='$name', " + Option(description).map { d =>
+      s"description='$d', "
+    }.getOrElse("") + s"path='$locationUri']"
   }
-
 }
 
-
-class Table(
-    val name: String,
-    @Nullable val database: String,
-    @Nullable val description: String,
-    val tableType: String,
-    val isTemporary: Boolean)
-  extends DefinedByConstructorParams {
+class Table(val name: String,
+            @Nullable val database: String,
+            @Nullable val description: String,
+            val tableType: String,
+            val isTemporary: Boolean)
+    extends DefinedByConstructorParams {
 
   override def toString: String = {
-    "Table[" +
-      s"name='$name', " +
-      Option(database).map { d => s"database='$d', " }.getOrElse("") +
-      Option(description).map { d => s"description='$d', " }.getOrElse("") +
-      s"tableType='$tableType', " +
-      s"isTemporary='$isTemporary']"
+    "Table[" + s"name='$name', " + Option(database).map { d =>
+      s"database='$d', "
+    }.getOrElse("") + Option(description).map { d =>
+      s"description='$d', "
+    }.getOrElse("") + s"tableType='$tableType', " + s"isTemporary='$isTemporary']"
   }
-
 }
 
-
-class Column(
-    val name: String,
-    @Nullable val description: String,
-    val dataType: String,
-    val nullable: Boolean,
-    val isPartition: Boolean,
-    val isBucket: Boolean)
-  extends DefinedByConstructorParams {
+class Column(val name: String,
+             @Nullable val description: String,
+             val dataType: String,
+             val nullable: Boolean,
+             val isPartition: Boolean,
+             val isBucket: Boolean)
+    extends DefinedByConstructorParams {
 
   override def toString: String = {
-    "Column[" +
-      s"name='$name', " +
-      Option(description).map { d => s"description='$d', " }.getOrElse("") +
-      s"dataType='$dataType', " +
-      s"nullable='$nullable', " +
-      s"isPartition='$isPartition', " +
-      s"isBucket='$isBucket']"
+    "Column[" + s"name='$name', " + Option(description).map { d =>
+      s"description='$d', "
+    }.getOrElse("") + s"dataType='$dataType', " + s"nullable='$nullable', " +
+    s"isPartition='$isPartition', " + s"isBucket='$isBucket']"
   }
-
 }
-
 
 // TODO(andrew): should we include the database here?
-class Function(
-    val name: String,
-    @Nullable val description: String,
-    val className: String,
-    val isTemporary: Boolean)
-  extends DefinedByConstructorParams {
+class Function(val name: String,
+               @Nullable val description: String,
+               val className: String,
+               val isTemporary: Boolean)
+    extends DefinedByConstructorParams {
 
   override def toString: String = {
-    "Function[" +
-      s"name='$name', " +
-      Option(description).map { d => s"description='$d', " }.getOrElse("") +
-      s"className='$className', " +
-      s"isTemporary='$isTemporary']"
+    "Function[" + s"name='$name', " + Option(description).map { d =>
+      s"description='$d', "
+    }.getOrElse("") + s"className='$className', " + s"isTemporary='$isTemporary']"
   }
-
 }

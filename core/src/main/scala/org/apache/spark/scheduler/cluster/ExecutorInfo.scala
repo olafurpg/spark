@@ -24,18 +24,14 @@ import org.apache.spark.annotation.DeveloperApi
  */
 @DeveloperApi
 class ExecutorInfo(
-   val executorHost: String,
-   val totalCores: Int,
-   val logUrlMap: Map[String, String]) {
+    val executorHost: String, val totalCores: Int, val logUrlMap: Map[String, String]) {
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[ExecutorInfo]
 
   override def equals(other: Any): Boolean = other match {
     case that: ExecutorInfo =>
-      (that canEqual this) &&
-        executorHost == that.executorHost &&
-        totalCores == that.totalCores &&
-        logUrlMap == that.logUrlMap
+      (that canEqual this) && executorHost == that.executorHost && totalCores == that.totalCores &&
+      logUrlMap == that.logUrlMap
     case _ => false
   }
 

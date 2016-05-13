@@ -44,13 +44,14 @@ import org.apache.spark.util.{ShutdownHookManager, SystemClock, Utils}
  * is the same structure as maintained in the event log write code path in
  * EventLoggingListener.
  */
-class HistoryServer(
-    conf: SparkConf,
-    provider: ApplicationHistoryProvider,
-    securityManager: SecurityManager,
-    port: Int)
-  extends WebUI(securityManager, securityManager.getSSLOptions("historyServer"), port, conf)
-  with Logging with UIRoot with ApplicationCacheOperations {
+class HistoryServer(conf: SparkConf,
+                    provider: ApplicationHistoryProvider,
+                    securityManager: SecurityManager,
+                    port: Int)
+    extends WebUI(securityManager, securityManager.getSSLOptions("historyServer"), port, conf)
+    with Logging
+    with UIRoot
+    with ApplicationCacheOperations {
 
   // How many applications to retain
   private val retainedApplications = conf.getInt("spark.history.retainedApplications", 50)
@@ -68,7 +69,7 @@ class HistoryServer(
       val parts = Option(req.getPathInfo()).getOrElse("").split("/")
       if (parts.length < 2) {
         res.sendError(HttpServletResponse.SC_BAD_REQUEST,
-          s"Unexpected path info in request (URI = ${req.getRequestURI()}")
+                      s"Unexpected path info in request (URI = ${req.getRequestURI()}")
         return
       }
 
@@ -140,10 +141,7 @@ class HistoryServer(
 
   /** Attach a reconstructed UI to this server. Only valid after bind(). */
   override def attachSparkUI(
-      appId: String,
-      attemptId: Option[String],
-      ui: SparkUI,
-      completed: Boolean) {
+      appId: String, attemptId: Option[String], ui: SparkUI, completed: Boolean) {
     assert(serverInfo.isDefined, "HistoryServer must be bound before attaching SparkUIs")
     ui.getHandlers.foreach(attachHandler)
     addFilters(ui.getHandlers, conf)
@@ -179,9 +177,7 @@ class HistoryServer(
   }
 
   override def writeEventLogs(
-      appId: String,
-      attemptId: Option[String],
-      zipStream: ZipOutputStream): Unit = {
+      appId: String, attemptId: Option[String], zipStream: ZipOutputStream): Unit = {
     provider.writeEventLogs(appId, attemptId, zipStream)
   }
 
@@ -203,12 +199,13 @@ class HistoryServer(
       appCache.get(appId, attemptId)
       true
     } catch {
-      case NonFatal(e) => e.getCause() match {
-        case nsee: NoSuchElementException =>
-          false
+      case NonFatal(e) =>
+        e.getCause() match {
+          case nsee: NoSuchElementException =>
+            false
 
-        case cause: Exception => throw cause
-      }
+          case cause: Exception => throw cause
+        }
     }
   }
 
@@ -247,9 +244,10 @@ object HistoryServer extends Logging {
     initSecurity()
     val securityManager = new SecurityManager(conf)
 
-    val providerName = conf.getOption("spark.history.provider")
-      .getOrElse(classOf[FsHistoryProvider].getName())
-    val provider = Utils.classForName(providerName)
+    val providerName =
+      conf.getOption("spark.history.provider").getOrElse(classOf[FsHistoryProvider].getName())
+    val provider = Utils
+      .classForName(providerName)
       .getConstructor(classOf[SparkConf])
       .newInstance(conf)
       .asInstanceOf[ApplicationHistoryProvider]
@@ -259,10 +257,12 @@ object HistoryServer extends Logging {
     val server = new HistoryServer(conf, provider, securityManager, port)
     server.bind()
 
-    ShutdownHookManager.addShutdownHook { () => server.stop() }
+    ShutdownHookManager.addShutdownHook { () =>
+      server.stop()
+    }
 
     // Wait until the end of the world... or if the HistoryServer process is manually stopped
-    while(true) { Thread.sleep(Int.MaxValue) }
+    while (true) { Thread.sleep(Int.MaxValue) }
   }
 
   def initSecurity() {
@@ -279,8 +279,9 @@ object HistoryServer extends Logging {
   }
 
   private[history] def getAttemptURI(appId: String, attemptId: Option[String]): String = {
-    val attemptSuffix = attemptId.map { id => s"/$id" }.getOrElse("")
+    val attemptSuffix = attemptId.map { id =>
+      s"/$id"
+    }.getOrElse("")
     s"${HistoryServer.UI_PATH_PREFIX}/${appId}${attemptSuffix}"
   }
-
 }

@@ -42,9 +42,7 @@ trait AnalysisTest extends PlanTest {
   }
 
   protected def checkAnalysis(
-      inputPlan: LogicalPlan,
-      expectedPlan: LogicalPlan,
-      caseSensitive: Boolean = true): Unit = {
+      inputPlan: LogicalPlan, expectedPlan: LogicalPlan, caseSensitive: Boolean = true): Unit = {
     val analyzer = getAnalyzer(caseSensitive)
     val actualPlan = analyzer.execute(inputPlan)
     analyzer.checkAnalysis(actualPlan)
@@ -52,35 +50,31 @@ trait AnalysisTest extends PlanTest {
   }
 
   protected def assertAnalysisSuccess(
-      inputPlan: LogicalPlan,
-      caseSensitive: Boolean = true): Unit = {
+      inputPlan: LogicalPlan, caseSensitive: Boolean = true): Unit = {
     val analyzer = getAnalyzer(caseSensitive)
     val analysisAttempt = analyzer.execute(inputPlan)
     try analyzer.checkAnalysis(analysisAttempt) catch {
       case a: AnalysisException =>
-        fail(
-          s"""
+        fail(s"""
             |Failed to Analyze Plan
             |$inputPlan
             |
             |Partial Analysis
             |$analysisAttempt
-          """.stripMargin, a)
+          """.stripMargin,
+             a)
     }
   }
 
   protected def assertAnalysisError(
-      inputPlan: LogicalPlan,
-      expectedErrors: Seq[String],
-      caseSensitive: Boolean = true): Unit = {
+      inputPlan: LogicalPlan, expectedErrors: Seq[String], caseSensitive: Boolean = true): Unit = {
     val analyzer = getAnalyzer(caseSensitive)
     val e = intercept[AnalysisException] {
       analyzer.checkAnalysis(analyzer.execute(inputPlan))
     }
 
     if (!expectedErrors.map(_.toLowerCase).forall(e.getMessage.toLowerCase.contains)) {
-      fail(
-        s"""Exception message should contain the following substrings:
+      fail(s"""Exception message should contain the following substrings:
            |
            |  ${expectedErrors.mkString("\n  ")}
            |

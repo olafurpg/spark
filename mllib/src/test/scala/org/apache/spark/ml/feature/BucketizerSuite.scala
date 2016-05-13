@@ -41,15 +41,13 @@ class BucketizerSuite extends SparkFunSuite with MLlibTestSparkContext with Defa
     val dataFrame: DataFrame =
       spark.createDataFrame(validData.zip(expectedBuckets)).toDF("feature", "expected")
 
-    val bucketizer: Bucketizer = new Bucketizer()
-      .setInputCol("feature")
-      .setOutputCol("result")
-      .setSplits(splits)
+    val bucketizer: Bucketizer =
+      new Bucketizer().setInputCol("feature").setOutputCol("result").setSplits(splits)
 
     bucketizer.transform(dataFrame).select("result", "expected").collect().foreach {
       case Row(x: Double, y: Double) =>
         assert(x === y,
-          s"The feature value is not correct after bucketing.  Expected $y but found $x")
+               s"The feature value is not correct after bucketing.  Expected $y but found $x")
     }
 
     // Check for exceptions when using a set of invalid feature values.
@@ -76,15 +74,13 @@ class BucketizerSuite extends SparkFunSuite with MLlibTestSparkContext with Defa
     val dataFrame: DataFrame =
       spark.createDataFrame(validData.zip(expectedBuckets)).toDF("feature", "expected")
 
-    val bucketizer: Bucketizer = new Bucketizer()
-      .setInputCol("feature")
-      .setOutputCol("result")
-      .setSplits(splits)
+    val bucketizer: Bucketizer =
+      new Bucketizer().setInputCol("feature").setOutputCol("result").setSplits(splits)
 
     bucketizer.transform(dataFrame).select("result", "expected").collect().foreach {
       case Row(x: Double, y: Double) =>
         assert(x === y,
-          s"The feature value is not correct after bucketing.  Expected $y but found $x")
+               s"The feature value is not correct after bucketing.  Expected $y but found $x")
     }
   }
 
@@ -106,7 +102,8 @@ class BucketizerSuite extends SparkFunSuite with MLlibTestSparkContext with Defa
 
   test("Binary search correctness in contrast with linear search, on random data") {
     val data = Array.fill(100)(Random.nextDouble())
-    val splits: Array[Double] = Double.NegativeInfinity +:
+    val splits: Array[Double] =
+      Double.NegativeInfinity +:
       Array.fill(10)(Random.nextDouble()).sorted :+ Double.PositiveInfinity
     val bsResult = Vectors.dense(data.map(x => Bucketizer.binarySearchForBuckets(splits, x)))
     val lsResult = Vectors.dense(data.map(x => BucketizerSuite.linearSearchForBuckets(splits, x)))
@@ -123,6 +120,7 @@ class BucketizerSuite extends SparkFunSuite with MLlibTestSparkContext with Defa
 }
 
 private object BucketizerSuite extends SparkFunSuite {
+
   /** Brute force search for buckets.  Bucket i is defined by the range [split(i), split(i+1)). */
   def linearSearchForBuckets(splits: Array[Double], feature: Double): Double = {
     require(feature >= splits.head)
@@ -133,15 +131,15 @@ private object BucketizerSuite extends SparkFunSuite {
       i += 1
     }
     throw new RuntimeException(
-      s"linearSearchForBuckets failed to find bucket for feature value $feature")
+        s"linearSearchForBuckets failed to find bucket for feature value $feature")
   }
 
   /** Check all values in splits, plus values between all splits. */
   def checkBinarySearch(splits: Array[Double]): Unit = {
     def testFeature(feature: Double, expectedBucket: Double): Unit = {
       assert(Bucketizer.binarySearchForBuckets(splits, feature) === expectedBucket,
-        s"Expected feature value $feature to be in bucket $expectedBucket with splits:" +
-          s" ${splits.mkString(", ")}")
+             s"Expected feature value $feature to be in bucket $expectedBucket with splits:" +
+             s" ${splits.mkString(", ")}")
     }
     var i = 0
     val n = splits.length - 1

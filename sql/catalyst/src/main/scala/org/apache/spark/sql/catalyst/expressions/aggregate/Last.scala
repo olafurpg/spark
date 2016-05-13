@@ -29,7 +29,7 @@ import org.apache.spark.sql.types._
  * a single partition, and we use a single reducer to do the aggregation.).
  */
 @ExpressionDescription(
-  usage = "_FUNC_(expr,isIgnoreNull) - Returns the last value of `child` for a group of rows.")
+    usage = "_FUNC_(expr,isIgnoreNull) - Returns the last value of `child` for a group of rows.")
 case class Last(child: Expression, ignoreNullsExpr: Expression) extends DeclarativeAggregate {
 
   def this(child: Expression) = this(child, Literal.create(false, BooleanType))
@@ -58,17 +58,17 @@ case class Last(child: Expression, ignoreNullsExpr: Expression) extends Declarat
   override lazy val aggBufferAttributes: Seq[AttributeReference] = last :: Nil
 
   override lazy val initialValues: Seq[Literal] = Seq(
-    /* last = */ Literal.create(null, child.dataType)
+      /* last = */ Literal.create(null, child.dataType)
   )
 
   override lazy val updateExpressions: Seq[Expression] = {
     if (ignoreNulls) {
       Seq(
-        /* last = */ If(IsNull(child), last, child)
+          /* last = */ If(IsNull(child), last, child)
       )
     } else {
       Seq(
-        /* last = */ child
+          /* last = */ child
       )
     }
   }
@@ -76,11 +76,11 @@ case class Last(child: Expression, ignoreNullsExpr: Expression) extends Declarat
   override lazy val mergeExpressions: Seq[Expression] = {
     if (ignoreNulls) {
       Seq(
-        /* last = */ If(IsNull(last.right), last.left, last.right)
+          /* last = */ If(IsNull(last.right), last.left, last.right)
       )
     } else {
       Seq(
-        /* last = */ last.right
+          /* last = */ last.right
       )
     }
   }

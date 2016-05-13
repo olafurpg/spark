@@ -37,10 +37,10 @@ private[v1] class SimpleDateParam(val originalValue: String) {
         } catch {
           case _: ParseException =>
             throw new WebApplicationException(
-              Response
-                .status(Status.BAD_REQUEST)
-                .entity("Couldn't parse date: " + originalValue)
-                .build()
+                Response
+                  .status(Status.BAD_REQUEST)
+                  .entity("Couldn't parse date: " + originalValue)
+                  .build()
             )
         }
     }

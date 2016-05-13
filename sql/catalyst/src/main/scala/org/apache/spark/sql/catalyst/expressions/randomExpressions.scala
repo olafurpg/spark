@@ -56,22 +56,26 @@ abstract class RDG extends LeafExpression with Nondeterministic {
 
 /** Generate a random column with i.i.d. uniformly distributed values in [0, 1). */
 @ExpressionDescription(
-  usage = "_FUNC_(a) - Returns a random column with i.i.d. uniformly distributed values in [0, 1).")
+    usage = "_FUNC_(a) - Returns a random column with i.i.d. uniformly distributed values in [0, 1).")
 case class Rand(seed: Long) extends RDG {
   override protected def evalInternal(input: InternalRow): Double = rng.nextDouble()
 
   def this() = this(Utils.random.nextLong())
 
-  def this(seed: Expression) = this(seed match {
-    case IntegerLiteral(s) => s
-    case _ => throw new AnalysisException("Input argument to rand must be an integer literal.")
-  })
+  def this(seed: Expression) =
+    this(
+        seed match {
+      case IntegerLiteral(s) => s
+      case _ => throw new AnalysisException("Input argument to rand must be an integer literal.")
+    })
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val rngTerm = ctx.freshName("rng")
     val className = classOf[XORShiftRandom].getName
-    ctx.addMutableState(className, rngTerm,
-      s"$rngTerm = new $className(${seed}L + org.apache.spark.TaskContext.getPartitionId());")
+    ctx.addMutableState(
+        className,
+        rngTerm,
+        s"$rngTerm = new $className(${seed}L + org.apache.spark.TaskContext.getPartitionId());")
     ev.copy(code = s"""
       final ${ctx.javaType(dataType)} ${ev.value} = $rngTerm.nextDouble();""", isNull = "false")
   }
@@ -79,22 +83,26 @@ case class Rand(seed: Long) extends RDG {
 
 /** Generate a random column with i.i.d. gaussian random distribution. */
 @ExpressionDescription(
-  usage = "_FUNC_(a) - Returns a random column with i.i.d. gaussian random distribution.")
+    usage = "_FUNC_(a) - Returns a random column with i.i.d. gaussian random distribution.")
 case class Randn(seed: Long) extends RDG {
   override protected def evalInternal(input: InternalRow): Double = rng.nextGaussian()
 
   def this() = this(Utils.random.nextLong())
 
-  def this(seed: Expression) = this(seed match {
-    case IntegerLiteral(s) => s
-    case _ => throw new AnalysisException("Input argument to randn must be an integer literal.")
-  })
+  def this(seed: Expression) =
+    this(
+        seed match {
+      case IntegerLiteral(s) => s
+      case _ => throw new AnalysisException("Input argument to randn must be an integer literal.")
+    })
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val rngTerm = ctx.freshName("rng")
     val className = classOf[XORShiftRandom].getName
-    ctx.addMutableState(className, rngTerm,
-      s"$rngTerm = new $className(${seed}L + org.apache.spark.TaskContext.getPartitionId());")
+    ctx.addMutableState(
+        className,
+        rngTerm,
+        s"$rngTerm = new $className(${seed}L + org.apache.spark.TaskContext.getPartitionId());")
     ev.copy(code = s"""
       final ${ctx.javaType(dataType)} ${ev.value} = $rngTerm.nextGaussian();""", isNull = "false")
   }

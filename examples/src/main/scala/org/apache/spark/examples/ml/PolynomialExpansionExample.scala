@@ -26,22 +26,17 @@ import org.apache.spark.sql.SparkSession
 
 object PolynomialExpansionExample {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("PolynomialExpansionExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("PolynomialExpansionExample").getOrCreate()
 
     // $example on$
     val data = Array(
-      Vectors.dense(-2.0, 2.3),
-      Vectors.dense(0.0, 0.0),
-      Vectors.dense(0.6, -1.1)
+        Vectors.dense(-2.0, 2.3),
+        Vectors.dense(0.0, 0.0),
+        Vectors.dense(0.6, -1.1)
     )
     val df = spark.createDataFrame(data.map(Tuple1.apply)).toDF("features")
-    val polynomialExpansion = new PolynomialExpansion()
-      .setInputCol("features")
-      .setOutputCol("polyFeatures")
-      .setDegree(3)
+    val polynomialExpansion =
+      new PolynomialExpansion().setInputCol("features").setOutputCol("polyFeatures").setDegree(3)
     val polyDF = polynomialExpansion.transform(df)
     polyDF.select("polyFeatures").take(3).foreach(println)
     // $example off$

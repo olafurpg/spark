@@ -43,10 +43,9 @@ import org.apache.spark.internal.Logging
  */
 @JsonInclude(Include.NON_NULL)
 @JsonPropertyOrder(Array("id", "name", "parent"))
-private[spark] class RDDOperationScope(
-    val name: String,
-    val parent: Option[RDDOperationScope] = None,
-    val id: String = RDDOperationScope.nextScopeId().toString) {
+private[spark] class RDDOperationScope(val name: String,
+                                       val parent: Option[RDDOperationScope] = None,
+                                       val id: String = RDDOperationScope.nextScopeId().toString) {
 
   def toJson: String = {
     RDDOperationScope.jsonMapper.writeValueAsString(this)
@@ -96,11 +95,10 @@ private[spark] object RDDOperationScope extends Logging {
    *
    * Note: Return statements are NOT allowed in body.
    */
-  private[spark] def withScope[T](
-      sc: SparkContext,
-      allowNesting: Boolean = false)(body: => T): T = {
+  private[spark] def withScope[T](sc: SparkContext, allowNesting: Boolean = false)(body: => T): T = {
     val ourMethodName = "withScope"
-    val callerMethodName = Thread.currentThread.getStackTrace()
+    val callerMethodName = Thread.currentThread
+      .getStackTrace()
       .dropWhile(_.getMethodName != ourMethodName)
       .find(_.getMethodName != ourMethodName)
       .map(_.getMethodName)
@@ -126,10 +124,8 @@ private[spark] object RDDOperationScope extends Logging {
    * Note: Return statements are NOT allowed in body.
    */
   private[spark] def withScope[T](
-      sc: SparkContext,
-      name: String,
-      allowNesting: Boolean,
-      ignoreParent: Boolean)(body: => T): T = {
+      sc: SparkContext, name: String, allowNesting: Boolean, ignoreParent: Boolean)(
+      body: => T): T = {
     // Save the old scope to restore it later
     val scopeKey = SparkContext.RDD_SCOPE_KEY
     val noOverrideKey = SparkContext.RDD_SCOPE_NO_OVERRIDE_KEY

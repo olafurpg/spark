@@ -32,11 +32,8 @@ object Main {
   def main(args: Array[String]) {
     // scalastyle:off println
     println("Running regression test for SPARK-8489.")
-    val spark = SparkSession.builder
-      .master("local")
-      .appName("testing")
-      .enableHiveSupport()
-      .getOrCreate()
+    val spark =
+      SparkSession.builder.master("local").appName("testing").enableHiveSupport().getOrCreate()
     // This line should not throw scala.reflect.internal.MissingRequirementError.
     // See SPARK-8470 for more detail.
     val df = spark.createDataFrame(Seq(MyCoolClass("1", "2", "3")))
@@ -46,4 +43,3 @@ object Main {
     spark.stop()
   }
 }
-

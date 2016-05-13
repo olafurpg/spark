@@ -105,7 +105,8 @@ private[hive] object HiveShim {
   def toCatalystDecimal(hdoi: HiveDecimalObjectInspector, data: Any): Decimal = {
     if (hdoi.preferWritable()) {
       Decimal(hdoi.getPrimitiveWritableObject(data).getHiveDecimal().bigDecimalValue,
-        hdoi.precision(), hdoi.scale())
+              hdoi.precision(),
+              hdoi.scale())
     } else {
       Decimal(hdoi.getPrimitiveJavaObject(data).bigDecimalValue(), hdoi.precision(), hdoi.scale())
     }
@@ -120,8 +121,9 @@ private[hive] object HiveShim {
    * @param functionClassName UDF class name
    * @param instance optional UDF instance which contains additional information (for macro)
    */
-  private[hive] case class HiveFunctionWrapper(var functionClassName: String,
-    private var instance: AnyRef = null) extends java.io.Externalizable {
+  private[hive] case class HiveFunctionWrapper(
+      var functionClassName: String, private var instance: AnyRef = null)
+      extends java.io.Externalizable {
 
     // for Serialization
     def this() = this(null)
@@ -139,7 +141,7 @@ private[hive] object HiveShim {
         // In case of udf macro, check to make sure they point to the same underlying UDF
         if (functionClassName == HIVE_GENERIC_UDF_MACRO_CLS) {
           a.instance.asInstanceOf[GenericUDFMacro].getBody() ==
-            instance.asInstanceOf[GenericUDFMacro].getBody()
+          instance.asInstanceOf[GenericUDFMacro].getBody()
         } else {
           true
         }
@@ -147,10 +149,7 @@ private[hive] object HiveShim {
     }
 
     @transient
-    def deserializeObjectByKryo[T: ClassTag](
-        kryo: Kryo,
-        in: InputStream,
-        clazz: Class[_]): T = {
+    def deserializeObjectByKryo[T: ClassTag](kryo: Kryo, in: InputStream, clazz: Class[_]): T = {
       val inp = new Input(in)
       val t: T = kryo.readObject(inp, clazz).asInstanceOf[T]
       inp.close()
@@ -158,10 +157,7 @@ private[hive] object HiveShim {
     }
 
     @transient
-    def serializeObjectByKryo(
-        kryo: Kryo,
-        plan: Object,
-        out: OutputStream) {
+    def serializeObjectByKryo(kryo: Kryo, plan: Object, out: OutputStream) {
       val output: Output = new Output(out)
       kryo.writeObject(output, plan)
       output.close()
@@ -207,8 +203,9 @@ private[hive] object HiveShim {
         in.readFully(functionInBytes)
 
         // deserialize the function object via Hive Utilities
-        instance = deserializePlan[AnyRef](new java.io.ByteArrayInputStream(functionInBytes),
-          Utils.getContextOrSparkClassLoader.loadClass(functionClassName))
+        instance = deserializePlan[AnyRef](
+            new java.io.ByteArrayInputStream(functionInBytes),
+            Utils.getContextOrSparkClassLoader.loadClass(functionClassName))
       }
     }
 
@@ -217,7 +214,9 @@ private[hive] object HiveShim {
         instance.asInstanceOf[UDFType]
       } else {
         val func = Utils.getContextOrSparkClassLoader
-          .loadClass(functionClassName).newInstance.asInstanceOf[UDFType]
+          .loadClass(functionClassName)
+          .newInstance
+          .asInstanceOf[UDFType]
         if (!func.isInstanceOf[UDF]) {
           // We cache the function if it's no the Simple UDF,
           // as we always have to create new instance for Simple UDF
@@ -246,10 +245,9 @@ private[hive] object HiveShim {
    * Fix it through wrapper.
    */
   private[hive] class ShimFileSinkDesc(
-      var dir: String,
-      var tableInfo: TableDesc,
-      var compressed: Boolean)
-    extends Serializable with Logging {
+      var dir: String, var tableInfo: TableDesc, var compressed: Boolean)
+      extends Serializable
+      with Logging {
     var compressCodec: String = _
     var compressType: String = _
     var destTableId: Int = _

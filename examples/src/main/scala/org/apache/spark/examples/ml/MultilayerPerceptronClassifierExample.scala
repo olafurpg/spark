@@ -30,15 +30,12 @@ import org.apache.spark.sql.SparkSession
 object MultilayerPerceptronClassifierExample {
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("MultilayerPerceptronClassifierExample")
-      .getOrCreate()
+    val spark = SparkSession.builder.appName("MultilayerPerceptronClassifierExample").getOrCreate()
 
     // $example on$
     // Load the data stored in LIBSVM format as a DataFrame.
-    val data = spark.read.format("libsvm")
-      .load("data/mllib/sample_multiclass_classification_data.txt")
+    val data =
+      spark.read.format("libsvm").load("data/mllib/sample_multiclass_classification_data.txt")
     // Split the data into train and test
     val splits = data.randomSplit(Array(0.6, 0.4), seed = 1234L)
     val train = splits(0)
@@ -58,8 +55,7 @@ object MultilayerPerceptronClassifierExample {
     // compute precision on the test set
     val result = model.transform(test)
     val predictionAndLabels = result.select("prediction", "label")
-    val evaluator = new MulticlassClassificationEvaluator()
-      .setMetricName("precision")
+    val evaluator = new MulticlassClassificationEvaluator().setMetricName("precision")
     println("Precision:" + evaluator.evaluate(predictionAndLabels))
     // $example off$
 

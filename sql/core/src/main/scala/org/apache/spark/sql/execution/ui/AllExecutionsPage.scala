@@ -36,27 +36,29 @@ private[ui] class AllExecutionsPage(parent: SQLTab) extends WebUIPage("") with L
     val content = listener.synchronized {
       val _content = mutable.ListBuffer[Node]()
       if (listener.getRunningExecutions.nonEmpty) {
-        _content ++=
-          new RunningExecutionTable(
-            parent, "Running Queries", currentTime,
+        _content ++= new RunningExecutionTable(
+            parent,
+            "Running Queries",
+            currentTime,
             listener.getRunningExecutions.sortBy(_.submissionTime).reverse).toNodeSeq
       }
       if (listener.getCompletedExecutions.nonEmpty) {
-        _content ++=
-          new CompletedExecutionTable(
-            parent, "Completed Queries", currentTime,
+        _content ++= new CompletedExecutionTable(
+            parent,
+            "Completed Queries",
+            currentTime,
             listener.getCompletedExecutions.sortBy(_.submissionTime).reverse).toNodeSeq
       }
       if (listener.getFailedExecutions.nonEmpty) {
-        _content ++=
-          new FailedExecutionTable(
-            parent, "Failed Queries", currentTime,
+        _content ++= new FailedExecutionTable(
+            parent,
+            "Failed Queries",
+            currentTime,
             listener.getFailedExecutions.sortBy(_.submissionTime).reverse).toNodeSeq
       }
       _content
     }
-    content ++=
-      <script>
+    content ++= <script>
         function clickDetail(details) {{
           details.parentNode.querySelector('.stage-details').classList.toggle('collapsed')
         }}
@@ -65,21 +67,16 @@ private[ui] class AllExecutionsPage(parent: SQLTab) extends WebUIPage("") with L
   }
 }
 
-private[ui] abstract class ExecutionTable(
-    parent: SQLTab,
-    tableId: String,
-    tableName: String,
-    currentTime: Long,
-    executionUIDatas: Seq[SQLExecutionUIData],
-    showRunningJobs: Boolean,
-    showSucceededJobs: Boolean,
-    showFailedJobs: Boolean) {
+private[ui] abstract class ExecutionTable(parent: SQLTab,
+                                          tableId: String,
+                                          tableName: String,
+                                          currentTime: Long,
+                                          executionUIDatas: Seq[SQLExecutionUIData],
+                                          showRunningJobs: Boolean,
+                                          showSucceededJobs: Boolean,
+                                          showFailedJobs: Boolean) {
 
-  protected def baseHeader: Seq[String] = Seq(
-    "ID",
-    "Description",
-    "Submitted",
-    "Duration")
+  protected def baseHeader: Seq[String] = Seq("ID", "Description", "Submitted", "Duration")
 
   protected def header: Seq[String]
 
@@ -128,16 +125,17 @@ private[ui] abstract class ExecutionTable(
   }
 
   private def descriptionCell(execution: SQLExecutionUIData): Seq[Node] = {
-    val details = if (execution.details.nonEmpty) {
-      <span onclick="clickDetail(this)" class="expand-details">
+    val details =
+      if (execution.details.nonEmpty) {
+        <span onclick="clickDetail(this)" class="expand-details">
         +details
       </span> ++
-      <div class="stage-details collapsed">
+        <div class="stage-details collapsed">
         <pre>{execution.details}</pre>
       </div>
-    } else {
-      Nil
-    }
+      } else {
+        Nil
+      }
 
     val desc = {
       <a href={executionURL(execution.executionId)}>{execution.description}</a>
@@ -161,57 +159,51 @@ private[ui] abstract class ExecutionTable(
     s"${UIUtils.prependBaseUri(parent.basePath)}/${parent.prefix}/execution?id=$executionID"
 }
 
-private[ui] class RunningExecutionTable(
-    parent: SQLTab,
-    tableName: String,
-    currentTime: Long,
-    executionUIDatas: Seq[SQLExecutionUIData])
-  extends ExecutionTable(
-    parent,
-    "running-execution-table",
-    tableName,
-    currentTime,
-    executionUIDatas,
-    showRunningJobs = true,
-    showSucceededJobs = true,
-    showFailedJobs = true) {
+private[ui] class RunningExecutionTable(parent: SQLTab,
+                                        tableName: String,
+                                        currentTime: Long,
+                                        executionUIDatas: Seq[SQLExecutionUIData])
+    extends ExecutionTable(parent,
+                           "running-execution-table",
+                           tableName,
+                           currentTime,
+                           executionUIDatas,
+                           showRunningJobs = true,
+                           showSucceededJobs = true,
+                           showFailedJobs = true) {
 
   override protected def header: Seq[String] =
     baseHeader ++ Seq("Running Jobs", "Succeeded Jobs", "Failed Jobs")
 }
 
-private[ui] class CompletedExecutionTable(
-    parent: SQLTab,
-    tableName: String,
-    currentTime: Long,
-    executionUIDatas: Seq[SQLExecutionUIData])
-  extends ExecutionTable(
-    parent,
-    "completed-execution-table",
-    tableName,
-    currentTime,
-    executionUIDatas,
-    showRunningJobs = false,
-    showSucceededJobs = true,
-    showFailedJobs = false) {
+private[ui] class CompletedExecutionTable(parent: SQLTab,
+                                          tableName: String,
+                                          currentTime: Long,
+                                          executionUIDatas: Seq[SQLExecutionUIData])
+    extends ExecutionTable(parent,
+                           "completed-execution-table",
+                           tableName,
+                           currentTime,
+                           executionUIDatas,
+                           showRunningJobs = false,
+                           showSucceededJobs = true,
+                           showFailedJobs = false) {
 
   override protected def header: Seq[String] = baseHeader ++ Seq("Jobs")
 }
 
-private[ui] class FailedExecutionTable(
-    parent: SQLTab,
-    tableName: String,
-    currentTime: Long,
-    executionUIDatas: Seq[SQLExecutionUIData])
-  extends ExecutionTable(
-    parent,
-    "failed-execution-table",
-    tableName,
-    currentTime,
-    executionUIDatas,
-    showRunningJobs = false,
-    showSucceededJobs = true,
-    showFailedJobs = true) {
+private[ui] class FailedExecutionTable(parent: SQLTab,
+                                       tableName: String,
+                                       currentTime: Long,
+                                       executionUIDatas: Seq[SQLExecutionUIData])
+    extends ExecutionTable(parent,
+                           "failed-execution-table",
+                           tableName,
+                           currentTime,
+                           executionUIDatas,
+                           showRunningJobs = false,
+                           showSucceededJobs = true,
+                           showFailedJobs = true) {
 
   override protected def header: Seq[String] =
     baseHeader ++ Seq("Succeeded Jobs", "Failed Jobs")
