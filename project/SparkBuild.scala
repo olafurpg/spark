@@ -250,13 +250,13 @@ object SparkBuild extends PomBuild {
       Resolver.file("local", file(Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns)
     ),
     externalResolvers := resolvers.value,
-    otherResolvers <<= SbtPomKeys.mvnLocalRepository(dotM2 => Seq(Resolver.file("dotM2", dotM2))),
-    publishLocalConfiguration in MavenCompile <<= (packagedArtifacts, deliverLocal, ivyLoggingLevel) map {
+    otherResolvers := SbtPomKeys.mvnLocalRepository(dotM2 => Seq(Resolver.file("dotM2", dotM2))).value,
+    publishLocalConfiguration in MavenCompile := ((packagedArtifacts, deliverLocal, ivyLoggingLevel) map {
       (arts, _, level) => new PublishConfiguration(None, "dotM2", arts, Seq(), level)
-    },
+    }).value,
     publishMavenStyle in MavenCompile := true,
-    publishLocal in MavenCompile <<= publishTask(publishLocalConfiguration in MavenCompile, deliverLocal),
-    publishLocalBoth <<= Seq(publishLocal in MavenCompile, publishLocal).dependOn,
+    publishLocal in MavenCompile := publishTask(publishLocalConfiguration in MavenCompile, deliverLocal).value,
+    publishLocalBoth := Seq(publishLocal in MavenCompile, publishLocal).dependOn.value,
 
     javacOptions in (Compile, doc) ++= {
       val versionParts = System.getProperty("java.version").split("[+.\\-]+", 3)
@@ -540,9 +540,9 @@ object Hive {
     javaOptions in Test := (javaOptions in Test).value.filterNot(_ == "-ea"),
     // Supporting all SerDes requires us to depend on deprecated APIs, so we turn off the warnings
     // only for this subproject.
-    scalacOptions <<= scalacOptions map { currentOpts: Seq[String] =>
+    scalacOptions := (scalacOptions map { currentOpts: Seq[String] =>
       currentOpts.filterNot(_ == "-deprecation")
-    },
+    }).value,
     initialCommands in console :=
       """
         |import org.apache.spark.SparkContext
@@ -580,17 +580,17 @@ object Assembly {
       sys.props.get("hadoop.version")
         .getOrElse(SbtPomKeys.effectivePom.value.getProperties.get("hadoop.version").asInstanceOf[String])
     },
-    jarName in assembly <<= (version, moduleName, hadoopVersion) map { (v, mName, hv) =>
+    jarName in assembly := ((version, moduleName, hadoopVersion) map { (v, mName, hv) =>
       if (mName.contains("streaming-flume-assembly") || mName.contains("streaming-kafka-0-8-assembly") || mName.contains("streaming-kinesis-asl-assembly")) {
         // This must match the same name used in maven (see external/kafka-0-8-assembly/pom.xml)
         s"${mName}-${v}.jar"
       } else {
         s"${mName}-${v}-hadoop${hv}.jar"
       }
-    },
-    jarName in (Test, assembly) <<= (version, moduleName, hadoopVersion) map { (v, mName, hv) =>
+    }).value,
+    jarName in (Test, assembly) := ((version, moduleName, hadoopVersion) map { (v, mName, hv) =>
       s"${mName}-test-${v}.jar"
-    },
+    }).value,
     mergeStrategy in assembly := {
       case m if m.toLowerCase.endsWith("manifest.mf")          => MergeStrategy.discard
       case m if m.toLowerCase.matches("meta-inf.*\\.sf$")      => MergeStrategy.discard
@@ -611,13 +611,13 @@ object PySparkAssembly {
     // Use a resource generator to copy all .py files from python/pyspark into a managed directory
     // to be included in the assembly. We can't just add "python/" to the assembly's resource dir
     // list since that will copy unneeded / unwanted files.
-    resourceGenerators in Compile <+= resourceManaged in Compile map { outDir: File =>
+    resourceGenerators in Compile ++= ((resourceManaged in Compile map { outDir: File =>
       val src = new File(BuildCommons.sparkHome, "python/pyspark")
       val zipFile = new File(BuildCommons.sparkHome , "python/lib/pyspark.zip")
       zipFile.delete()
       zipRecursive(src, zipFile)
       Seq[File]()
-    }
+    }).value)
   )
 
   private def zipRecursive(source: File, destZipFile: File) = {
@@ -761,7 +761,7 @@ object CopyDependencies {
         }
     },
     crossTarget in (Compile, packageBin) := destPath.value,
-    packageBin in Compile <<= (packageBin in Compile).dependsOn(copyDeps)
+    packageBin in Compile := (packageBin in Compile).dependsOn(copyDeps).value
   )
 
 }
@@ -831,7 +831,7 @@ object TestSettings {
     // Only allow one test at a time, even across projects, since they run in the same JVM
     parallelExecution in Test := false,
     // Make sure the test temp directory exists.
-    resourceGenerators in Test <+= resourceManaged in Test map { outDir: File =>
+    resourceGenerators in Test += (resourceManaged in Test map { outDir: File =>
       var dir = new File(testTempDir)
       if (!dir.isDirectory()) {
         // Because File.mkdirs() can fail if multiple callers are trying to create the same
@@ -849,7 +849,7 @@ object TestSettings {
         }
       }
       Seq[File]()
-    },
+    }).value,
     concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
     // Remove certain packages from Scaladoc
     scalacOptions in (Compile, doc) := Seq(
